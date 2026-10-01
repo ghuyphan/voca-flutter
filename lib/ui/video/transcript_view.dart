@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:signals_flutter/signals_flutter.dart';
+import '../../config/voca_theme.dart';
 import '../../models/voca_models.dart';
 import '../../state/app_state.dart';
 import '../../state/player_state.dart';
@@ -122,166 +123,172 @@ class _TranscriptViewState extends State<TranscriptView> {
 
       final filteredCues = _getFilteredCues(allCues);
 
-      return Column(
-        children: [
-          // Transcript Header Bar: Search + Auto-Scroll Toggle + Count
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0F172A),
-              border: Border(
-                bottom: BorderSide(color: Colors.white.withOpacity(0.08)),
+      return Container(
+        color: VocaTokens.bgPrimary,
+        child: Column(
+          children: [
+            // Transcript Header Bar: Search + Auto-Scroll Toggle + Count
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: const BoxDecoration(
+                color: VocaTokens.bgSecondary,
+                border: Border(
+                  bottom: BorderSide(color: VocaTokens.borderColor),
+                ),
+              ),
+              child: Row(
+                children: [
+                  // Search Input Field
+                  Expanded(
+                    child: Container(
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: VocaTokens.bgCard,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: VocaTokens.borderColor),
+                      ),
+                      child: TextField(
+                        controller: _searchController,
+                        style: const TextStyle(
+                          color: VocaTokens.textPrimary,
+                          fontSize: 13,
+                        ),
+                        cursorColor: VocaTokens.accentPrimary,
+                        decoration: InputDecoration(
+                          hintText: 'Search transcript...',
+                          hintStyle: const TextStyle(
+                            color: VocaTokens.textMuted,
+                            fontSize: 12.5,
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.search_rounded,
+                            color: VocaTokens.textMuted,
+                            size: 18,
+                          ),
+                          suffixIcon: _searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(
+                                    Icons.close_rounded,
+                                    color: VocaTokens.textMuted,
+                                    size: 16,
+                                  ),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                  },
+                                )
+                              : null,
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+
+                  // Auto-Scroll Toggle Chip
+                  InkWell(
+                    onTap: widget.controller.toggleAutoScroll,
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      height: 36,
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      decoration: BoxDecoration(
+                        color: isAutoScroll
+                            ? VocaTokens.accentPrimarySoft
+                            : VocaTokens.bgCard,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isAutoScroll
+                              ? VocaTokens.accentPrimary
+                              : VocaTokens.borderColor,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isAutoScroll
+                                ? Icons.vertical_align_center_rounded
+                                : Icons.vertical_align_bottom_rounded,
+                            size: 16,
+                            color: isAutoScroll
+                                ? VocaTokens.accentPrimary
+                                : VocaTokens.textMuted,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            isAutoScroll ? 'Auto-scroll' : 'Manual',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: isAutoScroll
+                                  ? VocaTokens.accentPrimary
+                                  : VocaTokens.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            child: Row(
-              children: [
-                // Search Input Field
-                Expanded(
-                  child: Container(
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.06),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.white12),
-                    ),
-                    child: TextField(
-                      controller: _searchController,
-                      style: const TextStyle(color: Colors.white, fontSize: 13),
-                      cursorColor: const Color(0xFF38BDF8),
-                      decoration: InputDecoration(
-                        hintText: 'Search transcript...',
-                        hintStyle: TextStyle(
-                          color: Colors.white.withOpacity(0.35),
-                          fontSize: 12.5,
-                        ),
-                        prefixIcon: const Icon(
-                          Icons.search_rounded,
-                          color: Colors.white38,
-                          size: 18,
-                        ),
-                        suffixIcon: _searchQuery.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(
-                                  Icons.close_rounded,
-                                  color: Colors.white54,
-                                  size: 16,
-                                ),
-                                onPressed: () {
-                                  _searchController.clear();
-                                },
-                              )
-                            : null,
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
 
-                // Auto-Scroll Toggle Chip
-                InkWell(
-                  onTap: widget.controller.toggleAutoScroll,
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    height: 36,
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    decoration: BoxDecoration(
-                      color: isAutoScroll
-                          ? const Color(0xFF0284C7).withOpacity(0.2)
-                          : Colors.white.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: isAutoScroll
-                            ? const Color(0xFF38BDF8).withOpacity(0.5)
-                            : Colors.white10,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isAutoScroll
-                              ? Icons.vertical_align_center_rounded
-                              : Icons.vertical_align_bottom_rounded,
-                          size: 16,
-                          color: isAutoScroll
-                              ? const Color(0xFF38BDF8)
-                              : Colors.white38,
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          isAutoScroll ? 'Auto-scroll' : 'Manual',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w600,
-                            color: isAutoScroll
-                                ? const Color(0xFF38BDF8)
-                                : Colors.white60,
+            // Transcript List or Empty State
+            Expanded(
+              child: filteredCues.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _searchQuery.isNotEmpty
+                                ? Icons.search_off_rounded
+                                : Icons.subtitles_off_rounded,
+                            color: VocaTokens.textMuted.withOpacity(0.5),
+                            size: 40,
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 8),
+                          Text(
+                            _searchQuery.isNotEmpty
+                                ? 'No matching cues found'
+                                : 'No transcript available',
+                            style: const TextStyle(
+                              color: VocaTokens.textMuted,
+                              fontSize: 13.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      itemCount: filteredCues.length,
+                      itemBuilder: (context, index) {
+                        final cue = filteredCues[index];
+                        final isActive = activeCue == cue;
+                        final isLoopingThis = isLoopingCue && loopingCue == cue;
+
+                        _cueKeys[index] ??= GlobalKey();
+
+                        return _buildCueCard(
+                          key: _cueKeys[index]!,
+                          cue: cue,
+                          isActive: isActive,
+                          isLoopingThis: isLoopingThis,
+                          showFurigana: showFurigana,
+                          showTranslation: showTranslation,
+                          subtitleSize: subtitleSize,
+                        );
+                      },
                     ),
-                  ),
-                ),
-              ],
             ),
-          ),
-
-          // Transcript List or Empty State
-          Expanded(
-            child: filteredCues.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          _searchQuery.isNotEmpty
-                              ? Icons.search_off_rounded
-                              : Icons.subtitles_off_rounded,
-                          color: Colors.white24,
-                          size: 40,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _searchQuery.isNotEmpty
-                              ? 'No matching cues found'
-                              : 'No transcript available',
-                          style: const TextStyle(
-                            color: Colors.white54,
-                            fontSize: 13.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    itemCount: filteredCues.length,
-                    itemBuilder: (context, index) {
-                      final cue = filteredCues[index];
-                      final isActive = activeCue == cue;
-                      final isLoopingThis = isLoopingCue && loopingCue == cue;
-
-                      _cueKeys[index] ??= GlobalKey();
-
-                      return _buildCueCard(
-                        key: _cueKeys[index]!,
-                        cue: cue,
-                        isActive: isActive,
-                        isLoopingThis: isLoopingThis,
-                        showFurigana: showFurigana,
-                        showTranslation: showTranslation,
-                        subtitleSize: subtitleSize,
-                      );
-                    },
-                  ),
-          ),
-        ],
+          ],
+        ),
       );
     });
   }
@@ -336,20 +343,20 @@ class _TranscriptViewState extends State<TranscriptView> {
       margin: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
         color: isActive
-            ? const Color(0xFF1E293B)
-            : const Color(0xFF131D31).withOpacity(0.55),
-        borderRadius: BorderRadius.circular(10),
+            ? VocaTokens.bgSurface
+            : VocaTokens.bgCard,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isActive
-              ? const Color(0xFF38BDF8).withOpacity(0.4)
-              : Colors.white.withOpacity(0.06),
+              ? VocaTokens.accentPrimary.withOpacity(0.6)
+              : VocaTokens.borderColor,
           width: 1,
         ),
         boxShadow: isActive
             ? [
                 BoxShadow(
-                  color: const Color(0xFF38BDF8).withOpacity(0.12),
-                  blurRadius: 8,
+                  color: VocaTokens.accentPrimary.withOpacity(0.12),
+                  blurRadius: 10,
                   offset: const Offset(0, 2),
                 ),
               ]
@@ -362,7 +369,7 @@ class _TranscriptViewState extends State<TranscriptView> {
             widget.onSeek(cue.start);
             widget.controller.currentTime.value = cue.start;
           },
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             child: Row(
@@ -374,7 +381,7 @@ class _TranscriptViewState extends State<TranscriptView> {
                   height: 36,
                   margin: const EdgeInsets.only(right: 8),
                   decoration: BoxDecoration(
-                    color: isActive ? const Color(0xFF38BDF8) : Colors.transparent,
+                    color: isActive ? VocaTokens.accentPrimary : Colors.transparent,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -382,18 +389,18 @@ class _TranscriptViewState extends State<TranscriptView> {
                 // Timestamp Chip
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
+                    horizontal: 7,
                     vertical: 3,
                   ),
                   decoration: BoxDecoration(
                     color: isActive
-                        ? const Color(0xFF38BDF8).withOpacity(0.15)
-                        : Colors.white.withOpacity(0.06),
+                        ? VocaTokens.accentPrimarySoft
+                        : VocaTokens.bgCard,
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
                       color: isActive
-                          ? const Color(0xFF38BDF8).withOpacity(0.4)
-                          : Colors.white10,
+                          ? VocaTokens.accentPrimary.withOpacity(0.5)
+                          : VocaTokens.borderColor,
                     ),
                   ),
                   child: Text(
@@ -401,8 +408,8 @@ class _TranscriptViewState extends State<TranscriptView> {
                     style: TextStyle(
                       fontFeatures: const [FontFeature.tabularFigures()],
                       color: isActive
-                          ? const Color(0xFF38BDF8)
-                          : Colors.white60,
+                          ? VocaTokens.accentPrimary
+                          : VocaTokens.textMuted,
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                     ),
@@ -431,8 +438,8 @@ class _TranscriptViewState extends State<TranscriptView> {
                                 token.surface,
                                 style: TextStyle(
                                   color: isActive
-                                      ? Colors.white
-                                      : Colors.white70,
+                                      ? VocaTokens.textPrimary
+                                      : VocaTokens.textSecondary,
                                   fontSize: surfaceFontSize,
                                 ),
                               );
@@ -458,7 +465,7 @@ class _TranscriptViewState extends State<TranscriptView> {
                                   border: grammarPattern != null
                                       ? const Border(
                                           bottom: BorderSide(
-                                            color: Colors.amberAccent,
+                                            color: VocaTokens.colorGrammar,
                                             width: 2,
                                           ),
                                         )
@@ -472,7 +479,7 @@ class _TranscriptViewState extends State<TranscriptView> {
                                         Text(
                                           ruby,
                                           style: TextStyle(
-                                            color: Colors.white60,
+                                            color: VocaTokens.textMuted,
                                             fontSize: rubyFontSize,
                                             fontWeight: FontWeight.w500,
                                             letterSpacing: -0.2,
@@ -485,10 +492,10 @@ class _TranscriptViewState extends State<TranscriptView> {
                                       token.surface,
                                       style: TextStyle(
                                         color: grammarPattern != null
-                                            ? Colors.amberAccent
+                                            ? VocaTokens.colorGrammar
                                             : (isActive
-                                                ? Colors.white
-                                                : Colors.white.withOpacity(0.85)),
+                                                ? VocaTokens.textPrimary
+                                                : VocaTokens.textPrimary.withOpacity(0.85)),
                                         fontSize: surfaceFontSize,
                                         fontWeight: isActive
                                             ? FontWeight.w600
@@ -506,8 +513,8 @@ class _TranscriptViewState extends State<TranscriptView> {
                           cue.text,
                           style: TextStyle(
                             color: isActive
-                                ? Colors.white
-                                : Colors.white.withOpacity(0.85),
+                                ? VocaTokens.textPrimary
+                                : VocaTokens.textPrimary.withOpacity(0.85),
                             fontSize: surfaceFontSize,
                             fontWeight: isActive
                                 ? FontWeight.w600
@@ -523,7 +530,7 @@ class _TranscriptViewState extends State<TranscriptView> {
                         Text(
                           cue.translation!,
                           style: TextStyle(
-                            color: const Color(0xFF94A3B8),
+                            color: VocaTokens.textSecondary,
                             fontSize: translationFontSize,
                             fontStyle: FontStyle.italic,
                           ),
@@ -544,8 +551,8 @@ class _TranscriptViewState extends State<TranscriptView> {
                     size: 20,
                   ),
                   color: isLoopingThis
-                      ? const Color(0xFFF59E0B)
-                      : (isActive ? Colors.white70 : Colors.white30),
+                      ? VocaTokens.accentPrimary
+                      : (isActive ? VocaTokens.textPrimary : VocaTokens.textMuted),
                   tooltip: isLoopingThis
                       ? 'Stop looping this sentence'
                       : 'Loop this sentence',

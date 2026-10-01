@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:voca_flutter/config/voca_theme.dart';
 import 'package:voca_flutter/services/voca_api_client.dart';
 import 'package:voca_flutter/state/app_state.dart';
 import 'package:voca_flutter/ui/explore/explore_screen.dart';
@@ -169,7 +170,7 @@ void main() {
     expect(find.textContaining('Valid YouTube Video'), findsNothing);
   });
 
-  testWidgets('ExploreScreen bookmark button toggles state', (tester) async {
+  testWidgets('ExploreScreen bookmark button toggles state and has Coral active color', (tester) async {
     tester.view.physicalSize = const Size(1200, 1000);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -182,15 +183,54 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Bookmark icon should start unselected
-    expect(find.byIcon(Icons.bookmark_border_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.bookmark_rounded), findsNothing);
+    // Bookmark icon should start unselected with white color
+    final unselectedIcon = tester.widget<Icon>(find.byIcon(Icons.bookmark_border_rounded));
+    expect(unselectedIcon.color, equals(Colors.white));
 
     // Tap bookmark icon
     await tester.tap(find.byIcon(Icons.bookmark_border_rounded));
     await tester.pump();
 
-    // Now it should be bookmarked
-    expect(find.byIcon(Icons.bookmark_rounded), findsOneWidget);
+    // Now it should be bookmarked with Radiant Coral color
+    final selectedIcon = tester.widget<Icon>(find.byIcon(Icons.bookmark_rounded));
+    expect(selectedIcon.color, equals(VocaTokens.accentPrimary));
+  });
+
+  testWidgets('ExploreScreen switches to 1-column ListView on mobile screens (< 720dp)', (tester) async {
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    AppState.instance.activeLanguage.value = 'ja';
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ExploreScreen(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // On mobile (< 720dp), video feed should use a ListView, not a GridView
+    expect(find.byType(GridView), findsNothing);
+    expect(find.text('Lemon / Kenshi Yonezu'), findsOneWidget);
+  });
+
+  testWidgets('ExploreScreen switches to responsive GridView on tablet screens (>= 720dp)', (tester) async {
+    tester.view.physicalSize = const Size(800, 1000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    AppState.instance.activeLanguage.value = 'ja';
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ExploreScreen(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // On tablet (>= 720dp), video feed should render a GridView
+    expect(find.byType(GridView), findsOneWidget);
+    final gridView = tester.widget<GridView>(find.byType(GridView));
+    final delegate = gridView.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount;
+    expect(delegate.crossAxisCount, equals(2));
   });
 }

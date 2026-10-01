@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import '../../config/voca_theme.dart';
 import '../../models/voca_models.dart';
 import '../../state/player_state.dart';
 
@@ -10,12 +11,14 @@ class PlayerControlsBar extends StatelessWidget {
   final VideoPlayerController controller;
   final YoutubePlayerController ytController;
   final VoidCallback? onBookmark;
+  final bool showTranscriptToggle;
 
   const PlayerControlsBar({
     super.key,
     required this.controller,
     required this.ytController,
     this.onBookmark,
+    this.showTranscriptToggle = true,
   });
 
   @override
@@ -43,75 +46,75 @@ class PlayerControlsBar extends StatelessWidget {
 
       return Container(
         height: 52,
-        decoration: BoxDecoration(
-          color: const Color(0xFF0B132B),
+        decoration: const BoxDecoration(
+          color: VocaTokens.bgPrimary,
           border: Border(
-            top: BorderSide(color: Colors.white.withOpacity(0.08)),
-            bottom: BorderSide(color: Colors.white.withOpacity(0.08)),
+            top: BorderSide(color: VocaTokens.borderColor),
+            bottom: BorderSide(color: VocaTokens.borderColor),
           ),
         ),
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // 1. View Mode Switch (Subtitle Overlay vs Full Transcript List)
-              InkWell(
-                onTap: controller.toggleTranscriptMode,
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  height: 38,
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  decoration: BoxDecoration(
-                    color: isTranscript
-                        ? const Color(0xFF6366F1).withOpacity(0.25)
-                        : Colors.white.withOpacity(0.06),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
+              // 1. Mobile/Stacked View Mode Switch: Subtitle Overlay vs Full Transcript List
+              if (showTranscriptToggle) ...[
+                InkWell(
+                  onTap: controller.toggleTranscriptMode,
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    height: 36,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
                       color: isTranscript
-                          ? const Color(0xFF818CF8)
-                          : Colors.white12,
+                          ? VocaTokens.accentPrimarySoft
+                          : VocaTokens.bgCard,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: isTranscript
+                            ? VocaTokens.accentPrimary
+                            : VocaTokens.borderColor,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isTranscript
+                              ? Icons.format_list_bulleted_rounded
+                              : Icons.subtitles_rounded,
+                          size: 16,
+                          color: isTranscript
+                              ? VocaTokens.accentPrimary
+                              : VocaTokens.textSecondary,
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          isTranscript ? 'Transcript' : 'Subtitles',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isTranscript
+                                ? VocaTokens.accentPrimary
+                                : VocaTokens.textPrimary,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isTranscript
-                            ? Icons.format_list_bulleted_rounded
-                            : Icons.subtitles_rounded,
-                        size: 16,
-                        color: isTranscript
-                            ? const Color(0xFF818CF8)
-                            : Colors.white70,
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        isTranscript ? 'Transcript' : 'Subtitles',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: isTranscript
-                              ? const Color(0xFF818CF8)
-                              : Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
-              ),
-
-              const SizedBox(width: 8),
-              _buildDivider(),
-              const SizedBox(width: 8),
+                const SizedBox(width: 6),
+                _buildDivider(),
+                const SizedBox(width: 6),
+              ],
 
               // 2. Previous Cue Button (<)
-              IconButton(
-                icon: const Icon(Icons.skip_previous_rounded, size: 22),
-                color: Colors.white,
+              _buildIconButton(
+                icon: Icons.skip_previous_rounded,
                 tooltip: 'Previous sentence',
-                onPressed: () {
+                onTap: () {
                   controller.seekToPreviousCue(
                     onSeek: (s) => ytController.seekTo(
                       seconds: s,
@@ -121,32 +124,62 @@ class PlayerControlsBar extends StatelessWidget {
                 },
               ),
 
+              const SizedBox(width: 6),
+
               // 3. Loop Current Cue Button
-              IconButton(
-                icon: Icon(
-                  isLooping
-                      ? Icons.repeat_one_rounded
-                      : Icons.repeat_rounded,
-                  size: 22,
+              InkWell(
+                onTap: controller.toggleLoopCurrentCue,
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  height: 36,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: isLooping
+                        ? VocaTokens.accentPrimarySoft
+                        : VocaTokens.bgCard,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isLooping
+                          ? VocaTokens.accentPrimary
+                          : VocaTokens.borderColor,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isLooping
+                            ? Icons.repeat_one_rounded
+                            : Icons.repeat_rounded,
+                        size: 18,
+                        color: isLooping
+                            ? VocaTokens.accentPrimary
+                            : VocaTokens.textMuted,
+                      ),
+                      if (isLooping) ...[
+                        const SizedBox(width: 4),
+                        const Text(
+                          'LOOP',
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.bold,
+                            color: VocaTokens.accentPrimary,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-                color: isLooping ? const Color(0xFFF59E0B) : Colors.white60,
-                tooltip: isLooping
-                    ? 'Looping active sentence (tap to stop)'
-                    : 'Loop active sentence',
-                style: isLooping
-                    ? IconButton.styleFrom(
-                        backgroundColor: const Color(0xFFF59E0B).withOpacity(0.2),
-                      )
-                    : null,
-                onPressed: controller.toggleLoopCurrentCue,
               ),
 
+              const SizedBox(width: 6),
+
               // 4. Next Cue Button (>)
-              IconButton(
-                icon: const Icon(Icons.skip_next_rounded, size: 22),
-                color: Colors.white,
+              _buildIconButton(
+                icon: Icons.skip_next_rounded,
                 tooltip: 'Next sentence',
-                onPressed: () {
+                onTap: () {
                   controller.seekToNextCue(
                     onSeek: (s) => ytController.seekTo(
                       seconds: s,
@@ -158,7 +191,7 @@ class PlayerControlsBar extends StatelessWidget {
 
               const SizedBox(width: 6),
               _buildDivider(),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
 
               // 5. Playback Speed Button Popup (0.75x, 1.0x, 1.25x, 1.5x)
               PopupMenuButton<double>(
@@ -168,7 +201,11 @@ class PlayerControlsBar extends StatelessWidget {
                   controller.playbackRate.value = newRate;
                   ytController.setPlaybackRate(newRate);
                 },
-                color: const Color(0xFF1E293B),
+                color: VocaTokens.bgCard,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(color: VocaTokens.borderColor),
+                ),
                 itemBuilder: (context) => [
                   _buildSpeedMenuItem(0.75, '0.75x', rate),
                   _buildSpeedMenuItem(1.0, '1.0x (Normal)', rate),
@@ -176,43 +213,51 @@ class PlayerControlsBar extends StatelessWidget {
                   _buildSpeedMenuItem(1.5, '1.5x', rate),
                 ],
                 child: Container(
-                  height: 34,
-                  padding: const EdgeInsets.symmetric(horizontal: 9),
+                  height: 36,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.06),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.white12),
+                    color: rate != 1.0
+                        ? VocaTokens.accentPrimarySoft
+                        : VocaTokens.bgCard,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: rate != 1.0
+                          ? VocaTokens.accentPrimary
+                          : VocaTokens.borderColor,
+                    ),
                   ),
                   alignment: Alignment.center,
                   child: Text(
                     '${rate}x',
-                    style: const TextStyle(
-                      color: Color(0xFF38BDF8),
-                      fontSize: 12.5,
+                    style: TextStyle(
+                      color: rate != 1.0
+                          ? VocaTokens.accentPrimary
+                          : VocaTokens.textPrimary,
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
               ),
 
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
 
-              // 6. Toggle Furigana / Ruby Display
+              // 6. Toggle Furigana / Ruby Display (振)
               InkWell(
                 onTap: controller.toggleFurigana,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
                 child: Container(
-                  height: 34,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  height: 36,
+                  padding: const EdgeInsets.symmetric(horizontal: 9),
                   decoration: BoxDecoration(
                     color: showFurigana
-                        ? const Color(0xFF38BDF8).withOpacity(0.18)
-                        : Colors.white.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(8),
+                        ? VocaTokens.accentPrimarySoft
+                        : VocaTokens.bgCard,
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: showFurigana
-                          ? const Color(0xFF38BDF8).withOpacity(0.5)
-                          : Colors.white10,
+                          ? VocaTokens.accentPrimary
+                          : VocaTokens.borderColor,
                     ),
                   ),
                   child: Row(
@@ -224,8 +269,8 @@ class PlayerControlsBar extends StatelessWidget {
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                           color: showFurigana
-                              ? const Color(0xFF38BDF8)
-                              : Colors.white38,
+                              ? VocaTokens.accentPrimary
+                              : VocaTokens.textMuted,
                         ),
                       ),
                       const SizedBox(width: 4),
@@ -235,8 +280,8 @@ class PlayerControlsBar extends StatelessWidget {
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
                           color: showFurigana
-                              ? const Color(0xFF38BDF8)
-                              : Colors.white38,
+                              ? VocaTokens.accentPrimary
+                              : VocaTokens.textMuted,
                         ),
                       ),
                     ],
@@ -244,35 +289,38 @@ class PlayerControlsBar extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
 
-              // 7. Toggle Translation Display
+              // 7. Toggle Translation Display (文)
               InkWell(
                 onTap: controller.toggleTranslation,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
                 child: Container(
-                  height: 34,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  height: 36,
+                  padding: const EdgeInsets.symmetric(horizontal: 9),
                   decoration: BoxDecoration(
                     color: showTranslation
-                        ? const Color(0xFF10B981).withOpacity(0.18)
-                        : Colors.white.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(8),
+                        ? VocaTokens.accentPrimarySoft
+                        : VocaTokens.bgCard,
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: showTranslation
-                          ? const Color(0xFF10B981).withOpacity(0.5)
-                          : Colors.white10,
+                          ? VocaTokens.accentPrimary
+                          : VocaTokens.borderColor,
                     ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.translate_rounded,
-                        size: 14,
-                        color: showTranslation
-                            ? const Color(0xFF10B981)
-                            : Colors.white38,
+                      Text(
+                        '文',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: showTranslation
+                              ? VocaTokens.accentPrimary
+                              : VocaTokens.textMuted,
+                        ),
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -281,8 +329,8 @@ class PlayerControlsBar extends StatelessWidget {
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
                           color: showTranslation
-                              ? const Color(0xFF10B981)
-                              : Colors.white38,
+                              ? VocaTokens.accentPrimary
+                              : VocaTokens.textMuted,
                         ),
                       ),
                     ],
@@ -290,19 +338,19 @@ class PlayerControlsBar extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
 
-              // 8. Font Size Scaler
+              // 8. Font Size Scaler (S / M / L)
               InkWell(
                 onTap: controller.cycleSubtitleSize,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
                 child: Container(
-                  height: 34,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  height: 36,
+                  padding: const EdgeInsets.symmetric(horizontal: 9),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.06),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.white12),
+                    color: VocaTokens.bgCard,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: VocaTokens.borderColor),
                   ),
                   alignment: Alignment.center,
                   child: Row(
@@ -311,13 +359,13 @@ class PlayerControlsBar extends StatelessWidget {
                       const Icon(
                         Icons.format_size_rounded,
                         size: 15,
-                        color: Colors.white70,
+                        color: VocaTokens.textMuted,
                       ),
                       const SizedBox(width: 3),
                       Text(
                         sizeLabel,
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: VocaTokens.textPrimary,
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                         ),
@@ -327,20 +375,60 @@ class PlayerControlsBar extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
 
               // 9. Bookmark Button
-              IconButton(
-                icon: const Icon(Icons.bookmark_border_rounded, size: 20),
-                color: Colors.white70,
-                tooltip: 'Bookmark current sentence',
-                onPressed: onBookmark,
+              InkWell(
+                onTap: onBookmark,
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  height: 36,
+                  width: 36,
+                  decoration: BoxDecoration(
+                    color: VocaTokens.bgCard,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: VocaTokens.borderColor),
+                  ),
+                  child: const Icon(
+                    Icons.bookmark_border_rounded,
+                    size: 18,
+                    color: VocaTokens.textMuted,
+                  ),
+                ),
               ),
             ],
           ),
         ),
       );
     });
+  }
+
+  Widget _buildIconButton({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onTap,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          height: 36,
+          width: 36,
+          decoration: BoxDecoration(
+            color: VocaTokens.bgCard,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: VocaTokens.borderColor),
+          ),
+          child: Icon(
+            icon,
+            size: 20,
+            color: VocaTokens.textPrimary,
+          ),
+        ),
+      ),
+    );
   }
 
   PopupMenuItem<double> _buildSpeedMenuItem(
@@ -357,14 +445,16 @@ class PlayerControlsBar extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: isSelected ? const Color(0xFF38BDF8) : Colors.white,
+              color: isSelected
+                  ? VocaTokens.accentPrimary
+                  : VocaTokens.textPrimary,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),
           ),
           if (isSelected)
             const Icon(
               Icons.check_rounded,
-              color: Color(0xFF38BDF8),
+              color: VocaTokens.accentPrimary,
               size: 16,
             ),
         ],
@@ -375,8 +465,9 @@ class PlayerControlsBar extends StatelessWidget {
   Widget _buildDivider() {
     return Container(
       width: 1,
-      height: 22,
-      color: Colors.white12,
+      height: 20,
+      margin: const EdgeInsets.symmetric(horizontal: 2),
+      color: VocaTokens.borderColor,
     );
   }
 }

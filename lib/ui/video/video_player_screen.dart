@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import '../../config/voca_theme.dart';
 import '../../state/app_state.dart';
 import '../../state/player_state.dart';
 import '../../utils/cyrb53_hasher.dart';
@@ -150,7 +151,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     if (active == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('No active sentence to bookmark'),
+          backgroundColor: VocaTokens.bgCard,
+          content: Text(
+            'No active sentence to bookmark',
+            style: TextStyle(color: VocaTokens.textPrimary),
+          ),
           duration: Duration(seconds: 2),
         ),
       );
@@ -159,12 +164,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: const Color(0xFF1E293B),
+        backgroundColor: VocaTokens.bgCard,
         content: Row(
           children: [
             const Icon(
               Icons.bookmark_added_rounded,
-              color: Color(0xFFF59E0B),
+              color: VocaTokens.accentPrimary,
               size: 18,
             ),
             const SizedBox(width: 8),
@@ -173,7 +178,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                 'Bookmarked: ${active.text}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: VocaTokens.textPrimary),
               ),
             ),
           ],
@@ -190,318 +195,383 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     super.dispose();
   }
 
+  Widget _buildVideoPlayer() {
+    if (_playerError != null && _playerError != YoutubeError.none) {
+      return Container(
+        height: 220,
+        color: VocaTokens.bgPrimary,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.lock_outline_rounded,
+                color: VocaTokens.warning,
+                size: 36,
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Playback Restricted by Owner',
+                style: TextStyle(
+                  color: VocaTokens.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'YouTube owner disabled third-party embedding for this track. You can open it in YouTube while using Voca for subtitles & vocabulary.',
+                style: TextStyle(
+                  color: VocaTokens.textSecondary,
+                  fontSize: 11.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: () => launchUrl(
+                  Uri.parse(
+                    'https://www.youtube.com/watch?v=${widget.videoId}',
+                  ),
+                  mode: LaunchMode.externalApplication,
+                ),
+                icon: const Icon(Icons.open_in_new, size: 14),
+                label: const Text(
+                  'Watch on YouTube',
+                  style: TextStyle(fontSize: 12.5),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: VocaTokens.error,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return YoutubePlayer(
+      controller: _ytController,
+      aspectRatio: 16 / 9,
+      backgroundColor: Colors.transparent,
+    );
+  }
+
+  Widget _buildSubtitleArea() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Column(
+        children: [
+          // Loading / Status indicator
+          Watch((context) {
+            final isLoading = _playerController.isLoading.value;
+            final status = _playerController.statusMessage.value;
+            if (isLoading && status != null) {
+              return Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+                margin: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: VocaTokens.bgCard,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: VocaTokens.borderColor),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: VocaTokens.accentPrimary,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      status,
+                      style: const TextStyle(
+                        color: VocaTokens.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+            return const SizedBox.shrink();
+          }),
+
+          // Language Mismatch Alert Banner
+          Watch((context) {
+            final isMismatch = _playerController.languageMismatch.value;
+            final available = _playerController.availableLanguages.value;
+            if (!isMismatch) return const SizedBox.shrink();
+
+            return Container(
+              margin: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: VocaTokens.bgCard,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: VocaTokens.accentTertiary.withOpacity(0.5),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline_rounded,
+                        color: VocaTokens.accentTertiary,
+                        size: 18,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'No captions in selected language',
+                        style: TextStyle(
+                          color: VocaTokens.accentTertiary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Available native captions: ${available.native.join(", ")}',
+                    style: const TextStyle(
+                      color: VocaTokens.textSecondary,
+                      fontSize: 12.5,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      if (available.native.isNotEmpty)
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              AppState.instance
+                                  .setLanguage(available.native.first);
+                              _playerController.loadVideo(widget.videoId);
+                            },
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: VocaTokens.textPrimary,
+                              side: const BorderSide(
+                                color: VocaTokens.borderColor,
+                              ),
+                            ),
+                            child: Text(
+                              'Switch to ${available.native.first}',
+                            ),
+                          ),
+                        ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            _playerController.loadVideo(
+                              widget.videoId,
+                              preferAI: true,
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: VocaTokens.accentPrimary,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text('AI Transcribe'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }),
+
+          // Interactive Subtitle Overlay
+          Watch((context) {
+            final activeCue = _playerController.activeCue.value;
+            final grammarMatches =
+                _playerController.activeGrammarMatches.value;
+            final showFurigana =
+                _playerController.showFurigana.value;
+            final showTranslation =
+                _playerController.showTranslation.value;
+            final subtitleSize =
+                _playerController.subtitleSize.value;
+
+            if (activeCue == null) {
+              return Container(
+                constraints: const BoxConstraints(minHeight: 76),
+                margin: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                alignment: Alignment.center,
+                child: const Text(
+                  'Listening...',
+                  style: TextStyle(
+                    color: VocaTokens.textMuted,
+                    fontSize: 14,
+                  ),
+                ),
+              );
+            }
+
+            return InteractiveSubtitleView(
+              cue: activeCue,
+              grammarMatches: grammarMatches,
+              showFurigana: showFurigana,
+              showTranslation: showTranslation,
+              subtitleSize: subtitleSize,
+              onTokenTap: (token) {
+                _ytController.pauseVideo();
+                DictionaryBottomSheet.show(
+                  context,
+                  token: token,
+                  sourceLang: AppState.instance.activeLanguage.value,
+                  contextSentence: activeCue.text,
+                  contextTranslation: activeCue.translation,
+                );
+              },
+              onGrammarTap: (pattern) {
+                _ytController.pauseVideo();
+                GrammarBottomSheet.show(context, pattern);
+              },
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTranscriptArea() {
+    return TranscriptView(
+      controller: _playerController,
+      onSeek: (seconds) => _ytController.seekTo(
+        seconds: seconds,
+        allowSeekAhead: true,
+      ),
+      onTokenTap: (token) {
+        _ytController.pauseVideo();
+        final active = _playerController.activeCue.value;
+        DictionaryBottomSheet.show(
+          context,
+          token: token,
+          sourceLang: AppState.instance.activeLanguage.value,
+          contextSentence: active?.text,
+          contextTranslation: active?.translation,
+        );
+      },
+      onGrammarTap: (pattern) {
+        _ytController.pauseVideo();
+        GrammarBottomSheet.show(context, pattern);
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final isTabletOrLandscape =
+        mediaQuery.size.width >= VocaTokens.tabletBreakpoint ||
+            mediaQuery.orientation == Orientation.landscape;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: VocaTokens.bgPrimary,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: VocaTokens.bgPrimary,
         elevation: 0,
         title: Text(
           widget.title,
-          style: const TextStyle(fontSize: 16, color: Colors.white),
+          style: const TextStyle(
+            fontSize: 16,
+            color: VocaTokens.textPrimary,
+            fontWeight: FontWeight.w600,
+          ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: VocaTokens.textPrimary),
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            // YouTube Player or Owner Restriction Banner
-            if (_playerError != null && _playerError != YoutubeError.none)
-              Container(
-                height: 220,
-                color: const Color(0xFF0F172A),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.lock_outline_rounded,
-                        color: Color(0xFFF59E0B),
-                        size: 36,
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Playback Restricted by Owner',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
+        child: isTabletOrLandscape
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Left Pane (flex 3): 16:9 Youtube player + sticky subtitle display + PlayerControlsBar
+                  Expanded(
+                    flex: 3,
+                    child: Column(
+                      children: [
+                        _buildVideoPlayer(),
+                        PlayerControlsBar(
+                          controller: _playerController,
+                          ytController: _ytController,
+                          onBookmark: _handleBookmark,
+                          showTranscriptToggle: false,
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'YouTube owner disabled third-party embedding for this track. You can open it in YouTube while using Voca for subtitles & vocabulary.',
-                        style: TextStyle(color: Colors.white70, fontSize: 11.5),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 12),
-                      ElevatedButton.icon(
-                        onPressed: () => launchUrl(
-                          Uri.parse(
-                            'https://www.youtube.com/watch?v=${widget.videoId}',
-                          ),
-                          mode: LaunchMode.externalApplication,
+                        Expanded(
+                          child: _buildSubtitleArea(),
                         ),
-                        icon: const Icon(Icons.open_in_new, size: 14),
-                        label: const Text(
-                          'Watch on YouTube',
-                          style: TextStyle(fontSize: 12.5),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFEF4444),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            else
-              YoutubePlayer(
-                controller: _ytController,
-                aspectRatio: 16 / 9,
-                backgroundColor: Colors.transparent,
-              ),
-
-            // Video Controls Bar
-            PlayerControlsBar(
-              controller: _playerController,
-              ytController: _ytController,
-              onBookmark: _handleBookmark,
-            ),
-
-            // Main Content Area: Subtitle Overlay View OR Synchronized Transcript View
-            Expanded(
-              child: Watch((context) {
-                final isTranscript = _playerController.isTranscriptMode.value;
-
-                if (isTranscript) {
-                  return TranscriptView(
-                    controller: _playerController,
-                    onSeek: (seconds) => _ytController.seekTo(
-                      seconds: seconds,
-                      allowSeekAhead: true,
+                      ],
                     ),
-                    onTokenTap: (token) {
-                      _ytController.pauseVideo();
-                      DictionaryBottomSheet.show(
-                        context,
-                        token: token,
-                        sourceLang: AppState.instance.activeLanguage.value,
-                      );
-                    },
-                    onGrammarTap: (pattern) {
-                      _ytController.pauseVideo();
-                      GrammarBottomSheet.show(context, pattern);
-                    },
-                  );
-                }
-
-                return SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      // Loading / Status indicator
-                      Watch((context) {
-                        final isLoading = _playerController.isLoading.value;
-                        final status = _playerController.statusMessage.value;
-                        if (isLoading && status != null) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            margin: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.06),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Color(0xFF38BDF8),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Text(
-                                  status,
-                                  style: const TextStyle(
-                                    color: Color(0xFFCBD5E1),
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-                        return const SizedBox.shrink();
-                      }),
-
-                      // Language Mismatch Alert Banner
-                      Watch((context) {
-                        final isMismatch =
-                            _playerController.languageMismatch.value;
-                        final available =
-                            _playerController.availableLanguages.value;
-                        if (!isMismatch) return const SizedBox.shrink();
-
-                        return Container(
-                          margin: const EdgeInsets.all(12),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF334155),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: Colors.amber.withOpacity(0.4),
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Row(
-                                children: [
-                                  Icon(
-                                    Icons.info_outline,
-                                    color: Colors.amberAccent,
-                                    size: 18,
-                                  ),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'No captions in selected language',
-                                    style: TextStyle(
-                                      color: Colors.amberAccent,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                'Available native captions: ${available.native.join(", ")}',
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 12.5,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              Row(
-                                children: [
-                                  if (available.native.isNotEmpty)
-                                    Expanded(
-                                      child: OutlinedButton(
-                                        onPressed: () {
-                                          AppState.instance
-                                              .setLanguage(available.native.first);
-                                          _playerController
-                                              .loadVideo(widget.videoId);
-                                        },
-                                        style: OutlinedButton.styleFrom(
-                                          foregroundColor: Colors.white,
-                                          side: const BorderSide(
-                                            color: Colors.white30,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          'Switch to ${available.native.first}',
-                                        ),
-                                      ),
-                                    ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: ElevatedButton(
-                                      onPressed: () {
-                                        _playerController.loadVideo(
-                                          widget.videoId,
-                                          preferAI: true,
-                                        );
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xFF6366F1),
-                                        foregroundColor: Colors.white,
-                                      ),
-                                      child: const Text('AI Transcribe'),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        );
-                      }),
-
-                      // Interactive Subtitle Overlay
-                      Watch((context) {
-                        final activeCue = _playerController.activeCue.value;
-                        final grammarMatches =
-                            _playerController.activeGrammarMatches.value;
-                        final showFurigana =
-                            _playerController.showFurigana.value;
-                        final showTranslation =
-                            _playerController.showTranslation.value;
-                        final subtitleSize =
-                            _playerController.subtitleSize.value;
-
-                        if (activeCue == null) {
-                          return Container(
-                            constraints: const BoxConstraints(minHeight: 76),
-                            margin: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            alignment: Alignment.center,
-                            child: const Text(
-                              'Listening...',
-                              style: TextStyle(
-                                color: Colors.white24,
-                                fontSize: 14,
-                              ),
-                            ),
-                          );
-                        }
-
-                        return InteractiveSubtitleView(
-                          cue: activeCue,
-                          grammarMatches: grammarMatches,
-                          showFurigana: showFurigana,
-                          showTranslation: showTranslation,
-                          subtitleSize: subtitleSize,
-                          onTokenTap: (token) {
-                            _ytController.pauseVideo();
-                            DictionaryBottomSheet.show(
-                              context,
-                              token: token,
-                              sourceLang: AppState.instance.activeLanguage.value,
-                              contextSentence: activeCue.text,
-                              contextTranslation: activeCue.translation,
-                            );
-                          },
-                          onGrammarTap: (pattern) {
-                            _ytController.pauseVideo();
-                            GrammarBottomSheet.show(context, pattern);
-                          },
-                        );
-                      }),
-                    ],
                   ),
-                );
-              }),
-            ),
-          ],
-        ),
+
+                  // Right Pane (flex 2): Synchronized TranscriptView panel
+                  Expanded(
+                    flex: 2,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        color: VocaTokens.bgPrimary,
+                        border: Border(
+                          left: BorderSide(color: VocaTokens.borderColor),
+                        ),
+                      ),
+                      child: _buildTranscriptArea(),
+                    ),
+                  ),
+                ],
+              )
+            : Column(
+                children: [
+                  // 16:9 Youtube player
+                  _buildVideoPlayer(),
+
+                  // Player Controls Bar (with transcript toggle on mobile)
+                  PlayerControlsBar(
+                    controller: _playerController,
+                    ytController: _ytController,
+                    onBookmark: _handleBookmark,
+                    showTranscriptToggle: true,
+                  ),
+
+                  // Main Content Area: Subtitle Overlay view OR Transcript List view
+                  Expanded(
+                    child: Watch((context) {
+                      final isTranscript =
+                          _playerController.isTranscriptMode.value;
+                      if (isTranscript) {
+                        return _buildTranscriptArea();
+                      }
+                      return _buildSubtitleArea();
+                    }),
+                  ),
+                ],
+              ),
       ),
     );
   }

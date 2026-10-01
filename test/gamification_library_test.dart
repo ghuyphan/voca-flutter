@@ -64,8 +64,13 @@ class FakeSupabaseService extends SupabaseService {
         videoIds: ['vid1', 'vid2'],
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
-      )
+      ),
     ];
+  }
+
+  @override
+  Future<List<Flashcard>> getVocabularyCards({String? language}) async {
+    return [];
   }
 }
 
@@ -205,7 +210,12 @@ void main() {
   });
 
   group('MainShell Navigation Tests', () {
-    testWidgets('MainShell has 5 navigation destinations', (tester) async {
+    testWidgets('Mobile layout has Watch, Review, +, Vocab, More, and opens sheets', (tester) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       await tester.pumpWidget(
         const MaterialApp(
           home: MainShell(),
@@ -213,23 +223,99 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Explore'), findsOneWidget);
-      expect(find.text('Study Deck'), findsOneWidget);
-      expect(find.text('Vocabulary'), findsOneWidget);
-      expect(find.text('Library'), findsOneWidget);
-      expect(find.text('Profile'), findsOneWidget);
+      // Mobile bottom nav destinations
+      expect(find.text('Watch'), findsOneWidget);
+      expect(find.text('Review'), findsOneWidget);
+      expect(find.byKey(const Key('bottom-nav__item--create')), findsOneWidget);
+      expect(find.text('Vocab'), findsOneWidget);
+      expect(find.text('More'), findsOneWidget);
 
-      // Tapping Library tab
-      await tester.tap(find.text('Library'));
+      // Tapping Review
+      await tester.tap(find.text('Review'));
+      await tester.pumpAndSettle();
+      expect(find.text('SRS Study Deck'), findsOneWidget);
+
+      // Tapping Vocab
+      await tester.tap(find.text('Vocab'));
+      await tester.pumpAndSettle();
+      expect(find.text('Vocabulary Notebook'), findsOneWidget);
+
+      // Tapping Center + New Video button opens NewVideoSheet
+      await tester.tap(find.byKey(const Key('bottom-nav__item--create')));
+      await tester.pumpAndSettle();
+      expect(find.text('Learn from Any Video'), findsOneWidget);
+      expect(find.text('Start Learning'), findsOneWidget);
+
+      // Dismiss NewVideoSheet
+      await tester.tap(find.text('Start Learning'));
+      await tester.pumpAndSettle();
+      // Should show validation error for empty input
+      expect(find.text('Please enter a YouTube link or video ID'), findsOneWidget);
+
+      // Close NewVideoSheet
+      Navigator.of(tester.element(find.text('Learn from Any Video'))).pop();
+      await tester.pumpAndSettle();
+
+      // Tapping More opens MoreSheet
+      await tester.tap(find.text('More'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Day Streak'), findsOneWidget);
+      expect(find.text('Level'), findsOneWidget);
+      expect(find.text('AI Credits'), findsOneWidget);
+      expect(find.text('Playlists'), findsOneWidget);
+      expect(find.text('History'), findsOneWidget);
+      expect(find.text('Settings'), findsOneWidget);
+      expect(find.text('Account & Profile'), findsOneWidget);
+
+      // Tapping Playlists from More
+      await tester.tap(find.text('Playlists'));
+      await tester.pumpAndSettle();
+      expect(find.text('Playlists / Saved'), findsOneWidget);
+    });
+
+    testWidgets('Tablet layout (>= 720dp) has sidebar with brand, elevated + New Video, nav items, and bottom stats', (tester) async {
+      tester.view.physicalSize = const Size(1024, 768);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: MainShell(),
+        ),
+      );
+      await tester.pump();
+
+      // Brand title & header
+      expect(find.text('VOCA'), findsOneWidget);
+      expect(find.text('+ New Video'), findsOneWidget);
+
+      // Navigation items in sidebar
+      expect(find.text('Watch'), findsOneWidget);
+      expect(find.text('Review'), findsOneWidget);
+      expect(find.text('Vocab'), findsOneWidget);
+      expect(find.text('Playlists'), findsOneWidget);
+      expect(find.text('History'), findsOneWidget);
+
+      // Bottom controls
+      expect(find.text('🇯🇵 Japanese'), findsAtLeastNWidgets(1));
+      expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
+
+      // Tapping History item in sidebar
+      await tester.tap(find.text('History'));
       await tester.pumpAndSettle();
       expect(find.text('Watch History'), findsOneWidget);
+
+      // Tapping Playlists item in sidebar
+      await tester.tap(find.text('Playlists'));
+      await tester.pumpAndSettle();
       expect(find.text('Playlists / Saved'), findsOneWidget);
 
-      // Tapping Profile tab
-      await tester.tap(find.text('Profile'));
+      // Tapping + New Video button in sidebar
+      await tester.tap(find.text('+ New Video'));
       await tester.pumpAndSettle();
-      expect(find.text('Learner Profile'), findsOneWidget);
-      expect(find.text('ACHIEVEMENTS'), findsOneWidget);
+      expect(find.text('Learn from Any Video'), findsOneWidget);
     });
   });
 }

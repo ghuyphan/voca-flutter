@@ -1,6 +1,7 @@
 // lib/ui/widgets/interactive_subtitle_view.dart
 
 import 'package:flutter/material.dart';
+import '../../config/voca_theme.dart';
 import '../../models/voca_models.dart';
 
 class InteractiveSubtitleView extends StatelessWidget {
@@ -72,11 +73,11 @@ class InteractiveSubtitleView extends StatelessWidget {
       // Zero-CLS: Enforce consistent minimum height and padding
       constraints: const BoxConstraints(minHeight: 76),
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.85),
+        color: VocaTokens.bgCard.withOpacity(0.95),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white12, width: 1),
+        border: Border.all(color: VocaTokens.borderColor, width: 1),
         boxShadow: const [
           BoxShadow(
             color: Colors.black54,
@@ -94,7 +95,7 @@ class InteractiveSubtitleView extends StatelessWidget {
             Wrap(
               alignment: WrapAlignment.center,
               crossAxisAlignment: WrapCrossAlignment.end,
-              spacing: 2,
+              spacing: 3,
               runSpacing: 4,
               children: cue.tokens.asMap().entries.map((entry) {
                 final idx = entry.key;
@@ -107,7 +108,7 @@ class InteractiveSubtitleView extends StatelessWidget {
                     child: Text(
                       token.surface,
                       style: TextStyle(
-                        color: Colors.white,
+                        color: VocaTokens.textPrimary,
                         fontSize: _surfaceFontSize,
                         fontWeight: FontWeight.w400,
                       ),
@@ -127,12 +128,12 @@ class InteractiveSubtitleView extends StatelessWidget {
                   },
                   borderRadius: BorderRadius.circular(4),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 2.5),
                     decoration: BoxDecoration(
                       border: grammarPattern != null
                           ? const Border(
                               bottom: BorderSide(
-                                color: Colors.amberAccent,
+                                color: VocaTokens.colorGrammar,
                                 width: 2.5,
                               ),
                             )
@@ -147,7 +148,7 @@ class InteractiveSubtitleView extends StatelessWidget {
                             Text(
                               rubyText,
                               style: TextStyle(
-                                color: Colors.white70,
+                                color: VocaTokens.textSecondary,
                                 fontSize: _rubyFontSize,
                                 fontWeight: FontWeight.w500,
                                 letterSpacing: -0.2,
@@ -161,8 +162,8 @@ class InteractiveSubtitleView extends StatelessWidget {
                           token.surface,
                           style: TextStyle(
                             color: grammarPattern != null
-                                ? Colors.amberAccent
-                                : Colors.white,
+                                ? VocaTokens.colorGrammar
+                                : VocaTokens.textPrimary,
                             fontSize: _surfaceFontSize,
                             fontWeight: FontWeight.w600,
                           ),
@@ -178,7 +179,7 @@ class InteractiveSubtitleView extends StatelessWidget {
               cue.text,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.white,
+                color: VocaTokens.textPrimary,
                 fontSize: _surfaceFontSize,
                 fontWeight: FontWeight.w600,
               ),
@@ -191,7 +192,7 @@ class InteractiveSubtitleView extends StatelessWidget {
               cue.translation!,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: const Color(0xFFE2E8F0),
+                color: VocaTokens.textSecondary,
                 fontSize: _translationFontSize,
                 fontWeight: FontWeight.w400,
                 fontStyle: FontStyle.italic,

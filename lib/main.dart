@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'config/api_endpoints.dart';
+import 'config/voca_theme.dart';
 import 'services/voca_api_client.dart';
 import 'services/supabase_service.dart';
 import 'services/grammar_engine.dart';
@@ -48,19 +49,7 @@ class VocaApp extends StatelessWidget {
       title: 'Voca',
       debugShowCheckedModeBanner: false,
       themeMode: ThemeMode.dark,
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0F172A),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF6366F1),
-          secondary: Color(0xFF38BDF8),
-          surface: Color(0xFF1E293B),
-        ),
-        textTheme: const TextTheme(
-          bodyMedium: TextStyle(color: Color(0xFFF1F5F9)),
-        ),
-      ),
+      darkTheme: VocaTheme.darkTheme,
       home: const MainShell(),
     );
   }

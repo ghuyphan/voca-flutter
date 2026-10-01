@@ -1,10 +1,111 @@
 // test/study_and_vocabulary_test.dart
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:voca_flutter/config/voca_theme.dart';
 import 'package:voca_flutter/models/voca_models.dart';
+import 'package:voca_flutter/services/gamification_service.dart';
 import 'package:voca_flutter/services/srs_service.dart';
+import 'package:voca_flutter/services/supabase_service.dart';
+import 'package:voca_flutter/services/voca_api_client.dart';
+import 'package:voca_flutter/state/app_state.dart';
+import 'package:voca_flutter/ui/study/study_deck_screen.dart';
+import 'package:voca_flutter/ui/vocabulary/vocabulary_screen.dart';
+import 'package:voca_flutter/ui/vocabulary/word_detail_sheet.dart';
+
+class FakeVocaApiClient extends VocaApiClient {
+  @override
+  Future<Map<String, dynamic>> getDiamonds() async {
+    return {'success': true, 'diamonds': 5, 'maxDiamonds': 5};
+  }
+}
+
+class FakeSupabaseService extends SupabaseService {
+  FakeSupabaseService() : super(SupabaseClient('https://mock.supabase.co', 'mock_anon_key'));
+
+  final List<Flashcard> mockCards = [
+    Flashcard(
+      id: 'mock_1',
+      userId: 'u1',
+      word: '食べる',
+      reading: 'たべる',
+      meaning: 'to eat',
+      language: 'ja',
+      level: 'learning',
+      contextSentence: '毎日美味しいご飯を食べる。',
+      contextTranslation: 'Eat delicious meals every day.',
+      srsInterval: 1,
+      srsRepetition: 1,
+      srsEaseFactor: 2.5,
+      srsNextReviewAt: DateTime.now().subtract(const Duration(hours: 1)),
+      createdAt: DateTime.now().subtract(const Duration(days: 2)),
+    ),
+    Flashcard(
+      id: 'mock_2',
+      userId: 'u1',
+      word: '約束',
+      reading: 'やくそく',
+      meaning: 'promise',
+      language: 'ja',
+      level: 'mastered',
+      contextSentence: '友達との約束を守る。',
+      contextTranslation: 'Keep promise with friend.',
+      srsInterval: 14,
+      srsRepetition: 4,
+      srsEaseFactor: 2.6,
+      srsNextReviewAt: DateTime.now().subtract(const Duration(hours: 2)),
+      createdAt: DateTime.now().subtract(const Duration(days: 5)),
+    ),
+  ];
+
+  @override
+  User? get currentUser => null;
+
+  @override
+  Future<List<Flashcard>> getVocabularyCards({String? language}) async {
+    return List.from(mockCards);
+  }
+
+  @override
+  Future<void> upsertVocabularyCard(Flashcard card) async {
+    final idx = mockCards.indexWhere((c) => c.id == card.id);
+    if (idx >= 0) {
+      mockCards[idx] = card;
+    } else {
+      mockCards.add(card);
+    }
+  }
+
+  @override
+  Future<void> deleteVocabularyCard(String id) async {
+    mockCards.removeWhere((c) => c.id == id);
+  }
+
+  @override
+  Future<Map<String, dynamic>?> recordStreakActivity(DateTime date) async {
+    return {'streak': 1};
+  }
+}
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    final fakeApi = FakeVocaApiClient();
+    final fakeSupabase = FakeSupabaseService();
+    AppState.instance.apiClient = fakeApi;
+    AppState.instance.supabaseService = fakeSupabase;
+    AppState.instance.gamificationService = GamificationService(
+      apiClient: fakeApi,
+      supabaseService: fakeSupabase,
+    );
+    await AppState.instance.initSettingsAndGamification();
+    AppState.instance.activeLanguage.value = 'ja';
+  });
+
   group('Flashcard Model & Serialization Tests', () {
     test('Flashcard serializes and deserializes optional rich fields', () {
       final now = DateTime(2026, 10, 1, 12, 0, 0);
@@ -76,7 +177,6 @@ void main() {
 
   group('SM-2 Spaced Repetition Interval Badge Calculations', () {
     test('Calculates expected intervals for Again, Hard, Good, Easy', () {
-      // Starting from a learning card with repetition=1, interval=1, ease=2.5
       const currentRep = 1;
       const currentInt = 1;
       const currentEase = 2.5;
@@ -198,6 +298,192 @@ void main() {
         ..sort((a, b) => b.srsInterval.compareTo(a.srsInterval));
       expect(sortedByInterval.first.word, equals('約束')); // 14 days
       expect(sortedByInterval.last.word, equals('美しい')); // 0 days
+    });
+  });
+
+  group('StudyDeckScreen Widget & Responsive Layout Tests', () {
+    testWidgets('StudyDeckScreen renders on mobile and handles card flip to reveal SM-2 buttons', (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: VocaTheme.darkTheme,
+          home: const StudyDeckScreen(),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Title & Modes
+      expect(find.text('SRS Study Deck'), findsOneWidget);
+      expect(find.text('Flashcard'), findsOneWidget);
+      expect(find.text('Cloze'), findsOneWidget);
+      expect(find.text('Quiz'), findsOneWidget);
+
+      // Verify Show Answer button is initially visible
+      expect(find.text('Show Answer'), findsOneWidget);
+
+      // Tap Show Answer to reveal back
+      await tester.tap(find.text('Show Answer'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      // SM-2 rating buttons should appear: Again, Hard, Good, Easy
+      expect(find.text('Again'), findsOneWidget);
+      expect(find.text('Hard'), findsOneWidget);
+      expect(find.text('Good'), findsOneWidget);
+      expect(find.text('Easy'), findsOneWidget);
+
+      // Verify interval badge <10m
+      expect(find.text('<10m'), findsOneWidget);
+    });
+
+    testWidgets('StudyDeckScreen on tablet (width >= 720) centers content with max width 600', (tester) async {
+      tester.view.physicalSize = const Size(900, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: VocaTheme.darkTheme,
+          home: const StudyDeckScreen(),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Find ConstrainedBox in body
+      final constrainedBoxes = tester.widgetList<ConstrainedBox>(find.byType(ConstrainedBox));
+      final has600MaxWidth = constrainedBoxes.any((box) => box.constraints.maxWidth == 600.0);
+      expect(has600MaxWidth, isTrue);
+    });
+
+    testWidgets('StudyDeckScreen switches to Cloze mode and Quiz mode', (tester) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: VocaTheme.darkTheme,
+          home: const StudyDeckScreen(),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Tap Cloze mode pill
+      await tester.tap(find.text('Cloze'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.text('CLOZE TEST'), findsOneWidget);
+      expect(find.text('Reveal Word & Context'), findsOneWidget);
+
+      // Tap Quiz mode pill
+      await tester.tap(find.text('Quiz'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.text('Choose the correct definition:'), findsOneWidget);
+    });
+  });
+
+  group('VocabularyScreen Widget & Responsive Layout Tests', () {
+    testWidgets('VocabularyScreen on mobile renders 1-column list', (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: VocaTheme.darkTheme,
+          home: const VocabularyScreen(),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Vocabulary Notebook'), findsOneWidget);
+      expect(find.byType(ListView), findsOneWidget);
+      expect(find.byType(GridView), findsNothing);
+
+      // Verify filter tabs
+      expect(find.text('All'), findsOneWidget);
+      expect(find.text('New'), findsOneWidget);
+      expect(find.text('Learning'), findsOneWidget);
+      expect(find.text('Mastered'), findsOneWidget);
+    });
+
+    testWidgets('VocabularyScreen on tablet (width >= 720) renders 2-column GridView', (tester) async {
+      tester.view.physicalSize = const Size(900, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: VocaTheme.darkTheme,
+          home: const VocabularyScreen(),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Vocabulary Notebook'), findsOneWidget);
+      expect(find.byType(GridView), findsOneWidget);
+    });
+  });
+
+  group('WordDetailSheet Widget Tests', () {
+    testWidgets('WordDetailSheet displays word information, definitions, and SM-2 stats', (tester) async {
+      final now = DateTime(2026, 10, 1);
+      final card = Flashcard(
+        id: 'test_c',
+        userId: 'u1',
+        word: '食べる',
+        reading: 'たべる',
+        meaning: 'to eat, to consume',
+        language: 'ja',
+        level: 'learning',
+        partOfSpeech: 'verb',
+        contextSentence: '美味しいご飯を食べる。',
+        contextTranslation: 'Eat delicious food.',
+        srsInterval: 3,
+        srsRepetition: 2,
+        srsEaseFactor: 2.5,
+        srsNextReviewAt: now,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: VocaTheme.darkTheme,
+          home: Scaffold(
+            body: WordDetailSheet(card: card),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('食べる'), findsOneWidget);
+      expect(find.text('たべる'), findsOneWidget);
+      expect(find.text('DEFINITIONS'), findsOneWidget);
+      expect(find.text('to eat, to consume'), findsOneWidget);
+      expect(find.text('VIDEO CONTEXT SENTENCE'), findsOneWidget);
+      expect(find.text('美味しいご飯を食べる。'), findsOneWidget);
+      expect(find.text('SPACED REPETITION (SM-2) STATS'), findsOneWidget);
+      expect(find.text('Repetitions'), findsOneWidget);
+      expect(find.text('Current Interval'), findsOneWidget);
+      expect(find.text('SET MASTERY STAGE'), findsOneWidget);
+      expect(find.text('Mark as Mastered'), findsOneWidget);
     });
   });
 }

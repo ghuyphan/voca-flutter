@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../config/voca_theme.dart';
 import '../../state/app_state.dart';
 import '../../utils/youtube_url_parser.dart';
 import '../video/video_player_screen.dart';
@@ -41,15 +42,23 @@ class _ExploreScreenState extends State<ExploreScreen> {
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchInputChanged);
+    _searchFocusNode.addListener(_onFocusChanged);
     _loadVideos();
   }
 
   @override
   void dispose() {
     _searchController.removeListener(_onSearchInputChanged);
+    _searchFocusNode.removeListener(_onFocusChanged);
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
+  }
+
+  void _onFocusChanged() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void _onSearchInputChanged() {
@@ -326,21 +335,29 @@ class _ExploreScreenState extends State<ExploreScreen> {
     return 'ALL LEVELS';
   }
 
-  Color _getLevelColor(String levelStr) {
+  _LevelColorInfo _getLevelColorInfo(String levelStr) {
     final l = levelStr.toUpperCase().replaceAll(' ', '');
     if (l.contains('N5') ||
         l.contains('HSK1') ||
         l.contains('TOPIK1') ||
         l.contains('A1') ||
         l.contains('BEGINNER')) {
-      return const Color(0xFF10B981); // Emerald
+      return const _LevelColorInfo(
+        bg: VocaTokens.levelBeginnerBg,
+        text: VocaTokens.levelBeginnerText,
+        border: VocaTokens.levelBeginnerBorder,
+      );
     }
     if (l.contains('N4') ||
         l.contains('HSK2') ||
         l.contains('TOPIK2') ||
         l.contains('A2') ||
         l.contains('ELEMENTARY')) {
-      return const Color(0xFF06B6D4); // Cyan
+      return const _LevelColorInfo(
+        bg: VocaTokens.levelElementaryBg,
+        text: VocaTokens.levelElementaryText,
+        border: VocaTokens.levelElementaryBorder,
+      );
     }
     if (l.contains('N3') ||
         l.contains('HSK3') ||
@@ -349,14 +366,22 @@ class _ExploreScreenState extends State<ExploreScreen> {
         l.contains('TOPIK4') ||
         l.contains('B1') ||
         l.contains('INTERMEDIATE')) {
-      return const Color(0xFF6366F1); // Indigo
+      return const _LevelColorInfo(
+        bg: VocaTokens.levelIntermediateBg,
+        text: VocaTokens.levelIntermediateText,
+        border: VocaTokens.levelIntermediateBorder,
+      );
     }
     if (l.contains('N2') ||
         l.contains('HSK5') ||
         l.contains('TOPIK5') ||
         l.contains('B2') ||
         l.contains('UPPER')) {
-      return const Color(0xFFF59E0B); // Amber
+      return const _LevelColorInfo(
+        bg: VocaTokens.levelUpperBg,
+        text: VocaTokens.levelUpperText,
+        border: VocaTokens.levelUpperBorder,
+      );
     }
     if (l.contains('N1') ||
         l.contains('HSK6') ||
@@ -364,9 +389,17 @@ class _ExploreScreenState extends State<ExploreScreen> {
         l.contains('C1') ||
         l.contains('C2') ||
         l.contains('ADVANCED')) {
-      return const Color(0xFFEF4444); // Red
+      return const _LevelColorInfo(
+        bg: VocaTokens.levelAdvancedBg,
+        text: VocaTokens.levelAdvancedText,
+        border: VocaTokens.levelAdvancedBorder,
+      );
     }
-    return const Color(0xFF6366F1); // Default Indigo
+    return const _LevelColorInfo(
+      bg: VocaTokens.levelBeginnerBg,
+      text: VocaTokens.levelBeginnerText,
+      border: VocaTokens.levelBeginnerBorder,
+    );
   }
 
   String _formatDuration(int seconds) {
@@ -430,67 +463,89 @@ class _ExploreScreenState extends State<ExploreScreen> {
     final levels = _getLevelsForLanguage(currentLang);
     final rawInput = _searchController.text.trim();
     final directVideoId = YouTubeUrlParser.extractVideoId(rawInput);
+    final hasSearchFocus = _searchFocusNode.hasFocus;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: VocaTokens.bgPrimary,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: VocaTokens.bgPrimary,
         elevation: 0,
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        titleSpacing: 16,
+        title: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                  color: VocaTokens.accentPrimarySoft,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: VocaTokens.accentPrimary.withOpacity(0.3)),
                 ),
-                borderRadius: BorderRadius.circular(8),
+                child: const Icon(Icons.explore_rounded, color: VocaTokens.accentPrimary, size: 18),
               ),
-              child: const Icon(Icons.explore_rounded, color: Colors.white, size: 20),
-            ),
-            const SizedBox(width: 10),
-            const Text(
-              'Discover',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
+              const SizedBox(width: 8),
+              const Text(
+                'Discover',
+                style: TextStyle(
+                  color: VocaTokens.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
-          // Language Selector Dropdown
+          // Language Selector Dropdown styled with VOCA design
           Container(
             margin: const EdgeInsets.only(right: 12),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E293B),
+              color: VocaTokens.bgCard,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white12),
+              border: Border.all(color: VocaTokens.borderColor),
             ),
-            child: DropdownButton<String>(
-              value: currentLang,
-              dropdownColor: const Color(0xFF1E293B),
-              underline: const SizedBox.shrink(),
-              icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white70, size: 18),
-              items: const [
-                DropdownMenuItem(value: 'ja', child: Text('🇯🇵 Japanese', style: TextStyle(color: Colors.white, fontSize: 13))),
-                DropdownMenuItem(value: 'zh', child: Text('🇨🇳 Chinese', style: TextStyle(color: Colors.white, fontSize: 13))),
-                DropdownMenuItem(value: 'ko', child: Text('🇰🇷 Korean', style: TextStyle(color: Colors.white, fontSize: 13))),
-                DropdownMenuItem(value: 'en', child: Text('🇺🇸 English', style: TextStyle(color: Colors.white, fontSize: 13))),
-              ],
-              onChanged: (val) {
-                if (val != null && val != currentLang) {
-                  AppState.instance.setLanguage(val);
-                  setState(() {
-                    _selectedLevel = 'All';
-                    _searchQuery = '';
-                    _searchController.clear();
-                  });
-                  _loadVideos();
-                }
-              },
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: currentLang,
+                dropdownColor: VocaTokens.bgCard,
+                icon: const Icon(Icons.keyboard_arrow_down_rounded, color: VocaTokens.textSecondary, size: 18),
+                borderRadius: BorderRadius.circular(12),
+                items: const [
+                  DropdownMenuItem(
+                    value: 'ja',
+                    child: Text('🇯🇵 Japanese', style: TextStyle(color: VocaTokens.textPrimary, fontSize: 13, fontWeight: FontWeight.w500)),
+                  ),
+                  DropdownMenuItem(
+                    value: 'zh',
+                    child: Text('🇨🇳 Chinese', style: TextStyle(color: VocaTokens.textPrimary, fontSize: 13, fontWeight: FontWeight.w500)),
+                  ),
+                  DropdownMenuItem(
+                    value: 'ko',
+                    child: Text('🇰🇷 Korean', style: TextStyle(color: VocaTokens.textPrimary, fontSize: 13, fontWeight: FontWeight.w500)),
+                  ),
+                  DropdownMenuItem(
+                    value: 'en',
+                    child: Text('🇺🇸 English', style: TextStyle(color: VocaTokens.textPrimary, fontSize: 13, fontWeight: FontWeight.w500)),
+                  ),
+                ],
+                onChanged: (val) {
+                  if (val != null && val != currentLang) {
+                    AppState.instance.setLanguage(val);
+                    setState(() {
+                      _selectedLevel = 'All';
+                      _searchQuery = '';
+                      _searchController.clear();
+                    });
+                    _loadVideos();
+                  }
+                },
+              ),
             ),
           ),
         ],
@@ -503,15 +558,17 @@ class _ExploreScreenState extends State<ExploreScreen> {
               padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
               child: Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E293B),
+                  color: VocaTokens.bgCard,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: directVideoId != null ? const Color(0xFF6366F1) : Colors.white12,
-                    width: directVideoId != null ? 1.5 : 1.0,
+                    color: (directVideoId != null || hasSearchFocus)
+                        ? VocaTokens.accentPrimary
+                        : VocaTokens.borderColor,
+                    width: (directVideoId != null || hasSearchFocus) ? 1.5 : 1.0,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
+                      color: Colors.black.withOpacity(0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -520,30 +577,35 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 child: TextField(
                   controller: _searchController,
                   focusNode: _searchFocusNode,
+                  cursorColor: VocaTokens.accentPrimary,
                   textInputAction: TextInputAction.search,
                   onSubmitted: _handleDirectUrlOrSearch,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  style: const TextStyle(color: VocaTokens.textPrimary, fontSize: 14),
                   decoration: InputDecoration(
                     hintText: 'Search keyword, channel, or paste YouTube link...',
-                    hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
-                    prefixIcon: const Icon(Icons.search_rounded, color: Colors.white54, size: 20),
+                    hintStyle: const TextStyle(color: VocaTokens.textMuted, fontSize: 13),
+                    prefixIcon: Icon(
+                      Icons.search_rounded,
+                      color: hasSearchFocus ? VocaTokens.accentPrimary : VocaTokens.textSecondary,
+                      size: 20,
+                    ),
                     suffixIcon: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         if (directVideoId != null)
                           IconButton(
-                            icon: const Icon(Icons.play_circle_fill_rounded, color: Color(0xFF6366F1)),
+                            icon: const Icon(Icons.play_circle_fill_rounded, color: VocaTokens.accentPrimary),
                             tooltip: 'Watch YouTube Video',
                             onPressed: () => _handleDirectUrlOrSearch(rawInput),
                           ),
                         if (_searchController.text.isNotEmpty)
                           IconButton(
-                            icon: const Icon(Icons.clear_rounded, color: Colors.white54, size: 18),
+                            icon: const Icon(Icons.clear_rounded, color: VocaTokens.textSecondary, size: 18),
                             tooltip: 'Clear',
                             onPressed: _clearSearch,
                           ),
                         IconButton(
-                          icon: const Icon(Icons.content_paste_rounded, color: Color(0xFF818CF8), size: 19),
+                          icon: const Icon(Icons.content_paste_rounded, color: VocaTokens.accentPrimary, size: 19),
                           tooltip: 'Paste URL or Video ID',
                           onPressed: _pasteFromClipboard,
                         ),
@@ -566,23 +628,31 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF6366F1).withOpacity(0.15),
+                      color: VocaTokens.accentPrimarySoft,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFF6366F1).withOpacity(0.4)),
+                      border: Border.all(color: VocaTokens.accentPrimary.withOpacity(0.4)),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.check_circle_rounded, color: Color(0xFF818CF8), size: 18),
+                        const Icon(Icons.check_circle_rounded, color: VocaTokens.accentPrimary, size: 18),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             'Valid YouTube Video ($directVideoId) detected!',
-                            style: const TextStyle(color: Color(0xFFC7D2FE), fontSize: 12.5, fontWeight: FontWeight.w600),
+                            style: const TextStyle(
+                              color: VocaTokens.textPrimary,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                         const Text(
                           'Watch Now →',
-                          style: TextStyle(color: Color(0xFF818CF8), fontSize: 12, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            color: VocaTokens.accentPrimary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
@@ -590,7 +660,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 ),
               ),
 
-            // Category Pills
+            // Category Pills with Coral active indicator
             SizedBox(
               height: 42,
               child: ListView.separated(
@@ -628,34 +698,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
             // Video Feed List / Results
             Expanded(
-              child: _isLoading
-                  ? const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircularProgressIndicator(strokeWidth: 2.5, color: Color(0xFF6366F1)),
-                          SizedBox(height: 12),
-                          Text('Finding immersion videos...', style: TextStyle(color: Colors.white54, fontSize: 13)),
-                        ],
-                      ),
-                    )
-                  : _errorMessage != null
-                      ? _buildErrorView()
-                      : _videos.isEmpty
-                          ? _buildEmptyView()
-                          : RefreshIndicator(
-                              onRefresh: _loadVideos,
-                              color: const Color(0xFF6366F1),
-                              backgroundColor: const Color(0xFF1E293B),
-                              child: ListView.separated(
-                                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                                itemCount: _videos.length,
-                                separatorBuilder: (_, __) => const SizedBox(height: 16),
-                                itemBuilder: (context, index) {
-                                  return _buildVideoCard(_videos[index], currentLang);
-                                },
-                              ),
-                            ),
+              child: _buildVideoFeed(currentLang),
             ),
           ],
         ),
@@ -669,7 +712,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
       avatar: Icon(
         _getCategoryIcon(category),
         size: 15,
-        color: isSelected ? Colors.white : const Color(0xFF94A3B8),
+        color: isSelected ? Colors.white : VocaTokens.textMuted,
       ),
       label: Text(category),
       onSelected: (_) {
@@ -678,12 +721,12 @@ class _ExploreScreenState extends State<ExploreScreen> {
         });
         _loadVideos();
       },
-      backgroundColor: const Color(0xFF1E293B),
-      selectedColor: const Color(0xFF6366F1),
+      backgroundColor: VocaTokens.bgCard,
+      selectedColor: VocaTokens.accentPrimary,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : const Color(0xFFCBD5E1),
+        color: isSelected ? Colors.white : VocaTokens.textSecondary,
         fontSize: 12.5,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
       ),
       checkmarkColor: Colors.white,
       showCheckmark: false,
@@ -691,27 +734,34 @@ class _ExploreScreenState extends State<ExploreScreen> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
         side: BorderSide(
-          color: isSelected ? Colors.transparent : Colors.white12,
+          color: isSelected ? VocaTokens.accentPrimary : VocaTokens.borderColor,
         ),
       ),
     );
   }
 
   Widget _buildLevelFilterChip(String level, bool isSelected) {
-    final levelColor = level == 'All' ? const Color(0xFF6366F1) : _getLevelColor(level);
+    final isAll = level == 'All';
+    final info = isAll
+        ? const _LevelColorInfo(
+            bg: VocaTokens.accentPrimarySoft,
+            text: VocaTokens.accentPrimary,
+            border: VocaTokens.accentPrimary,
+          )
+        : _getLevelColorInfo(level);
 
     return FilterChip(
       selected: isSelected,
       label: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (level != 'All')
+          if (!isAll)
             Container(
-              width: 8,
-              height: 8,
+              width: 7,
+              height: 7,
               margin: const EdgeInsets.only(right: 6),
               decoration: BoxDecoration(
-                color: isSelected ? Colors.white : levelColor,
+                color: info.text,
                 shape: BoxShape.circle,
               ),
             ),
@@ -724,19 +774,51 @@ class _ExploreScreenState extends State<ExploreScreen> {
         });
         _loadVideos();
       },
-      backgroundColor: const Color(0xFF1E293B),
-      selectedColor: levelColor,
+      backgroundColor: VocaTokens.bgCard,
+      selectedColor: isAll ? VocaTokens.accentPrimary : info.bg,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : const Color(0xFF94A3B8),
+        color: isSelected
+            ? (isAll ? Colors.white : info.text)
+            : VocaTokens.textSecondary,
         fontSize: 12,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
       ),
       showCheckmark: false,
-      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: isSelected ? Colors.transparent : Colors.white12,
+          color: isSelected
+              ? (isAll ? VocaTokens.accentPrimary : info.border)
+              : VocaTokens.borderColor,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLevelBadge(String levelTag) {
+    final info = _getLevelColorInfo(levelTag);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: info.bg,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: info.border, width: 1.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.35),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Text(
+        levelTag,
+        style: TextStyle(
+          color: info.text,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.2,
         ),
       ),
     );
@@ -749,7 +831,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
     final channelAvatar = item['channelAvatar'] as String?;
     final duration = item['duration'] as int? ?? 0;
     final levelTag = _getVideoLevel(item, currentLang);
-    final levelColor = _getLevelColor(levelTag);
     final durationStr = _formatDuration(duration);
     final isBookmarked = _bookmarkedIds.contains(videoId);
 
@@ -759,12 +840,12 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white10),
+        color: VocaTokens.bgCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: VocaTokens.borderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.25),
+            color: Colors.black.withOpacity(0.35),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -777,8 +858,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
           onTap: () => _navigateToPlayer(videoId, title),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Thumbnail with Duration, Level Badge, and Bookmark Action
+              // 16:9 Thumbnail with Dark Gradient, Badges, and Bookmark Action
               Stack(
                 children: [
                   AspectRatio(
@@ -787,15 +869,15 @@ class _ExploreScreenState extends State<ExploreScreen> {
                       thumbnailUrl,
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => Container(
-                        color: const Color(0xFF0F172A),
+                        color: VocaTokens.bgSecondary,
                         child: const Center(
-                          child: Icon(Icons.play_circle_outline_rounded, color: Colors.white24, size: 48),
+                          child: Icon(Icons.play_circle_outline_rounded, color: VocaTokens.textTertiary, size: 48),
                         ),
                       ),
                     ),
                   ),
 
-                  // Gradient overlay on thumbnail for better readability
+                  // Dark gradient overlay at bottom
                   Positioned.fill(
                     child: DecoratedBox(
                       decoration: BoxDecoration(
@@ -803,11 +885,11 @@ class _ExploreScreenState extends State<ExploreScreen> {
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            Colors.black.withOpacity(0.4),
+                            Colors.black.withOpacity(0.35),
                             Colors.transparent,
-                            Colors.black.withOpacity(0.6),
+                            Colors.black.withOpacity(0.75),
                           ],
-                          stops: const [0.0, 0.5, 1.0],
+                          stops: const [0.0, 0.45, 1.0],
                         ),
                       ),
                     ),
@@ -815,37 +897,15 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
                   // Difficulty Level Badge (Top-Left)
                   Positioned(
-                    top: 10,
-                    left: 10,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: levelColor,
-                        borderRadius: BorderRadius.circular(6),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.3),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Text(
-                        levelTag,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                    ),
+                    top: 8,
+                    left: 8,
+                    child: _buildLevelBadge(levelTag),
                   ),
 
-                  // Bookmark Button (Top-Right)
+                  // Bookmark Button (Top-Right) with Coral active state
                   Positioned(
-                    top: 6,
-                    right: 6,
+                    top: 8,
+                    right: 8,
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
@@ -854,41 +914,52 @@ class _ExploreScreenState extends State<ExploreScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.55),
+                            color: Colors.black.withOpacity(0.60),
                             shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isBookmarked
+                                  ? VocaTokens.accentPrimary.withOpacity(0.6)
+                                  : Colors.white12,
+                              width: 1,
+                            ),
                           ),
                           child: Icon(
                             isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                            color: isBookmarked ? const Color(0xFFFBBF24) : Colors.white,
-                            size: 20,
+                            color: isBookmarked ? VocaTokens.accentPrimary : Colors.white,
+                            size: 19,
                           ),
                         ),
                       ),
                     ),
                   ),
 
-                  // Duration Badge (Bottom-Right)
+                  // Duration Badge (Bottom-Right) - rgba(0,0,0,0.75) pill with clock icon
                   if (durationStr.isNotEmpty)
                     Positioned(
-                      bottom: 10,
-                      right: 10,
+                      bottom: 8,
+                      right: 8,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.85),
-                          borderRadius: BorderRadius.circular(5),
+                          color: const Color(0xBF000000), // rgba(0,0,0,0.75)
+                          borderRadius: BorderRadius.circular(4),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.access_time_filled_rounded, color: Colors.white70, size: 11),
+                            const Icon(
+                              Icons.access_time_rounded,
+                              color: Colors.white70,
+                              size: 11,
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               durationStr,
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 11,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.2,
                               ),
                             ),
                           ],
@@ -900,19 +971,20 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
               // Title and Channel Information
               Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: VocaTokens.textPrimary,
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        height: 1.3,
+                        height: 1.35,
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -920,7 +992,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     // Channel Avatar + Name & Watch Action Button
                     Row(
                       children: [
-                        // Channel avatar or fallback
                         if (channelAvatar != null && channelAvatar.isNotEmpty)
                           ClipOval(
                             child: Image.network(
@@ -930,16 +1001,16 @@ class _ExploreScreenState extends State<ExploreScreen> {
                               fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) => const CircleAvatar(
                                 radius: 12,
-                                backgroundColor: Color(0xFF334155),
-                                child: Icon(Icons.person, size: 14, color: Colors.white70),
+                                backgroundColor: VocaTokens.bgSurface,
+                                child: Icon(Icons.person, size: 14, color: VocaTokens.textSecondary),
                               ),
                             ),
                           )
                         else
                           const CircleAvatar(
                             radius: 12,
-                            backgroundColor: Color(0xFF334155),
-                            child: Icon(Icons.smart_display_rounded, size: 14, color: Colors.white70),
+                            backgroundColor: VocaTokens.bgSurface,
+                            child: Icon(Icons.smart_display_rounded, size: 14, color: VocaTokens.textSecondary),
                           ),
                         const SizedBox(width: 8),
 
@@ -950,12 +1021,14 @@ class _ExploreScreenState extends State<ExploreScreen> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              color: Color(0xFF94A3B8),
+                              color: VocaTokens.textSecondary,
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
+
+                        const SizedBox(width: 8),
 
                         // Watch Now Button
                         ElevatedButton.icon(
@@ -963,7 +1036,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                           icon: const Icon(Icons.play_arrow_rounded, size: 16),
                           label: const Text('Watch Now', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF6366F1),
+                            backgroundColor: VocaTokens.accentPrimary,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             minimumSize: Size.zero,
@@ -986,6 +1059,80 @@ class _ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
+  Widget _buildVideoFeed(String currentLang) {
+    if (_isLoading) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(strokeWidth: 2.5, color: VocaTokens.accentPrimary),
+            SizedBox(height: 12),
+            Text(
+              'Finding immersion videos...',
+              style: TextStyle(color: VocaTokens.textSecondary, fontSize: 13),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return _buildErrorView();
+    }
+
+    if (_videos.isEmpty) {
+      return _buildEmptyView();
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadVideos,
+      color: VocaTokens.accentPrimary,
+      backgroundColor: VocaTokens.bgCard,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final isTablet = width >= VocaTokens.tabletBreakpoint;
+
+          if (!isTablet) {
+            // Mobile (< 720dp): 1 column list of video cards
+            return ListView.separated(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              itemCount: _videos.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 16),
+              itemBuilder: (context, index) {
+                return _buildVideoCard(_videos[index], currentLang);
+              },
+            );
+          }
+
+          // Tablet (>= 720dp): 2 or 3 column responsive GridView
+          final crossAxisCount = width >= 1100 ? 3 : 2;
+          const double spacing = 16.0;
+          const double horizontalPadding = 16.0 * 2;
+          final cardWidth = (width - horizontalPadding - spacing * (crossAxisCount - 1)) / crossAxisCount;
+          final cardHeight = (cardWidth / (16 / 9)) + 120.0;
+          final childAspectRatio = cardWidth / cardHeight;
+
+          return GridView.builder(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+              mainAxisSpacing: spacing,
+              crossAxisSpacing: spacing,
+              childAspectRatio: childAspectRatio,
+            ),
+            itemCount: _videos.length,
+            itemBuilder: (context, index) {
+              return _buildVideoCard(_videos[index], currentLang);
+            },
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildEmptyView() {
     return Center(
       child: SingleChildScrollView(
@@ -996,16 +1143,16 @@ class _ExploreScreenState extends State<ExploreScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
+                color: VocaTokens.bgCard,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white12),
+                border: Border.all(color: VocaTokens.borderColor),
               ),
-              child: const Icon(Icons.search_off_rounded, color: Colors.white38, size: 48),
+              child: const Icon(Icons.search_off_rounded, color: VocaTokens.textSecondary, size: 48),
             ),
             const SizedBox(height: 16),
             const Text(
               'No immersion videos found',
-              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(color: VocaTokens.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
@@ -1013,7 +1160,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   ? 'No results for "$_searchQuery". Paste a direct YouTube link or try different keywords.'
                   : 'No videos found with the selected filters.',
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white54, fontSize: 13),
+              style: const TextStyle(color: VocaTokens.textSecondary, fontSize: 13),
             ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
@@ -1029,9 +1176,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
               icon: const Icon(Icons.restart_alt_rounded, size: 18),
               label: const Text('Reset All Filters'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1E293B),
-                foregroundColor: const Color(0xFF818CF8),
-                side: const BorderSide(color: Color(0xFF6366F1)),
+                backgroundColor: VocaTokens.bgCard,
+                foregroundColor: VocaTokens.accentPrimary,
+                side: const BorderSide(color: VocaTokens.accentPrimary),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
             ),
@@ -1048,17 +1195,17 @@ class _ExploreScreenState extends State<ExploreScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.cloud_off_rounded, color: Colors.redAccent, size: 48),
+            const Icon(Icons.cloud_off_rounded, color: VocaTokens.error, size: 48),
             const SizedBox(height: 16),
             const Text(
               'Could not load videos',
-              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(color: VocaTokens.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
               _errorMessage ?? 'Network request failed. Please check your connection.',
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white54, fontSize: 13),
+              style: const TextStyle(color: VocaTokens.textSecondary, fontSize: 13),
             ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
@@ -1066,7 +1213,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
               icon: const Icon(Icons.refresh_rounded),
               label: const Text('Retry'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6366F1),
+                backgroundColor: VocaTokens.accentPrimary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
@@ -1076,4 +1223,16 @@ class _ExploreScreenState extends State<ExploreScreen> {
       ),
     );
   }
+}
+
+class _LevelColorInfo {
+  final Color bg;
+  final Color text;
+  final Color border;
+
+  const _LevelColorInfo({
+    required this.bg,
+    required this.text,
+    required this.border,
+  });
 }

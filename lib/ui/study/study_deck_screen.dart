@@ -2,6 +2,7 @@
 
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../../config/voca_theme.dart';
 import '../../models/voca_models.dart';
 import '../../services/audio_service.dart';
 import '../../services/srs_service.dart';
@@ -234,17 +235,17 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
     return '${days}d';
   }
 
-  Color _getLevelColor(String level) {
+  ({Color bg, Color text}) _getMasteryColors(String level) {
     switch (level.toLowerCase()) {
       case 'mastered':
-        return const Color(0xFF10B981);
+        return (bg: VocaTokens.wordMasteredBg, text: VocaTokens.wordMasteredText);
       case 'known':
-        return const Color(0xFF38BDF8);
+        return (bg: VocaTokens.wordKnownBg, text: VocaTokens.wordKnownText);
       case 'learning':
-        return const Color(0xFFF59E0B);
+        return (bg: VocaTokens.wordLearningBg, text: VocaTokens.wordLearningText);
       case 'new':
       default:
-        return const Color(0xFF818CF8);
+        return (bg: VocaTokens.wordNewBg, text: VocaTokens.wordNewText);
     }
   }
 
@@ -252,7 +253,7 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Scaffold(
-        backgroundColor: Color(0xFF0F172A),
+        backgroundColor: VocaTokens.bgPrimary,
         body: Center(child: CircularProgressIndicator()),
       );
     }
@@ -260,23 +261,28 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
     final isFinished = _dueCards.isEmpty || _currentIndex >= _dueCards.length;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: VocaTokens.bgPrimary,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: VocaTokens.bgPrimary,
         elevation: 0,
+        titleSpacing: 16,
         title: const Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.style, color: Color(0xFF6366F1), size: 22),
+            Icon(Icons.style, color: VocaTokens.accentPrimary, size: 20),
             SizedBox(width: 8),
-            Text(
-              'SRS Study Deck',
-              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+            Flexible(
+              child: Text(
+                'SRS Study Deck',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: VocaTokens.textPrimary, fontSize: 18, fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white70),
+            icon: const Icon(Icons.refresh, color: VocaTokens.textSecondary),
             tooltip: 'Reload cards',
             onPressed: _loadDueCards,
           ),
@@ -289,131 +295,147 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
   }
 
   // -------------------------------------------------------------
-  // ACTIVE STUDY SCREEN
+  // ACTIVE STUDY SCREEN (RESPONSIVE TABLET & MOBILE)
   // -------------------------------------------------------------
   Widget _buildActiveStudyScreen() {
     final card = _dueCards[_currentIndex];
     final progress = (_currentIndex + 1) / _dueCards.length;
+    final mastery = _getMasteryColors(card.level);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth >= VocaTokens.tabletBreakpoint;
 
-    return Column(
-      children: [
-        // Mode Selector Pills
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          child: Row(
-            children: StudyMode.values.map((mode) {
-              final isSelected = _currentMode == mode;
-              return Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: InkWell(
-                    onTap: () {
-                      if (_currentMode != mode) {
-                        setState(() {
-                          _currentMode = mode;
-                          _resetCardState();
-                        });
-                      }
-                    },
-                    borderRadius: BorderRadius.circular(12),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      decoration: BoxDecoration(
-                        color: isSelected ? const Color(0xFF6366F1) : const Color(0xFF1E293B),
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: isTablet ? 600 : double.infinity),
+        child: Column(
+          children: [
+            // Mode Selector Pills
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Row(
+                children: StudyMode.values.map((mode) {
+                  final isSelected = _currentMode == mode;
+                  return Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 3),
+                      child: InkWell(
+                        onTap: () {
+                          if (_currentMode != mode) {
+                            setState(() {
+                              _currentMode = mode;
+                              _resetCardState();
+                            });
+                          }
+                        },
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isSelected ? const Color(0xFF818CF8) : Colors.white10,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            isSelected ? mode.activeIcon : mode.icon,
-                            size: 16,
-                            color: isSelected ? Colors.white : Colors.white60,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            mode.label,
-                            style: TextStyle(
-                              color: isSelected ? Colors.white : Colors.white70,
-                              fontSize: 12,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                          decoration: BoxDecoration(
+                            color: isSelected ? VocaTokens.accentPrimary : VocaTokens.bgCard,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isSelected ? VocaTokens.accentPrimaryHover : VocaTokens.borderColor,
                             ),
                           ),
-                        ],
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isSelected ? mode.activeIcon : mode.icon,
+                                size: 15,
+                                color: isSelected ? Colors.white : VocaTokens.textMuted,
+                              ),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  mode.label,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: isSelected ? Colors.white : VocaTokens.textSecondary,
+                                    fontSize: 12,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
+                  );
+                }).toList(),
+              ),
+            ),
 
-        // Progress bar & counter
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            // Progress bar & counter
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+              child: Column(
                 children: [
-                  Text(
-                    'Card ${_currentIndex + 1} of ${_dueCards.length}',
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          'Card ${_currentIndex + 1} of ${_dueCards.length}',
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: VocaTokens.textSecondary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: mastery.bg,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: mastery.text.withOpacity(0.35),
+                          ),
+                        ),
+                        child: Text(
+                          card.level.toUpperCase(),
+                          style: TextStyle(
+                            color: mastery.text,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: _getLevelColor(card.level).withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                        color: _getLevelColor(card.level).withOpacity(0.35),
-                      ),
-                    ),
-                    child: Text(
-                      card.level.toUpperCase(),
-                      style: TextStyle(
-                        color: _getLevelColor(card.level),
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  const SizedBox(height: 6),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      backgroundColor: VocaTokens.bgSecondary,
+                      valueColor: const AlwaysStoppedAnimation<Color>(VocaTokens.accentPrimary),
+                      minHeight: 5,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  backgroundColor: const Color(0xFF1E293B),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)),
-                  minHeight: 5,
-                ),
+            ),
+
+            // Active Study Mode Content (Flashcard, Cloze, Quiz)
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: _buildModeBody(card),
               ),
-            ],
-          ),
-        ),
+            ),
 
-        // Active Study Mode Content (Flashcard, Cloze, Quiz)
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: _buildModeBody(card),
-          ),
+            // Bottom Rating Controls
+            _buildBottomRatingBar(card),
+          ],
         ),
-
-        // Bottom Rating Controls
-        _buildBottomRatingBar(card),
-      ],
+      ),
     );
   }
 
@@ -429,7 +451,7 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
   }
 
   // -------------------------------------------------------------
-  // 1. 3D FLASHCARD MODE
+  // 1. 3D FLASHCARD MODE (styled after study-mode.component.scss)
   // -------------------------------------------------------------
   Widget _build3DFlashcard(Flashcard card) {
     return GestureDetector(
@@ -464,14 +486,14 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white12),
+        color: VocaTokens.bgCard,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: VocaTokens.borderColor),
         boxShadow: const [
           BoxShadow(color: Colors.black45, blurRadius: 18, offset: Offset(0, 8)),
         ],
       ),
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -479,15 +501,16 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
           if (card.partOfSpeech != null && card.partOfSpeech!.isNotEmpty)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              margin: const EdgeInsets.only(bottom: 16),
+              margin: const EdgeInsets.only(bottom: 12),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.08),
+                color: VocaTokens.bgSurface,
                 borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: VocaTokens.borderColorLight),
               ),
               child: Text(
                 card.partOfSpeech!.toUpperCase(),
                 style: const TextStyle(
-                  color: Color(0xFF38BDF8),
+                  color: VocaTokens.textSecondary,
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
@@ -500,7 +523,7 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
             Text(
               reading,
               style: const TextStyle(
-                color: Color(0xFF94A3B8),
+                color: VocaTokens.textMuted,
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
               ),
@@ -513,24 +536,24 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
             card.word,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              color: Colors.white,
-              fontSize: 42,
+              color: VocaTokens.textPrimary,
+              fontSize: 40,
               fontWeight: FontWeight.bold,
               letterSpacing: 0.5,
             ),
           ),
 
           if (card.romanization != null && card.reading != null) ...[
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             Text(
               card.romanization!,
-              style: const TextStyle(color: Colors.white38, fontSize: 14),
+              style: const TextStyle(color: VocaTokens.textTertiary, fontSize: 13),
             ),
           ],
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
 
-          // Audio Button
+          // Audio Button with Radiant Coral speaker icon
           ValueListenableBuilder<String?>(
             valueListenable: AudioService.instance.currentPlaying,
             builder: (context, playing, _) {
@@ -544,28 +567,43 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isPlaying ? const Color(0xFF6366F1) : const Color(0xFF334155),
-                  foregroundColor: Colors.white,
+                  backgroundColor: isPlaying ? VocaTokens.accentPrimary : VocaTokens.bgSurface,
+                  foregroundColor: isPlaying ? Colors.white : VocaTokens.accentPrimary,
+                  side: const BorderSide(color: VocaTokens.borderColor),
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                 ),
-                icon: Icon(isPlaying ? Icons.volume_up : Icons.volume_up_outlined, size: 18),
-                label: Text(isPlaying ? 'Playing...' : 'Pronounce'),
+                icon: Icon(
+                  isPlaying ? Icons.volume_up : Icons.volume_up_outlined,
+                  size: 18,
+                  color: isPlaying ? Colors.white : VocaTokens.accentPrimary,
+                ),
+                label: Text(
+                  isPlaying ? 'Playing...' : 'Pronounce',
+                  style: TextStyle(
+                    color: isPlaying ? Colors.white : VocaTokens.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               );
             },
           ),
 
-          const SizedBox(height: 36),
+          const SizedBox(height: 28),
 
           // Hint to tap
           const Row(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.touch_app_outlined, size: 16, color: Color(0xFF64748B)),
+              Icon(Icons.touch_app_outlined, size: 14, color: VocaTokens.textMuted),
               SizedBox(width: 6),
-              Text(
-                'Tap card to reveal meaning',
-                style: TextStyle(color: Color(0xFF64748B), fontSize: 13, fontStyle: FontStyle.italic),
+              Flexible(
+                child: Text(
+                  'Tap card to reveal meaning',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: VocaTokens.textMuted, fontSize: 12, fontStyle: FontStyle.italic),
+                ),
               ),
             ],
           ),
@@ -580,14 +618,14 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFF6366F1).withOpacity(0.5)),
+        color: VocaTokens.bgCard,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: VocaTokens.accentPrimary.withOpacity(0.4)),
         boxShadow: const [
           BoxShadow(color: Colors.black45, blurRadius: 18, offset: Offset(0, 8)),
         ],
       ),
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       child: SingleChildScrollView(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -595,25 +633,32 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
             // Word header small
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  card.word,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
+                Flexible(
+                  child: Text(
+                    card.word,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: VocaTokens.textPrimary,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 if (reading != null) ...[
                   const SizedBox(width: 8),
-                  Text(
-                    '($reading)',
-                    style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 15),
+                  Flexible(
+                    child: Text(
+                      '($reading)',
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: VocaTokens.textSecondary, fontSize: 15),
+                    ),
                   ),
                 ],
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 IconButton(
-                  icon: const Icon(Icons.volume_up, size: 20, color: Color(0xFF6366F1)),
+                  icon: const Icon(Icons.volume_up, size: 20, color: VocaTokens.accentPrimary),
                   onPressed: () {
                     AudioService.instance.playWord(
                       card.word,
@@ -625,25 +670,25 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
               ],
             ),
 
-            const Divider(color: Colors.white12, height: 28),
+            const Divider(color: VocaTokens.borderColorLight, height: 24),
 
             // Definition / Meaning
             const Text(
               'MEANING',
               style: TextStyle(
-                color: Color(0xFF64748B),
+                color: VocaTokens.textMuted,
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
-                letterSpacing: 1,
+                letterSpacing: 1.2,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
               card.meaning,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                color: Color(0xFFF1F5F9),
-                fontSize: 22,
+                color: VocaTokens.textPrimary,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
                 height: 1.3,
               ),
@@ -651,14 +696,14 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
 
             // Context Sentence if available
             if (card.contextSentence != null && card.contextSentence!.isNotEmpty) ...[
-              const SizedBox(height: 24),
+              const SizedBox(height: 18),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.04),
+                  color: VocaTokens.bgSurface,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.white10),
+                  border: Border.all(color: VocaTokens.borderColorLight),
                 ),
                 child: Column(
                   children: [
@@ -666,21 +711,21 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                       card.contextSentence!,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
+                        color: VocaTokens.textPrimary,
+                        fontSize: 14,
                         fontWeight: FontWeight.w500,
                         height: 1.4,
                       ),
                     ),
                     if (card.contextTranslation != null &&
                         card.contextTranslation!.isNotEmpty) ...[
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
                       Text(
                         card.contextTranslation!,
                         textAlign: TextAlign.center,
                         style: const TextStyle(
-                          color: Color(0xFF94A3B8),
-                          fontSize: 13,
+                          color: VocaTokens.textSecondary,
+                          fontSize: 12,
                           fontStyle: FontStyle.italic,
                         ),
                       ),
@@ -690,10 +735,10 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
               ),
             ],
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             const Text(
               'Tap card to flip back',
-              style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
+              style: TextStyle(color: VocaTokens.textMuted, fontSize: 11),
             ),
           ],
         ),
@@ -716,14 +761,14 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white12),
+        color: VocaTokens.bgCard,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: VocaTokens.borderColor),
         boxShadow: const [
           BoxShadow(color: Colors.black45, blurRadius: 18, offset: Offset(0, 8)),
         ],
       ),
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -734,13 +779,13 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF6366F1).withOpacity(0.15),
+                  color: VocaTokens.accentPrimarySoft,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Text(
                   'CLOZE TEST',
                   style: TextStyle(
-                    color: Color(0xFF818CF8),
+                    color: VocaTokens.accentPrimary,
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.5,
@@ -748,24 +793,27 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                 ),
               ),
               if (card.partOfSpeech != null)
-                Text(
-                  card.partOfSpeech!.toUpperCase(),
-                  style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.w600),
+                Flexible(
+                  child: Text(
+                    card.partOfSpeech!.toUpperCase(),
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: VocaTokens.textMuted, fontSize: 11, fontWeight: FontWeight.w600),
+                  ),
                 ),
             ],
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
           // Sentence Container
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.black26,
+              color: VocaTokens.bgSecondary,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: _isClozeRevealed ? const Color(0xFF10B981).withOpacity(0.4) : Colors.white10,
+                color: _isClozeRevealed ? VocaTokens.colorGrammar.withOpacity(0.4) : VocaTokens.borderColor,
               ),
             ),
             child: Column(
@@ -775,8 +823,8 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                     maskedSentence,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 19,
+                      color: VocaTokens.textPrimary,
+                      fontSize: 18,
                       height: 1.5,
                       fontWeight: FontWeight.w500,
                     ),
@@ -788,13 +836,13 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                     text: _buildHighlightedSentence(rawSentence, card.word),
                   ),
                   if (card.contextTranslation != null && card.contextTranslation!.isNotEmpty) ...[
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     Text(
                       card.contextTranslation!,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                        color: Color(0xFF94A3B8),
-                        fontSize: 14,
+                        color: VocaTokens.textSecondary,
+                        fontSize: 13,
                         fontStyle: FontStyle.italic,
                       ),
                     ),
@@ -804,24 +852,24 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
             ),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
           // Reading / Hint
           if (!_isClozeRevealed) ...[
             if (reading != null) ...[
               Text(
                 'Reading Hint: $reading',
-                style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
+                style: const TextStyle(color: VocaTokens.textMuted, fontSize: 13),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
             ],
 
             ElevatedButton.icon(
               onPressed: () => setState(() => _isClozeRevealed = true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6366F1),
+                backgroundColor: VocaTokens.accentPrimary,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
               icon: const Icon(Icons.visibility, size: 18),
@@ -830,19 +878,19 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
           ] else ...[
             // Meaning box
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFF10B981).withOpacity(0.12),
+                color: VocaTokens.wordMasteredBg,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3)),
+                border: Border.all(color: VocaTokens.wordMasteredText.withOpacity(0.3)),
               ),
               child: Column(
                 children: [
                   Text(
                     card.word,
                     style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 26,
+                      color: VocaTokens.textPrimary,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -851,8 +899,8 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                     card.meaning,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      color: Color(0xFFCBD5E1),
-                      fontSize: 15,
+                      color: VocaTokens.textSecondary,
+                      fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -860,9 +908,9 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
               ),
             ),
 
-            const SizedBox(height: 14),
+            const SizedBox(height: 10),
 
-            // Audio button
+            // Audio button with Coral accent
             IconButton.filled(
               onPressed: () {
                 AudioService.instance.playWord(
@@ -871,8 +919,9 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                 );
               },
               style: IconButton.styleFrom(
-                backgroundColor: const Color(0xFF334155),
-                foregroundColor: Colors.white,
+                backgroundColor: VocaTokens.bgSurface,
+                foregroundColor: VocaTokens.accentPrimary,
+                side: const BorderSide(color: VocaTokens.borderColor),
               ),
               icon: const Icon(Icons.volume_up, size: 20),
               tooltip: 'Listen to context',
@@ -891,16 +940,16 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
       if (parts[i].isNotEmpty) {
         spans.add(TextSpan(
           text: parts[i],
-          style: const TextStyle(color: Colors.white, fontSize: 18, height: 1.4),
+          style: const TextStyle(color: VocaTokens.textPrimary, fontSize: 17, height: 1.4),
         ));
       }
       if (i < parts.length - 1) {
         spans.add(TextSpan(
           text: targetWord,
           style: const TextStyle(
-            color: Color(0xFF34D399),
+            color: VocaTokens.accentPrimary,
             fontWeight: FontWeight.bold,
-            fontSize: 20,
+            fontSize: 18,
             decoration: TextDecoration.underline,
           ),
         ));
@@ -919,40 +968,45 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white12),
+        color: VocaTokens.bgCard,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: VocaTokens.borderColor),
         boxShadow: const [
           BoxShadow(color: Colors.black45, blurRadius: 18, offset: Offset(0, 8)),
         ],
       ),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       child: Column(
         children: [
           // Target Word & Audio
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Column(
-                children: [
-                  if (reading != null && reading.isNotEmpty)
+              Flexible(
+                child: Column(
+                  children: [
+                    if (reading != null && reading.isNotEmpty)
+                      Text(
+                        reading,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: VocaTokens.textMuted, fontSize: 14),
+                      ),
                     Text(
-                      reading,
-                      style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 15),
+                      card.word,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: VocaTokens.textPrimary,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  Text(
-                    card.word,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               IconButton(
-                icon: const Icon(Icons.volume_up, color: Color(0xFF6366F1), size: 24),
+                icon: const Icon(Icons.volume_up, color: VocaTokens.accentPrimary, size: 22),
                 onPressed: () {
                   AudioService.instance.playWord(
                     card.word,
@@ -964,12 +1018,12 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
             ],
           ),
 
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           const Text(
             'Choose the correct definition:',
-            style: TextStyle(color: Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w600),
+            style: TextStyle(color: VocaTokens.textMuted, fontSize: 12, fontWeight: FontWeight.w600),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
           // 4 Quiz Options
           Expanded(
@@ -981,21 +1035,21 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                 final isSelected = _selectedQuizOption == idx;
                 final isCorrect = option == card.meaning;
 
-                Color optionBorder = Colors.white12;
-                Color optionBg = Colors.white.withOpacity(0.04);
-                Color textColor = Colors.white70;
+                Color optionBorder = VocaTokens.borderColor;
+                Color optionBg = VocaTokens.bgSurface;
+                Color textColor = VocaTokens.textSecondary;
                 IconData? feedbackIcon;
 
                 if (_isQuizAnswered) {
                   if (isCorrect) {
-                    optionBorder = const Color(0xFF10B981);
-                    optionBg = const Color(0xFF10B981).withOpacity(0.2);
-                    textColor = Colors.white;
+                    optionBorder = VocaTokens.colorGrammar;
+                    optionBg = VocaTokens.colorGrammar.withOpacity(0.18);
+                    textColor = VocaTokens.textPrimary;
                     feedbackIcon = Icons.check_circle;
                   } else if (isSelected) {
-                    optionBorder = const Color(0xFFEF4444);
-                    optionBg = const Color(0xFFEF4444).withOpacity(0.2);
-                    textColor = Colors.white;
+                    optionBorder = VocaTokens.error;
+                    optionBg = VocaTokens.error.withOpacity(0.18);
+                    textColor = VocaTokens.textPrimary;
                     feedbackIcon = Icons.cancel;
                   }
                 }
@@ -1011,7 +1065,7 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                         },
                   borderRadius: BorderRadius.circular(14),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(
                       color: optionBg,
                       borderRadius: BorderRadius.circular(14),
@@ -1020,29 +1074,29 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                     child: Row(
                       children: [
                         Container(
-                          width: 26,
-                          height: 26,
+                          width: 24,
+                          height: 24,
                           alignment: Alignment.center,
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Colors.white.withOpacity(0.08),
+                            color: VocaTokens.bgHover,
                           ),
                           child: Text(
                             String.fromCharCode(65 + idx),
                             style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
+                              color: VocaTokens.textPrimary,
+                              fontSize: 11,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: Text(
                             option,
                             style: TextStyle(
                               color: textColor,
-                              fontSize: 14,
+                              fontSize: 13,
                               fontWeight: isSelected || isCorrect ? FontWeight.w600 : FontWeight.normal,
                             ),
                           ),
@@ -1050,8 +1104,8 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                         if (feedbackIcon != null)
                           Icon(
                             feedbackIcon,
-                            size: 20,
-                            color: isCorrect ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                            size: 18,
+                            color: isCorrect ? VocaTokens.colorGrammar : VocaTokens.error,
                           ),
                       ],
                     ),
@@ -1066,7 +1120,7 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
   }
 
   // -------------------------------------------------------------
-  // BOTTOM SM-2 RATING BAR WITH INTERVAL PREVIEWS
+  // BOTTOM SM-2 RATING BAR WITH INTERVAL PREVIEWS & VOCA ACCENTS
   // -------------------------------------------------------------
   Widget _buildBottomRatingBar(Flashcard card) {
     // Only show rating buttons when answer has been revealed
@@ -1076,7 +1130,7 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
 
     if (!showRatings) {
       return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: SizedBox(
           width: double.infinity,
           height: 48,
@@ -1089,7 +1143,7 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6366F1),
+              backgroundColor: VocaTokens.accentPrimary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
@@ -1123,16 +1177,16 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
     );
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       child: Row(
         children: [
-          _buildSM2Button('Again', '<10m', const Color(0xFFEF4444), SRSReviewRating.again),
-          const SizedBox(width: 8),
-          _buildSM2Button('Hard', _formatInterval(resHard.interval), const Color(0xFFF59E0B), SRSReviewRating.hard),
-          const SizedBox(width: 8),
-          _buildSM2Button('Good', _formatInterval(resGood.interval), const Color(0xFF3B82F6), SRSReviewRating.good),
-          const SizedBox(width: 8),
-          _buildSM2Button('Easy', _formatInterval(resEasy.interval), const Color(0xFF10B981), SRSReviewRating.easy),
+          _buildSM2Button('Again', '<10m', VocaTokens.error, SRSReviewRating.again),
+          const SizedBox(width: 6),
+          _buildSM2Button('Hard', _formatInterval(resHard.interval), VocaTokens.warning, SRSReviewRating.hard),
+          const SizedBox(width: 6),
+          _buildSM2Button('Good', _formatInterval(resGood.interval), VocaTokens.colorGrammar, SRSReviewRating.good),
+          const SizedBox(width: 6),
+          _buildSM2Button('Easy', _formatInterval(resEasy.interval), VocaTokens.accentPrimary, SRSReviewRating.easy),
         ],
       ),
     );
@@ -1150,9 +1204,9 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
         style: ElevatedButton.styleFrom(
           backgroundColor: color.withOpacity(0.12),
           foregroundColor: color,
-          side: BorderSide(color: color.withOpacity(0.6), width: 1.4),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          side: BorderSide(color: color.withOpacity(0.6), width: 1.2),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
           elevation: 0,
         ),
         child: Column(
@@ -1160,20 +1214,23 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
           children: [
             Text(
               label,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 2),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
               decoration: BoxDecoration(
                 color: color.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
                 intervalBadge,
+                maxLines: 1,
                 style: TextStyle(
                   color: color,
-                  fontSize: 10.5,
+                  fontSize: 10,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -1185,233 +1242,247 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
   }
 
   // -------------------------------------------------------------
-  // STUDY SESSION COMPLETION CELEBRATION
+  // STUDY SESSION COMPLETION CELEBRATION (RESPONSIVE TABLET & MOBILE)
   // -------------------------------------------------------------
   Widget _buildCelebrationScreen() {
     final streak = AppState.instance.currentStreak.value;
     final accuracy = _totalReviewed > 0
         ? ((_goodOrEasyCount / _totalReviewed) * 100).round()
         : 100;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth >= VocaTokens.tabletBreakpoint;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const SizedBox(height: 10),
-
-          // Trophy Animated Badge
-          Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: const Color(0xFF10B981).withOpacity(0.15),
-              border: Border.all(color: const Color(0xFF10B981), width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF10B981).withOpacity(0.3),
-                  blurRadius: 24,
-                  spreadRadius: 4,
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.emoji_events,
-              size: 56,
-              color: Color(0xFFFBBF24),
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          const Text(
-            'Session Complete!',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'You finished all spaced repetition reviews for this deck.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white60, fontSize: 14),
-          ),
-
-          const SizedBox(height: 24),
-
-          // Streak & Diamond Rewards Row
-          Row(
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: isTablet ? 600 : double.infinity),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Streak Card
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1E293B),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFF97316).withOpacity(0.4)),
-                  ),
-                  child: Column(
-                    children: [
-                      const Icon(Icons.local_fire_department, color: Color(0xFFF97316), size: 30),
-                      const SizedBox(height: 6),
-                      Text(
-                        '$streak Day Streak',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      const Text(
-                        'Keep it up!',
-                        style: TextStyle(color: Colors.white54, fontSize: 11),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              const SizedBox(height: 10),
 
-              const SizedBox(width: 12),
-
-              // Diamond Reward Card
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1E293B),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFF38BDF8).withOpacity(0.4)),
-                  ),
-                  child: const Column(
-                    children: [
-                      Icon(Icons.diamond, color: Color(0xFF38BDF8), size: 30),
-                      SizedBox(height: 6),
-                      Text(
-                        '+1 Diamond',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        'Daily study bonus',
-                        style: TextStyle(color: Colors.white54, fontSize: 11),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 20),
-
-          // Session Recap Box
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E293B),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.white10),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'SESSION RECAP',
-                  style: TextStyle(
-                    color: Color(0xFF64748B),
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildRecapItem('Reviewed', '$_totalReviewed', const Color(0xFF38BDF8)),
-                    _buildRecapItem('Good / Easy', '$_goodOrEasyCount', const Color(0xFF10B981)),
-                    _buildRecapItem('Again / Hard', '$_againOrHardCount', const Color(0xFFF59E0B)),
-                    _buildRecapItem('Accuracy', '$accuracy%', const Color(0xFF818CF8)),
+              // Trophy Badge
+              Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: VocaTokens.colorGrammar.withOpacity(0.15),
+                  border: Border.all(color: VocaTokens.colorGrammar, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: VocaTokens.colorGrammar.withOpacity(0.3),
+                      blurRadius: 24,
+                      spreadRadius: 4,
+                    ),
                   ],
                 ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 32),
-
-          // Action Buttons: "Review More" or "Back to Home"
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    if (Navigator.of(context).canPop()) {
-                      Navigator.of(context).pop();
-                    } else {
-                      // Switch to explore or reload
-                      _loadDueCards();
-                    }
-                  },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white70,
-                    side: const BorderSide(color: Colors.white24),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  ),
-                  child: const Text('Back to Home', style: TextStyle(fontWeight: FontWeight.w600)),
+                child: const Icon(
+                  Icons.emoji_events,
+                  size: 56,
+                  color: VocaTokens.accentTertiary,
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _loadDueCards,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6366F1),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    elevation: 4,
-                  ),
-                  child: const Text('Review More', style: TextStyle(fontWeight: FontWeight.bold)),
+
+              const SizedBox(height: 20),
+
+              const Text(
+                'Session Complete!',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: VocaTokens.textPrimary,
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
+              const SizedBox(height: 6),
+              const Text(
+                'You finished all spaced repetition reviews for this deck.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: VocaTokens.textSecondary, fontSize: 14),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Streak & Diamond Rewards Row
+              Row(
+                children: [
+                  // Streak Card
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: VocaTokens.bgCard,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: VocaTokens.colorFire.withOpacity(0.4)),
+                      ),
+                      child: Column(
+                        children: [
+                          const Icon(Icons.local_fire_department, color: VocaTokens.colorFire, size: 30),
+                          const SizedBox(height: 6),
+                          Text(
+                            '$streak Day Streak',
+                            style: const TextStyle(
+                              color: VocaTokens.textPrimary,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          const Text(
+                            'Keep it up!',
+                            style: TextStyle(color: VocaTokens.textMuted, fontSize: 11),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  // Diamond Reward Card
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: VocaTokens.bgCard,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: VocaTokens.colorDiamond.withOpacity(0.4)),
+                      ),
+                      child: const Column(
+                        children: [
+                          Icon(Icons.diamond, color: VocaTokens.colorDiamond, size: 30),
+                          SizedBox(height: 6),
+                          Text(
+                            '+1 Diamond',
+                            style: TextStyle(
+                              color: VocaTokens.textPrimary,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Daily study bonus',
+                            style: TextStyle(color: VocaTokens.textMuted, fontSize: 11),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              // Session Recap Box
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: VocaTokens.bgCard,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: VocaTokens.borderColor),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'SESSION RECAP',
+                      style: TextStyle(
+                        color: VocaTokens.textMuted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildRecapItem('Reviewed', '$_totalReviewed', VocaTokens.wordKnownText),
+                        _buildRecapItem('Good / Easy', '$_goodOrEasyCount', VocaTokens.colorGrammar),
+                        _buildRecapItem('Again / Hard', '$_againOrHardCount', VocaTokens.warning),
+                        _buildRecapItem('Accuracy', '$accuracy%', VocaTokens.accentSecondary),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 32),
+
+              // Action Buttons: "Review More" or "Back to Home"
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        if (Navigator.of(context).canPop()) {
+                          Navigator.of(context).pop();
+                        } else {
+                          _loadDueCards();
+                        }
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: VocaTokens.textSecondary,
+                        side: const BorderSide(color: VocaTokens.borderColor),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      child: const Text('Back to Home', style: TextStyle(fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _loadDueCards,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: VocaTokens.accentPrimary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        elevation: 4,
+                      ),
+                      child: const Text('Review More', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
             ],
           ),
-          const SizedBox(height: 20),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildRecapItem(String label, String value, Color color) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: TextStyle(
-            color: color,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+    return Expanded(
+      child: Column(
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(color: Colors.white54, fontSize: 11),
-        ),
-      ],
+          const SizedBox(height: 4),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              style: const TextStyle(color: VocaTokens.textMuted, fontSize: 11),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

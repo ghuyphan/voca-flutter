@@ -2,16 +2,19 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../config/voca_theme.dart';
 import '../../models/voca_models.dart';
 import '../../state/app_state.dart';
 import '../video/video_player_screen.dart';
 
 class LibraryScreen extends StatefulWidget {
   final VoidCallback? onNavigateToExplore;
+  final int initialTabIndex;
 
   const LibraryScreen({
     super.key,
     this.onNavigateToExplore,
+    this.initialTabIndex = 0,
   });
 
   @override
@@ -28,7 +31,11 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: widget.initialTabIndex.clamp(0, 1),
+    );
     _loadHistory();
     _loadPlaylists();
   }
@@ -392,13 +399,13 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: VocaTokens.bgPrimary,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: VocaTokens.bgPrimary,
         elevation: 0,
         title: const Text(
           'Library',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(color: VocaTokens.textPrimary, fontWeight: FontWeight.bold),
         ),
         actions: [
           if (_tabController.index == 0 && _historyItems.isNotEmpty)
@@ -416,7 +423,7 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
         ],
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: const Color(0xFF6366F1),
+          indicatorColor: VocaTokens.accentPrimary,
           indicatorWeight: 3,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white60,
@@ -691,10 +698,14 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                '${_playlists.length} Playlists',
-                style: const TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600),
+              Flexible(
+                child: Text(
+                  '${_playlists.length} Playlists',
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600),
+                ),
               ),
+              const SizedBox(width: 8),
               ElevatedButton.icon(
                 onPressed: _showCreatePlaylistDialog,
                 icon: const Icon(Icons.add, size: 16),

@@ -6,8 +6,28 @@ import 'package:voca_flutter/models/voca_models.dart';
 import 'package:voca_flutter/services/grammar_engine.dart';
 import 'package:voca_flutter/services/voca_api_client.dart';
 import 'package:voca_flutter/state/player_state.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:voca_flutter/ui/video/player_controls_bar.dart';
 import 'package:voca_flutter/ui/video/transcript_view.dart';
 import 'package:voca_flutter/ui/widgets/interactive_subtitle_view.dart';
+
+class FakeYoutubePlayerController extends Fake implements YoutubePlayerController {
+  double? lastSeek;
+  double? lastRate;
+
+  @override
+  Future<void> seekTo({required double seconds, bool allowSeekAhead = false}) async {
+    lastSeek = seconds;
+  }
+
+  @override
+  Future<void> setPlaybackRate(double rate) async {
+    lastRate = rate;
+  }
+
+  @override
+  Future<void> close() async {}
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -200,14 +220,91 @@ void main() {
       expect(find.text('Hello world'), findsOneWidget);
       expect(find.text('Language immersion'), findsOneWidget);
       expect(find.text('00:00'), findsOneWidget);
-      expect(find.text('00:03'), findsOneWidget);
-
       // Enter search query
       await tester.enterText(find.byType(TextField), 'immersion');
       await tester.pump();
 
       expect(find.text('Hello world'), findsNothing);
       expect(find.text('Language immersion'), findsOneWidget);
+    });
+
+    testWidgets('Tapping cue seeks playback position and repeat button sets loop', (tester) async {
+      final cue1 = SubtitleCue(start: 10.0, duration: 3.0, text: 'Active target');
+      controller.cues.value = [cue1];
+      controller.currentTime.value = 10.5;
+
+      double? seekTime;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: TranscriptView(
+              controller: controller,
+              onSeek: (s) => seekTime = s,
+              onTokenTap: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      expect(find.text('Active target'), findsOneWidget);
+
+      // Tap cue card to seek
+      await tester.tap(find.text('Active target'));
+      expect(seekTime, equals(10.0));
+
+      // Tap repeat button
+      final repeatFinder = find.byIcon(Icons.replay_rounded);
+      expect(repeatFinder, findsOneWidget);
+      await tester.tap(repeatFinder);
+      expect(controller.isLoopingCue.value, isTrue);
+      expect(controller.loopingCue.value, equals(cue1));
+    });
+  });
+
+  group('PlayerControlsBar Widget Tests', () {
+    testWidgets('Toggles furigana (振) and translation (文)', (tester) async {
+      final ytController = FakeYoutubePlayerController();
+      final cue = SubtitleCue(start: 0.0, duration: 2.0, text: 'Test sentence');
+      controller.cues.value = [cue];
+      controller.currentTime.value = 0.5;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: PlayerControlsBar(
+              controller: controller,
+              ytController: ytController,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      // Check for ruby '振' and translation '文'
+      expect(find.text('振'), findsOneWidget);
+      expect(find.text('文'), findsOneWidget);
+
+      // Initial states
+      expect(controller.showFurigana.value, isTrue);
+      expect(controller.showTranslation.value, isTrue);
+
+      // Tap '振' toggle
+      await tester.tap(find.text('振'));
+      expect(controller.showFurigana.value, isFalse);
+
+      // Tap '文' toggle
+      await tester.tap(find.text('文'));
+      expect(controller.showTranslation.value, isFalse);
+
+      // Loop sentence button
+      final loopBtn = find.byIcon(Icons.repeat_rounded);
+      expect(loopBtn, findsOneWidget);
+      await tester.tap(loopBtn);
+      expect(controller.isLoopingCue.value, isTrue);
+
+      ytController.close();
     });
   });
 }

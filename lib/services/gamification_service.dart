@@ -106,6 +106,8 @@ class GamificationService {
   final longestStreak = signal<int>(0);
   final streakFreezes = signal<int>(2);
   final activityCalendar = signal<List<DayActivity>>([]);
+  bool get practicedToday => activityCalendar.value.any((d) => d.isToday && d.isActive);
+  Set<String> get activeDates => Set.unmodifiable(_activeDateStrings);
 
   // Diamonds / AI Credits
   final diamonds = signal<int>(5);
