@@ -87,147 +87,154 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
               ),
             ),
 
-            // Loading / Status indicator
-            Watch((context) {
-              final isLoading = _playerController.isLoading.value;
-              final status = _playerController.statusMessage.value;
-              if (isLoading && status != null) {
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  margin: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.06),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF38BDF8)),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        status,
-                        style: const TextStyle(color: Color(0xFFCBD5E1), fontSize: 13),
-                      ),
-                    ],
-                  ),
-                );
-              }
-              return const SizedBox.shrink();
-            }),
-
-            // Language Mismatch Alert Banner
-            Watch((context) {
-              final isMismatch = _playerController.languageMismatch.value;
-              final available = _playerController.availableLanguages.value;
-              if (!isMismatch) return const SizedBox.shrink();
-
-              return Container(
-                margin: const EdgeInsets.all(12),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF334155),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.amber.withOpacity(0.4)),
-                ),
+            // Scrollable subtitle & status area
+            Expanded(
+              child: SingleChildScrollView(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.info_outline, color: Colors.amberAccent, size: 18),
-                        SizedBox(width: 8),
-                        Text(
-                          'No captions in selected language',
-                          style: TextStyle(
-                            color: Colors.amberAccent,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
+                    // Loading / Status indicator
+                    Watch((context) {
+                      final isLoading = _playerController.isLoading.value;
+                      final status = _playerController.statusMessage.value;
+                      if (isLoading && status != null) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          margin: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.06),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Available native captions: ${available.native.join(", ")}',
-                      style: const TextStyle(color: Colors.white70, fontSize: 12.5),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        if (available.native.isNotEmpty)
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () {
-                                AppState.instance.setLanguage(available.native.first);
-                                _playerController.loadVideo(widget.videoId);
-                              },
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.white,
-                                side: const BorderSide(color: Colors.white30),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF38BDF8)),
                               ),
-                              child: Text('Switch to ${available.native.first}'),
-                            ),
+                              const SizedBox(width: 10),
+                              Text(
+                                status,
+                                style: const TextStyle(color: Color(0xFFCBD5E1), fontSize: 13),
+                              ),
+                            ],
                           ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              _playerController.loadVideo(widget.videoId, preferAI: true);
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF6366F1),
-                              foregroundColor: Colors.white,
-                            ),
-                            child: const Text('AI Transcribe'),
-                          ),
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    }),
+
+                    // Language Mismatch Alert Banner
+                    Watch((context) {
+                      final isMismatch = _playerController.languageMismatch.value;
+                      final available = _playerController.availableLanguages.value;
+                      if (!isMismatch) return const SizedBox.shrink();
+
+                      return Container(
+                        margin: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF334155),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.amber.withOpacity(0.4)),
                         ),
-                      ],
-                    ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.info_outline, color: Colors.amberAccent, size: 18),
+                                SizedBox(width: 8),
+                                Text(
+                                  'No captions in selected language',
+                                  style: TextStyle(
+                                    color: Colors.amberAccent,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Available native captions: ${available.native.join(", ")}',
+                              style: const TextStyle(color: Colors.white70, fontSize: 12.5),
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                if (available.native.isNotEmpty)
+                                  Expanded(
+                                    child: OutlinedButton(
+                                      onPressed: () {
+                                        AppState.instance.setLanguage(available.native.first);
+                                        _playerController.loadVideo(widget.videoId);
+                                      },
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: Colors.white,
+                                        side: const BorderSide(color: Colors.white30),
+                                      ),
+                                      child: Text('Switch to ${available.native.first}'),
+                                    ),
+                                  ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: () {
+                                      _playerController.loadVideo(widget.videoId, preferAI: true);
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF6366F1),
+                                      foregroundColor: Colors.white,
+                                    ),
+                                    child: const Text('AI Transcribe'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+
+                    // Interactive Subtitle Overlay
+                    Watch((context) {
+                      final activeCue = _playerController.activeCue.value;
+                      final grammarMatches = _playerController.activeGrammarMatches.value;
+
+                      if (activeCue == null) {
+                        return Container(
+                          constraints: const BoxConstraints(minHeight: 76),
+                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          alignment: Alignment.center,
+                          child: const Text(
+                            'Listening...',
+                            style: TextStyle(color: Colors.white24, fontSize: 14),
+                          ),
+                        );
+                      }
+
+                      return InteractiveSubtitleView(
+                        cue: activeCue,
+                        grammarMatches: grammarMatches,
+                        onTokenTap: (token) {
+                          _ytController.pauseVideo();
+                          DictionaryBottomSheet.show(
+                            context,
+                            token: token,
+                            sourceLang: AppState.instance.activeLanguage.value,
+                          );
+                        },
+                        onGrammarTap: (pattern) {
+                          _ytController.pauseVideo();
+                          GrammarBottomSheet.show(context, pattern);
+                        },
+                      );
+                    }),
                   ],
                 ),
-              );
-            }),
-
-            // Interactive Subtitle Overlay
-            Watch((context) {
-              final activeCue = _playerController.activeCue.value;
-              final grammarMatches = _playerController.activeGrammarMatches.value;
-
-              if (activeCue == null) {
-                return Container(
-                  constraints: const BoxConstraints(minHeight: 76),
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  alignment: Alignment.center,
-                  child: const Text(
-                    'Listening...',
-                    style: TextStyle(color: Colors.white24, fontSize: 14),
-                  ),
-                );
-              }
-
-              return InteractiveSubtitleView(
-                cue: activeCue,
-                grammarMatches: grammarMatches,
-                onTokenTap: (token) {
-                  _ytController.pauseVideo();
-                  DictionaryBottomSheet.show(
-                    context,
-                    token: token,
-                    sourceLang: AppState.instance.activeLanguage.value,
-                  );
-                },
-                onGrammarTap: (pattern) {
-                  _ytController.pauseVideo();
-                  GrammarBottomSheet.show(context, pattern);
-                },
-              );
-            }),
-
-            const Spacer(),
+              ),
+            ),
           ],
         ),
       ),
