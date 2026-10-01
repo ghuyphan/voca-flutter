@@ -25,7 +25,8 @@ dependencies:
   hive_ce_flutter: ^2.2.0
 
   # YouTube Playback
-  youtube_player_iframe: ^5.1.0
+  youtube_player_flutter: ^10.0.1
+  youtube_player_iframe: ^6.0.2
 
   # Cloudflare Turnstile & Web interactions
   flutter_inappwebview: ^6.1.5

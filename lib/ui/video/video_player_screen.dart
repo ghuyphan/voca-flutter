@@ -2,7 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:signals_flutter/signals_flutter.dart';
-import 'package:youtube_player_iframe/youtube_player_iframe.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../../state/app_state.dart';
 import '../../state/player_state.dart';
 import '../widgets/interactive_subtitle_view.dart';
@@ -26,6 +27,7 @@ class VideoPlayerScreen extends StatefulWidget {
 class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   late final YoutubePlayerController _ytController;
   late final VideoPlayerController _playerController;
+  YoutubeError? _playerError;
 
   @override
   void initState() {
@@ -35,19 +37,31 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       grammarEngine: AppState.instance.grammarEngine,
     );
 
-    _ytController = YoutubePlayerController(
+    _ytController = YoutubePlayerController.fromVideoId(
+      videoId: widget.videoId,
+      autoPlay: false,
       params: const YoutubePlayerParams(
         showControls: true,
         showFullscreenButton: true,
         mute: false,
+        enableCaption: false,
+        origin: 'https://www.youtube.com',
+        privacyEnhancedMode: false,
       ),
     );
-
-    _ytController.loadVideoById(videoId: widget.videoId);
 
     // Listen to video position
     _ytController.videoStateStream.listen((state) {
       _playerController.currentTime.value = state.position.inMilliseconds / 1000.0;
+    });
+
+    // Listen to player errors (e.g. embed restrictions)
+    _ytController.listen((value) {
+      if (value.error != YoutubeError.none && value.error != _playerError) {
+        setState(() {
+          _playerError = value.error;
+        });
+      }
     });
 
     // Load subtitles
@@ -78,14 +92,52 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // YouTube IFrame Player
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: YoutubePlayer(
+            // YouTube Player
+            if (_playerError != null && _playerError != YoutubeError.none)
+              Container(
+                height: 220,
+                color: const Color(0xFF0F172A),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.lock_outline_rounded, color: Color(0xFFF59E0B), size: 36),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Playback Restricted by Owner',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'YouTube owner disabled third-party embedding for this track. You can open it in YouTube while using Voca for subtitles & vocabulary.',
+                        style: TextStyle(color: Colors.white70, fontSize: 11.5),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton.icon(
+                        onPressed: () => launchUrl(
+                          Uri.parse('https://www.youtube.com/watch?v=${widget.videoId}'),
+                          mode: LaunchMode.externalApplication,
+                        ),
+                        icon: const Icon(Icons.open_in_new, size: 14),
+                        label: const Text('Watch on YouTube', style: TextStyle(fontSize: 12.5)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFEF4444),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              YoutubePlayer(
                 controller: _ytController,
                 aspectRatio: 16 / 9,
               ),
-            ),
 
             // Scrollable subtitle & status area
             Expanded(

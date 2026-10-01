@@ -327,9 +327,14 @@ class DictionaryEntry {
           [],
       level: json['level'] as String?,
       audio: json['audio'] as String?,
-      examples: (json['examples'] as List<dynamic>?)
-              ?.map((e) => Map<String, dynamic>.from(e as Map))
-              .toList() ??
+      examples: (json['examples'] as List<dynamic>?)?.map((e) {
+            if (e is Map) {
+              return Map<String, dynamic>.from(e);
+            } else if (e is String) {
+              return <String, dynamic>{'sentence': e, 'translation': ''};
+            }
+            return <String, dynamic>{'sentence': e.toString(), 'translation': ''};
+          }).toList() ??
           [],
     );
   }
