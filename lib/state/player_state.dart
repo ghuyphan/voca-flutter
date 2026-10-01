@@ -58,6 +58,16 @@ class VideoPlayerController {
   final languageMismatch = signal<bool>(false);
   final availableLanguages = signal<AvailableLanguages>(AvailableLanguages());
 
+  // Immersion & subtitle display signals
+  final playbackRate = signal<double>(1.0);
+  final isLoopingCue = signal<bool>(false);
+  final loopingCue = signal<SubtitleCue?>(null);
+  final showFurigana = signal<bool>(true);
+  final showTranslation = signal<bool>(true);
+  final subtitleSize = signal<SubtitleSize>(SubtitleSize.medium);
+  final isTranscriptMode = signal<bool>(false);
+  final autoScrollTranscript = signal<bool>(true);
+
   late final ReadonlySignal<SubtitleCue?> activeCue;
   late final ReadonlySignal<List<GrammarMatch>> activeGrammarMatches;
 
@@ -68,6 +78,8 @@ class VideoPlayerController {
     statusMessage.value = 'Loading subtitles...';
     languageMismatch.value = false;
     cues.value = [];
+    isLoopingCue.value = false;
+    loopingCue.value = null;
 
     final targetLang = AppState.instance.activeLanguage.value;
     await grammarEngine.loadLanguage(targetLang);
@@ -144,6 +156,108 @@ class VideoPlayerController {
         targetLang: 'vi', // Default UI explanation language
       );
       cues.value = List.from(cueList);
+    }
+  }
+
+  /// Toggle looping the currently active cue
+  void toggleLoopCurrentCue() {
+    if (isLoopingCue.value) {
+      isLoopingCue.value = false;
+      loopingCue.value = null;
+    } else {
+      final current = activeCue.value;
+      if (current != null) {
+        loopingCue.value = current;
+        isLoopingCue.value = true;
+      }
+    }
+  }
+
+  /// Explicitly set or clear the loop cue
+  void setLoopCue(SubtitleCue? cue) {
+    if (cue == null) {
+      isLoopingCue.value = false;
+      loopingCue.value = null;
+    } else {
+      loopingCue.value = cue;
+      isLoopingCue.value = true;
+    }
+  }
+
+  /// Jump to the previous cue in the list
+  void seekToPreviousCue({required void Function(double seconds) onSeek}) {
+    final cueList = cues.value;
+    if (cueList.isEmpty) return;
+    final time = currentTime.value;
+
+    int currentIndex = cueList.indexWhere((c) => time >= c.start && time < (c.start + c.duration));
+    if (currentIndex == -1) {
+      currentIndex = cueList.lastIndexWhere((c) => c.start <= time);
+    }
+
+    if (currentIndex > 0) {
+      final currentCue = cueList[currentIndex];
+      // If already > 2s into current cue, restart current cue; otherwise jump to previous cue
+      if (time - currentCue.start > 2.0) {
+        onSeek(currentCue.start);
+        currentTime.value = currentCue.start;
+        if (isLoopingCue.value) loopingCue.value = currentCue;
+      } else {
+        final prevCue = cueList[currentIndex - 1];
+        onSeek(prevCue.start);
+        currentTime.value = prevCue.start;
+        if (isLoopingCue.value) loopingCue.value = prevCue;
+      }
+    } else if (currentIndex == 0) {
+      final firstCue = cueList[0];
+      onSeek(firstCue.start);
+      currentTime.value = firstCue.start;
+      if (isLoopingCue.value) loopingCue.value = firstCue;
+    }
+  }
+
+  /// Jump to the next cue in the list
+  void seekToNextCue({required void Function(double seconds) onSeek}) {
+    final cueList = cues.value;
+    if (cueList.isEmpty) return;
+    final time = currentTime.value;
+
+    final nextIndex = cueList.indexWhere((c) => c.start > time + 0.2);
+    if (nextIndex != -1 && nextIndex < cueList.length) {
+      final nextCue = cueList[nextIndex];
+      onSeek(nextCue.start);
+      currentTime.value = nextCue.start;
+      if (isLoopingCue.value) loopingCue.value = nextCue;
+    }
+  }
+
+  void toggleFurigana() {
+    showFurigana.value = !showFurigana.value;
+  }
+
+  void toggleTranslation() {
+    showTranslation.value = !showTranslation.value;
+  }
+
+  void toggleTranscriptMode() {
+    isTranscriptMode.value = !isTranscriptMode.value;
+  }
+
+  void toggleAutoScroll() {
+    autoScrollTranscript.value = !autoScrollTranscript.value;
+  }
+
+  void cycleSubtitleSize() {
+    switch (subtitleSize.value) {
+      case SubtitleSize.small:
+        subtitleSize.value = SubtitleSize.medium;
+        break;
+      case SubtitleSize.medium:
+        subtitleSize.value = SubtitleSize.large;
+        break;
+      case SubtitleSize.large:
+        subtitleSize.value = SubtitleSize.small;
+        break;
     }
   }
 }

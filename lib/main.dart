@@ -6,6 +6,7 @@ import 'config/api_endpoints.dart';
 import 'services/voca_api_client.dart';
 import 'services/supabase_service.dart';
 import 'services/grammar_engine.dart';
+import 'services/gamification_service.dart';
 import 'state/app_state.dart';
 import 'ui/shell/main_shell.dart';
 
@@ -23,6 +24,13 @@ Future<void> main() async {
   appState.apiClient = VocaApiClient();
   appState.supabaseService = SupabaseService(Supabase.instance.client);
   appState.grammarEngine = GrammarEngine();
+  appState.gamificationService = GamificationService(
+    apiClient: appState.apiClient,
+    supabaseService: appState.supabaseService,
+  );
+
+  // Load persistent settings & gamification stats
+  await appState.initSettingsAndGamification();
 
   // Pre-load default learning language grammar database
   await appState.grammarEngine.loadLanguage('ja');

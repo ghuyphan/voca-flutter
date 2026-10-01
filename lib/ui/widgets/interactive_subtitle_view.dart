@@ -8,6 +8,9 @@ class InteractiveSubtitleView extends StatelessWidget {
   final List<GrammarMatch> grammarMatches;
   final Function(Token token) onTokenTap;
   final Function(GrammarPattern pattern)? onGrammarTap;
+  final bool showFurigana;
+  final bool showTranslation;
+  final SubtitleSize subtitleSize;
 
   const InteractiveSubtitleView({
     super.key,
@@ -15,7 +18,43 @@ class InteractiveSubtitleView extends StatelessWidget {
     this.grammarMatches = const [],
     required this.onTokenTap,
     this.onGrammarTap,
+    this.showFurigana = true,
+    this.showTranslation = true,
+    this.subtitleSize = SubtitleSize.medium,
   });
+
+  double get _surfaceFontSize {
+    switch (subtitleSize) {
+      case SubtitleSize.small:
+        return 16.0;
+      case SubtitleSize.medium:
+        return 20.0;
+      case SubtitleSize.large:
+        return 24.0;
+    }
+  }
+
+  double get _rubyFontSize {
+    switch (subtitleSize) {
+      case SubtitleSize.small:
+        return 9.5;
+      case SubtitleSize.medium:
+        return 11.0;
+      case SubtitleSize.large:
+        return 13.0;
+    }
+  }
+
+  double get _translationFontSize {
+    switch (subtitleSize) {
+      case SubtitleSize.small:
+        return 12.5;
+      case SubtitleSize.medium:
+        return 14.5;
+      case SubtitleSize.large:
+        return 16.5;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,6 +65,8 @@ class InteractiveSubtitleView extends StatelessWidget {
         grammarTokenMap[idx] = m.pattern;
       }
     }
+
+    final hasTokens = cue.tokens.isNotEmpty;
 
     return Container(
       // Zero-CLS: Enforce consistent minimum height and padding
@@ -48,95 +89,110 @@ class InteractiveSubtitleView extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Primary Subtitle with Furigana / Pinyin ruby stack
-          Wrap(
-            alignment: WrapAlignment.center,
-            crossAxisAlignment: WrapCrossAlignment.end,
-            spacing: 2,
-            runSpacing: 4,
-            children: cue.tokens.asMap().entries.map((entry) {
-              final idx = entry.key;
-              final token = entry.value;
-              final grammarPattern = grammarTokenMap[idx];
+          // Primary Subtitle
+          if (hasTokens)
+            Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.end,
+              spacing: 2,
+              runSpacing: 4,
+              children: cue.tokens.asMap().entries.map((entry) {
+                final idx = entry.key;
+                final token = entry.value;
+                final grammarPattern = grammarTokenMap[idx];
 
-              if (token.isPunctuation) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 2),
-                  child: Text(
-                    token.surface,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w400,
+                if (token.isPunctuation) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: Text(
+                      token.surface,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: _surfaceFontSize,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  );
+                }
+
+                final rubyText = token.reading ?? token.pinyin ?? token.romanization;
+
+                return InkWell(
+                  onTap: () {
+                    if (grammarPattern != null && onGrammarTap != null) {
+                      onGrammarTap!(grammarPattern);
+                    } else {
+                      onTokenTap(token);
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(4),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    decoration: BoxDecoration(
+                      border: grammarPattern != null
+                          ? const Border(
+                              bottom: BorderSide(
+                                color: Colors.amberAccent,
+                                width: 2.5,
+                              ),
+                            )
+                          : null,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Furigana reading or Chinese Pinyin ruby text (if enabled)
+                        if (showFurigana) ...[
+                          if (rubyText != null)
+                            Text(
+                              rubyText,
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: _rubyFontSize,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: -0.2,
+                              ),
+                            )
+                          else
+                            SizedBox(height: _rubyFontSize + 2), // Baseline alignment
+                        ],
+                        // Surface word
+                        Text(
+                          token.surface,
+                          style: TextStyle(
+                            color: grammarPattern != null
+                                ? Colors.amberAccent
+                                : Colors.white,
+                            fontSize: _surfaceFontSize,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 );
-              }
-
-              return InkWell(
-                onTap: () {
-                  if (grammarPattern != null && onGrammarTap != null) {
-                    onGrammarTap!(grammarPattern);
-                  } else {
-                    onTokenTap(token);
-                  }
-                },
-                borderRadius: BorderRadius.circular(4),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 2),
-                  decoration: BoxDecoration(
-                    border: grammarPattern != null
-                        ? const Border(
-                            bottom: BorderSide(
-                              color: Colors.amberAccent,
-                              width: 2.5,
-                            ),
-                          )
-                        : null,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Furigana reading or Chinese Pinyin ruby text
-                      if (token.reading != null || token.pinyin != null)
-                        Text(
-                          token.reading ?? token.pinyin!,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: -0.2,
-                          ),
-                        )
-                      else
-                        const SizedBox(height: 12), // Placeholder to align baseline
-                      // Surface word
-                      Text(
-                        token.surface,
-                        style: TextStyle(
-                          color: grammarPattern != null
-                              ? Colors.amberAccent
-                              : Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
+              }).toList(),
+            )
+          else
+            Text(
+              cue.text,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: _surfaceFontSize,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
 
           // Secondary translated subtitle
-          if (cue.translation != null && cue.translation!.isNotEmpty) ...[
+          if (showTranslation && cue.translation != null && cue.translation!.isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(
               cue.translation!,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFFE2E8F0),
-                fontSize: 14.5,
+              style: TextStyle(
+                color: const Color(0xFFE2E8F0),
+                fontSize: _translationFontSize,
                 fontWeight: FontWeight.w400,
                 fontStyle: FontStyle.italic,
               ),

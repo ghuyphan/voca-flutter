@@ -356,6 +356,13 @@ class Flashcard {
   final DateTime srsNextReviewAt;
   final DateTime? srsLastReviewedAt;
 
+  final String? partOfSpeech;
+  final String? contextSentence;
+  final String? contextTranslation;
+  final String? audio;
+  final String? notes;
+  final DateTime? createdAt;
+
   Flashcard({
     required this.id,
     required this.userId,
@@ -371,6 +378,12 @@ class Flashcard {
     this.srsEaseFactor = 2.5,
     required this.srsNextReviewAt,
     this.srsLastReviewedAt,
+    this.partOfSpeech,
+    this.contextSentence,
+    this.contextTranslation,
+    this.audio,
+    this.notes,
+    this.createdAt,
   });
 
   factory Flashcard.fromJson(Map<String, dynamic> json) {
@@ -387,14 +400,70 @@ class Flashcard {
       srsInterval: json['srs_interval'] as int? ?? 0,
       srsRepetition: json['srs_repetition'] as int? ?? 0,
       srsEaseFactor: (json['srs_ease_factor'] as num?)?.toDouble() ?? 2.5,
-      srsNextReviewAt: DateTime.parse(json['srs_next_review_at'] as String),
+      srsNextReviewAt: json['srs_next_review_at'] != null
+          ? DateTime.tryParse(json['srs_next_review_at'] as String) ?? DateTime.now()
+          : DateTime.now(),
       srsLastReviewedAt: json['srs_last_reviewed_at'] != null
-          ? DateTime.parse(json['srs_last_reviewed_at'] as String)
+          ? DateTime.tryParse(json['srs_last_reviewed_at'] as String)
+          : null,
+      partOfSpeech: json['part_of_speech'] as String?,
+      contextSentence: json['context_sentence'] as String?,
+      contextTranslation: json['context_translation'] as String?,
+      audio: json['audio'] as String?,
+      notes: json['notes'] as String?,
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'] as String)
           : null,
     );
   }
 
-  Map<String, dynamic> toJson() => {
+  Flashcard copyWith({
+    String? id,
+    String? userId,
+    String? word,
+    String? reading,
+    String? romanization,
+    String? pinyin,
+    String? meaning,
+    String? language,
+    String? level,
+    int? srsInterval,
+    int? srsRepetition,
+    double? srsEaseFactor,
+    DateTime? srsNextReviewAt,
+    DateTime? srsLastReviewedAt,
+    String? partOfSpeech,
+    String? contextSentence,
+    String? contextTranslation,
+    String? audio,
+    String? notes,
+    DateTime? createdAt,
+  }) {
+    return Flashcard(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      word: word ?? this.word,
+      reading: reading ?? this.reading,
+      romanization: romanization ?? this.romanization,
+      pinyin: pinyin ?? this.pinyin,
+      meaning: meaning ?? this.meaning,
+      language: language ?? this.language,
+      level: level ?? this.level,
+      srsInterval: srsInterval ?? this.srsInterval,
+      srsRepetition: srsRepetition ?? this.srsRepetition,
+      srsEaseFactor: srsEaseFactor ?? this.srsEaseFactor,
+      srsNextReviewAt: srsNextReviewAt ?? this.srsNextReviewAt,
+      srsLastReviewedAt: srsLastReviewedAt ?? this.srsLastReviewedAt,
+      partOfSpeech: partOfSpeech ?? this.partOfSpeech,
+      contextSentence: contextSentence ?? this.contextSentence,
+      contextTranslation: contextTranslation ?? this.contextTranslation,
+      audio: audio ?? this.audio,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  Map<String, dynamic> toBaseJson() => {
     'id': id,
     'user_id': userId,
     'word': word,
@@ -410,4 +479,192 @@ class Flashcard {
     'srs_next_review_at': srsNextReviewAt.toIso8601String(),
     'srs_last_reviewed_at': srsLastReviewedAt?.toIso8601String(),
   };
+
+  Map<String, dynamic> toJson() {
+    final map = toBaseJson();
+    if (partOfSpeech != null) map['part_of_speech'] = partOfSpeech;
+    if (contextSentence != null) map['context_sentence'] = contextSentence;
+    if (contextTranslation != null) map['context_translation'] = contextTranslation;
+    if (audio != null) map['audio'] = audio;
+    if (notes != null) map['notes'] = notes;
+    if (createdAt != null) map['created_at'] = createdAt!.toIso8601String();
+    return map;
+  }
+}
+
+class WatchHistoryItem {
+  final String id;
+  final String userId;
+  final String videoId;
+  final String title;
+  final String thumbnail;
+  final String channel;
+  final int duration;
+  final String language;
+  final double progress;
+  final DateTime watchedAt;
+
+  WatchHistoryItem({
+    required this.id,
+    required this.userId,
+    required this.videoId,
+    required this.title,
+    required this.thumbnail,
+    required this.channel,
+    required this.duration,
+    required this.language,
+    required this.progress,
+    required this.watchedAt,
+  });
+
+  factory WatchHistoryItem.fromJson(Map<String, dynamic> json) {
+    return WatchHistoryItem(
+      id: json['id'] as String? ?? '',
+      userId: json['user_id'] as String? ?? '',
+      videoId: json['video_id'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      thumbnail: json['thumbnail'] as String? ?? '',
+      channel: json['channel'] as String? ?? '',
+      duration: (json['duration'] as num?)?.toInt() ?? 0,
+      language: json['language'] as String? ?? 'ja',
+      progress: (json['progress'] as num?)?.toDouble() ?? 0.0,
+      watchedAt: json['watched_at'] != null
+          ? DateTime.tryParse(json['watched_at'] as String) ?? DateTime.now()
+          : DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'user_id': userId,
+    'video_id': videoId,
+    'title': title,
+    'thumbnail': thumbnail,
+    'channel': channel,
+    'duration': duration,
+    'language': language,
+    'progress': progress,
+    'watched_at': watchedAt.toIso8601String(),
+  };
+}
+
+class PlaylistItem {
+  final String id;
+  final String userId;
+  final String title;
+  final String? description;
+  final String visibility;
+  final String language;
+  final int videoCount;
+  final String? thumbnail;
+  final List<String> videoIds;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  PlaylistItem({
+    required this.id,
+    required this.userId,
+    required this.title,
+    this.description,
+    this.visibility = 'private',
+    required this.language,
+    this.videoCount = 0,
+    this.thumbnail,
+    this.videoIds = const [],
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory PlaylistItem.fromJson(Map<String, dynamic> json) {
+    return PlaylistItem(
+      id: json['id'] as String? ?? '',
+      userId: json['user_id'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      description: json['description'] as String?,
+      visibility: json['visibility'] as String? ?? 'private',
+      language: json['language'] as String? ?? 'ja',
+      videoCount: (json['video_count'] as num?)?.toInt() ?? 0,
+      thumbnail: json['thumbnail'] as String?,
+      videoIds: (json['video_ids'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'] as String) ?? DateTime.now()
+          : DateTime.now(),
+      updatedAt: json['updated_at'] != null
+          ? DateTime.tryParse(json['updated_at'] as String) ?? DateTime.now()
+          : DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'user_id': userId,
+    'title': title,
+    'description': description,
+    'visibility': visibility,
+    'language': language,
+    'video_count': videoCount,
+    'thumbnail': thumbnail,
+    'video_ids': videoIds,
+    'created_at': createdAt.toIso8601String(),
+    'updated_at': updatedAt.toIso8601String(),
+  };
+}
+
+enum RubyDisplayMode { always, tap, never }
+enum SubtitleSize { small, medium, large }
+
+class UserSettings {
+  final RubyDisplayMode rubyMode;
+  final SubtitleSize subtitleSize;
+  final String nativeLanguage;
+  final bool autoPauseOnLookup;
+  final double playbackRate;
+
+  UserSettings({
+    this.rubyMode = RubyDisplayMode.always,
+    this.subtitleSize = SubtitleSize.medium,
+    this.nativeLanguage = 'en',
+    this.autoPauseOnLookup = true,
+    this.playbackRate = 1.0,
+  });
+
+  UserSettings copyWith({
+    RubyDisplayMode? rubyMode,
+    SubtitleSize? subtitleSize,
+    String? nativeLanguage,
+    bool? autoPauseOnLookup,
+    double? playbackRate,
+  }) {
+    return UserSettings(
+      rubyMode: rubyMode ?? this.rubyMode,
+      subtitleSize: subtitleSize ?? this.subtitleSize,
+      nativeLanguage: nativeLanguage ?? this.nativeLanguage,
+      autoPauseOnLookup: autoPauseOnLookup ?? this.autoPauseOnLookup,
+      playbackRate: playbackRate ?? this.playbackRate,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'rubyMode': rubyMode.name,
+    'subtitleSize': subtitleSize.name,
+    'nativeLanguage': nativeLanguage,
+    'autoPauseOnLookup': autoPauseOnLookup,
+    'playbackRate': playbackRate,
+  };
+
+  factory UserSettings.fromJson(Map<String, dynamic> json) {
+    return UserSettings(
+      rubyMode: RubyDisplayMode.values.firstWhere(
+        (e) => e.name == json['rubyMode'],
+        orElse: () => RubyDisplayMode.always,
+      ),
+      subtitleSize: SubtitleSize.values.firstWhere(
+        (e) => e.name == json['subtitleSize'],
+        orElse: () => SubtitleSize.medium,
+      ),
+      nativeLanguage: json['nativeLanguage'] as String? ?? 'en',
+      autoPauseOnLookup: json['autoPauseOnLookup'] as bool? ?? true,
+      playbackRate: (json['playbackRate'] as num?)?.toDouble() ?? 1.0,
+    );
+  }
 }

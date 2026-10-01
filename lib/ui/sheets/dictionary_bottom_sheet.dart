@@ -9,12 +9,16 @@ class DictionaryBottomSheet extends StatefulWidget {
   final Token token;
   final String sourceLang;
   final String explanationLang;
+  final String? contextSentence;
+  final String? contextTranslation;
 
   const DictionaryBottomSheet({
     super.key,
     required this.token,
     required this.sourceLang,
     this.explanationLang = 'vi',
+    this.contextSentence,
+    this.contextTranslation,
   });
 
   static Future<void> show(
@@ -22,6 +26,8 @@ class DictionaryBottomSheet extends StatefulWidget {
     required Token token,
     required String sourceLang,
     String explanationLang = 'vi',
+    String? contextSentence,
+    String? contextTranslation,
   }) {
     return showModalBottomSheet(
       context: context,
@@ -31,6 +37,8 @@ class DictionaryBottomSheet extends StatefulWidget {
         token: token,
         sourceLang: sourceLang,
         explanationLang: explanationLang,
+        contextSentence: contextSentence,
+        contextTranslation: contextTranslation,
       ),
     );
   }
@@ -77,31 +85,30 @@ class _DictionaryBottomSheetState extends State<DictionaryBottomSheet> {
 
   Future<void> _addToFlashcards() async {
     final supabase = AppState.instance.supabaseService;
-    final user = supabase.currentUser;
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please sign in to save vocabulary')),
-      );
-      return;
-    }
+    final userId = supabase.currentUser?.id ?? 'guest';
 
     final word = widget.token.surface;
     final reading = widget.token.reading;
     final romanization = widget.token.romanization;
     final pinyin = widget.token.pinyin;
     final meaning = _result?.entries.firstOrNull?.definitions.join(', ') ?? '';
+    final partOfSpeech = widget.token.partOfSpeech ?? _result?.entries.firstOrNull?.partOfSpeech;
 
-    final id = generateDeterministicRecordId([user.id, word.toLowerCase(), widget.sourceLang]);
+    final id = generateDeterministicRecordId([userId, word.toLowerCase(), widget.sourceLang]);
 
     final card = Flashcard(
       id: id,
-      userId: user.id,
+      userId: userId,
       word: word,
       reading: reading,
       romanization: romanization,
       pinyin: pinyin,
       meaning: meaning,
       language: widget.sourceLang,
+      partOfSpeech: partOfSpeech,
+      contextSentence: widget.contextSentence,
+      contextTranslation: widget.contextTranslation,
+      createdAt: DateTime.now(),
       srsNextReviewAt: DateTime.now(),
     );
 

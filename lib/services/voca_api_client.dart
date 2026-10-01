@@ -1,6 +1,7 @@
 // lib/services/voca_api_client.dart
 
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import '../models/voca_models.dart';
 
@@ -203,13 +204,15 @@ class VocaApiClient {
   Future<List<Map<String, dynamic>>> getRecommendedVideos({
     String lang = 'ja',
     String? tier,
-    int limit = 12,
+    String? query,
+    int limit = 20,
     int offset = 0,
     bool refresh = false,
   }) async {
     final response = await _dio.get('/api/recommended-videos', queryParameters: {
       'lang': lang,
-      if (tier != null) 'tier': tier,
+      if (tier != null && tier != 'all') 'tier': tier,
+      if (query != null && query.trim().isNotEmpty) 'q': query.trim(),
       'limit': limit,
       'offset': offset,
       if (refresh) 'refresh': 'true',
@@ -231,5 +234,33 @@ class VocaApiClient {
   Future<Map<String, dynamic>> getDiamonds() async {
     final response = await _dio.get('/api/diamonds');
     return Map<String, dynamic>.from(response.data as Map);
+  }
+
+  /// 10. Fetch Edge Neural TTS audio bytes with mandatory User-Agent
+  Future<Uint8List?> fetchTtsAudio({
+    required String text,
+    required String lang,
+  }) async {
+    if (text.trim().isEmpty) return null;
+    try {
+      final response = await _dio.get<List<int>>(
+        '/api/tts',
+        queryParameters: {
+          'lang': lang,
+          'text': text.trim(),
+        },
+        options: Options(
+          responseType: ResponseType.bytes,
+          headers: {'Accept': 'audio/mpeg'},
+        ),
+      );
+      if (response.data != null && response.data!.isNotEmpty) {
+        return Uint8List.fromList(response.data!);
+      }
+      return null;
+    } catch (e) {
+      print('[VocaApiClient] TTS fetch error: $e');
+      return null;
+    }
   }
 }
