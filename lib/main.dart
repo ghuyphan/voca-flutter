@@ -15,7 +15,7 @@ Future<void> main() async {
   // Initialize Supabase Backend-as-a-Service
   await Supabase.initialize(
     url: AppConfig.supabaseUrl,
-    anonKey: AppConfig.supabaseAnonKey,
+    publishableKey: AppConfig.supabaseAnonKey,
   );
 
   // Initialize Global App Services

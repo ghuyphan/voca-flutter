@@ -2,8 +2,6 @@
 
 import 'package:flutter/material.dart';
 import '../../models/voca_models.dart';
-import '../../services/voca_api_client.dart';
-import '../../services/supabase_service.dart';
 import '../../utils/cyrb53_hasher.dart';
 import '../../state/app_state.dart';
 
