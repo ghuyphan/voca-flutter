@@ -37,9 +37,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       grammarEngine: AppState.instance.grammarEngine,
     );
 
-    _ytController = YoutubePlayerController.fromVideoId(
-      videoId: widget.videoId,
-      autoPlay: false,
+    _ytController = YoutubePlayerController(
       params: const YoutubePlayerParams(
         showControls: true,
         showFullscreenButton: true,
@@ -47,8 +45,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         enableCaption: false,
         origin: 'https://www.youtube-nocookie.com',
         privacyEnhancedMode: true,
+        userAgent:
+            'Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
       ),
     );
+
+    _ytController.loadVideoById(videoId: widget.videoId);
 
     // Listen to video position
     _ytController.videoStateStream.listen((state) {
@@ -137,6 +139,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
               YoutubePlayer(
                 controller: _ytController,
                 aspectRatio: 16 / 9,
+                backgroundColor: Colors.transparent,
               ),
 
             // Scrollable subtitle & status area
