@@ -45,8 +45,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         showFullscreenButton: true,
         mute: false,
         enableCaption: false,
-        origin: 'https://www.youtube.com',
-        privacyEnhancedMode: false,
+        origin: 'https://www.youtube-nocookie.com',
+        privacyEnhancedMode: true,
       ),
     );
 
