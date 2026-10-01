@@ -1,0 +1,51 @@
+# Voca Flutter Mobile Architecture Rules
+
+You are pair programming on the Voca Flutter Mobile App. Follow these non-negotiable rules:
+
+1. DUAL BACKEND ARCHITECTURE:
+   - All public edge operations (transcripts, tokenization, dictionaries, video metadata, diamonds, payments, version) MUST route to the Cloudflare Edge API: `https://voca.study`.
+   - All user data persistence (auth, vocabulary cards, playlists, streaks, history, gamification) MUST route to Supabase: `https://edbkvzviqeulwzcnrrlb.supabase.co`.
+
+2. MANDATORY USER-AGENT HEADER (ANTI-BOT BYPASS):
+   - The Cloudflare Edge rejects scrapers (curl, python, axios, dart default).
+   - All HTTP requests MUST include a descriptive User-Agent:
+     `User-Agent: VocaMobile/1.0.0 (Android 14; Mobile)` or `User-Agent: VocaMobile/1.0.0 (iOS 17.5; Mobile)`.
+
+3. TOKENIZATION & FIELDS (CRITICAL):
+   - POST /api/tokenize-batch/:lang REQUIRES BOTH `videoId` AND `texts`.
+   - The Token object fields are:
+     - `surface` (String): Raw text.
+     - `reading` (String?): Furigana in hiragana (Japanese kanji only).
+     - `romanization` (String?): Romaji for JA, Revised Romanization for KO.
+     - `pinyin` (String?): Pinyin with tone marks for ZH.
+     - `baseForm` (String?): Lemmatized dictionary form for JA verbs and EN words.
+     - `partOfSpeech` (String?): POS tag (e.g. '名詞', '動詞', 'Verb', 'Noun').
+     - `isPunctuation` (bool): True if punctuation or whitespace.
+   - NEVER rename `romanization` to `romaji` or `partOfSpeech` to `pos`.
+
+4. GRAMMAR DETECTION (CLIENT-SIDE):
+   - Grammar patterns are detected client-side against the Token stream.
+   - Support Japanese (JLPT N5-N1), Chinese (HSK 1-6), Korean (1-6), and English (CEFR A1-C2).
+   - Tapping a grammar token highlights the pattern span and opens the Grammar BottomSheet with formation, explanations, and bilingual examples.
+
+5. SUPABASE QUERY & FILTER SYNTAX:
+   - Use PostgREST filtering via the Supabase Flutter/Dart SDK:
+     `supabase.from('vocabulary').select().eq('user_id', userId).eq('language', 'ja')`.
+   - For atomic streak updates, call the Postgres RPC:
+     `supabase.rpc('record_streak_activity', params: {'p_user_id': userId, 'p_activity_date': dateStr})`.
+
+6. DETERMINISTIC OFFLINE RECORD IDS:
+   - Offline flashcards and history records use deterministic hashing to prevent duplicate inserts:
+     `generateDeterministicRecordId([userId, word.toLowerCase(), language])`.
+
+7. ASYNC TWO-PHASE POLLING & BACKGROUND RESUMPTION:
+   - Gladia AI ASR: If POST /api/transcript returns `{ status: "processing", jobId: "..." }`, poll POST /api/transcript with `{ videoId, lang, jobId }` every 4–6 seconds until `success: true` or 180s timeout.
+   - Edge Auto-Resumption: If the app was backgrounded, killed, or refreshed, subsequent calls to POST /api/transcript with `{ videoId, lang }` automatically detect active jobs in D1 `ai_transcription_jobs` and return `{ status: "processing", jobId }` without double-deducting diamonds.
+
+8. TWO-TIER DUAL SUBTITLE STREAMING (< 200ms SEEK LATENCY):
+   - When the user seeks or starts playback, DO NOT block the UI waiting for whole-video translations.
+   - Fire an immediate urgent micro-batch translating the active cue and upcoming 2 cues (`cues[i..i+2]`) with high priority (< 200ms latency).
+   - Stream background batches (40–60 cues) with exponential backoff on HTTP 429 rate limits.
+
+9. STICKY SUBTITLE DISPLAY:
+   - Hold subtitles during short phrase gaps (< 3.0 seconds) to prevent visual flicker.
