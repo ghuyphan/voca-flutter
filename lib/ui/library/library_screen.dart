@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import '../../config/voca_theme.dart';
 import '../../models/voca_models.dart';
 import '../../state/app_state.dart';
-import '../video/video_player_screen.dart';
+import '../../state/player_coordinator.dart';
 
 class LibraryScreen extends StatefulWidget {
   final VoidCallback? onNavigateToExplore;
@@ -345,13 +345,10 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                                 trailing: const Icon(Icons.play_circle_outline, color: Color(0xFF6366F1)),
                                 onTap: () {
                                   Navigator.of(ctx).pop();
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => VideoPlayerScreen(
-                                        videoId: vid,
-                                        title: 'Saved Video',
-                                      ),
-                                    ),
+                                  PlayerCoordinator.instance.openVideo(
+                                    context,
+                                    videoId: vid,
+                                    title: 'Saved Video',
                                   );
                                 },
                               );
@@ -530,14 +527,12 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
               child: InkWell(
                 onTap: () {
                   // One-tap resume: resume at watched progress
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => VideoPlayerScreen(
-                        videoId: videoId,
-                        title: title,
-                      ),
-                    ),
-                  ).then((_) => _loadHistory());
+                  PlayerCoordinator.instance.openVideo(
+                    context,
+                    videoId: videoId,
+                    title: title,
+                  );
+                  _loadHistory();
                 },
                 child: Padding(
                   padding: const EdgeInsets.all(10),

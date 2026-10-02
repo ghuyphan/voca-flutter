@@ -2,9 +2,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:signals_flutter/signals_flutter.dart';
+import '../../config/voca_theme.dart';
 import '../../services/gamification_service.dart';
+import '../../services/i18n_service.dart';
+import '../../services/toast_service.dart';
 import '../../state/app_state.dart';
 import '../settings/settings_screen.dart';
+import '../widgets/voca_confirm_dialog.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -22,9 +26,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       await AppState.instance.supabaseService.signInWithGoogle();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Sign in failed: $e')),
-        );
+        ToastService.error(context, 'Sign in failed: $e');
       }
     } finally {
       if (mounted) setState(() => _isSigningIn = false);
@@ -32,30 +34,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _handleSignOut() async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showVocaConfirmDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
-        title: const Text('Sign Out', style: TextStyle(color: Colors.white)),
-        content: const Text(
-          'Are you sure you want to sign out? Your offline progress will remain saved on this device.',
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFEF4444),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Sign Out'),
-          ),
-        ],
-      ),
+      title: context.t('profile.signOut', null, 'Sign Out'),
+      message: context.t('profile.signOutConfirm', null, 'Are you sure you want to sign out? Your offline progress will remain saved on this device.'),
+      confirmText: context.t('profile.signOut', null, 'Sign Out'),
+      variant: ConfirmDialogVariant.danger,
     );
 
     if (confirmed == true) {
@@ -66,23 +50,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.vocaColors;
     final supabase = AppState.instance.supabaseService;
     final currentUser = supabase.currentUser;
     final gamification = AppState.instance.gamificationService;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: colors.bgPrimary,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: colors.bgPrimary,
         elevation: 0,
-        title: const Text(
-          'Learner Profile',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        leading: BackButton(color: colors.textPrimary),
+        title: Text(
+          context.t('profile.title', null, 'Learner Profile'),
+          style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings_outlined, color: Colors.white70),
-            tooltip: 'Settings',
+            icon: Icon(Icons.settings_outlined, color: colors.textSecondary),
+            tooltip: context.t('nav.settings', null, 'Settings'),
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const SettingsScreen()),
@@ -97,7 +83,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             await gamification.refreshDiamonds();
             if (mounted) setState(() {});
           },
-          color: const Color(0xFF6366F1),
+          color: colors.accentPrimary,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -105,27 +91,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // 1. User Header & Auth Card
-                _buildUserCard(currentUser),
+                _buildUserCard(colors, currentUser),
 
                 const SizedBox(height: 16),
 
                 // 2. XP & Level Progress Card
-                _buildXpCard(gamification),
+                _buildXpCard(colors, gamification),
 
                 const SizedBox(height: 16),
 
                 // 3. Streak Stat & 7-Day Activity Calendar Card
-                _buildStreakCard(gamification),
+                _buildStreakCard(colors, gamification),
 
                 const SizedBox(height: 16),
 
                 // 4. Diamonds / AI Credits Card
-                _buildDiamondsCard(gamification),
+                _buildDiamondsCard(colors, gamification),
 
                 const SizedBox(height: 24),
 
                 // 5. Pre-defined Achievements Section
-                _buildAchievementsSection(gamification),
+                _buildAchievementsSection(colors, gamification),
 
                 const SizedBox(height: 32),
               ],
@@ -136,27 +122,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildUserCard(dynamic currentUser) {
+  Widget _buildUserCard(VocaColorPalette colors, dynamic currentUser) {
     final isAuthenticated = currentUser != null;
-    final email = isAuthenticated ? (currentUser.email ?? 'Learner') : 'Guest Learner';
+    final email = isAuthenticated ? (currentUser.email ?? context.t('profile.learner', null, 'Learner')) : context.t('profile.guestLearner', null, 'Guest Learner');
     final avatarUrl = isAuthenticated ? (currentUser.userMetadata?['avatar_url'] as String?) : null;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: colors.bgCard,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(color: colors.borderColor),
       ),
       child: Row(
         children: [
           // Avatar
           CircleAvatar(
             radius: 30,
-            backgroundColor: const Color(0xFF6366F1),
+            backgroundColor: colors.accentPrimarySoft,
             backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
             child: avatarUrl == null
-                ? const Icon(Icons.person_rounded, size: 34, color: Colors.white)
+                ? Icon(Icons.person_rounded, size: 34, color: colors.accentPrimary)
                 : null,
           ),
           const SizedBox(width: 14),
@@ -168,8 +154,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 Text(
                   email,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: colors.textPrimary,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -184,14 +170,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       height: 8,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: isAuthenticated ? const Color(0xFF10B981) : Colors.amberAccent,
+                        color: isAuthenticated ? colors.success : colors.warning,
                       ),
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      isAuthenticated ? 'Cloud Synced' : 'Guest Mode (Local Only)',
+                      isAuthenticated
+                          ? context.t('profile.cloudSynced', null, 'Cloud Synced')
+                          : context.t('profile.guestMode', null, 'Guest Mode (Local Only)'),
                       style: TextStyle(
-                        color: isAuthenticated ? const Color(0xFF10B981) : Colors.amberAccent,
+                        color: isAuthenticated ? colors.success : colors.warning,
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
@@ -207,11 +195,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             OutlinedButton(
               onPressed: _handleSignOut,
               style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white70,
-                side: const BorderSide(color: Colors.white24),
+                foregroundColor: colors.textPrimary,
+                side: BorderSide(color: colors.borderColor),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
-              child: const Text('Sign Out', style: TextStyle(fontSize: 12)),
+              child: Text(context.t('profile.signOut', null, 'Sign Out'), style: const TextStyle(fontSize: 12)),
             )
           else
             ElevatedButton.icon(
@@ -223,9 +211,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
                   : const Icon(Icons.login_rounded, size: 14),
-              label: const Text('Sign in', style: TextStyle(fontSize: 12)),
+              label: Text(context.t('profile.signIn', null, 'Sign In'), style: const TextStyle(fontSize: 12)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6366F1),
+                backgroundColor: colors.accentPrimary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
@@ -235,7 +223,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildXpCard(GamificationService gamification) {
+  Widget _buildXpCard(VocaColorPalette colors, GamificationService gamification) {
     return Watch((context) {
       final totalXp = gamification.xp.value;
       final level = gamification.level.value;
@@ -246,9 +234,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
+          color: colors.bgCard,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white12),
+          border: Border.all(color: colors.borderColor),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -261,13 +249,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                        ),
+                        color: colors.accentPrimary,
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
-                        'LEVEL $level',
+                        '${context.t('gamification.level', null, 'LEVEL').toUpperCase()} $level',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 12,
@@ -277,15 +263,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Text(
-                      'Polyglot Scholar',
-                      style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                    Text(
+                      context.t('gamification.polyglotScholar', null, 'Polyglot Scholar'),
+                      style: TextStyle(color: colors.textPrimary, fontSize: 14, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
                 Text(
-                  '$totalXp Total XP',
-                  style: const TextStyle(color: Color(0xFF38BDF8), fontSize: 13, fontWeight: FontWeight.bold),
+                  '$totalXp ${context.t('gamification.totalXp', null, 'Total XP')}',
+                  style: TextStyle(color: colors.accentTertiary, fontSize: 13, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -295,8 +281,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: LinearProgressIndicator(
                 value: progress,
                 minHeight: 8,
-                backgroundColor: const Color(0xFF0F172A),
-                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)),
+                backgroundColor: colors.bgSecondary,
+                valueColor: AlwaysStoppedAnimation<Color>(colors.accentTertiary),
               ),
             ),
             const SizedBox(height: 6),
@@ -305,11 +291,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 Text(
                   '$curXp / $targetXp XP',
-                  style: const TextStyle(color: Colors.white60, fontSize: 11.5),
+                  style: TextStyle(color: colors.textSecondary, fontSize: 11.5),
                 ),
                 Text(
                   '${targetXp - curXp} XP to Level ${level + 1}',
-                  style: const TextStyle(color: Colors.white38, fontSize: 11.5),
+                  style: TextStyle(color: colors.textMuted, fontSize: 11.5),
                 ),
               ],
             ),
@@ -319,7 +305,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-  Widget _buildStreakCard(GamificationService gamification) {
+  Widget _buildStreakCard(VocaColorPalette colors, GamificationService gamification) {
     return Watch((context) {
       final currentStreak = gamification.currentStreak.value;
       final longestStreak = gamification.longestStreak.value;
@@ -329,9 +315,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
+          color: colors.bgCard,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white12),
+          border: Border.all(color: colors.borderColor),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -342,22 +328,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.local_fire_department_rounded, color: Color(0xFFF97316), size: 26),
+                    Icon(Icons.local_fire_department_rounded, color: colors.colorFire, size: 26),
                     const SizedBox(width: 8),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '$currentStreak Day Streak',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          '$currentStreak ${context.t('streak.dayStreak', null, 'Day Streak')}',
+                          style: TextStyle(
+                            color: colors.textPrimary,
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         Text(
-                          'Personal Best: $longestStreak days',
-                          style: const TextStyle(color: Colors.white60, fontSize: 11.5),
+                          '${context.t('streak.personalBest', null, 'Personal Best')}: $longestStreak ${context.t('study.days', null, 'days')}',
+                          style: TextStyle(color: colors.textSecondary, fontSize: 11.5),
                         ),
                       ],
                     ),
@@ -366,17 +352,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF38BDF8).withOpacity(0.15),
+                    color: colors.accentSecondarySoft,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFF38BDF8).withOpacity(0.3)),
+                    border: Border.all(color: colors.accentSecondary.withOpacity(0.3)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.ac_unit_rounded, color: Color(0xFF38BDF8), size: 14),
+                      Icon(Icons.ac_unit_rounded, color: colors.accentSecondary, size: 14),
                       const SizedBox(width: 4),
                       Text(
-                        '$streakFreezes Freezes',
-                        style: const TextStyle(color: Color(0xFF38BDF8), fontSize: 11.5, fontWeight: FontWeight.bold),
+                        '$streakFreezes ${context.t('streak.freezesRemaining', null, 'Freezes')}',
+                        style: TextStyle(color: colors.accentSecondary, fontSize: 11.5, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
@@ -385,13 +371,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
 
             const SizedBox(height: 16),
-            const Divider(color: Colors.white10, height: 1),
+            Divider(color: colors.borderColorLight, height: 1),
             const SizedBox(height: 14),
 
             // Last 7 Days Activity Calendar
-            const Text(
-              'Activity (Last 7 Days)',
-              style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600),
+            Text(
+              context.t('streak.activityLast7Days', null, 'Activity (Last 7 Days)'),
+              style: TextStyle(color: colors.textSecondary, fontSize: 12, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 10),
 
@@ -403,7 +389,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Text(
                       day.dayLabel,
                       style: TextStyle(
-                        color: day.isToday ? const Color(0xFF38BDF8) : Colors.white60,
+                        color: day.isToday ? colors.accentPrimary : colors.textMuted,
                         fontSize: 11,
                         fontWeight: day.isToday ? FontWeight.bold : FontWeight.normal,
                       ),
@@ -415,12 +401,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: day.isActive
-                            ? const Color(0xFFF97316)
-                            : (day.isToday ? const Color(0xFF334155) : const Color(0xFF0F172A)),
+                            ? colors.colorFire
+                            : (day.isToday ? colors.bgHover : colors.bgSecondary),
                         border: Border.all(
                           color: day.isToday
-                              ? const Color(0xFF38BDF8)
-                              : (day.isActive ? const Color(0xFFEA580C) : Colors.white10),
+                              ? colors.accentPrimary
+                              : (day.isActive ? colors.colorFire : colors.borderColor),
                           width: day.isToday ? 2 : 1,
                         ),
                       ),
@@ -430,7 +416,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             : Text(
                                 day.dayNumber,
                                 style: TextStyle(
-                                  color: day.isToday ? Colors.white : Colors.white38,
+                                  color: day.isToday ? colors.accentPrimary : colors.textMuted,
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -447,7 +433,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-  Widget _buildDiamondsCard(GamificationService gamification) {
+  Widget _buildDiamondsCard(VocaColorPalette colors, GamificationService gamification) {
     return Watch((context) {
       final diamonds = gamification.diamonds.value;
       final maxDiamonds = gamification.maxDiamonds.value;
@@ -455,54 +441,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
+          color: colors.bgCard,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white12),
+          border: Border.all(color: colors.borderColor),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFF0284C7).withOpacity(0.15),
+                color: colors.colorDiamond.withOpacity(0.15),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.diamond_rounded, color: Color(0xFF38BDF8), size: 28),
+              child: Icon(Icons.diamond_rounded, color: colors.colorDiamond, size: 28),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Text(
-                        '$diamonds / $maxDiamonds Diamonds',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    '$diamonds / $maxDiamonds ${context.t('subtitle.diamonds', null, 'Diamonds')}',
+                    style: TextStyle(
+                      color: colors.textPrimary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 2),
-                  const Text(
-                    'AI Transcription & Whisper credits',
-                    style: TextStyle(color: Colors.white60, fontSize: 12),
+                  Text(
+                    context.t('profile.aiCreditsDesc', null, 'AI Transcription & Whisper credits'),
+                    style: TextStyle(color: colors.textSecondary, fontSize: 12),
                   ),
                 ],
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.refresh_rounded, color: Color(0xFF38BDF8)),
-              tooltip: 'Refresh Diamonds',
+              icon: Icon(Icons.refresh_rounded, color: colors.colorDiamond),
+              tooltip: context.t('aiCredits.refresh', null, 'Refresh Diamonds'),
               onPressed: () async {
+                final msg = context.t('aiCredits.refreshed', null, 'Diamonds refreshed');
                 await gamification.refreshDiamonds();
                 if (!mounted) return;
-                ScaffoldMessenger.of(this.context).showSnackBar(
-                  const SnackBar(content: Text('Diamonds refreshed')),
-                );
+                ToastService.info(this.context, msg);
               },
             ),
           ],
@@ -511,7 +492,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-  Widget _buildAchievementsSection(GamificationService gamification) {
+  Widget _buildAchievementsSection(VocaColorPalette colors, GamificationService gamification) {
     return Watch((context) {
       final list = gamification.achievements.value;
 
@@ -521,18 +502,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'ACHIEVEMENTS',
+              Text(
+                context.t('gamification.achievements', null, 'ACHIEVEMENTS').toUpperCase(),
                 style: TextStyle(
-                  color: Color(0xFF94A3B8),
+                  color: colors.textMuted,
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.1,
                 ),
               ),
               Text(
-                '${list.where((a) => a.isUnlocked).length} / ${list.length} Unlocked',
-                style: const TextStyle(color: Color(0xFF38BDF8), fontSize: 12, fontWeight: FontWeight.bold),
+                '${list.where((a) => a.isUnlocked).length} / ${list.length} ${context.t('achievements.unlocked', null, 'Unlocked')}',
+                style: TextStyle(color: colors.accentTertiary, fontSize: 12, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -545,10 +526,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               margin: const EdgeInsets.only(bottom: 10),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
+                color: colors.bgCard,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isUnlocked ? const Color(0xFF10B981).withOpacity(0.4) : Colors.white12,
+                  color: isUnlocked ? colors.accentTertiary.withOpacity(0.4) : colors.borderColor,
                 ),
               ),
               child: Row(
@@ -558,16 +539,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     height: 44,
                     decoration: BoxDecoration(
                       color: isUnlocked
-                          ? const Color(0xFF10B981).withOpacity(0.2)
-                          : const Color(0xFF0F172A),
+                          ? colors.accentTertiary.withOpacity(0.15)
+                          : colors.bgSecondary,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: isUnlocked ? const Color(0xFF10B981) : Colors.white12,
+                        color: isUnlocked ? colors.accentTertiary.withOpacity(0.3) : colors.borderColor,
                       ),
                     ),
                     child: Icon(
                       ach.icon,
-                      color: isUnlocked ? const Color(0xFF10B981) : Colors.white30,
+                      color: isUnlocked ? colors.accentTertiary : colors.textMuted,
                       size: 24,
                     ),
                   ),
@@ -580,9 +561,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           children: [
                             Expanded(
                               child: Text(
-                                ach.title,
+                                context.t('achievements.${ach.id}.title', null, ach.title),
                                 style: TextStyle(
-                                  color: isUnlocked ? Colors.white : Colors.white70,
+                                  color: isUnlocked ? colors.textPrimary : colors.textMuted,
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -591,13 +572,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF6366F1).withOpacity(0.2),
+                                color: colors.accentPrimarySoft,
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
                                 '+${ach.xpReward} XP',
-                                style: const TextStyle(
-                                  color: Color(0xFF818CF8),
+                                style: TextStyle(
+                                  color: colors.accentPrimary,
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -607,8 +588,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          ach.description,
-                          style: const TextStyle(color: Colors.white60, fontSize: 11.5),
+                          context.t('achievements.${ach.id}.desc', null, ach.description),
+                          style: TextStyle(color: colors.textMuted, fontSize: 11.5),
                         ),
                         const SizedBox(height: 6),
                         Row(
@@ -619,18 +600,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 child: LinearProgressIndicator(
                                   value: ach.progress,
                                   minHeight: 4,
-                                  backgroundColor: const Color(0xFF0F172A),
+                                  backgroundColor: colors.bgSecondary,
                                   valueColor: AlwaysStoppedAnimation<Color>(
-                                    isUnlocked ? const Color(0xFF10B981) : const Color(0xFF6366F1),
+                                    isUnlocked ? colors.accentTertiary : colors.accentPrimary,
                                   ),
                                 ),
                               ),
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              isUnlocked ? 'Completed' : '${ach.current}/${ach.target}',
+                              isUnlocked ? context.t('achievements.completed', null, 'Completed') : '${ach.current}/${ach.target}',
                               style: TextStyle(
-                                color: isUnlocked ? const Color(0xFF10B981) : Colors.white38,
+                                color: isUnlocked ? colors.accentTertiary : colors.textMuted,
                                 fontSize: 10.5,
                                 fontWeight: FontWeight.bold,
                               ),

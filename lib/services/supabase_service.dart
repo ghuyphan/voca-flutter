@@ -44,6 +44,8 @@ class SupabaseService {
         final data = await query.order('srs_next_review_at', ascending: true);
         final list = (data as List).map((row) => Flashcard.fromJson(row)).toList();
         if (list.isNotEmpty) {
+          _localCards.clear();
+          _localCards.addAll(list);
           return list;
         }
       } catch (e) {
@@ -59,6 +61,26 @@ class SupabaseService {
       return _localCards.where((c) => c.language == language).toList();
     }
     return List.from(_localCards);
+  }
+
+  bool hasWord(String word, {String? language}) {
+    final clean = word.trim().toLowerCase();
+    return _localCards.any((c) {
+      if (language != null && c.language != language) return false;
+      return c.word.trim().toLowerCase() == clean;
+    });
+  }
+
+  Flashcard? getCardByWord(String word, {String? language}) {
+    final clean = word.trim().toLowerCase();
+    try {
+      return _localCards.firstWhere((c) {
+        if (language != null && c.language != language) return false;
+        return c.word.trim().toLowerCase() == clean;
+      });
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> upsertVocabularyCard(Flashcard card) async {
@@ -497,10 +519,149 @@ class SupabaseService {
     return map.values.toList();
   }
 
+  /// Fetch published/community playlists from Supabase
+  Future<List<PlaylistItem>> getCommunityPlaylists({String? language}) async {
+    try {
+      var query = client.from('playlists').select().inFilter('visibility', ['published', 'public']);
+      if (language != null && language != 'all') {
+        query = query.eq('language', language);
+      }
+      final data = await query.order('updated_at', ascending: false).limit(30);
+      return (data as List).map((row) => PlaylistItem.fromJson(row)).toList();
+    } catch (e) {
+      debugPrint('[SupabaseService] getCommunityPlaylists error: $e');
+      return [];
+    }
+  }
+
+  /// Curated fallback playlists for rich offline or guest immersion
+  List<PlaylistItem> _getCuratedPresets(String lang) {
+    final now = DateTime.now();
+    switch (lang) {
+      case 'ja':
+        return [
+          PlaylistItem(
+            id: 'curated_ja_anime',
+            userId: 'voca_curated',
+            title: 'Anime & J-Pop Immersion',
+            description: 'Learn Japanese through popular songs and anime clips',
+            language: 'ja',
+            visibility: 'public',
+            videoCount: 3,
+            thumbnail: 'https://i.ytimg.com/vi/clU8c2fpk2s/hqdefault.jpg',
+            videoIds: const ['clU8c2fpk2s', '8dqNwVUofxo', 'HWdaevrnCnQ'],
+            createdAt: now,
+            updatedAt: now,
+          ),
+          PlaylistItem(
+            id: 'curated_ja_conversation',
+            userId: 'voca_curated',
+            title: 'JLPT N4/N3 Core Comprehension',
+            description: 'Natural pacing and everyday conversation for intermediate learners',
+            language: 'ja',
+            visibility: 'public',
+            videoCount: 2,
+            thumbnail: 'https://i.ytimg.com/vi/BZRT37f8zZY/hqdefault.jpg',
+            videoIds: const ['BZRT37f8zZY', 'clU8c2fpk2s'],
+            createdAt: now,
+            updatedAt: now,
+          ),
+        ];
+      case 'zh':
+        return [
+          PlaylistItem(
+            id: 'curated_zh_hsk',
+            userId: 'voca_curated',
+            title: 'HSK Practical Dialogue & Stories',
+            description: 'Essential Chinese conversation with pinyin subtitles',
+            language: 'zh',
+            visibility: 'public',
+            videoCount: 2,
+            thumbnail: 'https://i.ytimg.com/vi/clU8c2fpk2s/hqdefault.jpg',
+            videoIds: const ['clU8c2fpk2s'],
+            createdAt: now,
+            updatedAt: now,
+          ),
+        ];
+      case 'ko':
+        return [
+          PlaylistItem(
+            id: 'curated_ko_kdrama',
+            userId: 'voca_curated',
+            title: 'K-Drama & Daily Korean Expressions',
+            description: 'Everyday colloquial Korean from authentic immersion videos',
+            language: 'ko',
+            visibility: 'public',
+            videoCount: 2,
+            thumbnail: 'https://i.ytimg.com/vi/clU8c2fpk2s/hqdefault.jpg',
+            videoIds: const ['clU8c2fpk2s'],
+            createdAt: now,
+            updatedAt: now,
+          ),
+        ];
+      case 'en':
+      default:
+        return [
+          PlaylistItem(
+            id: 'curated_en_ted',
+            userId: 'voca_curated',
+            title: 'Conversational English & Ideas',
+            description: 'Engaging talks and natural expressions for ESL learners',
+            language: 'en',
+            visibility: 'public',
+            videoCount: 2,
+            thumbnail: 'https://i.ytimg.com/vi/clU8c2fpk2s/hqdefault.jpg',
+            videoIds: const ['clU8c2fpk2s'],
+            createdAt: now,
+            updatedAt: now,
+          ),
+        ];
+    }
+  }
+
+  /// Gathers all playlists available for the Explore screen:
+  /// User playlists + Published Community playlists + Curated presets
+  Future<List<PlaylistItem>> getExplorePlaylists({String? language}) async {
+    final List<PlaylistItem> result = [];
+    final seenIds = <String>{};
+
+    // 1. User playlists with videos
+    try {
+      final userLists = await getPlaylists(language: language);
+      for (final p in userLists) {
+        if (p.videoIds.isNotEmpty && seenIds.add(p.id)) {
+          result.add(p);
+        }
+      }
+    } catch (_) {}
+
+    // 2. Published Community playlists from Supabase
+    try {
+      final community = await getCommunityPlaylists(language: language);
+      for (final p in community) {
+        if (seenIds.add(p.id)) {
+          result.add(p);
+        }
+      }
+    } catch (_) {}
+
+    // 3. Fallback curated presets for the active language
+    final seed = _getCuratedPresets(language ?? 'ja');
+    for (final p in seed) {
+      if (seenIds.add(p.id)) {
+        result.add(p);
+      }
+    }
+
+    return result;
+  }
+
   Future<PlaylistItem> createPlaylist({
     required String title,
     String? description,
     String language = 'ja',
+    String visibility = 'private',
+    String? level,
   }) async {
     final user = currentUser;
     final now = DateTime.now();
@@ -512,6 +673,8 @@ class SupabaseService {
       title: title,
       description: description,
       language: language,
+      visibility: visibility,
+      level: level,
       videoCount: 0,
       createdAt: now,
       updatedAt: now,
@@ -585,6 +748,80 @@ class SupabaseService {
           }
         }
       }
+    }
+  }
+
+  Future<void> removeVideoFromPlaylist({
+    required String playlistId,
+    required String videoId,
+  }) async {
+    final local = await _getPlaylistsFromLocal();
+    final idx = local.indexWhere((p) => p.id == playlistId);
+    if (idx != -1) {
+      final p = local[idx];
+      if (p.videoIds.contains(videoId)) {
+        final updatedIds = p.videoIds.where((id) => id != videoId).toList();
+        final updated = PlaylistItem(
+          id: p.id,
+          userId: p.userId,
+          title: p.title,
+          description: p.description,
+          visibility: p.visibility,
+          language: p.language,
+          videoCount: updatedIds.length,
+          thumbnail: p.thumbnail,
+          videoIds: updatedIds,
+          createdAt: p.createdAt,
+          updatedAt: DateTime.now(),
+        );
+        local[idx] = updated;
+        await _savePlaylistsToLocal(local);
+
+        final user = currentUser;
+        if (user != null) {
+          try {
+            await client.from('playlists').upsert(updated.toJson());
+          } catch (e) {
+            debugPrint('[SupabaseService] removeVideoFromPlaylist remote error: $e');
+          }
+        }
+      }
+    }
+  }
+
+  Future<bool> isVideoSaved(String videoId) async {
+    final playlists = await getPlaylists();
+    final saved = playlists.firstWhere(
+      (p) => p.id == 'default_saved' || p.title.toLowerCase().contains('saved'),
+      orElse: () => playlists.isNotEmpty
+          ? playlists.first
+          : PlaylistItem(
+              id: 'default_saved',
+              userId: currentUser?.id ?? 'guest',
+              title: 'Saved Videos',
+              language: 'all',
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            ),
+    );
+    return saved.videoIds.contains(videoId);
+  }
+
+  Future<bool> toggleSaveVideo({
+    required String videoId,
+    String? thumbnail,
+  }) async {
+    final isSaved = await isVideoSaved(videoId);
+    if (isSaved) {
+      await removeVideoFromPlaylist(playlistId: 'default_saved', videoId: videoId);
+      return false;
+    } else {
+      await addVideoToPlaylist(
+        playlistId: 'default_saved',
+        videoId: videoId,
+        thumbnail: thumbnail,
+      );
+      return true;
     }
   }
 

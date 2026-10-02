@@ -13,7 +13,8 @@
     "updatingDesc": "Đang chuẩn bị phiên bản mới cho bạn...",
     "updateSuccess": "Đã cập nhật lên v{{version}}!",
     "reloadNow": "Tải lại",
-    "dataSafe": "Dữ liệu học tập đã được lưu an toàn"
+    "dataSafe": "Dữ liệu học tập đã được lưu an toàn",
+    "tagline": "Học ngoại ngữ qua video YouTube"
   },
   "nav": {
     "video": "Video",
@@ -27,11 +28,12 @@
     "study": "Ôn tập",
     "review": "Ôn tập",
     "explore": "Danh sách phát",
-    "playlists": "Danh sách phát",
+    "playlists": "Danh sách",
     "settings": "Cài đặt",
-    "newVideo": "Video mới",
+    "newVideo": "Thêm video",
     "quickLinks": "Truy cập nhanh",
-    "more": "Thêm"
+    "more": "Thêm",
+    "library": "Thư viện"
   },
   "commandPalette": {
     "placeholder": "Dán link YouTube hoặc tìm thao tác...",
@@ -71,7 +73,8 @@
     "signInToUpgrade": "Đăng nhập để ủng hộ",
     "signInToUpgradeDesc": "Đăng nhập bằng Google để lưu quyền lợi ủng hộ và đồng bộ trên mọi thiết bị",
     "freeDiamondsNotice": "Tài khoản mới được tặng Kim cương miễn phí mỗi ngày để tạo phụ đề video!",
-    "guestUser": "Khách"
+    "guestUser": "Khách",
+    "signInFailedError": "Đăng nhập thất bại: {error}"
   },
   "player": {
     "paste": "Dán",
@@ -125,7 +128,9 @@
     "nowPlaying": "Đang phát",
     "videoCompleted": "Đã xem hết video",
     "embedErrorHelp": "Video này không cho phép phát ngoài YouTube. Tác giả có thể đã giới hạn quyền phát hoặc video không khả dụng.",
-    "watchOnYouTube": "Xem trên YouTube"
+    "watchOnYouTube": "Xem trên YouTube",
+    "previousSentence": "Câu trước",
+    "nextSentence": "Câu tiếp theo"
   },
   "subtitle": {
     "loop": "Lặp câu",
@@ -220,7 +225,12 @@
     "dualSubs": "Phụ đề song ngữ",
     "dualSubsHint": "Hiển thị song song phụ đề gốc và bản dịch",
     "translating": "Đang dịch phụ đề...",
-    "reading": "Phiên âm"
+    "reading": "Phiên âm",
+    "dualSubtitles": "Phụ đề song ngữ",
+    "subtitlesOn": "Bật phụ đề",
+    "readingGuide": "Hướng dẫn phát âm",
+    "display": "Hiển thị",
+    "title": "Phụ đề"
   },
   "pro": {
     "title": "Voca Supporter",
@@ -232,7 +242,7 @@
     "premiumBadge": "Founder",
     "getPro": "Ủng hộ dự án",
     "upgrade": "Ủng hộ",
-    "upgradeToPro": "Trở thành Supporter",
+    "upgradeToPro": "Nâng cấp lên Pro",
     "upgradeToPremium": "Trở thành Founder",
     "viewPro": "Xem mức ủng hộ",
     "needMoreCredits": "Cần thêm Kim cương?",
@@ -297,7 +307,12 @@
     "signInToUpgradePrompt": "Vui lòng đăng nhập để gửi đóng góp ủng hộ dự án",
     "createOrderFailed": "Không thể tạo yêu cầu ủng hộ. Vui lòng thử lại.",
     "qrAlt": "Mã VietQR chuyển khoản ủng hộ",
-    "nonProfitDisclaimer": "Voca là dự án giáo dục cộng đồng phi lợi nhuận. Mọi khoản đóng góp hoàn toàn tự nguyện nhằm hỗ trợ chi phí vận hành máy chủ và API nhận diện giọng nói AI."
+    "nonProfitDisclaimer": "Voca là dự án giáo dục cộng đồng phi lợi nhuận. Mọi khoản đóng góp hoàn toàn tự nguyện nhằm hỗ trợ chi phí vận hành máy chủ và API nhận diện giọng nói AI.",
+    "checkoutComingSoon": "Tính năng đăng ký Pro sắp ra mắt!",
+    "featureUnlimitedTranscribe": "💎 Không giới hạn tạo phụ đề AI Whisper",
+    "featureSrsDecks": "⚡ Không giới hạn bộ thẻ lặp lại ngắt quãng SRS",
+    "featureGrammarRules": "📚 2,400+ Quy tắc & Giải thích ngữ pháp",
+    "featureSync": "☁️ Đồng bộ đa nền tảng mượt mà"
   },
   "vocab": {
     "title": "Từ vựng",
@@ -320,7 +335,7 @@
     "json": "JSON",
     "anki": "Anki",
     "import": "Nhập",
-    "deleteWord": "Xóa từ vựng",
+    "deleteWord": "Xóa từ",
     "deleteConfirm": "Bạn có chắc muốn xóa từ này không? Không thể khôi phục sau khi xóa.",
     "cancel": "Hủy",
     "importSuccess": "Nhập từ vựng thành công!",
@@ -334,7 +349,20 @@
     "syncHint": "Đăng nhập Google để đồng bộ sổ từ vựng trên các thiết bị.",
     "filterAll": "Tất cả",
     "filterWords": "Từ vựng",
-    "filterGrammar": "Ngữ pháp"
+    "filterGrammar": "Ngữ pháp",
+    "savedWords": "Từ vựng đã lưu",
+    "noSavedWords": "Chưa có từ vựng nào được lưu",
+    "tapWordHint": "Chạm vào bất kỳ từ nào trên phụ đề để tra từ và lưu vào bộ thẻ SRS.",
+    "deleteWordConfirm": "Bạn có chắc chắn muốn xóa từ \"{word}\" khỏi sổ tay từ vựng?",
+    "wordRemoved": "Đã xóa từ khỏi sổ tay",
+    "editNotes": "Chỉnh sửa ghi chú",
+    "notesHint": "Thêm mẹo ghi nhớ hoặc liên tưởng cá nhân...",
+    "stageUpdated": "Đã cập nhật mức độ: {stage}",
+    "videoContextSentence": "CÂU TRONG NGỮ CẢNH VIDEO",
+    "srsStats": "THỐNG KÊ LẶP LẠI NGẮT QUÃNG (SM-2)",
+    "setMasteryStage": "CHỌN MỨC ĐỘ THUỘC",
+    "markReview": "Đánh dấu đang ôn",
+    "markMastered": "Đánh dấu đã thuộc"
   },
   "popup": {
     "translationLang": "Ngôn ngữ dịch",
@@ -364,7 +392,9 @@
     "saveSuccess": "Đã lưu \"{{pattern}}\" vào sổ ngữ pháp",
     "noGrammarSaved": "Chưa lưu ngữ pháp nào",
     "clickGrammarToSave": "Lưu các cấu trúc ngữ pháp khi xem video hoặc tra từ điển để ôn tập tại đây.",
-    "moreDetails": "Chi tiết thêm"
+    "moreDetails": "Chi tiết thêm",
+    "highlightDesc": "Làm nổi bật các mẫu ngữ pháp JLPT / HSK / TOPIK / CEFR",
+    "title": "Ngữ pháp"
   },
   "dictionary": {
     "title": "Từ điển",
@@ -460,7 +490,35 @@
     "profileUpdated": "Đã cập nhật hồ sơ thành công!",
     "profileUpdateFailed": "Không thể cập nhật hồ sơ. Vui lòng thử lại.",
     "countryHint": "Hiển thị bên cạnh tên bạn trên bảng xếp hạng toàn cầu",
-    "language": "Ngôn ngữ"
+    "language": "Ngôn ngữ",
+    "subtitles": "Phụ đề",
+    "subtitleSize": "Cỡ chữ",
+    "sizeSmall": "Nhỏ",
+    "sizeMedium": "Vừa",
+    "sizeLarge": "Lớn",
+    "readingDisplayDesc": "Hiển thị cách đọc (Furigana, Pinyin, Romaji) phía trên chữ",
+    "dualSubtitles": "Phụ đề song ngữ",
+    "dualSubtitlesDesc": "Hiển thị song song phụ đề gốc và bản dịch",
+    "theme": "Giao diện",
+    "themeDesc": "Tùy chỉnh giao diện ứng dụng",
+    "themeSystem": "Hệ thống",
+    "themeLight": "Sáng",
+    "themeDark": "Tối",
+    "uiLanguage": "Ngôn ngữ ứng dụng",
+    "uiLanguageDesc": "Đổi ngôn ngữ hiển thị giao diện",
+    "furiganaPinyin": "Hướng dẫn phiên âm",
+    "alwaysShow": "Luôn hiển thị",
+    "onTapOnly": "Khi chạm",
+    "off": "Tắt",
+    "subtitleSizeDesc": "Điều chỉnh cỡ chữ phụ đề",
+    "nativeLanguage": "Ngôn ngữ giải nghĩa từ điển",
+    "nativeLanguageDesc": "Ngôn ngữ dùng để hiển thị nghĩa từ vựng",
+    "autoPause": "Tự động dừng khi tra từ",
+    "autoPauseDesc": "Tự động tạm dừng phát video khi chạm vào từ để tra cứu",
+    "system": "Hệ thống & Thông tin",
+    "version": "Phiên bản ứng dụng",
+    "architecture": "Kiến trúc hệ thống",
+    "archDesc": "Edge + Supabase"
   },
   "study": {
     "title": "Ôn tập",
@@ -541,7 +599,7 @@
     "searchQueue": "Tìm trong danh sách chờ ôn...",
     "noCardsInQueue": "Không có thẻ nào đang chờ ôn",
     "nextReview": "Lần ôn tiếp theo",
-    "dueNow": "Đến hạn",
+    "dueNow": "Cần ôn ngay",
     "filterAll": "Tất cả",
     "filterWords": "Từ vựng",
     "filterGrammar": "Ngữ pháp",
@@ -556,7 +614,20 @@
     "combo": "Combo",
     "comboStreak": "{{count}} câu liên tiếp!",
     "highestCombo": "Chuỗi cao nhất",
-    "xpEarned": "XP nhận được"
+    "xpEarned": "XP nhận được",
+    "addWord": "Thêm từ",
+    "added": "Đã thêm",
+    "wordAdded": "Đã thêm \"{word}\" vào bộ thẻ ôn tập!",
+    "saveFailed": "Không thể lưu từ vựng: {error}",
+    "repetitions": "Số lần ôn tập",
+    "times": "lần",
+    "currentInterval": "Khoảng cách hiện tại",
+    "days": "ngày",
+    "easeFactor": "Hệ số ghi nhớ (EF)",
+    "lastReviewed": "Ôn tập lần cuối",
+    "today": "Hôm nay",
+    "tomorrow": "Ngày mai",
+    "inDays": "Sau {days} ngày"
   },
   "streak": {
     "dayStreak": "Chuỗi ngày học",
@@ -582,7 +653,7 @@
     "howToExtend": "Học tập mỗi ngày để duy trì và nối dài chuỗi ngày. Nếu bỏ lỡ một ngày mà không có lượt bảo vệ, chuỗi sẽ trở về 0.",
     "freezeExplanation": "Lượt bảo vệ sẽ tự động giữ chuỗi nếu bạn quên học một ngày. Bạn hiện còn {{count}} lượt bảo vệ.",
     "reached": "Bạn đã đạt",
-    "days": "ngày!",
+    "days": "ngày",
     "saved": "Chuỗi đã được bảo vệ! ❄️",
     "daysReached": "Bạn đã đạt chuỗi {{count}} ngày!",
     "replenish": "Khôi phục",
@@ -601,13 +672,20 @@
     "longestExpedition": "Hành Trình Dài Nhất",
     "frostWards": "Lá Chắn Băng",
     "infuseWard": "Nạp Lá Chắn Băng",
-    "trailTitle": "Dấu Ấn Chặng Đường Tuần"
+    "trailTitle": "Dấu Ấn Chặng Đường Tuần",
+    "title": "Chuỗi ngày học",
+    "bestStreak": "Chuỗi tốt nhất",
+    "freezesLeft": "Lượt bảo vệ còn lại",
+    "fullStats": "Xem thống kê đầy đủ",
+    "keepStreak": "Hôm nay hãy xem video hoặc ôn thẻ để duy trì chuỗi nhé!",
+    "personalBest": "Kỷ lục cá nhân",
+    "activityLast7Days": "Hoạt động (7 ngày gần nhất)"
   },
   "history": {
     "title": "Lịch sử xem",
     "subtitle": "Tiếp tục từ lần xem trước",
-    "noHistory": "Chưa xem video nào",
-    "noHistoryHint": "Video bạn xem sẽ xuất hiện ở đây",
+    "noHistory": "Chưa có lịch sử xem nào",
+    "noHistoryHint": "Bắt đầu xem các video immersion kèm phụ đề tương tác để theo dõi tiến độ học tập.",
     "noFavorites": "Chưa có video yêu thích",
     "noFavoritesHint": "Chạm biểu tượng tim để lưu video",
     "clearAll": "Xóa tất cả",
@@ -633,7 +711,9 @@
     "syncHint": "Đăng nhập để đồng bộ lịch sử trên các thiết bị",
     "searchHistory": "Tìm trong lịch sử xem...",
     "justNow": "Vừa xong",
-    "overview": "Tổng quan"
+    "overview": "Tổng quan",
+    "clearHistory": "Xóa lịch sử xem",
+    "watchHistory": "Lịch sử xem"
   },
   "playlist": {
     "title": "Danh sách phát",
@@ -642,7 +722,7 @@
     "myPlaylists": "Của tôi",
     "myPlaylist": "Của tôi",
     "community": "Cộng đồng",
-    "newPlaylist": "Tạo danh sách mới",
+    "newPlaylist": "Danh sách phát mới",
     "saveToPlaylist": "Lưu vào danh sách phát",
     "addedSuccess": "Đã thêm vào {{title}}",
     "removedSuccess": "Đã xóa khỏi {{title}}",
@@ -667,7 +747,7 @@
       "videosHint": "Dán link YouTube ở trên để bắt đầu học ngay với phụ đề thông minh",
       "feedErrorTitle": "Không thể tải video gợi ý",
       "feedErrorHint": "Vui lòng kiểm tra kết nối mạng và thử lại.",
-      "noVideosTitle": "Chưa có video",
+      "noVideosTitle": "Chưa có video nào",
       "noVideosHint": "Lưu video vào danh sách phát này khi đang xem",
       "title": "Không tìm thấy danh sách phát",
       "hint": "Hãy thử điều chỉnh bộ lọc hoặc từ khóa tìm kiếm",
@@ -682,7 +762,7 @@
     "by": "Bởi {{author}}",
     "createPlaylist": "Tạo danh sách phát",
     "titleLabel": "Tiêu đề",
-    "titlePlaceholder": "Nhập tiêu đề danh sách phát",
+    "titlePlaceholder": "VD: Nhạc City Pop & Lời bài hát",
     "descriptionLabel": "Mô tả (Tùy chọn)",
     "descriptionPlaceholder": "Thêm mô tả...",
     "languageLabel": "Ngôn ngữ",
@@ -706,8 +786,8 @@
     "instantSubtitles": "Có sẵn phụ đề",
     "transcribedVideos": "Video đã tạo phụ đề AI",
     "sharePlaylist": "Chia sẻ danh sách phát",
-    "loopPlaylist": "Lặp lại danh sách phát",
-    "shufflePlaylist": "Phát ngẫu nhiên danh sách phát",
+    "loopPlaylist": "Lặp lại danh sách",
+    "shufflePlaylist": "Phát ngẫu nhiên",
     "moveUp": "Di chuyển lên",
     "moveDown": "Di chuyển xuống",
     "moveToTop": "Chuyển lên đầu",
@@ -742,11 +822,25 @@
     "continueStudying": "Tiếp tục học",
     "resume": "Tiếp tục",
     "browseByLanguage": "Duyệt theo ngôn ngữ",
-    "loopOn": "Đang bật lặp lại",
-    "shuffleOn": "Đang bật ngẫu nhiên",
+    "loopOn": "Bật lặp lại",
+    "shuffleOn": "Bật phát ngẫu nhiên",
     "toggleQueue": "Ẩn/hiện danh sách chờ phát",
     "viewPlaylist": "Xem danh sách phát",
-    "videoSingular": "Video"
+    "videoSingular": "Video",
+    "emptyDesc": "Tạo danh sách phát tùy chỉnh để sắp xếp video học tập theo chủ đề hoặc cấp độ thi.",
+    "addToPlaylist": "Thêm vào danh sách",
+    "createFirst": "+ Tạo danh sách phát đầu tiên",
+    "createdSuccess": "Đã tạo danh sách phát thành công",
+    "updatedSuccess": "Đã cập nhật danh sách phát thành công",
+    "description": "Mô tả (Không bắt buộc)",
+    "titleRequired": "Vui lòng nhập tiêu đề cho danh sách phát",
+    "descPlaceholder": "Ghi chú ngắn về bộ sưu tập này",
+    "playlistsSaved": "Danh sách / Đã lưu",
+    "emptyPlaylist": "Danh sách phát này đang trống",
+    "emptyPlaylistHint": "Đánh dấu video từ Khám phá hoặc Trình phát để lưu vào đây.",
+    "videoCountSuffix": "video",
+    "updateFailed": "Không thể cập nhật danh sách phát: {error}",
+    "saveFailed": "Không thể lưu danh sách phát: {error}"
   },
   "common": {
     "all": "Tất cả",
@@ -770,7 +864,17 @@
     "confirm": "Xác nhận",
     "cancel": "Hủy",
     "loadMore": "Tải thêm",
-    "chunkLoadError": "Không thể tải nội dung ứng dụng. Vui lòng kiểm tra lại kết nối mạng."
+    "chunkLoadError": "Không thể tải nội dung ứng dụng. Vui lòng kiểm tra lại kết nối mạng.",
+    "gotIt": "Đã hiểu",
+    "clearAll": "Xóa tất cả",
+    "language": "Ngôn ngữ",
+    "loadFailed": "Không thể tải nội dung",
+    "paste": "Dán từ khay nhớ tạm",
+    "reset": "Đặt lại",
+    "save": "Lưu",
+    "remove": "Xóa",
+    "delete": "Xóa",
+    "apply": "Áp dụng"
   },
   "onboarding": {
     "welcomeTitle": "Chào mừng đến với Voca",
@@ -1022,12 +1126,24 @@
     "howCadenceDesc": "Tốc độ nói được tính toán từ lời thoại video.",
     "immersionTipTitle": "Gợi ý học tập",
     "immersionTipPace": "Nếu thấy nói nhanh, hãy thử chỉnh 0.75x hoặc bật phụ đề song ngữ.",
-    "immersionTipFast": "Tốc độ nói nhanh. Hãy thử giảm còn 0.75x hoặc lặp lại câu khó.",
-    "immersionTipAdvanced": "Nội dung nâng cao. Chạm vào từ để xem nghĩa hoặc lưu từ mới.",
-    "immersionTipBeginner": "Lời thoại rõ ràng, rất thích hợp để luyện nghe và nhại theo (shadowing).",
+    "immersionTipFast": "Tốc độ bản xứ nói khá nhanh. Hãy thử 0.75x hoặc lặp lại các câu khó nhé.",
+    "immersionTipAdvanced": "Nội dung nâng cao. Chạm vào bất kỳ từ nào để tra nghĩa trong từ điển.",
+    "immersionTipBeginner": "Tốc độ nói rõ ràng. Rất thích hợp để luyện nghe hiểu và shadowing.",
     "evaluationSummaryLinguistic": "Cấp độ được ước tính từ mẫu ngữ pháp trong phụ đề, độ khó từ vựng và tốc độ nói.",
     "evaluationSummaryMetadata": "Cấp độ được đối chiếu từ tiêu đề video, kênh hoặc thông tin giáo trình.",
-    "confidenceScore": "Độ tin cậy"
+    "confidenceScore": "Độ tin cậy",
+    "immersionLevel": "Cấp độ thành thạo",
+    "grammar": "Ngữ pháp",
+    "spokenPace": "Tốc độ nói",
+    "immersionTip": "Gợi ý học tập",
+    "evaluatedLinguistic": "Cấp độ được ước tính từ mẫu ngữ pháp trong phụ đề, độ khó từ vựng và tốc độ nói.",
+    "evaluatedCurriculum": "Cấp độ được đối chiếu từ tiêu đề video, kênh hoặc thông tin giáo trình.",
+    "targetLevel": "Cấp độ khó mục tiêu",
+    "analyzedFromSubtitles": "Phân tích từ phụ đề",
+    "curriculumMatch": "Khớp giáo trình",
+    "patterns": "mẫu ngữ pháp",
+    "detected": "Đã phát hiện",
+    "immersionTipDefault": "Nói quá nhanh? Hãy giảm xuống 0.75x hoặc bật phụ đề song ngữ trong tùy chọn."
   },
   "gamification": {
     "level": "CẤP ĐỘ",
@@ -1089,7 +1205,13 @@
     "rank47": "Ký ức vô tận",
     "rank48": "Ngọn hải đăng phụ đề",
     "rank49": "Huyền thoại đa ngữ",
-    "rank50": "Từ điển sống"
+    "rank50": "Từ điển sống",
+    "aiCredits": "Credits AI khả dụng",
+    "dayStreak": "Chuỗi ngày học",
+    "diamond": "Kim cương",
+    "streak": "Chuỗi ngày",
+    "polyglotScholar": "Học giả đa ngôn ngữ",
+    "totalXp": "Tổng XP"
   },
   "leaderboard": {
     "title": "Bảng xếp hạng toàn cầu",
@@ -1342,6 +1464,203 @@
     "quiz100": {
       "title": "Quán quân câu đố",
       "desc": "Trả lời đúng 100 câu đố phụ đề"
+    },
+    "completed": "Đã hoàn thành",
+    "first_video": {
+      "title": "Video đầu tiên",
+      "desc": "Xem video bài học tương tác đầu tiên của bạn trên Voca."
+    },
+    "words_10": {
+      "title": "Lưu 10 từ vựng",
+      "desc": "Thêm 10 thẻ từ vựng mới vào bộ thẻ ôn tập của bạn."
+    },
+    "streak_7": {
+      "title": "Chuỗi 7 ngày liên tục",
+      "desc": "Duy trì thói quen học tập trong 7 ngày liên tiếp."
+    },
+    "vocab_master": {
+      "title": "Bậc thầy từ vựng",
+      "desc": "Ôn tập và làm chủ 50 thẻ từ vựng với SRS."
     }
+  },
+  "dict": {
+    "noResults": "Không tìm thấy trong từ điển",
+    "loadError": "Không thể tải định nghĩa: {error}",
+    "definitions": "Định nghĩa"
+  },
+  "transcript": {
+    "search": "Tìm kiếm trong phụ đề...",
+    "autoScroll": "Tự cuộn",
+    "manual": "Thủ công",
+    "noMatching": "Không tìm thấy phụ đề phù hợp",
+    "noTranscript": "Chưa có bản ghi phụ đề",
+    "stopLooping": "Dừng lặp lại câu này",
+    "loopSentence": "Lặp lại câu này"
+  },
+  "video": {
+    "jumpToCurrent": "Về câu hiện tại",
+    "loopingSentence": "ĐANG LẶP CÂU",
+    "restrictedTitle": "Bị giới hạn phát bởi chủ sở hữu",
+    "restrictedDesc": "Chủ sở hữu YouTube đã tắt tính năng nhúng bên ngoài cho video này. Bạn có thể mở xem trực tiếp trên YouTube trong khi vẫn sử dụng Voca để xem phụ đề tương tác và học từ vựng.",
+    "watchOnYouTube": "Xem trên YouTube",
+    "linkCopied": "Đã sao chép liên kết!",
+    "curatedQueue": "Danh sách phát tuyển chọn • {{current}} / {{total}}",
+    "switchToLang": "Chuyển sang {{lang}}",
+    "useAITranscription": "Tạo phụ đề bằng AI",
+    "waitingForPlayback": "Đang chờ phát video...",
+    "toolbar": {
+      "loop": "Lặp câu",
+      "added": "Đã thêm",
+      "quiz": "Luyện tập",
+      "options": "Tùy chọn"
+    }
+  },
+  "aiCredits": {
+    "explanation": "AI Credits dùng để tạo phiên âm furigana/ruby, phân tích ngữ pháp và tra từ điển ngữ cảnh AI.",
+    "refillNotice": "Tự động nhận miễn phí 5 AI credits mỗi 24 giờ.",
+    "refresh": "Làm mới Credits",
+    "refreshed": "Đã làm mới AI Credits!"
+  },
+  "audio": {
+    "playing": "Đang phát...",
+    "pronounce": "Phát âm",
+    "listenContext": "Nghe câu trong ngữ cảnh"
+  },
+  "credits": {
+    "title": "AI Credits"
+  },
+  "explore": {
+    "all": "Tất cả",
+    "backToVideos": "Quay lại tất cả video",
+    "filterByTopic": "Lọc theo chủ đề",
+    "myPlaylists": "Danh sách của tôi",
+    "noPlaylists": "Không tìm thấy danh sách phát nào",
+    "noPlaylistsDesc": "Chưa có danh sách phát immersion nào cho ngôn ngữ này.",
+    "noVideos": "Không tìm thấy video immersion nào",
+    "paste": "Dán",
+    "playlists": "Danh sách phát",
+    "resetFilters": "Đặt lại bộ lọc",
+    "searchHint": "Dán link YouTube hoặc tìm kiếm...",
+    "topic": "Chủ đề",
+    "topicAll": "Tất cả",
+    "topicTrending": "Thịnh hành",
+    "topicAnimeDrama": "Anime & Phim",
+    "topicMusic": "Âm nhạc",
+    "topicNews": "Tin tức",
+    "topicVlog": "Vlog",
+    "topicConversation": "Hội thoại",
+    "videoDetected": "Đã phát hiện video YouTube ({id}) hợp lệ!",
+    "watchNow": "Xem ngay",
+    "watchVideoTooltip": "Xem video YouTube",
+    "discover": "Khám phá",
+    "filter": "Bộ lọc",
+    "filterVideos": "Lọc video",
+    "filterSubtitle": "Tinh chỉnh theo chủ đề và cấp độ",
+    "topics": "Chủ đề & Thể loại",
+    "levelFilter": "Cấp độ khó",
+    "removedFromBookmarks": "Đã xóa khỏi dấu trang",
+    "savedToBookmarks": "Đã lưu \"{{title}}\" vào dấu trang"
+  },
+  "flashcards": {
+    "again": "Chưa nhớ",
+    "hard": "Khó",
+    "good": "Đã nhớ",
+    "easy": "Dễ",
+    "card": "Thẻ",
+    "of": "/",
+    "showAnswer": "Xem đáp án",
+    "meaning": "Ý NGHĨA",
+    "tapHint": "Chạm vào thẻ để xem nghĩa",
+    "tapBackHint": "Chạm vào thẻ để lật lại",
+    "backToHome": "Về trang chủ",
+    "chooseDefinition": "Chọn định nghĩa chính xác:",
+    "selectAnswerAbove": "Chọn một đáp án ở trên",
+    "revealContext": "Xem từ & Ngữ cảnh",
+    "keepItUp": "Tiếp tục phát huy nhé!",
+    "sessionComplete": "Hoàn thành phiên học!",
+    "sessionCompleteDesc": "Bạn đã hoàn thành tất cả các thẻ lặp lại ngắt quãng cho bộ từ này.",
+    "sessionRecap": "TỔNG KẾT PHIÊN HỌC",
+    "recapReviewed": "Đã ôn tập",
+    "recapAccuracy": "Độ chính xác",
+    "recapGoodEasy": "Đã nhớ / Dễ",
+    "recapAgainHard": "Chưa nhớ / Khó",
+    "dailyBonus": "Thưởng học tập hàng ngày",
+    "reloadCards": "Tải lại thẻ",
+    "reviewMore": "Ôn tập thêm",
+    "studyDeck": "Bộ thẻ ghi nhớ SRS",
+    "mode": {
+      "flashcard": "Thẻ ghi nhớ",
+      "cloze": "Điền từ",
+      "quiz": "Trắc nghiệm"
+    }
+  },
+  "practice": {
+    "title": "Luyện tập ngữ cảnh",
+    "subtitle": "Luyện phát âm chuẩn và phản xạ chủ động",
+    "shadowing": "Shadowing",
+    "cloze": "Điền từ (Quiz)",
+    "clozeTest": "BÀI KIỂM TRA ĐIỀN TỪ",
+    "noCueSelected": "Chưa chọn câu phụ đề nào. Hãy phát video để chọn câu luyện tập.",
+    "loopCue": "Lặp câu",
+    "stopLoop": "Dừng lặp",
+    "rateSetNotice": "Đã đặt tốc độ phát 0.85x cho chế độ Shadowing",
+    "chooseMissingWord": "Chọn từ còn thiếu trong câu trên:",
+    "correct": "Chính xác! +15 XP",
+    "incorrect": "Chưa đúng, thử lại câu tiếp theo nhé!",
+    "replayCue": "Nghe lại câu"
+  },
+  "profile": {
+    "title": "Tài khoản & Hồ sơ",
+    "cloudSynced": "Đã đồng bộ đám mây",
+    "guestMode": "Chế độ khách (Lưu trên máy)",
+    "levelProgress": "Tiến độ cấp độ",
+    "signIn": "Đăng nhập",
+    "signOut": "Đăng xuất",
+    "signOutConfirm": "Bạn có chắc chắn muốn đăng xuất? Tiến trình học ngoại tuyến vẫn được lưu an toàn trên thiết bị này.",
+    "learner": "Học viên",
+    "guestLearner": "Học viên khách",
+    "aiCreditsDesc": "Credits tạo phụ đề AI & Whisper"
+  },
+  "search": {
+    "noResults": "Không tìm thấy kết quả",
+    "noResultsHint": "Thử tìm kiếm với từ khóa khác hoặc dán link YouTube"
+  },
+  "sidebar": {
+    "watch": "Xem & Học",
+    "review": "Ôn tập thẻ từ",
+    "vocab": "Sổ tay từ vựng",
+    "playlists": "Danh sách phát",
+    "history": "Lịch sử xem",
+    "settings": "Cài đặt"
+  },
+  "spotlight": {
+    "hint": "Dán link YouTube hoặc tìm kiếm...",
+    "startLearning": "Bắt đầu học",
+    "quickNavigation": "ĐIỀU HƯỚNG NHANH",
+    "searchResults": "KẾT QUẢ TÌM KIẾM",
+    "watchSubtitle": "Khám phá video & bài học",
+    "reviewSubtitle": "Hệ thống lặp lại ngắt quãng (SRS)",
+    "vocabSubtitle": "Từ vựng & cấu trúc ngữ pháp đã lưu",
+    "playlistsSubtitle": "Danh sách chọn lọc & video đã lưu",
+    "historySubtitle": "Xem tiếp các video gần đây",
+    "settingsSubtitle": "Furigana, kích thước chữ & tùy chọn",
+    "bilingualImmersion": "Chạm để bắt đầu học immersion song ngữ & tạo phụ đề",
+    "youtubeVideo": "VIDEO YOUTUBE",
+    "loadVideo": "Tải video YouTube: {id}"
+  },
+  "words": {
+    "title": "Sổ tay từ vựng",
+    "empty": "Chưa có từ vựng nào trong danh mục này",
+    "emptyHint": "Chạm vào bất kỳ từ nào khi xem video để lưu lại!",
+    "refreshTooltip": "Làm mới danh sách từ",
+    "searchPlaceholder": "Tìm từ vựng, cách đọc hoặc ý nghĩa...",
+    "filterAll": "Tất cả",
+    "filterNew": "Mới",
+    "filterLearning": "Đang học",
+    "filterMastered": "Đã thuộc",
+    "sortDateAdded": "Ngày thêm",
+    "sortAlpha": "Bảng chữ cái",
+    "sortMastery": "Mức độ thuộc",
+    "sortInterval": "Khoảng cách SRS"
   }
 }

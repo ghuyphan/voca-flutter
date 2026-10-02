@@ -1,11 +1,11 @@
 {
-    "name": "voca_flutter",
-    "short_name": "voca_flutter",
+    "name": "Voca - YouTube Language Immersion",
+    "short_name": "Voca",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0D0F14",
+    "theme_color": "#0D0F14",
+    "description": "Learn Japanese, Chinese, Korean, and English from YouTube videos with interactive subtitles & SRS",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

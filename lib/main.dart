@@ -8,6 +8,8 @@ import 'services/voca_api_client.dart';
 import 'services/supabase_service.dart';
 import 'services/grammar_engine.dart';
 import 'services/gamification_service.dart';
+import 'services/i18n_service.dart';
+import 'package:signals_flutter/signals_flutter.dart';
 import 'state/app_state.dart';
 import 'ui/shell/main_shell.dart';
 
@@ -33,6 +35,9 @@ Future<void> main() async {
   // Load persistent settings & gamification stats
   await appState.initSettingsAndGamification();
 
+  // Initialize I18n Localization Service
+  await I18nService.instance.init();
+
   // Pre-load default learning language grammar database
   await appState.grammarEngine.loadLanguage('ja');
   await appState.refreshDiamonds();
@@ -41,16 +46,36 @@ Future<void> main() async {
 }
 
 class VocaApp extends StatelessWidget {
-  const VocaApp({super.key});
+  final Widget? home;
+  const VocaApp({super.key, this.home});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Voca',
-      debugShowCheckedModeBanner: false,
-      themeMode: ThemeMode.dark,
-      darkTheme: VocaTheme.darkTheme,
-      home: const MainShell(),
-    );
+    return Watch((context) {
+      final lang = I18nService.instance.currentLanguage.value;
+      final settings = AppState.instance.userSettings.value;
+      ThemeMode themeMode;
+      switch (settings.themeMode.toLowerCase()) {
+        case 'light':
+          themeMode = ThemeMode.light;
+          break;
+        case 'dark':
+          themeMode = ThemeMode.dark;
+          break;
+        default:
+          themeMode = ThemeMode.system;
+          break;
+      }
+
+      return MaterialApp(
+        title: 'Voca',
+        debugShowCheckedModeBanner: false,
+        theme: VocaTheme.lightTheme,
+        darkTheme: VocaTheme.darkTheme,
+        themeMode: themeMode,
+        locale: Locale(lang),
+        home: home ?? const MainShell(),
+      );
+    });
   }
 }

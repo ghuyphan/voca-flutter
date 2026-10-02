@@ -295,7 +295,7 @@ void main() {
       expect(find.text('Watch'), findsOneWidget);
       expect(find.text('Review'), findsOneWidget);
       expect(find.text('Vocab'), findsOneWidget);
-      expect(find.text('Playlists'), findsOneWidget);
+      expect(find.text('Playlists'), findsAtLeastNWidgets(1));
       expect(find.text('History'), findsOneWidget);
 
       // Bottom controls
@@ -308,7 +308,7 @@ void main() {
       expect(find.text('Watch History'), findsOneWidget);
 
       // Tapping Playlists item in sidebar
-      await tester.tap(find.text('Playlists'));
+      await tester.tap(find.text('Playlists').first);
       await tester.pumpAndSettle();
       expect(find.text('Playlists / Saved'), findsOneWidget);
 

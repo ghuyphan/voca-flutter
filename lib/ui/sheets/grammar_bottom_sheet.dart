@@ -1,7 +1,9 @@
 // lib/ui/sheets/grammar_bottom_sheet.dart
 
 import 'package:flutter/material.dart';
+import '../../config/voca_theme.dart';
 import '../../models/voca_models.dart';
+import 'voca_bottom_sheet.dart';
 
 class GrammarBottomSheet extends StatelessWidget {
   final GrammarPattern pattern;
@@ -9,194 +11,158 @@ class GrammarBottomSheet extends StatelessWidget {
   const GrammarBottomSheet({super.key, required this.pattern});
 
   static Future<void> show(BuildContext context, GrammarPattern pattern) {
-    return showModalBottomSheet(
+    return showVocaBottomSheet(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      title: pattern.title,
+      subtitle: pattern.level.isNotEmpty ? 'Grammar • ${pattern.level}' : 'Grammar Pattern',
+      showCloseButton: true,
+      maxHeightFactor: 0.85,
+      contentPadding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
       builder: (ctx) => GrammarBottomSheet(pattern: pattern),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.8,
-      ),
-      decoration: const BoxDecoration(
-        color: Color(0xFF1E293B),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+    final colors = context.vocaColors;
+    final levelColor = LevelColorInfo.forLevel(pattern.level, isDark: context.isDarkMode);
+
+    return SingleChildScrollView(
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Drag handle
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
+          // Level badge chip
+          if (pattern.level.isNotEmpty) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.white24,
-                borderRadius: BorderRadius.circular(2),
+                color: levelColor.bg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: levelColor.border, width: 1),
+              ),
+              child: Text(
+                pattern.level,
+                style: TextStyle(
+                  color: levelColor.text,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
+          ],
 
-          // Header with Title and Level Badge
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  pattern.title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
+          // Formation formula
+          if (pattern.formation.isNotEmpty) ...[
+            Text(
+              'FORMATION',
+              style: TextStyle(
+                color: colors.textMuted,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.1,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: colors.bgSurface,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: colors.borderColor),
+              ),
+              child: Text(
+                pattern.formation,
+                style: TextStyle(
+                  color: colors.colorDiamond,
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // Explanation
+          Text(
+            'EXPLANATION',
+            style: TextStyle(
+              color: colors.textMuted,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.1,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            pattern.longExplanation.isNotEmpty
+                ? pattern.longExplanation
+                : pattern.shortExplanation,
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontSize: 14.5,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Authentic Examples
+          if (pattern.examples.isNotEmpty) ...[
+            Text(
+              'EXAMPLES',
+              style: TextStyle(
+                color: colors.textMuted,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.1,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...pattern.examples.map((ex) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.amberAccent.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.amberAccent, width: 1),
+                  color: colors.bgSurface,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: colors.borderColor),
                 ),
-                child: Text(
-                  pattern.level,
-                  style: const TextStyle(
-                    color: Colors.amberAccent,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const Divider(color: Colors.white12, height: 24),
-
-          // Scrollable Body
-          Expanded(
-            child: ListView(
-              children: [
-                // Formation formula
-                if (pattern.formation.isNotEmpty) ...[
-                  const Text(
-                    'FORMATION',
-                    style: TextStyle(
-                      color: Color(0xFF94A3B8),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.1,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0F172A),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.white12),
-                    ),
-                    child: Text(
-                      pattern.formation,
-                      style: const TextStyle(
-                        color: Color(0xFF38BDF8),
-                        fontSize: 14.5,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      ex.sentence,
+                      style: TextStyle(
+                        color: colors.textPrimary,
+                        fontSize: 15.5,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-
-                // Explanation
-                const Text(
-                  'EXPLANATION',
-                  style: TextStyle(
-                    color: Color(0xFF94A3B8),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.1,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  pattern.longExplanation.isNotEmpty
-                      ? pattern.longExplanation
-                      : pattern.shortExplanation,
-                  style: const TextStyle(
-                    color: Color(0xFFF1F5F9),
-                    fontSize: 15,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Authentic Examples
-                if (pattern.examples.isNotEmpty) ...[
-                  const Text(
-                    'EXAMPLES',
-                    style: TextStyle(
-                      color: Color(0xFF94A3B8),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.1,
+                    if (ex.romanization != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        ex.romanization!,
+                        style: TextStyle(
+                          color: colors.textMuted,
+                          fontSize: 12.5,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 4),
+                    Text(
+                      ex.translation,
+                      style: TextStyle(
+                        color: colors.textSecondary,
+                        fontSize: 13.5,
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  ...pattern.examples.map((ex) {
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.black26,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.white10),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            ex.sentence,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          if (ex.romanization != null) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              ex.romanization!,
-                              style: const TextStyle(
-                                color: Color(0xFF94A3B8),
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                          const SizedBox(height: 4),
-                          Text(
-                            ex.translation,
-                            style: const TextStyle(
-                              color: Color(0xFFCBD5E1),
-                              fontSize: 14,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
-                ],
-              ],
-            ),
-          ),
+                  ],
+                ),
+              );
+            }),
+          ],
         ],
       ),
     );

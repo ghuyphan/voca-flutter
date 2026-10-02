@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- VOCA Signature Colors -->
+    <color name="launch_background_color">#0D0F14</color>
+    <color name="voca_accent">#FF6B82</color>
+</resources>

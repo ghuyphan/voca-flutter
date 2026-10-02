@@ -13,15 +13,16 @@
     "updatingDesc": "正在为你准备最新功能...",
     "updateSuccess": "已更新至 v{{version}}！",
     "reloadNow": "重新加载",
-    "dataSafe": "学习进度已安全保存"
+    "dataSafe": "学习进度已安全保存",
+    "tagline": "通过 YouTube 视频高效学外语"
   },
   "nav": {
     "video": "视频",
-    "watch": "看视频",
+    "watch": "观看",
     "learn": "看视频",
     "added": "已添加",
     "words": "生词本",
-    "vocab": "生词本",
+    "vocab": "生词",
     "vocabulary": "词汇",
     "dictionary": "词典",
     "study": "复习",
@@ -29,9 +30,10 @@
     "explore": "播放列表",
     "playlists": "播放列表",
     "settings": "设置",
-    "newVideo": "导入视频",
+    "newVideo": "新建视频",
     "quickLinks": "快速链接",
-    "more": "更多"
+    "more": "更多",
+    "library": "媒体库"
   },
   "commandPalette": {
     "placeholder": "粘贴 YouTube 链接或搜索功能...",
@@ -71,7 +73,8 @@
     "signInToUpgrade": "登录并升级",
     "signInToUpgradeDesc": "登录 Google 账号以绑定会员订阅，支持多端数据同步",
     "freeDiamondsNotice": "新用户每日可免费获得用于视频转写的 AI 钻石！",
-    "guestUser": "游客"
+    "guestUser": "游客",
+    "signInFailedError": "登录失败: {error}"
   },
   "player": {
     "paste": "粘贴",
@@ -125,7 +128,9 @@
     "nowPlaying": "正在播放",
     "videoCompleted": "已播完当前视频",
     "embedErrorHelp": "该视频不支持站外嵌入播放，可能已被创作者设限或已下架。",
-    "watchOnYouTube": "在 YouTube 上观看"
+    "watchOnYouTube": "在 YouTube 上观看",
+    "previousSentence": "上一句",
+    "nextSentence": "下一句"
   },
   "subtitle": {
     "loop": "单句循环",
@@ -220,7 +225,12 @@
     "dualSubs": "双语字幕",
     "dualSubsHint": "同时显示母语与学习语言双语字幕",
     "translating": "正在翻译字幕...",
-    "reading": "注音"
+    "reading": "注音",
+    "dualSubtitles": "双语字幕",
+    "subtitlesOn": "字幕开启",
+    "readingGuide": "注音指南",
+    "display": "显示设置",
+    "title": "字幕"
   },
   "pro": {
     "title": "Voca 支持者",
@@ -232,7 +242,7 @@
     "premiumBadge": "创始会员",
     "getPro": "支持 Voca",
     "upgrade": "支持项目",
-    "upgradeToPro": "成为支持者",
+    "upgradeToPro": "升级到 Pro",
     "upgradeToPremium": "成为创始会员",
     "viewPro": "查看支持方案",
     "needMoreCredits": "需要更多钻石？",
@@ -297,7 +307,12 @@
     "signInToUpgradePrompt": "请登录后升级订阅",
     "createOrderFailed": "创建支付订单失败",
     "qrAlt": "VietQR 转账二维码",
-    "nonProfitDisclaimer": "Voca 是一项非营利的语言教育支持计划。所有赞助款项将直接用于维护服务器、AI 语音识别处理成本及词典数据基础设施。"
+    "nonProfitDisclaimer": "Voca 是一项非营利的语言教育支持计划。所有赞助款项将直接用于维护服务器、AI 语音识别处理成本及词典数据基础设施。",
+    "checkoutComingSoon": "Pro 会员订阅即将上线！",
+    "featureUnlimitedTranscribe": "💎 无限制 AI Whisper 转写",
+    "featureSrsDecks": "⚡ 无限间隔重复 SRS 卡组",
+    "featureGrammarRules": "📚 2,400+ 条语法规则与深度解析",
+    "featureSync": "☁️ 无缝跨平台云端同步"
   },
   "vocab": {
     "title": "生词本",
@@ -320,7 +335,7 @@
     "json": "JSON",
     "anki": "Anki",
     "import": "导入",
-    "deleteWord": "删除词汇",
+    "deleteWord": "删除单词",
     "deleteConfirm": "确定要从生词本中删除该生词吗？此操作无法撤销。",
     "cancel": "取消",
     "importSuccess": "词汇导入成功！",
@@ -334,7 +349,20 @@
     "syncHint": "登录 Google 账号，在多个设备间同步生词本。",
     "filterAll": "全部",
     "filterWords": "单词",
-    "filterGrammar": "语法"
+    "filterGrammar": "语法",
+    "savedWords": "已保存的生词",
+    "noSavedWords": "暂无保存的生词",
+    "tapWordHint": "点击互动字幕中的单词即可查词并添加到 SRS 卡组。",
+    "deleteWordConfirm": "确定要从生词本中移除“{word}”吗？",
+    "wordRemoved": "单词已从生词本中移除",
+    "editNotes": "编辑笔记",
+    "notesHint": "添加个人助记提示或笔记...",
+    "stageUpdated": "掌握阶段已更新为 {stage}",
+    "videoContextSentence": "视频上下文原句",
+    "srsStats": "间隔重复 (SM-2) 学习统计",
+    "setMasteryStage": "设置掌握阶段",
+    "markReview": "标记为复习中",
+    "markMastered": "标记为已掌握"
   },
   "popup": {
     "translationLang": "翻译语言",
@@ -364,7 +392,9 @@
     "saveSuccess": "已将“{{pattern}}”添加到语法本",
     "noGrammarSaved": "暂无保存的语法",
     "clickGrammarToSave": "在观看视频或查词典时保存语法，即可在此处复习。",
-    "moreDetails": "更多详情"
+    "moreDetails": "更多详情",
+    "highlightDesc": "高亮显示 JLPT / HSK / TOPIK / CEFR 语法规则",
+    "title": "语法"
   },
   "dictionary": {
     "title": "词典",
@@ -460,7 +490,35 @@
     "profileUpdated": "个人资料更新成功！",
     "profileUpdateFailed": "更新个人资料失败，请重试。",
     "countryHint": "将在全球排行榜的昵称旁显示",
-    "language": "语言"
+    "language": "语言",
+    "subtitles": "字幕",
+    "subtitleSize": "字幕大小",
+    "sizeSmall": "小",
+    "sizeMedium": "标准",
+    "sizeLarge": "大",
+    "readingDisplayDesc": "在文字上方显示读音标注（拼音 / 假名 / 罗马音）",
+    "dualSubtitles": "双语字幕",
+    "dualSubtitlesDesc": "同时显示母语与学习语言双语字幕",
+    "theme": "外观主题",
+    "themeDesc": "自定义应用显示外观",
+    "themeSystem": "跟随系统",
+    "themeLight": "明亮",
+    "themeDark": "暗黑",
+    "uiLanguage": "界面语言",
+    "uiLanguageDesc": "更改界面显示语言",
+    "furiganaPinyin": "注音指南",
+    "alwaysShow": "始终显示",
+    "onTapOnly": "点击时",
+    "off": "关闭",
+    "subtitleSizeDesc": "调整字幕字体大小",
+    "nativeLanguage": "词典释义语言",
+    "nativeLanguageDesc": "单词释义所使用的语言",
+    "autoPause": "查词时自动暂停",
+    "autoPauseDesc": "点击单词查词时自动暂停视频",
+    "system": "系统与关于",
+    "version": "应用版本",
+    "architecture": "系统架构",
+    "archDesc": "Edge + Supabase"
   },
   "study": {
     "title": "复习",
@@ -541,7 +599,7 @@
     "searchQueue": "搜索待复习生词...",
     "noCardsInQueue": "暂无待复习卡片",
     "nextReview": "下次复习",
-    "dueNow": "已到期",
+    "dueNow": "当前待复习",
     "filterAll": "全部",
     "filterWords": "单词",
     "filterGrammar": "语法",
@@ -556,7 +614,20 @@
     "combo": "连击",
     "comboStreak": "连续答对 {{count}} 题！",
     "highestCombo": "最高连击",
-    "xpEarned": "获得经验值"
+    "xpEarned": "获得经验值",
+    "addWord": "添加生词",
+    "added": "已添加",
+    "wordAdded": "已将“{word}”添加到学习卡组！",
+    "saveFailed": "保存单词失败: {error}",
+    "repetitions": "复习次数",
+    "times": "次",
+    "currentInterval": "当前复习间隔",
+    "days": "天",
+    "easeFactor": "记忆难度系数 (EF)",
+    "lastReviewed": "上次复习",
+    "today": "今天",
+    "tomorrow": "明天",
+    "inDays": "{days} 天后"
   },
   "streak": {
     "dayStreak": "连续打卡",
@@ -582,7 +653,7 @@
     "howToExtend": "每天完成任意学习即可延续打卡天数。若当日未学习且无保护卡，连胜记录将归零。",
     "freezeExplanation": "若某天未能学习，打卡保护将自动生效守护记录。当前剩余 {{count}} 次。",
     "reached": "你已达成",
-    "days": "天！",
+    "days": "天",
     "saved": "打卡记录已受保护！❄️",
     "daysReached": "已连续打卡 {{count}} 天！",
     "replenish": "恢复",
@@ -601,13 +672,20 @@
     "longestExpedition": "最长远征",
     "frostWards": "冰霜结界",
     "infuseWard": "充能冰霜结界",
-    "trailTitle": "每周远征踪迹"
+    "trailTitle": "每周远征踪迹",
+    "title": "连续学习天数",
+    "bestStreak": "最高记录",
+    "freezesLeft": "剩余保护次数",
+    "fullStats": "完整统计",
+    "keepStreak": "今天观看视频或复习卡片以保持连续打卡！",
+    "personalBest": "个人最佳记录",
+    "activityLast7Days": "最近 7 天学习动态"
   },
   "history": {
     "title": "观看历史",
     "subtitle": "继续上次未完的学习进度",
     "noHistory": "暂无观看历史",
-    "noHistoryHint": "观看过的视频会记录在这里",
+    "noHistoryHint": "开始观看带有互动字幕的沉浸式视频，追踪你的学习进度。",
     "noFavorites": "暂无收藏视频",
     "noFavoritesHint": "点击爱心图标即可收藏视频",
     "clearAll": "清空观看记录",
@@ -618,7 +696,7 @@
     "noMatchesFound": "没有找到匹配的视频",
     "noMatchesHint": "尝试调整搜索词或筛选条件",
     "clearFilters": "清除筛选",
-    "exploreVideos": "浏览视频",
+    "exploreVideos": "探索视频",
     "progress": "进度",
     "inProgress": "观看中",
     "completed": "已完成",
@@ -633,7 +711,9 @@
     "syncHint": "登录后可多端同步观看历史",
     "searchHistory": "搜索历史记录...",
     "justNow": "刚刚",
-    "overview": "概览"
+    "overview": "概览",
+    "clearHistory": "清除观看历史",
+    "watchHistory": "观看历史"
   },
   "playlist": {
     "title": "播放列表",
@@ -682,7 +762,7 @@
     "by": "来自 {{author}}",
     "createPlaylist": "创建播放列表",
     "titleLabel": "标题",
-    "titlePlaceholder": "输入播放列表标题",
+    "titlePlaceholder": "例如：流行音乐与日常口语",
     "descriptionLabel": "描述（可选）",
     "descriptionPlaceholder": "添加描述...",
     "languageLabel": "语言",
@@ -706,7 +786,7 @@
     "instantSubtitles": "自带字幕视频",
     "transcribedVideos": "AI 转写精选视频",
     "sharePlaylist": "分享播放列表",
-    "loopPlaylist": "列表循环",
+    "loopPlaylist": "循环列表",
     "shufflePlaylist": "随机播放",
     "moveUp": "上移",
     "moveDown": "下移",
@@ -742,11 +822,25 @@
     "continueStudying": "继续学习",
     "resume": "继续",
     "browseByLanguage": "按语言浏览",
-    "loopOn": "已开启循环",
-    "shuffleOn": "已开启随机",
+    "loopOn": "循环播放开",
+    "shuffleOn": "随机播放开",
     "toggleQueue": "展开/收起播放队列",
     "viewPlaylist": "查看播放列表",
-    "videoSingular": "视频"
+    "videoSingular": "视频",
+    "emptyDesc": "创建自定义播放列表，按主题或考试级别整理沉浸式视频。",
+    "addToPlaylist": "添加到播放列表",
+    "createFirst": "+ 创建第一个播放列表",
+    "createdSuccess": "播放列表创建成功",
+    "updatedSuccess": "播放列表更新成功",
+    "description": "描述（可选）",
+    "titleRequired": "请输入播放列表标题",
+    "descPlaceholder": "关于此收藏的简短笔记",
+    "playlistsSaved": "播放列表 / 已保存",
+    "emptyPlaylist": "此播放列表为空",
+    "emptyPlaylistHint": "从探索或播放器中收藏视频以保存在此处。",
+    "videoCountSuffix": "个视频",
+    "updateFailed": "更新播放列表失败: {error}",
+    "saveFailed": "保存播放列表失败: {error}"
   },
   "common": {
     "all": "全部",
@@ -770,7 +864,17 @@
     "confirm": "确定",
     "cancel": "取消",
     "loadMore": "加载更多",
-    "chunkLoadError": "页面资源加载失败，请检查网络后重试。"
+    "chunkLoadError": "页面资源加载失败，请检查网络后重试。",
+    "gotIt": "知道了",
+    "clearAll": "全部清除",
+    "language": "语言",
+    "loadFailed": "无法加载内容",
+    "paste": "从剪贴板粘贴",
+    "reset": "重置",
+    "save": "保存",
+    "remove": "移除",
+    "delete": "删除",
+    "apply": "应用"
   },
   "onboarding": {
     "welcomeTitle": "欢迎使用 Voca",
@@ -1022,12 +1126,24 @@
     "howCadenceDesc": "基于音频真实发音节奏计算的语速水平。",
     "immersionTipTitle": "学习提示",
     "immersionTipPace": "若语速较快，可将倍速调为 0.75x 或开启双语字幕辅助理解。轻触单词即可随时查词。",
-    "immersionTipFast": "检测到母语者较快语速。可将倍速调为 0.75x，或开启自动暂停（P）逐句消化吸收。",
-    "immersionTipAdvanced": "包含较多进阶语法与丰富词汇。点击生词即可快速查词或存入词卡库，亦可开启双语字幕（D）对照。",
-    "immersionTipBeginner": "语速清晰易懂！建议尝试关闭双语字幕挑战纯听力，遇到生词轻触即可保存到词卡库。",
+    "immersionTipFast": "原速语速较快。建议开启 0.75x 或单句循环练习。",
+    "immersionTipAdvanced": "进阶内容。点击任意单词即可在词典中查询释义。",
+    "immersionTipBeginner": "发音清晰流畅，非常适合用于听力理解与跟读模仿练习。",
     "evaluationSummaryLinguistic": "根据字幕语法句型、词汇难度以及语速综合评估得出该难度级别。",
     "evaluationSummaryMetadata": "根据视频标题、频道或课程大纲信息匹配得出该难度级别。",
-    "confidenceScore": "评估可信度"
+    "confidenceScore": "评估可信度",
+    "immersionLevel": "熟练度级别",
+    "grammar": "语法",
+    "spokenPace": "语速节奏",
+    "immersionTip": "学习提示",
+    "evaluatedLinguistic": "根据字幕语法句型、词汇难度以及语速综合评估得出该难度级别。",
+    "evaluatedCurriculum": "根据视频标题、频道或课程大纲信息匹配得出该难度级别。",
+    "targetLevel": "目标难度等级",
+    "analyzedFromSubtitles": "根据字幕分析",
+    "curriculumMatch": "课程匹配",
+    "patterns": "个语法点",
+    "detected": "已检测",
+    "immersionTipDefault": "语速过快？可在设置中调至 0.75x 或开启双语字幕。"
   },
   "gamification": {
     "level": "等级",
@@ -1089,7 +1205,13 @@
     "rank47": "无尽记忆",
     "rank48": "字幕璀璨领航者",
     "rank49": "传奇多语领袖",
-    "rank50": "活字典"
+    "rank50": "活字典",
+    "aiCredits": "可用 AI 点数",
+    "dayStreak": "连续天数",
+    "diamond": "钻石",
+    "streak": "连续学习",
+    "polyglotScholar": "博学语言学者",
+    "totalXp": "总经验值 XP"
   },
   "leaderboard": {
     "title": "全球排行榜",
@@ -1342,6 +1464,203 @@
     "quiz100": {
       "title": "测验霸主",
       "desc": "正确回答100次字幕测验"
+    },
+    "completed": "已达成",
+    "first_video": {
+      "title": "初次观看",
+      "desc": "在 Voca 中观看你的第一个互动视频课程。"
+    },
+    "words_10": {
+      "title": "积累 10 词",
+      "desc": "添加 10 个生词卡片到你的学习卡组。"
+    },
+    "streak_7": {
+      "title": "连续打卡 7 天",
+      "desc": "连续 7 天保持语言沉浸式学习。"
+    },
+    "vocab_master": {
+      "title": "词汇大师",
+      "desc": "使用 SRS 算法复习并掌握 50 张生词闪卡。"
     }
+  },
+  "dict": {
+    "noResults": "词典暂未收录此词",
+    "loadError": "无法加载释义: {error}",
+    "definitions": "释义列表"
+  },
+  "transcript": {
+    "search": "搜索字幕...",
+    "autoScroll": "自动滚动",
+    "manual": "手动",
+    "noMatching": "未找到匹配的字幕",
+    "noTranscript": "暂无可用字幕文本",
+    "stopLooping": "停止单句循环",
+    "loopSentence": "循环播放该句"
+  },
+  "video": {
+    "jumpToCurrent": "跳转至当前进度",
+    "loopingSentence": "单句循环中",
+    "restrictedTitle": "视频创作者限制外部播放",
+    "restrictedDesc": "YouTube 版权所有者已禁用此视频的第三方嵌入播放。您可以在 YouTube 中打开播放，同时使用 Voca 查看互动字幕与生词学习。",
+    "watchOnYouTube": "在 YouTube 上观看",
+    "linkCopied": "链接已复制到剪贴板！",
+    "curatedQueue": "精选播放列表队列 • {{current}} / {{total}}",
+    "switchToLang": "切换为 {{lang}}",
+    "useAITranscription": "使用 AI 转写",
+    "waitingForPlayback": "正在等待视频播放...",
+    "toolbar": {
+      "loop": "单句循环",
+      "added": "已添加",
+      "quiz": "测验",
+      "options": "选项"
+    }
+  },
+  "aiCredits": {
+    "explanation": "AI 点数用于生成假名/注音、语法解析以及上下文 AI 词典释义。",
+    "refillNotice": "每 24 小时免费补充 5 个 AI 点数。",
+    "refresh": "刷新点数",
+    "refreshed": "AI 点数已刷新！"
+  },
+  "audio": {
+    "playing": "播放中...",
+    "pronounce": "发音",
+    "listenContext": "收听上下文音频"
+  },
+  "credits": {
+    "title": "AI 点数"
+  },
+  "explore": {
+    "all": "全部",
+    "backToVideos": "返回所有视频",
+    "filterByTopic": "按主题筛选",
+    "myPlaylists": "我的播放列表",
+    "noPlaylists": "未找到播放列表",
+    "noPlaylistsDesc": "暂无该语言的沉浸式播放列表。",
+    "noVideos": "未找到沉浸式视频",
+    "paste": "粘贴",
+    "playlists": "播放列表",
+    "resetFilters": "重置筛选",
+    "searchHint": "粘贴 YouTube 链接或搜索...",
+    "topic": "主题",
+    "topicAll": "全部",
+    "topicTrending": "热门",
+    "topicAnimeDrama": "动漫与剧集",
+    "topicMusic": "音乐",
+    "topicNews": "新闻",
+    "topicVlog": "Vlog",
+    "topicConversation": "日常对话",
+    "videoDetected": "检测到有效的 YouTube 视频 ({id})！",
+    "watchNow": "立即观看",
+    "watchVideoTooltip": "观看 YouTube 视频",
+    "discover": "发现",
+    "filter": "筛选",
+    "filterVideos": "筛选视频",
+    "filterSubtitle": "按主题和难度级别筛选",
+    "topics": "主题与分类",
+    "levelFilter": "难度级别",
+    "removedFromBookmarks": "已从书签中移除",
+    "savedToBookmarks": "已将\"{{title}}\"保存到书签"
+  },
+  "flashcards": {
+    "again": "没记住",
+    "hard": "困难",
+    "good": "良好",
+    "easy": "简单",
+    "card": "卡片",
+    "of": "/",
+    "showAnswer": "查看答案",
+    "meaning": "释义",
+    "tapHint": "点击卡片查看释义",
+    "tapBackHint": "点击卡片翻回正面",
+    "backToHome": "返回首页",
+    "chooseDefinition": "选择正确的释义：",
+    "selectAnswerAbove": "请在上方选择答案",
+    "revealContext": "查看单词与语境",
+    "keepItUp": "继续保持！",
+    "sessionComplete": "学习完成！",
+    "sessionCompleteDesc": "你已完成该卡组的所有间隔重复复习。",
+    "sessionRecap": "学习总结",
+    "recapReviewed": "已复习",
+    "recapAccuracy": "正确率",
+    "recapGoodEasy": "良好 / 简单",
+    "recapAgainHard": "没记住 / 困难",
+    "dailyBonus": "每日学习奖励",
+    "reloadCards": "重新加载卡片",
+    "reviewMore": "复习更多",
+    "studyDeck": "SRS 学习卡组",
+    "mode": {
+      "flashcard": "闪卡",
+      "cloze": "填空题",
+      "quiz": "测验"
+    }
+  },
+  "practice": {
+    "title": "沉浸式练习",
+    "subtitle": "强化发音与主动回忆",
+    "shadowing": "跟读模仿",
+    "cloze": "填空测验",
+    "clozeTest": "填空测试",
+    "noCueSelected": "未选择字幕。请播放视频并选择句子。",
+    "loopCue": "单句循环",
+    "stopLoop": "停止循环",
+    "rateSetNotice": "已将跟读语速设置为 0.85x",
+    "chooseMissingWord": "请选择上方句子中缺失的单词：",
+    "correct": "回答正确！ +15 XP",
+    "incorrect": "回答错误，再接再厉！",
+    "replayCue": "重播单句"
+  },
+  "profile": {
+    "title": "账户与个人资料",
+    "cloudSynced": "已云端同步",
+    "guestMode": "访客模式（仅保存在本地）",
+    "levelProgress": "等级进度",
+    "signIn": "登录",
+    "signOut": "退出登录",
+    "signOutConfirm": "确定要退出登录吗？你的离线学习记录仍将保存在此设备上。",
+    "learner": "学员",
+    "guestLearner": "访客学员",
+    "aiCreditsDesc": "AI 字幕生成与 Whisper 点数"
+  },
+  "search": {
+    "noResults": "未找到相关结果",
+    "noResultsHint": "尝试其他关键词或直接粘贴 YouTube 链接"
+  },
+  "sidebar": {
+    "watch": "观看与学习",
+    "review": "闪卡复习",
+    "vocab": "生词本",
+    "playlists": "播放列表",
+    "history": "观看历史",
+    "settings": "设置"
+  },
+  "spotlight": {
+    "hint": "粘贴 YouTube 链接或搜索...",
+    "startLearning": "开始学习",
+    "quickNavigation": "快速导航",
+    "searchResults": "搜索结果",
+    "watchSubtitle": "浏览视频库与课程",
+    "reviewSubtitle": "间隔重复系统 (SRS)",
+    "vocabSubtitle": "已保存的生词与语法表达",
+    "playlistsSubtitle": "精选播放列表与已保存视频",
+    "historySubtitle": "继续观看最近视频",
+    "settingsSubtitle": "假名注音、字号与偏好设置",
+    "bilingualImmersion": "点击开始双语沉浸式学习与字幕转写",
+    "youtubeVideo": "YOUTUBE 视频",
+    "loadVideo": "加载 YouTube 视频: {id}"
+  },
+  "words": {
+    "title": "生词本",
+    "empty": "此分类暂无保存的单词",
+    "emptyHint": "观看视频时点击单词即可将其添加到生词本！",
+    "refreshTooltip": "刷新单词",
+    "searchPlaceholder": "搜索单词、发音或释义...",
+    "filterAll": "全部",
+    "filterNew": "新词",
+    "filterLearning": "学习中",
+    "filterMastered": "已掌握",
+    "sortDateAdded": "添加日期",
+    "sortAlpha": "字母顺序",
+    "sortMastery": "掌握程度",
+    "sortInterval": "SRS 间隔"
   }
 }

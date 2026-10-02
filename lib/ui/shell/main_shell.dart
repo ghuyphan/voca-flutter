@@ -3,7 +3,9 @@
 import 'package:flutter/material.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import '../../config/voca_theme.dart';
+import '../../services/i18n_service.dart';
 import '../../state/app_state.dart';
+import '../../state/player_coordinator.dart';
 import '../explore/explore_screen.dart';
 import '../study/study_deck_screen.dart';
 import '../vocabulary/vocabulary_screen.dart';
@@ -13,6 +15,8 @@ import '../widgets/kikyou_logo.dart';
 import '../sheets/more_sheet.dart';
 import '../sheets/new_video_sheet.dart';
 import '../sheets/gamification_dialogs.dart';
+import '../video/miniplayer_bar.dart';
+import '../video/video_player_screen.dart';
 
 class MainShell extends StatefulWidget {
   final int initialIndex;
@@ -30,7 +34,9 @@ class _MainShellState extends State<MainShell> {
   late int _currentIndex;
 
   late final List<Widget> _screens = [
-    const ExploreScreen(),
+    ExploreScreen(
+      onOpenPlaylists: () => setState(() => _currentIndex = 3),
+    ),
     const StudyDeckScreen(),
     const VocabularyScreen(),
     LibraryScreen(
@@ -62,11 +68,63 @@ class _MainShellState extends State<MainShell> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth >= VocaTokens.tabletBreakpoint;
 
-    return Scaffold(
-      backgroundColor: VocaTokens.bgPrimary,
-      body: isTablet ? _buildTabletLayout(context) : _buildMobileLayout(context),
-      bottomNavigationBar: isTablet ? null : _buildMobileBottomNav(context),
-    );
+    return Watch((context) {
+      final coordinator = PlayerCoordinator.instance;
+      final hasActive = coordinator.hasActiveVideo;
+      final isMini = coordinator.isMiniplayer.value;
+      final isFullScreenVideo = hasActive && !isMini;
+      final videoId = coordinator.activeVideoId.value;
+
+      return Scaffold(
+        backgroundColor: VocaTokens.bgPrimary,
+        body: Stack(
+          children: [
+            isTablet ? _buildTabletLayout(context) : _buildMobileLayout(context),
+            if (hasActive && videoId != null) ...[
+              Positioned.fill(
+                child: Visibility(
+                  visible: !isMini,
+                  maintainState: true,
+                  child: VideoPlayerScreen(
+                    key: ValueKey(videoId),
+                    videoId: videoId,
+                    title: coordinator.activeTitle.value,
+                    channel: coordinator.activeChannel.value,
+                    level: coordinator.activeLevel.value,
+                    playlistTitle: coordinator.activePlaylistTitle.value,
+                    playlistIndex: coordinator.activePlaylistIndex.value,
+                    playlistTotal: coordinator.activePlaylistTotal.value,
+                    sharedPlayerController: coordinator.playerController,
+                    sharedYtController: coordinator.ytController,
+                  ),
+                ),
+              ),
+              if (isMini)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: MiniplayerBar(
+                    videoId: videoId,
+                    title: coordinator.activeTitle.value,
+                    channel: coordinator.activeChannel.value ?? 'YouTube',
+                    currentTime: coordinator.currentTime.value,
+                    duration: coordinator.duration.value,
+                    isPlaying: coordinator.isPlaying.value,
+                    isEnded: coordinator.isEnded.value,
+                    onTap: () => coordinator.expand(context),
+                    onPlayPause: () => coordinator.togglePlayPause(),
+                    onClose: () => coordinator.closeVideo(),
+                  ),
+                ),
+            ],
+          ],
+        ),
+        bottomNavigationBar: (isTablet || isFullScreenVideo)
+            ? null
+            : _buildMobileBottomNav(context),
+      );
+    });
   }
 
   // ==========================================
@@ -158,31 +216,31 @@ class _MainShellState extends State<MainShell> {
           _buildSidebarNavItem(
             icon: Icons.play_circle_outline,
             activeIcon: Icons.play_circle,
-            label: 'Watch',
+            label: context.t('nav.watch', null, 'Watch'),
             index: 0,
           ),
           _buildSidebarNavItem(
             icon: Icons.school_outlined,
             activeIcon: Icons.school,
-            label: 'Review',
+            label: context.t('nav.review', null, 'Review'),
             index: 1,
           ),
           _buildSidebarNavItem(
             icon: Icons.book_outlined,
             activeIcon: Icons.menu_book,
-            label: 'Vocab',
+            label: context.t('nav.vocab', null, 'Vocab'),
             index: 2,
           ),
           _buildSidebarNavItem(
             icon: Icons.playlist_play,
             activeIcon: Icons.playlist_play_rounded,
-            label: 'Playlists',
+            label: context.t('nav.playlists', null, 'Playlists'),
             index: 3,
           ),
           _buildSidebarNavItem(
             icon: Icons.history,
             activeIcon: Icons.history_rounded,
-            label: 'History',
+            label: context.t('history.title', null, 'History'),
             index: 4,
           ),
 
@@ -444,7 +502,7 @@ class _MainShellState extends State<MainShell> {
           _buildMobileNavItem(
             icon: Icons.play_circle_outline,
             activeIcon: Icons.play_circle,
-            label: 'Watch',
+            label: context.t('nav.watch', null, 'Watch'),
             isSelected: _currentIndex == 0,
             onTap: () => _onTabTapped(0),
           ),
@@ -453,7 +511,7 @@ class _MainShellState extends State<MainShell> {
           _buildMobileNavItem(
             icon: Icons.school_outlined,
             activeIcon: Icons.school,
-            label: 'Review',
+            label: context.t('nav.review', null, 'Review'),
             isSelected: _currentIndex == 1,
             onTap: () => _onTabTapped(1),
           ),
@@ -465,7 +523,7 @@ class _MainShellState extends State<MainShell> {
           _buildMobileNavItem(
             icon: Icons.menu_book_outlined,
             activeIcon: Icons.menu_book,
-            label: 'Vocab',
+            label: context.t('nav.vocab', null, 'Vocab'),
             isSelected: _currentIndex == 2,
             onTap: () => _onTabTapped(2),
           ),
@@ -474,7 +532,7 @@ class _MainShellState extends State<MainShell> {
           _buildMobileNavItem(
             icon: Icons.more_horiz,
             activeIcon: Icons.more_horiz,
-            label: 'More',
+            label: context.t('nav.more', null, 'More'),
             isSelected: false,
             onTap: () => MoreSheet.show(
               context,

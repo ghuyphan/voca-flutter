@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../config/voca_theme.dart';
 import '../../utils/youtube_url_parser.dart';
-import '../video/video_player_screen.dart';
+import '../../state/player_coordinator.dart';
 
 /// Authentic New Video Bottom Sheet matching lingua-tube.
 class NewVideoSheet extends StatefulWidget {
@@ -77,13 +77,10 @@ class _NewVideoSheetState extends State<NewVideoSheet> {
     if (widget.onVideoSelected != null) {
       widget.onVideoSelected!(videoId);
     } else {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => VideoPlayerScreen(
-            videoId: videoId,
-            title: 'YouTube Video',
-          ),
-        ),
+      PlayerCoordinator.instance.openVideo(
+        context,
+        videoId: videoId,
+        title: 'YouTube Video',
       );
     }
   }

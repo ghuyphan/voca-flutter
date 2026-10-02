@@ -6,6 +6,7 @@ import '../../config/voca_theme.dart';
 import '../../models/voca_models.dart';
 import '../../services/audio_service.dart';
 import '../../services/srs_service.dart';
+import '../../services/i18n_service.dart';
 import '../../state/app_state.dart';
 
 enum StudyMode {
@@ -236,54 +237,56 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
   }
 
   ({Color bg, Color text}) _getMasteryColors(String level) {
+    final colors = context.vocaColors;
     switch (level.toLowerCase()) {
       case 'mastered':
-        return (bg: VocaTokens.wordMasteredBg, text: VocaTokens.wordMasteredText);
+        return (bg: colors.wordMasteredBg, text: colors.wordMasteredText);
       case 'known':
-        return (bg: VocaTokens.wordKnownBg, text: VocaTokens.wordKnownText);
+        return (bg: colors.wordKnownBg, text: colors.wordKnownText);
       case 'learning':
-        return (bg: VocaTokens.wordLearningBg, text: VocaTokens.wordLearningText);
+        return (bg: colors.wordLearningBg, text: colors.wordLearningText);
       case 'new':
       default:
-        return (bg: VocaTokens.wordNewBg, text: VocaTokens.wordNewText);
+        return (bg: colors.wordNewBg, text: colors.wordNewText);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.vocaColors;
     if (_isLoading) {
-      return const Scaffold(
-        backgroundColor: VocaTokens.bgPrimary,
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        backgroundColor: colors.bgPrimary,
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     final isFinished = _dueCards.isEmpty || _currentIndex >= _dueCards.length;
 
     return Scaffold(
-      backgroundColor: VocaTokens.bgPrimary,
+      backgroundColor: colors.bgPrimary,
       appBar: AppBar(
-        backgroundColor: VocaTokens.bgPrimary,
+        backgroundColor: colors.bgPrimary,
         elevation: 0,
         titleSpacing: 16,
-        title: const Row(
+        title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.style, color: VocaTokens.accentPrimary, size: 20),
-            SizedBox(width: 8),
+            Icon(Icons.style, color: colors.accentPrimary, size: 20),
+            const SizedBox(width: 8),
             Flexible(
               child: Text(
-                'SRS Study Deck',
+                context.t('flashcards.studyDeck', null, 'SRS Study Deck'),
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: VocaTokens.textPrimary, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(color: colors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: VocaTokens.textSecondary),
-            tooltip: 'Reload cards',
+            icon: Icon(Icons.refresh, color: colors.textSecondary),
+            tooltip: context.t('flashcards.reloadCards', null, 'Reload cards'),
             onPressed: _loadDueCards,
           ),
         ],
@@ -298,6 +301,7 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
   // ACTIVE STUDY SCREEN (RESPONSIVE TABLET & MOBILE)
   // -------------------------------------------------------------
   Widget _buildActiveStudyScreen() {
+    final colors = context.vocaColors;
     final card = _dueCards[_currentIndex];
     final progress = (_currentIndex + 1) / _dueCards.length;
     final mastery = _getMasteryColors(card.level);
@@ -315,6 +319,7 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
               child: Row(
                 children: StudyMode.values.map((mode) {
                   final isSelected = _currentMode == mode;
+                  final modeText = context.t('flashcards.mode.${mode.name}', null, mode.label);
                   return Expanded(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 3),
@@ -332,10 +337,10 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                           duration: const Duration(milliseconds: 200),
                           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                           decoration: BoxDecoration(
-                            color: isSelected ? VocaTokens.accentPrimary : VocaTokens.bgCard,
+                            color: isSelected ? colors.accentPrimary : colors.bgCard,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: isSelected ? VocaTokens.accentPrimaryHover : VocaTokens.borderColor,
+                              color: isSelected ? colors.accentPrimaryHover : colors.borderColor,
                             ),
                           ),
                           child: Row(
@@ -345,15 +350,15 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                               Icon(
                                 isSelected ? mode.activeIcon : mode.icon,
                                 size: 15,
-                                color: isSelected ? Colors.white : VocaTokens.textMuted,
+                                color: isSelected ? Colors.white : colors.textMuted,
                               ),
                               const SizedBox(width: 4),
                               Flexible(
                                 child: Text(
-                                  mode.label,
+                                  modeText,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    color: isSelected ? Colors.white : VocaTokens.textSecondary,
+                                    color: isSelected ? Colors.white : colors.textSecondary,
                                     fontSize: 12,
                                     fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                                   ),
@@ -379,10 +384,10 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                     children: [
                       Flexible(
                         child: Text(
-                          'Card ${_currentIndex + 1} of ${_dueCards.length}',
+                          '${context.t('flashcards.card', null, 'Card')} ${_currentIndex + 1} ${context.t('flashcards.of', null, 'of')} ${_dueCards.length}',
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: VocaTokens.textSecondary,
+                          style: TextStyle(
+                            color: colors.textSecondary,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
@@ -414,8 +419,8 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
                       value: progress,
-                      backgroundColor: VocaTokens.bgSecondary,
-                      valueColor: const AlwaysStoppedAnimation<Color>(VocaTokens.accentPrimary),
+                      backgroundColor: colors.bgSecondary,
+                      valueColor: AlwaysStoppedAnimation<Color>(colors.accentPrimary),
                       minHeight: 5,
                     ),
                   ),
@@ -481,16 +486,21 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
   }
 
   Widget _buildCardFront(Flashcard card) {
+    final colors = context.vocaColors;
     final reading = card.reading ?? card.pinyin ?? card.romanization;
 
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: VocaTokens.bgCard,
+        color: colors.bgCard,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: VocaTokens.borderColor),
-        boxShadow: const [
-          BoxShadow(color: Colors.black45, blurRadius: 18, offset: Offset(0, 8)),
+        border: Border.all(color: colors.borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: context.isDarkMode ? Colors.black45 : Colors.black12,
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
         ],
       ),
       padding: const EdgeInsets.all(20),
@@ -503,14 +513,14 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               margin: const EdgeInsets.only(bottom: 12),
               decoration: BoxDecoration(
-                color: VocaTokens.bgSurface,
+                color: colors.bgSurface,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: VocaTokens.borderColorLight),
+                border: Border.all(color: colors.borderColorLight),
               ),
               child: Text(
                 card.partOfSpeech!.toUpperCase(),
-                style: const TextStyle(
-                  color: VocaTokens.textSecondary,
+                style: TextStyle(
+                  color: colors.textSecondary,
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
@@ -522,8 +532,8 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
           if (reading != null && reading.isNotEmpty) ...[
             Text(
               reading,
-              style: const TextStyle(
-                color: VocaTokens.textMuted,
+              style: TextStyle(
+                color: colors.textMuted,
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
               ),
@@ -535,8 +545,8 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
           Text(
             card.word,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: VocaTokens.textPrimary,
+            style: TextStyle(
+              color: colors.textPrimary,
               fontSize: 40,
               fontWeight: FontWeight.bold,
               letterSpacing: 0.5,
@@ -547,7 +557,7 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
             const SizedBox(height: 4),
             Text(
               card.romanization!,
-              style: const TextStyle(color: VocaTokens.textTertiary, fontSize: 13),
+              style: TextStyle(color: colors.textTertiary, fontSize: 13),
             ),
           ],
 
@@ -567,21 +577,23 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isPlaying ? VocaTokens.accentPrimary : VocaTokens.bgSurface,
-                  foregroundColor: isPlaying ? Colors.white : VocaTokens.accentPrimary,
-                  side: const BorderSide(color: VocaTokens.borderColor),
+                  backgroundColor: isPlaying ? colors.accentPrimary : colors.bgSurface,
+                  foregroundColor: isPlaying ? Colors.white : colors.accentPrimary,
+                  side: BorderSide(color: colors.borderColor),
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                 ),
                 icon: Icon(
                   isPlaying ? Icons.volume_up : Icons.volume_up_outlined,
                   size: 18,
-                  color: isPlaying ? Colors.white : VocaTokens.accentPrimary,
+                  color: isPlaying ? Colors.white : colors.accentPrimary,
                 ),
                 label: Text(
-                  isPlaying ? 'Playing...' : 'Pronounce',
+                  isPlaying
+                      ? context.t('audio.playing', null, 'Playing...')
+                      : context.t('audio.pronounce', null, 'Pronounce'),
                   style: TextStyle(
-                    color: isPlaying ? Colors.white : VocaTokens.textPrimary,
+                    color: isPlaying ? Colors.white : colors.textPrimary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -592,17 +604,17 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
           const SizedBox(height: 28),
 
           // Hint to tap
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.touch_app_outlined, size: 14, color: VocaTokens.textMuted),
-              SizedBox(width: 6),
+              Icon(Icons.touch_app_outlined, size: 14, color: colors.textMuted),
+              const SizedBox(width: 6),
               Flexible(
                 child: Text(
-                  'Tap card to reveal meaning',
+                  context.t('flashcards.tapHint', null, 'Tap card to reveal meaning'),
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: VocaTokens.textMuted, fontSize: 12, fontStyle: FontStyle.italic),
+                  style: TextStyle(color: colors.textMuted, fontSize: 12, fontStyle: FontStyle.italic),
                 ),
               ),
             ],
@@ -613,16 +625,21 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
   }
 
   Widget _buildCardBack(Flashcard card) {
+    final colors = context.vocaColors;
     final reading = card.reading ?? card.pinyin ?? card.romanization;
 
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: VocaTokens.bgCard,
+        color: colors.bgCard,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: VocaTokens.accentPrimary.withOpacity(0.4)),
-        boxShadow: const [
-          BoxShadow(color: Colors.black45, blurRadius: 18, offset: Offset(0, 8)),
+        border: Border.all(color: colors.accentPrimary.withOpacity(0.4)),
+        boxShadow: [
+          BoxShadow(
+            color: context.isDarkMode ? Colors.black45 : Colors.black12,
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
         ],
       ),
       padding: const EdgeInsets.all(20),
@@ -639,8 +656,8 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                   child: Text(
                     card.word,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: VocaTokens.textPrimary,
+                    style: TextStyle(
+                      color: colors.textPrimary,
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                     ),
@@ -652,13 +669,13 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                     child: Text(
                       '($reading)',
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: VocaTokens.textSecondary, fontSize: 15),
+                      style: TextStyle(color: colors.textSecondary, fontSize: 15),
                     ),
                   ),
                 ],
                 const SizedBox(width: 6),
                 IconButton(
-                  icon: const Icon(Icons.volume_up, size: 20, color: VocaTokens.accentPrimary),
+                  icon: Icon(Icons.volume_up, size: 20, color: colors.accentPrimary),
                   onPressed: () {
                     AudioService.instance.playWord(
                       card.word,
@@ -670,13 +687,13 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
               ],
             ),
 
-            const Divider(color: VocaTokens.borderColorLight, height: 24),
+            Divider(color: colors.borderColorLight, height: 24),
 
             // Definition / Meaning
-            const Text(
-              'MEANING',
+            Text(
+              context.t('flashcards.meaning', null, 'MEANING'),
               style: TextStyle(
-                color: VocaTokens.textMuted,
+                color: colors.textMuted,
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.2,
@@ -686,8 +703,8 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
             Text(
               card.meaning,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: VocaTokens.textPrimary,
+              style: TextStyle(
+                color: colors.textPrimary,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 height: 1.3,
@@ -701,17 +718,17 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: VocaTokens.bgSurface,
+                  color: colors.bgSurface,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: VocaTokens.borderColorLight),
+                  border: Border.all(color: colors.borderColorLight),
                 ),
                 child: Column(
                   children: [
                     Text(
                       card.contextSentence!,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: VocaTokens.textPrimary,
+                      style: TextStyle(
+                        color: colors.textPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         height: 1.4,
@@ -723,8 +740,8 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                       Text(
                         card.contextTranslation!,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: VocaTokens.textSecondary,
+                        style: TextStyle(
+                          color: colors.textSecondary,
                           fontSize: 12,
                           fontStyle: FontStyle.italic,
                         ),
@@ -736,9 +753,9 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
             ],
 
             const SizedBox(height: 16),
-            const Text(
-              'Tap card to flip back',
-              style: TextStyle(color: VocaTokens.textMuted, fontSize: 11),
+            Text(
+              context.t('flashcards.tapBackHint', null, 'Tap card to flip back'),
+              style: TextStyle(color: colors.textMuted, fontSize: 11),
             ),
           ],
         ),
@@ -750,6 +767,7 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
   // 2. CLOZE / CONTEXT SENTENCE MODE
   // -------------------------------------------------------------
   Widget _buildClozeCard(Flashcard card) {
+    final colors = context.vocaColors;
     // Generate context sentence with masked target word
     final rawSentence = card.contextSentence ??
         '日常会話でよく使われる [ ___ ] という言葉です。';
@@ -761,11 +779,15 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: VocaTokens.bgCard,
+        color: colors.bgCard,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: VocaTokens.borderColor),
-        boxShadow: const [
-          BoxShadow(color: Colors.black45, blurRadius: 18, offset: Offset(0, 8)),
+        border: Border.all(color: colors.borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: context.isDarkMode ? Colors.black45 : Colors.black12,
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
         ],
       ),
       padding: const EdgeInsets.all(20),
@@ -779,13 +801,13 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: VocaTokens.accentPrimarySoft,
+                  color: colors.accentPrimarySoft,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Text(
-                  'CLOZE TEST',
+                child: Text(
+                  context.t('practice.clozeTest', null, 'CLOZE TEST').toUpperCase(),
                   style: TextStyle(
-                    color: VocaTokens.accentPrimary,
+                    color: colors.accentPrimary,
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.5,
@@ -797,7 +819,7 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                   child: Text(
                     card.partOfSpeech!.toUpperCase(),
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: VocaTokens.textMuted, fontSize: 11, fontWeight: FontWeight.w600),
+                    style: TextStyle(color: colors.textMuted, fontSize: 11, fontWeight: FontWeight.w600),
                   ),
                 ),
             ],
@@ -810,10 +832,10 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: VocaTokens.bgSecondary,
+              color: colors.bgSecondary,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: _isClozeRevealed ? VocaTokens.colorGrammar.withOpacity(0.4) : VocaTokens.borderColor,
+                color: _isClozeRevealed ? colors.colorGrammar.withOpacity(0.4) : colors.borderColor,
               ),
             ),
             child: Column(
@@ -822,8 +844,8 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                   Text(
                     maskedSentence,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: VocaTokens.textPrimary,
+                    style: TextStyle(
+                      color: colors.textPrimary,
                       fontSize: 18,
                       height: 1.5,
                       fontWeight: FontWeight.w500,
@@ -840,8 +862,8 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                     Text(
                       card.contextTranslation!,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: VocaTokens.textSecondary,
+                      style: TextStyle(
+                        color: colors.textSecondary,
                         fontSize: 13,
                         fontStyle: FontStyle.italic,
                       ),
@@ -859,7 +881,7 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
             if (reading != null) ...[
               Text(
                 'Reading Hint: $reading',
-                style: const TextStyle(color: VocaTokens.textMuted, fontSize: 13),
+                style: TextStyle(color: colors.textMuted, fontSize: 13),
               ),
               const SizedBox(height: 14),
             ],
@@ -867,29 +889,32 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
             ElevatedButton.icon(
               onPressed: () => setState(() => _isClozeRevealed = true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: VocaTokens.accentPrimary,
+                backgroundColor: colors.accentPrimary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
               icon: const Icon(Icons.visibility, size: 18),
-              label: const Text('Reveal Word & Context', style: TextStyle(fontWeight: FontWeight.bold)),
+              label: Text(
+                context.t('flashcards.revealContext', null, 'Reveal Word & Context'),
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
           ] else ...[
             // Meaning box
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: VocaTokens.wordMasteredBg,
+                color: colors.wordMasteredBg,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: VocaTokens.wordMasteredText.withOpacity(0.3)),
+                border: Border.all(color: colors.wordMasteredText.withOpacity(0.3)),
               ),
               child: Column(
                 children: [
                   Text(
                     card.word,
-                    style: const TextStyle(
-                      color: VocaTokens.textPrimary,
+                    style: TextStyle(
+                      color: colors.textPrimary,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
@@ -898,8 +923,8 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                   Text(
                     card.meaning,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: VocaTokens.textSecondary,
+                    style: TextStyle(
+                      color: colors.textSecondary,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
@@ -919,12 +944,12 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                 );
               },
               style: IconButton.styleFrom(
-                backgroundColor: VocaTokens.bgSurface,
-                foregroundColor: VocaTokens.accentPrimary,
-                side: const BorderSide(color: VocaTokens.borderColor),
+                backgroundColor: colors.bgSurface,
+                foregroundColor: colors.accentPrimary,
+                side: BorderSide(color: colors.borderColor),
               ),
               icon: const Icon(Icons.volume_up, size: 20),
-              tooltip: 'Listen to context',
+              tooltip: context.t('audio.listenContext', null, 'Listen to context'),
             ),
           ],
         ],
@@ -933,6 +958,7 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
   }
 
   TextSpan _buildHighlightedSentence(String sentence, String targetWord) {
+    final colors = context.vocaColors;
     final parts = sentence.split(targetWord);
     final spans = <TextSpan>[];
 
@@ -940,14 +966,14 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
       if (parts[i].isNotEmpty) {
         spans.add(TextSpan(
           text: parts[i],
-          style: const TextStyle(color: VocaTokens.textPrimary, fontSize: 17, height: 1.4),
+          style: TextStyle(color: colors.textPrimary, fontSize: 17, height: 1.4),
         ));
       }
       if (i < parts.length - 1) {
         spans.add(TextSpan(
           text: targetWord,
-          style: const TextStyle(
-            color: VocaTokens.accentPrimary,
+          style: TextStyle(
+            color: colors.accentPrimary,
             fontWeight: FontWeight.bold,
             fontSize: 18,
             decoration: TextDecoration.underline,
@@ -963,16 +989,21 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
   // 3. MULTIPLE-CHOICE QUIZ MODE
   // -------------------------------------------------------------
   Widget _buildQuizCard(Flashcard card) {
+    final colors = context.vocaColors;
     final reading = card.reading ?? card.pinyin ?? card.romanization;
 
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: VocaTokens.bgCard,
+        color: colors.bgCard,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: VocaTokens.borderColor),
-        boxShadow: const [
-          BoxShadow(color: Colors.black45, blurRadius: 18, offset: Offset(0, 8)),
+        border: Border.all(color: colors.borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: context.isDarkMode ? Colors.black45 : Colors.black12,
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
         ],
       ),
       padding: const EdgeInsets.all(16),
@@ -990,13 +1021,13 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                       Text(
                         reading,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: VocaTokens.textMuted, fontSize: 14),
+                        style: TextStyle(color: colors.textMuted, fontSize: 14),
                       ),
                     Text(
                       card.word,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: VocaTokens.textPrimary,
+                      style: TextStyle(
+                        color: colors.textPrimary,
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
                       ),
@@ -1006,7 +1037,7 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
               ),
               const SizedBox(width: 8),
               IconButton(
-                icon: const Icon(Icons.volume_up, color: VocaTokens.accentPrimary, size: 22),
+                icon: Icon(Icons.volume_up, color: colors.accentPrimary, size: 22),
                 onPressed: () {
                   AudioService.instance.playWord(
                     card.word,
@@ -1019,9 +1050,9 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
           ),
 
           const SizedBox(height: 6),
-          const Text(
-            'Choose the correct definition:',
-            style: TextStyle(color: VocaTokens.textMuted, fontSize: 12, fontWeight: FontWeight.w600),
+          Text(
+            context.t('flashcards.chooseDefinition', null, 'Choose the correct definition:'),
+            style: TextStyle(color: colors.textMuted, fontSize: 12, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 10),
 
@@ -1035,21 +1066,21 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                 final isSelected = _selectedQuizOption == idx;
                 final isCorrect = option == card.meaning;
 
-                Color optionBorder = VocaTokens.borderColor;
-                Color optionBg = VocaTokens.bgSurface;
-                Color textColor = VocaTokens.textSecondary;
+                Color optionBorder = colors.borderColor;
+                Color optionBg = colors.bgSurface;
+                Color textColor = colors.textSecondary;
                 IconData? feedbackIcon;
 
                 if (_isQuizAnswered) {
                   if (isCorrect) {
-                    optionBorder = VocaTokens.colorGrammar;
-                    optionBg = VocaTokens.colorGrammar.withOpacity(0.18);
-                    textColor = VocaTokens.textPrimary;
+                    optionBorder = colors.colorGrammar;
+                    optionBg = colors.colorGrammar.withOpacity(0.18);
+                    textColor = colors.textPrimary;
                     feedbackIcon = Icons.check_circle;
                   } else if (isSelected) {
-                    optionBorder = VocaTokens.error;
-                    optionBg = VocaTokens.error.withOpacity(0.18);
-                    textColor = VocaTokens.textPrimary;
+                    optionBorder = colors.error;
+                    optionBg = colors.error.withOpacity(0.18);
+                    textColor = colors.textPrimary;
                     feedbackIcon = Icons.cancel;
                   }
                 }
@@ -1077,14 +1108,14 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                           width: 24,
                           height: 24,
                           alignment: Alignment.center,
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: VocaTokens.bgHover,
+                            color: colors.bgHover,
                           ),
                           child: Text(
                             String.fromCharCode(65 + idx),
-                            style: const TextStyle(
-                              color: VocaTokens.textPrimary,
+                            style: TextStyle(
+                              color: colors.textPrimary,
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
                             ),
@@ -1105,7 +1136,7 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                           Icon(
                             feedbackIcon,
                             size: 18,
-                            color: isCorrect ? VocaTokens.colorGrammar : VocaTokens.error,
+                            color: isCorrect ? colors.colorGrammar : colors.error,
                           ),
                       ],
                     ),
@@ -1123,6 +1154,7 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
   // BOTTOM SM-2 RATING BAR WITH INTERVAL PREVIEWS & VOCA ACCENTS
   // -------------------------------------------------------------
   Widget _buildBottomRatingBar(Flashcard card) {
+    final colors = context.vocaColors;
     // Only show rating buttons when answer has been revealed
     final showRatings = (_currentMode == StudyMode.flashcard && _isCardFlipped) ||
         (_currentMode == StudyMode.cloze && _isClozeRevealed) ||
@@ -1143,12 +1175,14 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: VocaTokens.accentPrimary,
+              backgroundColor: colors.accentPrimary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
             child: Text(
-              _currentMode == StudyMode.quiz ? 'Select an answer above' : 'Show Answer',
+              _currentMode == StudyMode.quiz
+                  ? context.t('flashcards.selectAnswerAbove', null, 'Select an answer above')
+                  : context.t('flashcards.showAnswer', null, 'Show Answer'),
               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
             ),
           ),
@@ -1180,13 +1214,33 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       child: Row(
         children: [
-          _buildSM2Button('Again', '<10m', VocaTokens.error, SRSReviewRating.again),
+          _buildSM2Button(
+            context.t('flashcards.again', null, 'Again'),
+            '<10m',
+            colors.error,
+            SRSReviewRating.again,
+          ),
           const SizedBox(width: 6),
-          _buildSM2Button('Hard', _formatInterval(resHard.interval), VocaTokens.warning, SRSReviewRating.hard),
+          _buildSM2Button(
+            context.t('flashcards.hard', null, 'Hard'),
+            _formatInterval(resHard.interval),
+            colors.warning,
+            SRSReviewRating.hard,
+          ),
           const SizedBox(width: 6),
-          _buildSM2Button('Good', _formatInterval(resGood.interval), VocaTokens.colorGrammar, SRSReviewRating.good),
+          _buildSM2Button(
+            context.t('flashcards.good', null, 'Good'),
+            _formatInterval(resGood.interval),
+            colors.colorGrammar,
+            SRSReviewRating.good,
+          ),
           const SizedBox(width: 6),
-          _buildSM2Button('Easy', _formatInterval(resEasy.interval), VocaTokens.accentPrimary, SRSReviewRating.easy),
+          _buildSM2Button(
+            context.t('flashcards.easy', null, 'Easy'),
+            _formatInterval(resEasy.interval),
+            colors.accentPrimary,
+            SRSReviewRating.easy,
+          ),
         ],
       ),
     );
@@ -1245,6 +1299,7 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
   // STUDY SESSION COMPLETION CELEBRATION (RESPONSIVE TABLET & MOBILE)
   // -------------------------------------------------------------
   Widget _buildCelebrationScreen() {
+    final colors = context.vocaColors;
     final streak = AppState.instance.currentStreak.value;
     final accuracy = _totalReviewed > 0
         ? ((_goodOrEasyCount / _totalReviewed) * 100).round()
@@ -1268,39 +1323,39 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                 height: 100,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: VocaTokens.colorGrammar.withOpacity(0.15),
-                  border: Border.all(color: VocaTokens.colorGrammar, width: 2),
+                  color: colors.colorGrammar.withOpacity(0.15),
+                  border: Border.all(color: colors.colorGrammar, width: 2),
                   boxShadow: [
                     BoxShadow(
-                      color: VocaTokens.colorGrammar.withOpacity(0.3),
+                      color: colors.colorGrammar.withOpacity(0.3),
                       blurRadius: 24,
                       spreadRadius: 4,
                     ),
                   ],
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.emoji_events,
                   size: 56,
-                  color: VocaTokens.accentTertiary,
+                  color: colors.accentTertiary,
                 ),
               ),
 
               const SizedBox(height: 20),
 
-              const Text(
-                'Session Complete!',
+              Text(
+                context.t('flashcards.sessionComplete', null, 'Session Complete!'),
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: VocaTokens.textPrimary,
+                  color: colors.textPrimary,
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
-                'You finished all spaced repetition reviews for this deck.',
+              Text(
+                context.t('flashcards.sessionCompleteDesc', null, 'You finished all spaced repetition reviews for this deck.'),
                 textAlign: TextAlign.center,
-                style: TextStyle(color: VocaTokens.textSecondary, fontSize: 14),
+                style: TextStyle(color: colors.textSecondary, fontSize: 14),
               ),
 
               const SizedBox(height: 24),
@@ -1313,26 +1368,26 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                     child: Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: VocaTokens.bgCard,
+                        color: colors.bgCard,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: VocaTokens.colorFire.withOpacity(0.4)),
+                        border: Border.all(color: colors.colorFire.withOpacity(0.4)),
                       ),
                       child: Column(
                         children: [
-                          const Icon(Icons.local_fire_department, color: VocaTokens.colorFire, size: 30),
+                          Icon(Icons.local_fire_department, color: colors.colorFire, size: 30),
                           const SizedBox(height: 6),
                           Text(
-                            '$streak Day Streak',
-                            style: const TextStyle(
-                              color: VocaTokens.textPrimary,
+                            '$streak ${context.t('gamification.dayStreak', null, 'Day Streak')}',
+                            style: TextStyle(
+                              color: colors.textPrimary,
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           const SizedBox(height: 2),
-                          const Text(
-                            'Keep it up!',
-                            style: TextStyle(color: VocaTokens.textMuted, fontSize: 11),
+                          Text(
+                            context.t('flashcards.keepItUp', null, 'Keep it up!'),
+                            style: TextStyle(color: colors.textMuted, fontSize: 11),
                           ),
                         ],
                       ),
@@ -1346,26 +1401,26 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                     child: Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: VocaTokens.bgCard,
+                        color: colors.bgCard,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: VocaTokens.colorDiamond.withOpacity(0.4)),
+                        border: Border.all(color: colors.colorDiamond.withOpacity(0.4)),
                       ),
-                      child: const Column(
+                      child: Column(
                         children: [
-                          Icon(Icons.diamond, color: VocaTokens.colorDiamond, size: 30),
-                          SizedBox(height: 6),
+                          Icon(Icons.diamond, color: colors.colorDiamond, size: 30),
+                          const SizedBox(height: 6),
                           Text(
-                            '+1 Diamond',
+                            '+1 ${context.t('gamification.diamond', null, 'Diamond')}',
                             style: TextStyle(
-                              color: VocaTokens.textPrimary,
+                              color: colors.textPrimary,
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          SizedBox(height: 2),
+                          const SizedBox(height: 2),
                           Text(
-                            'Daily study bonus',
-                            style: TextStyle(color: VocaTokens.textMuted, fontSize: 11),
+                            context.t('flashcards.dailyBonus', null, 'Daily study bonus'),
+                            style: TextStyle(color: colors.textMuted, fontSize: 11),
                           ),
                         ],
                       ),
@@ -1381,17 +1436,17 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                 width: double.infinity,
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: VocaTokens.bgCard,
+                  color: colors.bgCard,
                   borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: VocaTokens.borderColor),
+                  border: Border.all(color: colors.borderColor),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'SESSION RECAP',
+                    Text(
+                      context.t('flashcards.sessionRecap', null, 'SESSION RECAP'),
                       style: TextStyle(
-                        color: VocaTokens.textMuted,
+                        color: colors.textMuted,
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1,
@@ -1401,10 +1456,10 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildRecapItem('Reviewed', '$_totalReviewed', VocaTokens.wordKnownText),
-                        _buildRecapItem('Good / Easy', '$_goodOrEasyCount', VocaTokens.colorGrammar),
-                        _buildRecapItem('Again / Hard', '$_againOrHardCount', VocaTokens.warning),
-                        _buildRecapItem('Accuracy', '$accuracy%', VocaTokens.accentSecondary),
+                        _buildRecapItem(context.t('flashcards.recapReviewed', null, 'Reviewed'), '$_totalReviewed', colors.wordKnownText, colors),
+                        _buildRecapItem(context.t('flashcards.recapGoodEasy', null, 'Good / Easy'), '$_goodOrEasyCount', colors.colorGrammar, colors),
+                        _buildRecapItem(context.t('flashcards.recapAgainHard', null, 'Again / Hard'), '$_againOrHardCount', colors.warning, colors),
+                        _buildRecapItem(context.t('flashcards.recapAccuracy', null, 'Accuracy'), '$accuracy%', colors.accentSecondary, colors),
                       ],
                     ),
                   ],
@@ -1426,12 +1481,15 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                         }
                       },
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: VocaTokens.textSecondary,
-                        side: const BorderSide(color: VocaTokens.borderColor),
+                        foregroundColor: colors.textSecondary,
+                        side: BorderSide(color: colors.borderColor),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       ),
-                      child: const Text('Back to Home', style: TextStyle(fontWeight: FontWeight.w600)),
+                      child: Text(
+                        context.t('flashcards.backToHome', null, 'Back to Home'),
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1439,13 +1497,16 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
                     child: ElevatedButton(
                       onPressed: _loadDueCards,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: VocaTokens.accentPrimary,
+                        backgroundColor: colors.accentPrimary,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         elevation: 4,
                       ),
-                      child: const Text('Review More', style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: Text(
+                        context.t('flashcards.reviewMore', null, 'Review More'),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                 ],
@@ -1458,7 +1519,7 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
     );
   }
 
-  Widget _buildRecapItem(String label, String value, Color color) {
+  Widget _buildRecapItem(String label, String value, Color color, VocaColorPalette colors) {
     return Expanded(
       child: Column(
         children: [
@@ -1478,7 +1539,7 @@ class _StudyDeckScreenState extends State<StudyDeckScreen>
             fit: BoxFit.scaleDown,
             child: Text(
               label,
-              style: const TextStyle(color: VocaTokens.textMuted, fontSize: 11),
+              style: TextStyle(color: colors.textMuted, fontSize: 11),
             ),
           ),
         ],

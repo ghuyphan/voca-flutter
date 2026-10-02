@@ -1,27 +1,49 @@
 // lib/ui/video/video_player_screen.dart
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../../config/voca_theme.dart';
+import '../../services/i18n_service.dart';
 import '../../state/app_state.dart';
+import '../../state/player_coordinator.dart';
 import '../../state/player_state.dart';
 import '../../utils/cyrb53_hasher.dart';
-import '../widgets/interactive_subtitle_view.dart';
 import '../sheets/dictionary_bottom_sheet.dart';
 import '../sheets/grammar_bottom_sheet.dart';
-import 'player_controls_bar.dart';
+import '../sheets/video_settings_sheet.dart';
+import '../widgets/interactive_subtitle_view.dart';
+import 'center_controls.dart';
+import 'subtitle_controls_bar.dart';
 import 'transcript_view.dart';
+import 'video_bottom_bar.dart';
+import 'video_header.dart';
+import 'video_progress_bar.dart';
 
 class VideoPlayerScreen extends StatefulWidget {
   final String videoId;
   final String title;
+  final String? channel;
+  final String? level;
+  final String? playlistTitle;
+  final int? playlistIndex;
+  final int? playlistTotal;
+  final VideoPlayerController? sharedPlayerController;
+  final YoutubePlayerController? sharedYtController;
 
   const VideoPlayerScreen({
     super.key,
     required this.videoId,
     required this.title,
+    this.channel,
+    this.level,
+    this.playlistTitle,
+    this.playlistIndex,
+    this.playlistTotal,
+    this.sharedPlayerController,
+    this.sharedYtController,
   });
 
   @override
@@ -31,37 +53,70 @@ class VideoPlayerScreen extends StatefulWidget {
 class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   late final YoutubePlayerController _ytController;
   late final VideoPlayerController _playerController;
+  final bool _ownsControllers = false;
+
   YoutubeError? _playerError;
   DateTime _lastHistorySave = DateTime.now();
+
+  // Custom Player Overlay & Gesture States
+  bool _areControlsVisible = true;
+  Timer? _controlsAutoHideTimer;
+
+  bool _leftSeekFeedback = false;
+  bool _rightSeekFeedback = false;
+  Timer? _seekFeedbackTimer;
+  DateTime? _lastLeftTapTime;
+  DateTime? _lastRightTapTime;
+  Timer? _pendingSingleTapTimer;
+
+  bool _isBuffering = false;
+  bool _isEnded = false;
+  double _bufferedFraction = 0.0;
 
   @override
   void initState() {
     super.initState();
-    _playerController = VideoPlayerController(
-      apiClient: AppState.instance.apiClient,
-      grammarEngine: AppState.instance.grammarEngine,
-    );
 
-    // Rule 2: Standard controller initialization without hardcoded key
-    _ytController = YoutubePlayerController(
-      params: const YoutubePlayerParams(
-        showControls: true,
-        showFullscreenButton: true,
-        mute: false,
-        enableCaption: false,
-        origin: 'https://www.youtube-nocookie.com',
-        privacyEnhancedMode: true,
-        userAgent:
-            'Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
-      ),
-    );
+    if (widget.sharedPlayerController != null && widget.sharedYtController != null) {
+      _playerController = widget.sharedPlayerController!;
+      _ytController = widget.sharedYtController!;
+    } else {
+      _playerController = VideoPlayerController(
+        apiClient: AppState.instance.apiClient,
+        grammarEngine: AppState.instance.grammarEngine,
+      );
 
-    _ytController.loadVideoById(videoId: widget.videoId);
+      // Rule 2 Invariant: Standard initialization without hardcoded key.
+      // pointerEvents: PointerEvents.none ensures touches pass directly to custom controls & gestures.
+      _ytController = YoutubePlayerController(
+        params: const YoutubePlayerParams(
+          showControls: false,
+          showFullscreenButton: false,
+          pointerEvents: PointerEvents.none,
+          showVideoAnnotations: false,
+          strictRelatedVideos: true,
+          enableKeyboard: false,
+          playsInline: true,
+          mute: false,
+          enableCaption: false,
+          origin: 'https://www.youtube-nocookie.com',
+          privacyEnhancedMode: true,
+          userAgent:
+              'Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
+        ),
+      );
 
-    // Listen to video position
+      _ytController.loadVideoById(videoId: widget.videoId);
+      _playerController.loadVideo(widget.videoId);
+    }
+
     _ytController.videoStateStream.listen((state) {
+      if (!mounted) return;
       final time = state.position.inMilliseconds / 1000.0;
       _playerController.currentTime.value = time;
+      setState(() {
+        _bufferedFraction = state.loadedFraction;
+      });
 
       // Sentence / Cue Looping
       if (_playerController.isLoopingCue.value) {
@@ -83,18 +138,33 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       }
     });
 
-    // Listen to player state & errors
     _ytController.listen((value) {
-      if (value.playerState == PlayerState.paused ||
-          value.playerState == PlayerState.ended) {
-        _saveWatchHistory();
-      }
-
+      if (!mounted) return;
       if (value.playerState == PlayerState.playing) {
         _playerController.isPlaying.value = true;
-      } else if (value.playerState == PlayerState.paused ||
-          value.playerState == PlayerState.ended) {
+        setState(() {
+          _isBuffering = false;
+          _isEnded = false;
+        });
+        _scheduleControlsAutoHide();
+      } else if (value.playerState == PlayerState.buffering) {
+        setState(() {
+          _isBuffering = true;
+        });
+      } else if (value.playerState == PlayerState.paused) {
         _playerController.isPlaying.value = false;
+        setState(() {
+          _isBuffering = false;
+        });
+        _saveWatchHistory();
+      } else if (value.playerState == PlayerState.ended) {
+        _playerController.isPlaying.value = false;
+        setState(() {
+          _isBuffering = false;
+          _isEnded = true;
+          _areControlsVisible = true;
+        });
+        _saveWatchHistory();
       }
 
       if (value.error != YoutubeError.none && value.error != _playerError) {
@@ -104,8 +174,114 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       }
     });
 
-    // Load subtitles
-    _playerController.loadVideo(widget.videoId);
+    _scheduleControlsAutoHide();
+  }
+
+  void _scheduleControlsAutoHide() {
+    _controlsAutoHideTimer?.cancel();
+    if (!_areControlsVisible) return;
+    _controlsAutoHideTimer = Timer(const Duration(milliseconds: 3500), () {
+      if (mounted && _playerController.isPlaying.value && !_isBuffering && !_isEnded) {
+        setState(() {
+          _areControlsVisible = false;
+        });
+      }
+    });
+  }
+
+  void _toggleControls() {
+    setState(() {
+      _areControlsVisible = !_areControlsVisible;
+    });
+    if (_areControlsVisible) {
+      _scheduleControlsAutoHide();
+    } else {
+      _controlsAutoHideTimer?.cancel();
+    }
+  }
+
+  void _handleSpatialTap(TapUpDetails details, double boxWidth) {
+    final x = details.localPosition.dx;
+    final now = DateTime.now();
+
+    if (x < boxWidth * 0.35) {
+      // Left 35%: Rewind 10s zone
+      _pendingSingleTapTimer?.cancel();
+      _pendingSingleTapTimer = null;
+
+      if (_lastLeftTapTime != null && now.difference(_lastLeftTapTime!).inMilliseconds < 250) {
+        _lastLeftTapTime = null;
+        _seekRelative(-10);
+        _triggerSeekFeedback(isLeft: true);
+      } else {
+        _lastLeftTapTime = now;
+        _pendingSingleTapTimer = Timer(const Duration(milliseconds: 260), () {
+          _lastLeftTapTime = null;
+          _toggleControls();
+        });
+      }
+    } else if (x > boxWidth * 0.65) {
+      // Right 35%: Forward 10s zone
+      _pendingSingleTapTimer?.cancel();
+      _pendingSingleTapTimer = null;
+
+      if (_lastRightTapTime != null && now.difference(_lastRightTapTime!).inMilliseconds < 250) {
+        _lastRightTapTime = null;
+        _seekRelative(10);
+        _triggerSeekFeedback(isLeft: false);
+      } else {
+        _lastRightTapTime = now;
+        _pendingSingleTapTimer = Timer(const Duration(milliseconds: 260), () {
+          _lastRightTapTime = null;
+          _toggleControls();
+        });
+      }
+    } else {
+      // Center 30%: Instant controls toggle without delay
+      _pendingSingleTapTimer?.cancel();
+      _pendingSingleTapTimer = null;
+      _lastLeftTapTime = null;
+      _lastRightTapTime = null;
+      _toggleControls();
+    }
+  }
+
+  void _seekRelative(double deltaSeconds) {
+    final cur = _playerController.currentTime.value;
+    final dur = _ytController.metadata.duration.inSeconds.toDouble();
+    final target = (cur + deltaSeconds).clamp(0.0, dur > 0 ? dur : double.infinity);
+    _ytController.seekTo(seconds: target, allowSeekAhead: true);
+    _playerController.currentTime.value = target;
+  }
+
+  void _triggerSeekFeedback({required bool isLeft}) {
+    _seekFeedbackTimer?.cancel();
+    setState(() {
+      if (isLeft) {
+        _leftSeekFeedback = true;
+        _rightSeekFeedback = false;
+      } else {
+        _rightSeekFeedback = true;
+        _leftSeekFeedback = false;
+      }
+    });
+    _seekFeedbackTimer = Timer(const Duration(milliseconds: 650), () {
+      if (mounted) {
+        setState(() {
+          _leftSeekFeedback = false;
+          _rightSeekFeedback = false;
+        });
+      }
+    });
+  }
+
+  void _handleMinimize() {
+    final coordinator = PlayerCoordinator.instance;
+    if (coordinator.hasActiveVideo) {
+      coordinator.minimize(context);
+    } else {
+      Navigator.of(context).maybePop();
+    }
   }
 
   Future<void> _saveWatchHistory() async {
@@ -119,7 +295,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           ? widget.title
           : _playerController.videoTitle.value;
       final thumbnail = 'https://img.youtube.com/vi/$videoId/hqdefault.jpg';
-      final author = _ytController.metadata.author;
+      final author = widget.channel ?? _ytController.metadata.author;
       final channel = author.isNotEmpty ? author : 'YouTube';
       final metaDur = _ytController.metadata.duration.inSeconds;
       final lastCue = _playerController.cues.value.isNotEmpty
@@ -146,85 +322,51 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     }
   }
 
-  void _handleBookmark() {
-    final active = _playerController.activeCue.value;
-    if (active == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: VocaTokens.bgCard,
-          content: Text(
-            'No active sentence to bookmark',
-            style: TextStyle(color: VocaTokens.textPrimary),
-          ),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: VocaTokens.bgCard,
-        content: Row(
-          children: [
-            const Icon(
-              Icons.bookmark_added_rounded,
-              color: VocaTokens.accentPrimary,
-              size: 18,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Bookmarked: ${active.text}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: VocaTokens.textPrimary),
-              ),
-            ),
-          ],
-        ),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
 
   @override
   void dispose() {
+    _controlsAutoHideTimer?.cancel();
+    _seekFeedbackTimer?.cancel();
+    _pendingSingleTapTimer?.cancel();
     _saveWatchHistory();
-    _ytController.close();
+    if (_ownsControllers) {
+      _ytController.close();
+    }
     super.dispose();
   }
 
-  Widget _buildVideoPlayer() {
+  Widget _buildVideoPlayerArea() {
+    final colors = context.vocaColors;
     if (_playerError != null && _playerError != YoutubeError.none) {
       return Container(
         height: 220,
-        color: VocaTokens.bgPrimary,
+        color: colors.bgCard,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              Icon(
                 Icons.lock_outline_rounded,
-                color: VocaTokens.warning,
+                color: colors.accentTertiary,
                 size: 36,
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Playback Restricted by Owner',
                 style: TextStyle(
-                  color: VocaTokens.textPrimary,
+                  color: colors.textPrimary,
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                 ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'YouTube owner disabled third-party embedding for this track. You can open it in YouTube while using Voca for subtitles & vocabulary.',
                 style: TextStyle(
-                  color: VocaTokens.textSecondary,
+                  color: colors.textSecondary,
                   fontSize: 11.5,
                 ),
                 textAlign: TextAlign.center,
@@ -232,23 +374,15 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
               const SizedBox(height: 12),
               ElevatedButton.icon(
                 onPressed: () => launchUrl(
-                  Uri.parse(
-                    'https://www.youtube.com/watch?v=${widget.videoId}',
-                  ),
+                  Uri.parse('https://www.youtube.com/watch?v=${widget.videoId}'),
                   mode: LaunchMode.externalApplication,
                 ),
                 icon: const Icon(Icons.open_in_new, size: 14),
-                label: const Text(
-                  'Watch on YouTube',
-                  style: TextStyle(fontSize: 12.5),
-                ),
+                label: const Text('Watch on YouTube', style: TextStyle(fontSize: 12.5)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: VocaTokens.error,
+                  backgroundColor: colors.accentPrimary,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 ),
               ),
             ],
@@ -257,230 +391,265 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       );
     }
 
-    return YoutubePlayer(
-      controller: _ytController,
-      aspectRatio: 16 / 9,
-      backgroundColor: Colors.transparent,
-    );
-  }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final boxWidth = constraints.maxWidth;
+        final totalDuration = _ytController.metadata.duration.inSeconds.toDouble();
 
-  Widget _buildSubtitleArea() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.only(bottom: 24),
-      child: Column(
-        children: [
-          // Loading / Status indicator
-          Watch((context) {
-            final isLoading = _playerController.isLoading.value;
-            final status = _playerController.statusMessage.value;
-            if (isLoading && status != null) {
-              return Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
-                ),
-                margin: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: VocaTokens.bgCard,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: VocaTokens.borderColor),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: VocaTokens.accentPrimary,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      status,
-                      style: const TextStyle(
-                        color: VocaTokens.textSecondary,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }
-            return const SizedBox.shrink();
-          }),
-
-          // Language Mismatch Alert Banner
-          Watch((context) {
-            final isMismatch = _playerController.languageMismatch.value;
-            final available = _playerController.availableLanguages.value;
-            if (!isMismatch) return const SizedBox.shrink();
-
-            return Container(
-              margin: const EdgeInsets.all(12),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: VocaTokens.bgCard,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: VocaTokens.accentTertiary.withOpacity(0.5),
-                ),
+        return AspectRatio(
+          aspectRatio: 16 / 9,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // 1. YouTube Player with pointerEvents: none (Touches handled exclusively by Flutter)
+              YoutubePlayer(
+                controller: _ytController,
+                aspectRatio: 16 / 9,
+                backgroundColor: Colors.black,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline_rounded,
-                        color: VocaTokens.accentTertiary,
-                        size: 18,
+
+              // 2. Spatial Gesture Detector Layer (Double Tap Seek & Single Tap Controls)
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTapUp: (details) => _handleSpatialTap(details, boxWidth),
+                child: const SizedBox.expand(),
+              ),
+
+              // 3. Left Double-Tap Seek Feedback Overlay (-10s)
+              if (_leftSeekFeedback)
+                Positioned(
+                  left: 20,
+                  top: 0,
+                  bottom: 0,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.75),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: Colors.white.withOpacity(0.2)),
                       ),
-                      SizedBox(width: 8),
-                      Text(
-                        'No captions in selected language',
-                        style: TextStyle(
-                          color: VocaTokens.accentTertiary,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.fast_rewind_rounded, color: Colors.white, size: 20),
+                          SizedBox(width: 4),
+                          Text(
+                            '10s',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Available native captions: ${available.native.join(", ")}',
-                    style: const TextStyle(
-                      color: VocaTokens.textSecondary,
-                      fontSize: 12.5,
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      if (available.native.isNotEmpty)
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () {
-                              AppState.instance
-                                  .setLanguage(available.native.first);
-                              _playerController.loadVideo(widget.videoId);
-                            },
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: VocaTokens.textPrimary,
-                              side: const BorderSide(
-                                color: VocaTokens.borderColor,
+                ),
+
+              // 4. Right Double-Tap Seek Feedback Overlay (+10s)
+              if (_rightSeekFeedback)
+                Positioned(
+                  right: 20,
+                  top: 0,
+                  bottom: 0,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.75),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: Colors.white.withOpacity(0.2)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '10s',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                          SizedBox(width: 4),
+                          Icon(Icons.fast_forward_rounded, color: Colors.white, size: 20),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+              // 5. Custom Controls Overlay with Smooth Fade Transition
+              IgnorePointer(
+                ignoring: !_areControlsVisible,
+                child: AnimatedOpacity(
+                  opacity: _areControlsVisible ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 220),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withOpacity(0.75),
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.85),
+                        ],
+                        stops: const [0.0, 0.45, 1.0],
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Compact top bar inside overlay (minimize chevron)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          child: Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white, size: 28),
+                                tooltip: context.t('player.minimize', null, 'Minimize'),
+                                onPressed: _handleMinimize,
                               ),
-                            ),
-                            child: Text(
-                              'Switch to ${available.native.first}',
-                            ),
+                            ],
                           ),
                         ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            _playerController.loadVideo(
-                              widget.videoId,
-                              preferAI: true,
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: VocaTokens.accentPrimary,
-                            foregroundColor: Colors.white,
-                          ),
-                          child: const Text('AI Transcribe'),
-                        ),
-                      ),
-                    ],
+
+                        // Center Controls (Play/Pause, Buffering loader, Replay)
+                        Watch((context) {
+                          final isPlaying = _playerController.isPlaying.value;
+                          return CenterControls(
+                            isPlaying: isPlaying,
+                            isBuffering: _isBuffering,
+                            isEnded: _isEnded,
+                            areControlsVisible: _areControlsVisible,
+                            hasPlaylist: widget.playlistTotal != null && widget.playlistTotal! > 1,
+                            canPlayPrev: widget.playlistIndex != null && widget.playlistIndex! > 0,
+                            canPlayNext: widget.playlistIndex != null &&
+                                widget.playlistTotal != null &&
+                                widget.playlistIndex! < widget.playlistTotal! - 1,
+                            onPlayPause: () {
+                              if (isPlaying) {
+                                _ytController.pauseVideo();
+                              } else {
+                                _ytController.playVideo();
+                              }
+                            },
+                            onReplay: () {
+                              _ytController.seekTo(seconds: 0.0, allowSeekAhead: true);
+                              _ytController.playVideo();
+                            },
+                          );
+                        }),
+
+                        // Bottom Controls: Scrub bar + VideoBottomBar (showPlayPause: false eliminates duplicate!)
+                        Watch((context) {
+                          final curTime = _playerController.currentTime.value;
+                          final isPlaying = _playerController.isPlaying.value;
+                          final showDual = _playerController.showTranslation.value;
+                          final subsVisible = _playerController.showFurigana.value || showDual;
+
+                          return Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Smooth Touch Scrubber
+                              VideoProgressBar(
+                                currentTime: curTime,
+                                duration: totalDuration,
+                                bufferedFraction: _bufferedFraction,
+                                onSeekStarted: () {
+                                  _controlsAutoHideTimer?.cancel();
+                                },
+                                onSeekEnded: (newSeconds) {
+                                  _ytController.seekTo(seconds: newSeconds, allowSeekAhead: true);
+                                  _playerController.currentTime.value = newSeconds;
+                                  _scheduleControlsAutoHide();
+                                },
+                              ),
+
+                              // Bottom Controls Row (Time, CC toggle, Dual Sub toggle, Settings, Miniplayer)
+                              VideoBottomBar(
+                                isPlaying: isPlaying,
+                                isEnded: _isEnded,
+                                currentTime: curTime,
+                                duration: totalDuration,
+                                showPlayPause: false, // NO duplicate play/pause with CenterControls!
+                                subtitlesVisible: subsVisible,
+                                showDualSubtitles: showDual,
+                                isCJKLanguage: ['ja', 'zh', 'ko'].contains(AppState.instance.activeLanguage.value),
+                                onPlayPause: () {
+                                  if (isPlaying) {
+                                    _ytController.pauseVideo();
+                                  } else {
+                                    _ytController.playVideo();
+                                  }
+                                },
+                                onToggleSubtitles: () {
+                                  _playerController.toggleFurigana();
+                                },
+                                onToggleDualSubtitles: () {
+                                  _playerController.toggleTranslation();
+                                },
+                                onOpenSettings: () {
+                                  VideoSettingsSheet.show(
+                                    context,
+                                    controller: _playerController,
+                                    ytController: _ytController,
+                                  );
+                                },
+                                onToggleMiniplayer: _handleMinimize,
+                              ),
+                            ],
+                          );
+                        }),
+                      ],
+                    ),
                   ),
-                ],
+                ),
               ),
-            );
-          }),
-
-          // Interactive Subtitle Overlay
-          Watch((context) {
-            final activeCue = _playerController.activeCue.value;
-            final grammarMatches =
-                _playerController.activeGrammarMatches.value;
-            final showFurigana =
-                _playerController.showFurigana.value;
-            final showTranslation =
-                _playerController.showTranslation.value;
-            final subtitleSize =
-                _playerController.subtitleSize.value;
-
-            if (activeCue == null) {
-              return Container(
-                constraints: const BoxConstraints(minHeight: 76),
-                margin: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                alignment: Alignment.center,
-                child: const Text(
-                  'Listening...',
-                  style: TextStyle(
-                    color: VocaTokens.textMuted,
-                    fontSize: 14,
-                  ),
-                ),
-              );
-            }
-
-            return InteractiveSubtitleView(
-              cue: activeCue,
-              grammarMatches: grammarMatches,
-              showFurigana: showFurigana,
-              showTranslation: showTranslation,
-              subtitleSize: subtitleSize,
-              onTokenTap: (token) {
-                _ytController.pauseVideo();
-                DictionaryBottomSheet.show(
-                  context,
-                  token: token,
-                  sourceLang: AppState.instance.activeLanguage.value,
-                  contextSentence: activeCue.text,
-                  contextTranslation: activeCue.translation,
-                );
-              },
-              onGrammarTap: (pattern) {
-                _ytController.pauseVideo();
-                GrammarBottomSheet.show(context, pattern);
-              },
-            );
-          }),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTranscriptArea() {
-    return TranscriptView(
-      controller: _playerController,
-      onSeek: (seconds) => _ytController.seekTo(
-        seconds: seconds,
-        allowSeekAhead: true,
-      ),
-      onTokenTap: (token) {
-        _ytController.pauseVideo();
-        final active = _playerController.activeCue.value;
-        DictionaryBottomSheet.show(
-          context,
-          token: token,
-          sourceLang: AppState.instance.activeLanguage.value,
-          contextSentence: active?.text,
-          contextTranslation: active?.translation,
+            ],
+          ),
         );
       },
-      onGrammarTap: (pattern) {
-        _ytController.pauseVideo();
-        GrammarBottomSheet.show(context, pattern);
-      },
     );
+  }
+
+  Widget _buildSubtitleView() {
+    return Watch((context) {
+      final activeCue = _playerController.activeCue.value;
+      final grammarMatches = _playerController.activeGrammarMatches.value;
+      final showFurigana = _playerController.showFurigana.value;
+      final showTranslation = _playerController.showTranslation.value;
+      final subtitleSize = _playerController.subtitleSize.value;
+
+      return InteractiveSubtitleView(
+        cue: activeCue,
+        grammarMatches: grammarMatches,
+        showFurigana: showFurigana,
+        showTranslation: showTranslation,
+        subtitleSize: subtitleSize,
+        isLooping: _playerController.isLoopingCue.value,
+        hasSubtitles: _playerController.cues.value.isNotEmpty,
+        isLoading: _playerController.isLoading.value,
+        isAIGenerating: _playerController.isAIGenerated.value && _playerController.cues.value.isEmpty,
+        onTokenTap: (token) {
+          _ytController.pauseVideo();
+          DictionaryBottomSheet.show(
+            context,
+            token: token,
+            sourceLang: AppState.instance.activeLanguage.value,
+            contextSentence: activeCue?.text,
+            contextTranslation: activeCue?.translation,
+          );
+        },
+        onGrammarTap: (pattern) {
+          _ytController.pauseVideo();
+          GrammarBottomSheet.show(context, pattern);
+        },
+      );
+    });
   }
 
   @override
@@ -490,88 +659,145 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         mediaQuery.size.width >= VocaTokens.tabletBreakpoint ||
             mediaQuery.orientation == Orientation.landscape;
 
-    return Scaffold(
-      backgroundColor: VocaTokens.bgPrimary,
-      appBar: AppBar(
-        backgroundColor: VocaTokens.bgPrimary,
-        elevation: 0,
-        title: Text(
-          widget.title,
-          style: const TextStyle(
-            fontSize: 16,
-            color: VocaTokens.textPrimary,
-            fontWeight: FontWeight.w600,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        iconTheme: const IconThemeData(color: VocaTokens.textPrimary),
-      ),
-      body: SafeArea(
-        child: isTabletOrLandscape
-            ? Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Left Pane (flex 3): 16:9 Youtube player + sticky subtitle display + PlayerControlsBar
-                  Expanded(
-                    flex: 3,
-                    child: Column(
-                      children: [
-                        _buildVideoPlayer(),
-                        PlayerControlsBar(
-                          controller: _playerController,
-                          ytController: _ytController,
-                          onBookmark: _handleBookmark,
-                          showTranscriptToggle: false,
-                        ),
-                        Expanded(
-                          child: _buildSubtitleArea(),
-                        ),
-                      ],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _handleMinimize();
+      },
+      child: Scaffold(
+        backgroundColor: context.vocaColors.bgPrimary,
+        body: SafeArea(
+          child: isTabletOrLandscape
+              ? Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Left Pane (flex 3): 16:9 Youtube player + VideoHeader + sticky subtitle view + subtitle controls bar
+                    Expanded(
+                      flex: 3,
+                      child: Column(
+                        children: [
+                          _buildVideoPlayerArea(),
+                          Watch((context) {
+                            return VideoHeader(
+                              title: widget.title.isNotEmpty
+                                  ? widget.title
+                                  : _playerController.videoTitle.value,
+                              channel: widget.channel ?? _ytController.metadata.author,
+                              videoId: widget.videoId,
+                              level: widget.level ?? _playerController.difficultyLevel.value,
+                              controller: _playerController,
+                              ytController: _ytController,
+                              onCloseTap: _handleMinimize,
+                            );
+                          }),
+                          Expanded(
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: _buildSubtitleView(),
+                            ),
+                          ),
+                          SubtitleControlsBar(
+                            controller: _playerController,
+                            ytController: _ytController,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
 
-                  // Right Pane (flex 2): Synchronized TranscriptView panel
-                  Expanded(
-                    flex: 2,
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        color: VocaTokens.bgPrimary,
-                        border: Border(
-                          left: BorderSide(color: VocaTokens.borderColor),
+                    // Right Pane (flex 2): Synchronized TranscriptView
+                    Expanded(
+                      flex: 2,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: context.vocaColors.bgPrimary,
+                          border: Border(
+                            left: BorderSide(color: context.vocaColors.borderColor),
+                          ),
+                        ),
+                        child: TranscriptView(
+                          controller: _playerController,
+                          onSeek: (seconds) => _ytController.seekTo(
+                            seconds: seconds,
+                            allowSeekAhead: true,
+                          ),
+                          onTokenTap: (token) {
+                            _ytController.pauseVideo();
+                            final active = _playerController.activeCue.value;
+                            DictionaryBottomSheet.show(
+                              context,
+                              token: token,
+                              sourceLang: AppState.instance.activeLanguage.value,
+                              contextSentence: active?.text,
+                              contextTranslation: active?.translation,
+                            );
+                          },
+                          onGrammarTap: (pattern) {
+                            _ytController.pauseVideo();
+                            GrammarBottomSheet.show(context, pattern);
+                          },
                         ),
                       ),
-                      child: _buildTranscriptArea(),
                     ),
-                  ),
-                ],
-              )
-            : Column(
-                children: [
-                  // 16:9 Youtube player
-                  _buildVideoPlayer(),
+                  ],
+                )
+              : Column(
+                  children: [
+                    // 1. 16:9 Youtube Player with Gesture Detector, Center Controls & Bottom Bar
+                    _buildVideoPlayerArea(),
 
-                  // Player Controls Bar (with transcript toggle on mobile)
-                  PlayerControlsBar(
-                    controller: _playerController,
-                    ytController: _ytController,
-                    onBookmark: _handleBookmark,
-                    showTranscriptToggle: true,
-                  ),
-
-                  // Main Content Area: Subtitle Overlay view OR Transcript List view
-                  Expanded(
-                    child: Watch((context) {
-                      final isTranscript =
-                          _playerController.isTranscriptMode.value;
-                      if (isTranscript) {
-                        return _buildTranscriptArea();
-                      }
-                      return _buildSubtitleArea();
+                    // 2. VideoHeader (Title, channel, level badge, tracks, share, close)
+                    Watch((context) {
+                      return VideoHeader(
+                        title: widget.title.isNotEmpty
+                            ? widget.title
+                            : _playerController.videoTitle.value,
+                        channel: widget.channel ?? _ytController.metadata.author,
+                        videoId: widget.videoId,
+                        level: widget.level ?? _playerController.difficultyLevel.value,
+                        controller: _playerController,
+                        ytController: _ytController,
+                        onCloseTap: _handleMinimize,
+                      );
                     }),
-                  ),
-                ],
-              ),
+
+                    // 3. Active Subtitle Cue Card (Comfortable fixed height matching lingua-tube)
+                    _buildSubtitleView(),
+
+                    // 4. Synchronized Subtitle Cue List (flex scroll area)
+                    Expanded(
+                      child: TranscriptView(
+                        controller: _playerController,
+                        onSeek: (seconds) => _ytController.seekTo(
+                          seconds: seconds,
+                          allowSeekAhead: true,
+                        ),
+                        onTokenTap: (token) {
+                          _ytController.pauseVideo();
+                          final active = _playerController.activeCue.value;
+                          DictionaryBottomSheet.show(
+                            context,
+                            token: token,
+                            sourceLang: AppState.instance.activeLanguage.value,
+                            contextSentence: active?.text,
+                            contextTranslation: active?.translation,
+                          );
+                        },
+                        onGrammarTap: (pattern) {
+                          _ytController.pauseVideo();
+                          GrammarBottomSheet.show(context, pattern);
+                        },
+                      ),
+                    ),
+
+                    // 5. Authentic Subtitle Controls Toolbar ([Loop 1/3], [Added (count)], [Quiz], [Options])
+                    SubtitleControlsBar(
+                      controller: _playerController,
+                      ytController: _ytController,
+                    ),
+                  ],
+                ),
+        ),
       ),
     );
   }

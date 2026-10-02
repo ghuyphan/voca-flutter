@@ -1,42 +1,29 @@
 // lib/state/player_state.dart
 
+import 'dart:async';
 import 'package:signals_flutter/signals_flutter.dart';
 import '../models/voca_models.dart';
 import '../services/voca_api_client.dart';
 import '../services/grammar_engine.dart';
+import '../services/dual_sub_service.dart';
 import 'app_state.dart';
 
 class VideoPlayerController {
   final VocaApiClient apiClient;
   final GrammarEngine grammarEngine;
+  late final DualSubService dualSubService;
 
   VideoPlayerController({
     required this.apiClient,
     required this.grammarEngine,
   }) {
-    // Computed signal: Find active cue using the Sticky Subtitle Rule
+    dualSubService = DualSubService(apiClient: apiClient);
+
+    // Computed signal: Find active cue using the Sticky Subtitle Rule (Rule 6)
     activeCue = computed(() {
       final time = currentTime.value;
       final cueList = cues.value;
-      if (cueList.isEmpty) return null;
-
-      for (int i = 0; i < cueList.length; i++) {
-        final cue = cueList[i];
-        final nextStart = (i + 1 < cueList.length) ? cueList[i + 1].start : double.infinity;
-
-        // In duration
-        if (time >= cue.start && time < (cue.start + cue.duration)) {
-          return cue;
-        }
-
-        // Sticky gap hold (< 3.0s)
-        if (time >= (cue.start + cue.duration) && time < nextStart) {
-          if ((nextStart - (cue.start + cue.duration)) <= 3.0) {
-            return cue;
-          }
-        }
-      }
-      return null;
+      return findActiveCue(time, cueList);
     });
 
     // Automatically detect grammar patterns whenever the active cue changes
@@ -48,7 +35,9 @@ class VideoPlayerController {
     });
   }
 
+  // --- Core Playback & Video Metadata Signals ---
   final currentVideoId = signal<String?>(null);
+  String get videoId => currentVideoId.value ?? '';
   final videoTitle = signal<String>('');
   final currentTime = signal<double>(0.0);
   final isPlaying = signal<bool>(false);
@@ -57,8 +46,10 @@ class VideoPlayerController {
   final statusMessage = signal<String?>(null);
   final languageMismatch = signal<bool>(false);
   final availableLanguages = signal<AvailableLanguages>(AvailableLanguages());
+  final difficultyLevel = signal<String?>(null);
+  final isAIGenerated = signal<bool>(false);
 
-  // Immersion & subtitle display signals
+  // --- Immersion & Subtitle Display Signals ---
   final playbackRate = signal<double>(1.0);
   final isLoopingCue = signal<bool>(false);
   final loopingCue = signal<SubtitleCue?>(null);
@@ -68,8 +59,255 @@ class VideoPlayerController {
   final isTranscriptMode = signal<bool>(false);
   final autoScrollTranscript = signal<bool>(true);
 
+  // --- Subtitles Visibility Toggle ---
+  final subtitlesVisible = signal<bool>(true);
+
+  // --- Miniplayer State ---
+  final isMiniplayer = signal<bool>(false);
+
+  // --- Quiz Mode Active Signal ---
+  final isQuizActive = signal<bool>(false);
+
+  // --- Dual Subtitles Target Language & Lookahead ---
+  final dualSubLanguage = signal<String?>('vi');
+  Signal<bool> get isDualSubLoading => dualSubService.isDualSubLoading;
+
+  // --- Sleep Timer Signals ---
+  final sleepTimerOption = signal<String>('off'); // 'off' | '10' | '15' | '30' | '45' | '60' | 'end'
+  final sleepTimerRemainingSeconds = signal<int?>(null);
+
+  // --- Readonly Computed Signals ---
   late final ReadonlySignal<SubtitleCue?> activeCue;
   late final ReadonlySignal<List<GrammarMatch>> activeGrammarMatches;
+
+  // --- Pause Lock Coordinator ---
+  final Set<String> _pauseLocks = <String>{};
+  bool _wasPlayingBeforeLock = false;
+
+  bool get isPauseLocked => _pauseLocks.isNotEmpty;
+
+  // --- Internal State & Timers ---
+  Timer? _sleepTimer;
+  void Function()? _onSleepTimerEnd;
+
+  // ============================================================================
+  // Pause Lock Coordinator API
+  // ============================================================================
+
+  /// Acquire pause lock when opening a modal bottom sheet (dictionary, grammar, playlist, settings).
+  /// If the player was playing before the first lock, calls [onPause] and records playing state.
+  void acquirePauseLock(String reason, {required void Function() onPause}) {
+    if (_pauseLocks.isEmpty) {
+      _wasPlayingBeforeLock = isPlaying.value;
+      _pauseLocks.add(reason);
+      if (_wasPlayingBeforeLock) {
+        onPause();
+      }
+    } else {
+      _pauseLocks.add(reason);
+    }
+  }
+
+  /// Release pause lock when a modal is dismissed.
+  /// When all active locks are cleared, resumes playback via [onResume] if it was playing before locks.
+  void releasePauseLock(String reason, {required void Function() onResume}) {
+    final wasRemoved = _pauseLocks.remove(reason);
+    if (wasRemoved && _pauseLocks.isEmpty) {
+      if (_wasPlayingBeforeLock) {
+        _wasPlayingBeforeLock = false;
+        onResume();
+      }
+    }
+  }
+
+  /// Clear all pause locks unconditionally
+  void clearPauseLocks() {
+    _pauseLocks.clear();
+    _wasPlayingBeforeLock = false;
+  }
+
+  // ============================================================================
+  // Sticky Subtitle Rule (Rule 6) & Cue Search
+  // ============================================================================
+
+  /// Find active cue index using O(log n) binary search with Rule 6 Sticky Subtitle logic.
+  /// Holds the last ended cue for up to 2.0s - 3.0s (2.5s) into timestamp gaps before the next cue starts.
+  int findActiveCueIndex(double time, [List<SubtitleCue>? cueList]) {
+    final list = cueList ?? cues.value;
+    if (list.isEmpty) return -1;
+
+    int left = 0;
+    int right = list.length - 1;
+    int candidate = -1;
+
+    while (left <= right) {
+      final mid = (left + right) ~/ 2;
+      if (list[mid].start <= time) {
+        candidate = mid;
+        left = mid + 1;
+      } else {
+        right = mid - 1;
+      }
+    }
+
+    if (candidate != -1) {
+      // 1. Scan backwards from candidate to find latest overlapping active cue
+      final startScan = (candidate - 6).clamp(0, candidate);
+      for (int i = candidate; i >= startScan; i--) {
+        final c = list[i];
+        if (time >= c.start && time < (c.start + c.duration)) {
+          return i;
+        }
+      }
+
+      // 2. Rule 6 Sticky Subtitle: hold ended cue for up to 2.5s gap if next cue hasn't started
+      final candCue = list[candidate];
+      final candEnd = candCue.start + candCue.duration;
+      final nextStart = (candidate + 1 < list.length) ? list[candidate + 1].start : double.infinity;
+
+      if (time >= candEnd && time < nextStart) {
+        if ((time - candEnd) <= 2.5) {
+          return candidate;
+        }
+      }
+    }
+
+    return -1;
+  }
+
+  /// Returns the active cue (or sticky held cue) for the given timestamp
+  SubtitleCue? findActiveCue(double time, [List<SubtitleCue>? cueList]) {
+    final list = cueList ?? cues.value;
+    if (list.isEmpty) return null;
+    final idx = findActiveCueIndex(time, list);
+    return (idx >= 0 && idx < list.length) ? list[idx] : null;
+  }
+
+  // ============================================================================
+  // Miniplayer API
+  // ============================================================================
+
+  void toggleMiniplayer() {
+    isMiniplayer.value = !isMiniplayer.value;
+  }
+
+  void setMiniplayer(bool value) {
+    isMiniplayer.value = value;
+  }
+
+  // ============================================================================
+  // Sleep Timer API
+  // ============================================================================
+
+  /// Sets sleep timer option: 'off' | '10' | '15' | '30' | '45' | '60' | 'end'
+  /// On expiry or end-of-video, triggers [onTimerEnd] callback and resets to 'off'.
+  void setSleepTimer(String option, {required void Function() onTimerEnd}) {
+    cancelSleepTimer();
+    sleepTimerOption.value = option;
+    _onSleepTimerEnd = onTimerEnd;
+
+    if (option == 'off') {
+      return;
+    }
+
+    if (option == 'end') {
+      sleepTimerRemainingSeconds.value = null;
+      return;
+    }
+
+    final minutes = int.tryParse(option);
+    if (minutes == null || minutes <= 0) {
+      sleepTimerOption.value = 'off';
+      return;
+    }
+
+    int secondsLeft = minutes * 60;
+    sleepTimerRemainingSeconds.value = secondsLeft;
+
+    _sleepTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      secondsLeft--;
+      if (secondsLeft <= 0) {
+        cancelSleepTimer();
+        sleepTimerOption.value = 'off';
+        _onSleepTimerEnd?.call();
+      } else {
+        sleepTimerRemainingSeconds.value = secondsLeft;
+      }
+    });
+  }
+
+  /// Cancels active sleep timer countdown
+  void cancelSleepTimer() {
+    _sleepTimer?.cancel();
+    _sleepTimer = null;
+    sleepTimerRemainingSeconds.value = null;
+  }
+
+  /// Clears sleep timer and resets option to 'off'
+  void clearSleepTimer() {
+    cancelSleepTimer();
+    sleepTimerOption.value = 'off';
+    _onSleepTimerEnd = null;
+  }
+
+  /// Call when video reaches the end to handle 'end' sleep timer setting
+  void handleVideoEnded() {
+    if (sleepTimerOption.value == 'end') {
+      cancelSleepTimer();
+      sleepTimerOption.value = 'off';
+      _onSleepTimerEnd?.call();
+    }
+  }
+
+  // ============================================================================
+  // Subtitles Visibility API
+  // ============================================================================
+
+  void toggleSubtitlesVisible() {
+    subtitlesVisible.value = !subtitlesVisible.value;
+  }
+
+  void setSubtitlesVisible(bool visible) {
+    subtitlesVisible.value = visible;
+  }
+
+  // ============================================================================
+  // Quiz Mode API
+  // ============================================================================
+
+  void toggleQuizMode() {
+    isQuizActive.value = !isQuizActive.value;
+  }
+
+  void setQuizMode(bool active) {
+    isQuizActive.value = active;
+  }
+
+  // ============================================================================
+  // Dual Subtitles & Lookahead Streaming Buffer
+  // ============================================================================
+
+  void setDualSubLanguage(String? lang) {
+    if (dualSubLanguage.value != lang) {
+      dualSubLanguage.value = lang;
+      if (lang != null && lang.isNotEmpty) {
+        dualSubService.setTargetLanguage(lang);
+      }
+    }
+  }
+
+  /// Update playback time and trigger dual subtitle lookahead progress
+  void updatePlaybackTime(double time) {
+    currentTime.value = time;
+    final idx = findActiveCueIndex(time);
+    if (idx != -1) {
+      dualSubService.onPlaybackProgress(idx);
+    }
+  }
+
+  // ============================================================================
+  // Video Loading & Tokenization
+  // ============================================================================
 
   /// Load video and fetch synchronized transcripts
   Future<void> loadVideo(String videoId, {bool preferAI = false, String? turnstileToken}) async {
@@ -77,6 +315,8 @@ class VideoPlayerController {
     isLoading.value = true;
     statusMessage.value = 'Loading subtitles...';
     languageMismatch.value = false;
+    difficultyLevel.value = null;
+    isAIGenerated.value = false;
     cues.value = [];
     isLoopingCue.value = false;
     loopingCue.value = null;
@@ -94,6 +334,12 @@ class VideoPlayerController {
       );
 
       availableLanguages.value = res.availableLanguages;
+      if (res.source == 'ai') {
+        isAIGenerated.value = true;
+      }
+      if (res.levels.isNotEmpty) {
+        difficultyLevel.value = res.levels[targetLang] ?? res.levels['overall'] ?? res.levels.values.first;
+      }
 
       if (res.languageMismatch) {
         languageMismatch.value = true;
@@ -110,6 +356,18 @@ class VideoPlayerController {
 
         // Asynchronously batch tokenize cues if needed
         _tokenizeCues(videoId, targetLang, rawCues);
+
+        // Initialize DualSubService (Cloudflare R2 cache lookup + Two-tier streaming)
+        final dualTarget = dualSubLanguage.value ?? 'vi';
+        dualSubService.initializeForVideo(
+          videoId: videoId,
+          sourceLang: targetLang,
+          targetLang: dualTarget,
+          cues: cues.value,
+          onCuesUpdated: (updatedCues) {
+            cues.value = List.from(updatedCues);
+          },
+        );
       } else {
         isLoading.value = false;
         statusMessage.value = res.error ?? 'No subtitles found for this video';
@@ -140,7 +398,7 @@ class VideoPlayerController {
     }
   }
 
-  /// Urgent seek translation micro-batch (< 200ms)
+  /// Urgent seek translation micro-batch (< 200ms) with lookahead buffer follow-up
   Future<void> handleSeek(double time) async {
     currentTime.value = time;
     final cueList = cues.value;
@@ -148,16 +406,13 @@ class VideoPlayerController {
 
     final index = cueList.indexWhere((c) => time >= c.start && time < (c.start + c.duration + 2.0));
     if (index != -1) {
-      final targetLang = AppState.instance.activeLanguage.value;
-      await apiClient.translateUrgentSeek(
-        cues: cueList,
-        activeIndex: index,
-        sourceLang: targetLang,
-        targetLang: 'vi', // Default UI explanation language
-      );
-      cues.value = List.from(cueList);
+      dualSubService.onPlaybackProgress(index);
     }
   }
+
+  // ============================================================================
+  // Playback Navigation & Loop Controls
+  // ============================================================================
 
   /// Toggle looping the currently active cue
   void toggleLoopCurrentCue() {
@@ -237,6 +492,10 @@ class VideoPlayerController {
 
   void toggleTranslation() {
     showTranslation.value = !showTranslation.value;
+    if (showTranslation.value) {
+      final currentIdx = findActiveCueIndex(currentTime.value);
+      dualSubService.onPlaybackProgress(currentIdx >= 0 ? currentIdx : 0);
+    }
   }
 
   void toggleTranscriptMode() {
@@ -259,5 +518,11 @@ class VideoPlayerController {
         subtitleSize.value = SubtitleSize.small;
         break;
     }
+  }
+
+  void dispose() {
+    dualSubService.dispose();
+    cancelSleepTimer();
+    clearPauseLocks();
   }
 }

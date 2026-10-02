@@ -10,6 +10,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   # State Management (Signal-first reactive state matching Angular 19 Signals)
   signals_flutter: ^5.5.0
@@ -34,7 +36,7 @@ dependencies:
   # Payments & Utilities
   purchases_flutter: ^8.6.0
   url_launcher: ^6.3.1
-  intl: ^0.19.0
+  intl: ^0.20.2
   shared_preferences: ^2.3.3
   audioplayers: ^6.8.1
 
@@ -52,3 +54,5 @@ flutter:
     - assets/grammar/grammar_ko.json
     - assets/grammar/grammar_en.json
     - assets/i18n/
+    - assets/images/
+    - assets/icons/

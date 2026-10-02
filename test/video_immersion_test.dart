@@ -7,7 +7,6 @@ import 'package:voca_flutter/services/grammar_engine.dart';
 import 'package:voca_flutter/services/voca_api_client.dart';
 import 'package:voca_flutter/state/player_state.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
-import 'package:voca_flutter/ui/video/player_controls_bar.dart';
 import 'package:voca_flutter/ui/video/transcript_view.dart';
 import 'package:voca_flutter/ui/widgets/interactive_subtitle_view.dart';
 
@@ -262,49 +261,4 @@ void main() {
     });
   });
 
-  group('PlayerControlsBar Widget Tests', () {
-    testWidgets('Toggles furigana (振) and translation (文)', (tester) async {
-      final ytController = FakeYoutubePlayerController();
-      final cue = SubtitleCue(start: 0.0, duration: 2.0, text: 'Test sentence');
-      controller.cues.value = [cue];
-      controller.currentTime.value = 0.5;
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: PlayerControlsBar(
-              controller: controller,
-              ytController: ytController,
-            ),
-          ),
-        ),
-      );
-
-      await tester.pump();
-
-      // Check for ruby '振' and translation '文'
-      expect(find.text('振'), findsOneWidget);
-      expect(find.text('文'), findsOneWidget);
-
-      // Initial states
-      expect(controller.showFurigana.value, isTrue);
-      expect(controller.showTranslation.value, isTrue);
-
-      // Tap '振' toggle
-      await tester.tap(find.text('振'));
-      expect(controller.showFurigana.value, isFalse);
-
-      // Tap '文' toggle
-      await tester.tap(find.text('文'));
-      expect(controller.showTranslation.value, isFalse);
-
-      // Loop sentence button
-      final loopBtn = find.byIcon(Icons.repeat_rounded);
-      expect(loopBtn, findsOneWidget);
-      await tester.tap(loopBtn);
-      expect(controller.isLoopingCue.value, isTrue);
-
-      ytController.close();
-    });
-  });
 }

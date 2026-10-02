@@ -13,7 +13,8 @@
     "updatingDesc": "새로운 기능을 준비하고 있어요...",
     "updateSuccess": "v{{version}}(으)로 업데이트되었습니다!",
     "reloadNow": "새로고침",
-    "dataSafe": "학습 기록이 안전하게 저장되었습니다"
+    "dataSafe": "학습 기록이 안전하게 저장되었습니다",
+    "tagline": "YouTube로 배우는 진짜 외국어"
   },
   "nav": {
     "video": "동영상",
@@ -21,7 +22,7 @@
     "learn": "학습",
     "added": "저장한 단어",
     "words": "단어",
-    "vocab": "단어",
+    "vocab": "단어장",
     "vocabulary": "단어",
     "dictionary": "사전",
     "study": "복습",
@@ -31,7 +32,8 @@
     "settings": "설정",
     "newVideo": "새 동영상",
     "quickLinks": "빠른 링크",
-    "more": "더보기"
+    "more": "더보기",
+    "library": "보관함"
   },
   "commandPalette": {
     "placeholder": "YouTube 링크 붙여넣기 또는 검색...",
@@ -71,7 +73,8 @@
     "signInToUpgrade": "로그인 후 업그레이드",
     "signInToUpgradeDesc": "구독을 연동하고 기기 간에 동기화하려면 Google 계정으로 로그인해 주세요.",
     "freeDiamondsNotice": "가입 즉시 AI 자막 생성에 쓸 수 있는 다이아몬드가 매일 무료로 지급돼요!",
-    "guestUser": "게스트"
+    "guestUser": "게스트",
+    "signInFailedError": "로그인 실패: {error}"
   },
   "player": {
     "paste": "붙여넣기",
@@ -125,7 +128,9 @@
     "nowPlaying": "현재 재생 중",
     "videoCompleted": "동영상 시청 완료",
     "embedErrorHelp": "이 동영상은 외부 사이트 재생이 제한되어 있습니다. 소유자가 재생을 제한했거나 삭제된 동영상입니다.",
-    "watchOnYouTube": "YouTube에서 시청"
+    "watchOnYouTube": "YouTube에서 시청",
+    "previousSentence": "이전 문장",
+    "nextSentence": "다음 문장"
   },
   "subtitle": {
     "loop": "반복",
@@ -220,7 +225,12 @@
     "dualSubs": "이중 자막",
     "dualSubsHint": "보조 번역 자막 표시",
     "translating": "자막 번역 중...",
-    "reading": "발음"
+    "reading": "발음",
+    "dualSubtitles": "이중 자막",
+    "subtitlesOn": "자막 켜짐",
+    "readingGuide": "발음 가이드",
+    "display": "화면 표시",
+    "title": "자막"
   },
   "pro": {
     "title": "Voca 서포터",
@@ -232,7 +242,7 @@
     "premiumBadge": "파운더",
     "getPro": "Voca 후원하기",
     "upgrade": "후원하기",
-    "upgradeToPro": "서포터 되기",
+    "upgradeToPro": "Pro로 업그레이드",
     "upgradeToPremium": "파운더 되기",
     "viewPro": "후원 혜택 보기",
     "needMoreCredits": "다이아몬드가 더 필요하신가요?",
@@ -297,7 +307,12 @@
     "signInToUpgradePrompt": "구독을 업그레이드하려면 로그인해 주세요",
     "createOrderFailed": "결제 주문 생성에 실패했습니다",
     "qrAlt": "VietQR 송금 코드",
-    "nonProfitDisclaimer": "Voca는 비영리 교육 지원 프로젝트입니다. 후원해 주신 금액은 전액 서버 유지비, AI 음성 인식 처리 비용, 사전 데이터베이스 운영에 사용됩니다."
+    "nonProfitDisclaimer": "Voca는 비영리 교육 지원 프로젝트입니다. 후원해 주신 금액은 전액 서버 유지비, AI 음성 인식 처리 비용, 사전 데이터베이스 운영에 사용됩니다.",
+    "checkoutComingSoon": "Pro 구독 결제가 곧 제공될 예정입니다!",
+    "featureUnlimitedTranscribe": "💎 무제한 AI Whisper 자막 생성",
+    "featureSrsDecks": "⚡ 무제한 간격 반복 SRS 덱",
+    "featureGrammarRules": "📚 2,400개 이상의 문법 규칙 및 분석",
+    "featureSync": "☁️ 완벽한 기기 간 클라우드 동기화"
   },
   "vocab": {
     "title": "단어장",
@@ -334,7 +349,20 @@
     "syncHint": "Google 계정으로 로그인하여 여러 기기에서 단어장을 동기화하세요.",
     "filterAll": "전체",
     "filterWords": "단어",
-    "filterGrammar": "문법"
+    "filterGrammar": "문법",
+    "savedWords": "저장된 단어",
+    "noSavedWords": "저장된 단어가 없습니다",
+    "tapWordHint": "인터랙티브 자막의 단어를 탭하여 번역하고 SRS 학습 덱에 저장하세요.",
+    "deleteWordConfirm": "단어장에서 \"{word}\" 단어를 삭제하시겠습니까?",
+    "wordRemoved": "단어장에서 삭제되었습니다",
+    "editNotes": "메모 편집",
+    "notesHint": "나만의 암기 팁이나 메모를 추가하세요...",
+    "stageUpdated": "학습 단계가 {stage}(으)로 변경되었습니다",
+    "videoContextSentence": "동영상 문맥 예문",
+    "srsStats": "간격 반복 (SM-2) 통계",
+    "setMasteryStage": "숙련도 단계 설정",
+    "markReview": "복습 대상으로 표시",
+    "markMastered": "완전 습득으로 표시"
   },
   "popup": {
     "translationLang": "번역 언어",
@@ -364,7 +392,9 @@
     "saveSuccess": "\"{{pattern}}\" 문법 노트에 추가됨",
     "noGrammarSaved": "저장된 문법이 없어요",
     "clickGrammarToSave": "동영상을 시청하거나 사전을 찾을 때 문법을 저장하면 여기서 복습할 수 있어요.",
-    "moreDetails": "더 보기"
+    "moreDetails": "더 보기",
+    "highlightDesc": "JLPT / HSK / TOPIK / CEFR 문법 규칙 강조 표시",
+    "title": "문법"
   },
   "dictionary": {
     "title": "사전",
@@ -460,7 +490,35 @@
     "profileUpdated": "프로필이 성공적으로 업데이트되었습니다!",
     "profileUpdateFailed": "프로필 업데이트에 실패했습니다. 다시 시도해 주세요.",
     "countryHint": "글로벌 랭킹에서 이름 옆에 표시됩니다",
-    "language": "언어"
+    "language": "언어",
+    "subtitles": "자막",
+    "subtitleSize": "자막 크기",
+    "sizeSmall": "작게",
+    "sizeMedium": "보통",
+    "sizeLarge": "크게",
+    "readingDisplayDesc": "글자 위에 발음 표기(후리가나/병음/로마자) 표시",
+    "dualSubtitles": "이중 자막",
+    "dualSubtitlesDesc": "보조 번역 자막 표시",
+    "theme": "테마",
+    "themeDesc": "앱 디자인 및 테마 설정",
+    "themeSystem": "시스템 설정",
+    "themeLight": "라이트",
+    "themeDark": "다크",
+    "uiLanguage": "앱 언어",
+    "uiLanguageDesc": "UI 표시 언어 변경",
+    "furiganaPinyin": "발음 표기 가이드",
+    "alwaysShow": "항상 표시",
+    "onTapOnly": "탭할 때만",
+    "off": "끄기",
+    "subtitleSizeDesc": "자막 글꼴 크기 조정",
+    "nativeLanguage": "사전 번역 언어",
+    "nativeLanguageDesc": "단어 의미 표시에 사용되는 언어",
+    "autoPause": "단어 검색 시 자동 일시정지",
+    "autoPauseDesc": "단어를 탭하여 사전을 열 때 영상을 일시정지합니다",
+    "system": "시스템 및 정보",
+    "version": "앱 버전",
+    "architecture": "아키텍처",
+    "archDesc": "Edge + Supabase"
   },
   "study": {
     "title": "단어 복습",
@@ -541,7 +599,7 @@
     "searchQueue": "복습 카드 검색...",
     "noCardsInQueue": "복습할 카드가 없어요",
     "nextReview": "다음 복습",
-    "dueNow": "지금 복습",
+    "dueNow": "지금 복습 필요",
     "filterAll": "전체",
     "filterWords": "단어",
     "filterGrammar": "문법",
@@ -556,7 +614,20 @@
     "combo": "콤보",
     "comboStreak": "{{count}}연속 정답!",
     "highestCombo": "최고 콤보",
-    "xpEarned": "획득 XP"
+    "xpEarned": "획득 XP",
+    "addWord": "단어 추가",
+    "added": "저장됨",
+    "wordAdded": "\"{word}\" 단어를 학습 덱에 추가했습니다!",
+    "saveFailed": "단어 저장 실패: {error}",
+    "repetitions": "반복 횟수",
+    "times": "회",
+    "currentInterval": "현재 간격",
+    "days": "일",
+    "easeFactor": "용이도 계수 (EF)",
+    "lastReviewed": "마지막 복습",
+    "today": "오늘",
+    "tomorrow": "내일",
+    "inDays": "{days}일 후"
   },
   "streak": {
     "dayStreak": "일 연속 학습",
@@ -582,7 +653,7 @@
     "howToExtend": "연속 학습을 이어가려면 매일 영상을 시청하거나 단어를 복습하세요. 프리즈 없이 하루를 건너뛰면 기록이 0일로 리셋돼요.",
     "freezeExplanation": "스트릭 프리즈는 학습을 쉬어간 날에도 연속 기록을 안전하게 지켜줘요. (남은 프리즈: {{count}}개)",
     "reached": "도달했습니다",
-    "days": "일!",
+    "days": "일",
     "saved": "연속 학습 보호됨! ❄️",
     "daysReached": "{{count}}일 연속 달성!",
     "replenish": "복구",
@@ -601,13 +672,20 @@
     "longestExpedition": "최장 원정 기록",
     "frostWards": "서리 결계",
     "infuseWard": "서리 결계 충전",
-    "trailTitle": "주간 원정 트레일"
+    "trailTitle": "주간 원정 트레일",
+    "title": "연속 학습 일수",
+    "bestStreak": "최고 기록",
+    "freezesLeft": "남은 프리즈",
+    "fullStats": "전체 통계",
+    "keepStreak": "오늘 동영상을 보거나 카드를 복습하여 연속 기록을 이어가세요!",
+    "personalBest": "개인 최고 기록",
+    "activityLast7Days": "활동 (최근 7일)"
   },
   "history": {
     "title": "시청 기록",
     "subtitle": "이전에 보던 곳에서 계속",
-    "noHistory": "아직 시청한 동영상이 없습니다",
-    "noHistoryHint": "시청한 동영상이 여기에 표시됩니다",
+    "noHistory": "시청 기록이 없습니다",
+    "noHistoryHint": "스마트 자막과 함께 몰입형 동영상을 시청하며 학습 진행 상황을 기록하세요.",
     "noFavorites": "즐겨찾기가 없습니다",
     "noFavoritesHint": "하트 아이콘을 탭하여 저장",
     "clearAll": "모두 삭제",
@@ -618,7 +696,7 @@
     "noMatchesFound": "일치하는 동영상이 없습니다",
     "noMatchesHint": "검색어나 필터 조건을 변경해 보세요",
     "clearFilters": "필터 초기화",
-    "exploreVideos": "동영상 둘러보기",
+    "exploreVideos": "동영상 탐색",
     "progress": "진행률",
     "inProgress": "시청 중",
     "completed": "완료",
@@ -633,7 +711,9 @@
     "syncHint": "기기 간 기록을 동기화하려면 로그인하세요",
     "searchHistory": "시청 기록 검색...",
     "justNow": "방금",
-    "overview": "개요"
+    "overview": "개요",
+    "clearHistory": "시청 기록 삭제",
+    "watchHistory": "시청 기록"
   },
   "playlist": {
     "title": "재생목록",
@@ -667,7 +747,7 @@
       "videosHint": "상단 검색창에 YouTube 링크를 입력해 스마트 자막으로 바로 학습을 시작해 보세요",
       "feedErrorTitle": "추천 동영상을 불러올 수 없습니다",
       "feedErrorHint": "네트워크 연결을 확인한 뒤 다시 시도해 주세요.",
-      "noVideosTitle": "동영상이 없습니다",
+      "noVideosTitle": "아직 동영상이 없습니다",
       "noVideosHint": "동영상을 시청하면서 이 재생목록에 추가해 보세요",
       "title": "재생목록을 찾을 수 없습니다",
       "hint": "필터나 검색어를 변경해 보세요",
@@ -682,7 +762,7 @@
     "by": "{{author}} 제작",
     "createPlaylist": "재생목록 만들기",
     "titleLabel": "제목",
-    "titlePlaceholder": "재생목록 제목 입력",
+    "titlePlaceholder": "예: K-Pop 노래로 배우는 한국어",
     "descriptionLabel": "설명 (선택사항)",
     "descriptionPlaceholder": "설명 추가...",
     "languageLabel": "언어",
@@ -707,7 +787,7 @@
     "transcribedVideos": "AI 생성 자막 동영상",
     "sharePlaylist": "재생목록 공유",
     "loopPlaylist": "재생목록 반복",
-    "shufflePlaylist": "셔플 재생",
+    "shufflePlaylist": "재생목록 셔플",
     "moveUp": "위로 이동",
     "moveDown": "아래로 이동",
     "moveToTop": "맨 위로 이동",
@@ -742,11 +822,25 @@
     "continueStudying": "학습 계속하기",
     "resume": "이어보기",
     "browseByLanguage": "언어별 탐색",
-    "loopOn": "반복 재생 켜짐",
+    "loopOn": "반복 켜짐",
     "shuffleOn": "셔플 켜짐",
     "toggleQueue": "재생 대기열 열기/닫기",
     "viewPlaylist": "재생목록 보기",
-    "videoSingular": "동영상"
+    "videoSingular": "동영상",
+    "emptyDesc": "맞춤 재생목록을 만들어 주제나 시험 등급별로 몰입 동영상을 정리해 보세요.",
+    "addToPlaylist": "재생목록에 추가",
+    "createFirst": "+ 첫 재생목록 만들기",
+    "createdSuccess": "재생목록을 만들었습니다",
+    "updatedSuccess": "재생목록을 업데이트했습니다",
+    "description": "설명 (선택사항)",
+    "titleRequired": "재생목록 제목을 입력하세요",
+    "descPlaceholder": "이 재생목록에 대한 간단한 메모",
+    "playlistsSaved": "재생목록 / 저장됨",
+    "emptyPlaylist": "재생목록이 비어 있습니다",
+    "emptyPlaylistHint": "탐색 또는 플레이어에서 동영상을 북마크하여 여기에 저장하세요.",
+    "videoCountSuffix": "개 영상",
+    "updateFailed": "재생목록 업데이트 실패: {error}",
+    "saveFailed": "재생목록 저장 실패: {error}"
   },
   "common": {
     "all": "전체",
@@ -770,7 +864,17 @@
     "confirm": "확인",
     "cancel": "취소",
     "loadMore": "더 보기",
-    "chunkLoadError": "앱 리소스를 불러오지 못했습니다. 네트워크 연결을 확인해 주세요."
+    "chunkLoadError": "앱 리소스를 불러오지 못했습니다. 네트워크 연결을 확인해 주세요.",
+    "gotIt": "확인",
+    "clearAll": "모두 삭제",
+    "language": "언어",
+    "loadFailed": "콘텐츠를 불러올 수 없습니다",
+    "paste": "클립보드에서 붙여넣기",
+    "reset": "초기화",
+    "save": "저장",
+    "remove": "삭제",
+    "delete": "삭제",
+    "apply": "적용"
   },
   "onboarding": {
     "welcomeTitle": "Voca에 오신 것을 환영합니다",
@@ -1022,12 +1126,24 @@
     "howCadenceDesc": "영상 속 실제 말하기 속도를 측정해 난이도에 반영했어요.",
     "immersionTipTitle": "학습 팁",
     "immersionTipPace": "속도가 너무 빠르다면 재생 속도를 0.75배로 낮추거나 이중 자막을 켜보세요. 단어를 탭하면 뜻을 확인할 수 있습니다.",
-    "immersionTipFast": "빠른 원어민 속도입니다. 재생 속도를 0.75배로 낮추거나 자동 일시정지(P)를 켜서 한 문장씩 소화해 보세요.",
-    "immersionTipAdvanced": "심화 문법과 다채로운 어휘가 포함되어 있습니다. 모르는 단어를 탭해 사전을 확인하거나 이중 자막(D)을 활용해 보세요.",
-    "immersionTipBeginner": "명확하고 듣기 편한 난이도입니다! 이중 자막을 끄고 순수 듣기에 도전해 보거나, 모르는 단어를 탭해 단어장에 저장해 보세요.",
+    "immersionTipFast": "빠른 원어민 발화입니다. 0.85x 배속으로 듣거나 어려운 문장을 반복해 보세요.",
+    "immersionTipAdvanced": "고급 콘텐츠입니다. 단어를 탭하여 사전에서 의미를 확인하세요.",
+    "immersionTipBeginner": "명확한 어조의 콘텐츠입니다. 듣기 이해와 섀도잉 연습에 매우 좋습니다.",
     "evaluationSummaryLinguistic": "자막의 문법 패턴, 어휘 난이도 및 말하기 속도를 바탕으로 측정한 레벨입니다.",
     "evaluationSummaryMetadata": "동영상 제목, 채널 또는 교육과정 정보를 바탕으로 일치시킨 레벨입니다.",
-    "confidenceScore": "신뢰도"
+    "confidenceScore": "신뢰도",
+    "immersionLevel": "숙련도 레벨",
+    "grammar": "문법",
+    "spokenPace": "말하기 속도",
+    "immersionTip": "학습 팁",
+    "evaluatedLinguistic": "자막의 문법 패턴, 어휘 난이도 및 말하기 속도를 바탕으로 측정한 레벨입니다。",
+    "evaluatedCurriculum": "동영상 제목, 채널 또는 교육과정 정보를 바탕으로 일치시킨 레벨입니다。",
+    "targetLevel": "목표 난이도 레벨",
+    "analyzedFromSubtitles": "자막에서 분석됨",
+    "curriculumMatch": "커리큘럼 일치",
+    "patterns": "문법 패턴",
+    "detected": "감지됨",
+    "immersionTipDefault": "너무 빠른가요? 0.75x로 속도를 낮추거나 옵션에서 이중 자막을 켜세요."
   },
   "gamification": {
     "level": "레벨",
@@ -1089,7 +1205,13 @@
     "rank47": "무한한 기억",
     "rank48": "자막의 빛",
     "rank49": "전설의 폴리글랏",
-    "rank50": "살아있는 사전"
+    "rank50": "살아있는 사전",
+    "aiCredits": "사용 가능한 AI 크레딧",
+    "dayStreak": "연속 학습 일수",
+    "diamond": "다이아몬드",
+    "streak": "연속 학습",
+    "polyglotScholar": "다국어 학자",
+    "totalXp": "총 XP"
   },
   "leaderboard": {
     "title": "글로벌 랭킹",
@@ -1342,6 +1464,203 @@
     "quiz100": {
       "title": "퀴즈 챔피언",
       "desc": "자막 퀴즈 100회 정답 맞추기"
+    },
+    "completed": "완료됨",
+    "first_video": {
+      "title": "첫 동영상 시청",
+      "desc": "Voca에서 첫 번째 인터랙티브 동영상 레슨을 시청하세요."
+    },
+    "words_10": {
+      "title": "단어 10개 수집",
+      "desc": "학습 덱에 새로운 단어 카드 10개를 추가하세요."
+    },
+    "streak_7": {
+      "title": "7일 연속 학습",
+      "desc": "7일 연속으로 언어 몰입 학습을 유지하세요."
+    },
+    "vocab_master": {
+      "title": "어휘 마스터",
+      "desc": "SRS를 통해 50개의 단어 카드를 복습하고 마스터하세요."
     }
+  },
+  "dict": {
+    "noResults": "사전에 등록되지 않은 단어예요",
+    "loadError": "단어 정의를 불러올 수 없습니다: {error}",
+    "definitions": "단어 정의"
+  },
+  "transcript": {
+    "search": "자막 검색...",
+    "autoScroll": "자동 스크롤",
+    "manual": "수동",
+    "noMatching": "일치하는 자막을 찾을 수 없습니다",
+    "noTranscript": "사용 가능한 자막이 없습니다",
+    "stopLooping": "문장 반복 재생 중지",
+    "loopSentence": "이 문장 반복 재생"
+  },
+  "video": {
+    "jumpToCurrent": "현재 위치로 이동",
+    "loopingSentence": "문장 반복 재생 중",
+    "restrictedTitle": "소유자에 의해 재생이 제한됨",
+    "restrictedDesc": "동영상 소유자가 외부 재생을 비활성화했습니다. YouTube에서 동영상을 직접 재생하면서 Voca의 대화형 자막 및 어휘 학습 기능을 계속 이용할 수 있습니다.",
+    "watchOnYouTube": "YouTube에서 시청",
+    "linkCopied": "링크가 클립보드에 복사되었습니다!",
+    "curatedQueue": "추천 재생목록 대기열 • {{current}} / {{total}}",
+    "switchToLang": "{{lang}} 자막으로 전환",
+    "useAITranscription": "AI 자막 생성하기",
+    "waitingForPlayback": "동영상 재생 대기 중...",
+    "toolbar": {
+      "loop": "반복",
+      "added": "저장한 단어",
+      "quiz": "퀴즈",
+      "options": "옵션"
+    }
+  },
+  "aiCredits": {
+    "explanation": "AI 크레딧은 후리가나 생성, 문법 분석 및 문맥 AI 사전 설명에 사용됩니다.",
+    "refillNotice": "24시간마다 5 AI 크레딧이 무료로 충전됩니다.",
+    "refresh": "크레딧 새로고침",
+    "refreshed": "AI 크레딧이 새로고침되었습니다!"
+  },
+  "audio": {
+    "playing": "재생 중...",
+    "pronounce": "발음 듣기",
+    "listenContext": "문맥 음성 듣기"
+  },
+  "credits": {
+    "title": "AI 크레딧"
+  },
+  "explore": {
+    "all": "전체",
+    "backToVideos": "모든 영상으로 돌아가기",
+    "filterByTopic": "주제별 필터",
+    "myPlaylists": "내 재생목록",
+    "noPlaylists": "재생목록을 찾을 수 없습니다",
+    "noPlaylistsDesc": "이 언어의 몰입형 재생목록이 없습니다.",
+    "noVideos": "몰입형 영상을 찾을 수 없습니다",
+    "paste": "붙여넣기",
+    "playlists": "재생목록",
+    "resetFilters": "필터 초기화",
+    "searchHint": "YouTube 링크 붙여넣기 또는 검색...",
+    "topic": "주제",
+    "topicAll": "전체",
+    "topicTrending": "인기 급상승",
+    "topicAnimeDrama": "애니 & 드라마",
+    "topicMusic": "음악",
+    "topicNews": "뉴스",
+    "topicVlog": "브이로그",
+    "topicConversation": "회화",
+    "videoDetected": "유효한 YouTube 동영상 ({id}) 감지됨!",
+    "watchNow": "지금 시청",
+    "watchVideoTooltip": "YouTube 영상 시청",
+    "discover": "탐색",
+    "filter": "필터",
+    "filterVideos": "동영상 필터",
+    "filterSubtitle": "주제 및 난이도별 필터링",
+    "topics": "주제 및 카테고리",
+    "levelFilter": "난이도",
+    "removedFromBookmarks": "북마크에서 삭제되었습니다",
+    "savedToBookmarks": "\"{{title}}\" 북마크에 저장되었습니다"
+  },
+  "flashcards": {
+    "again": "다시",
+    "hard": "어려움",
+    "good": "알맞음",
+    "easy": "쉬움",
+    "card": "카드",
+    "of": "/",
+    "showAnswer": "정답 보기",
+    "meaning": "의미",
+    "tapHint": "카드를 탭하여 의미 확인",
+    "tapBackHint": "카드를 탭하여 뒤집기",
+    "backToHome": "홈으로 돌아가기",
+    "chooseDefinition": "올바른 의미를 선택하세요:",
+    "selectAnswerAbove": "위의 보기에서 선택하세요",
+    "revealContext": "단어 및 문맥 보기",
+    "keepItUp": "계속 힘내세요!",
+    "sessionComplete": "세션 완료!",
+    "sessionCompleteDesc": "이 덱의 모든 간격 반복 복습을 완료했습니다.",
+    "sessionRecap": "학습 요약",
+    "recapReviewed": "복습 완료",
+    "recapAccuracy": "정답률",
+    "recapGoodEasy": "알맞음 / 쉬움",
+    "recapAgainHard": "다시 / 어려움",
+    "dailyBonus": "일일 학습 보너스",
+    "reloadCards": "카드 다시 불러오기",
+    "reviewMore": "더 복습하기",
+    "studyDeck": "SRS 학습 덱",
+    "mode": {
+      "flashcard": "플래시카드",
+      "cloze": "빈칸 채우기",
+      "quiz": "퀴즈"
+    }
+  },
+  "practice": {
+    "title": "몰입 학습 연습",
+    "subtitle": "발음과 능동적 회상 완벽 마스터",
+    "shadowing": "섀도잉",
+    "cloze": "빈칸 퀴즈",
+    "clozeTest": "빈칸 테스트",
+    "noCueSelected": "선택된 자막이 없습니다. 영상을 재생하여 문장을 선택하세요.",
+    "loopCue": "문장 반복",
+    "stopLoop": "반복 정지",
+    "rateSetNotice": "섀도잉을 위해 재생 속도를 0.85배로 설정했습니다",
+    "chooseMissingWord": "위 문장의 빈칸에 들어갈 단어를 선택하세요:",
+    "correct": "정답입니다! +15 XP",
+    "incorrect": "오답입니다. 다음 문장에 도전하세요!",
+    "replayCue": "자막 다시 듣기"
+  },
+  "profile": {
+    "title": "계정 및 프로필",
+    "cloudSynced": "클라우드 동기화됨",
+    "guestMode": "게스트 모드 (기기 전용)",
+    "levelProgress": "레벨 진행률",
+    "signIn": "로그인",
+    "signOut": "로그아웃",
+    "signOutConfirm": "정말 로그아웃하시겠습니까? 오프라인 학습 기록은 이 기기에 안전하게 유지됩니다.",
+    "learner": "학습자",
+    "guestLearner": "게스트 학습자",
+    "aiCreditsDesc": "AI 자막 생성 및 Whisper 크레딧"
+  },
+  "search": {
+    "noResults": "검색 결과가 없습니다",
+    "noResultsHint": "다른 검색어를 입력하거나 YouTube 링크를 붙여넣으세요"
+  },
+  "sidebar": {
+    "watch": "시청 및 학습",
+    "review": "플래시카드 복습",
+    "vocab": "단어장",
+    "playlists": "재생목록",
+    "history": "시청 기록",
+    "settings": "설정"
+  },
+  "spotlight": {
+    "hint": "YouTube 링크 붙여넣기 또는 검색...",
+    "startLearning": "학습 시작",
+    "quickNavigation": "빠른 탐색",
+    "searchResults": "검색 결과",
+    "watchSubtitle": "영상 카탈로그 및 레슨 탐색",
+    "reviewSubtitle": "간격 반복 시스템 (SRS)",
+    "vocabSubtitle": "저장된 단어 및 문법 표현",
+    "playlistsSubtitle": "추천 재생목록 및 저장된 영상",
+    "historySubtitle": "최근 시청한 영상 이어보기",
+    "settingsSubtitle": "후리가나, 글꼴 크기 및 환경설정",
+    "bilingualImmersion": "탭하여 이중 언어 몰입 및 자막 생성 시작",
+    "youtubeVideo": "YOUTUBE 영상",
+    "loadVideo": "YouTube 영상 불러오기: {id}"
+  },
+  "words": {
+    "title": "단어장",
+    "empty": "이 카테고리에 저장된 단어가 없습니다",
+    "emptyHint": "영상을 시청하며 단어를 탭하여 추가하세요!",
+    "refreshTooltip": "단어 새로고침",
+    "searchPlaceholder": "단어, 발음, 의미 검색...",
+    "filterAll": "전체",
+    "filterNew": "신규",
+    "filterLearning": "학습 중",
+    "filterMastered": "마스터",
+    "sortDateAdded": "추가된 날짜순",
+    "sortAlpha": "가나다순",
+    "sortMastery": "숙련도순",
+    "sortInterval": "SRS 간격순"
   }
 }

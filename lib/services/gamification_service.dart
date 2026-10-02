@@ -157,6 +157,9 @@ class GamificationService {
   ];
 
   final achievements = signal<List<Achievement>>(_defaultAchievements);
+  late final Computed<bool> hasClaimableRewards = computed(() =>
+    achievements.value.any((a) => !a.isUnlocked && a.current >= a.target)
+  );
 
   final Set<String> _activeDateStrings = {};
   DateTime? _lastActiveDate;

@@ -13,7 +13,8 @@
     "updatingDesc": "新しい機能を準備しています...",
     "updateSuccess": "v{{version}} にアップデートしました！",
     "reloadNow": "再読み込み",
-    "dataSafe": "学習データは安全に保存されています"
+    "dataSafe": "学習データは安全に保存されています",
+    "tagline": "YouTubeで生きた言語を学ぶ"
   },
   "nav": {
     "video": "動画",
@@ -31,7 +32,8 @@
     "settings": "設定",
     "newVideo": "動画を追加",
     "quickLinks": "クイックリンク",
-    "more": "その他"
+    "more": "その他",
+    "library": "ライブラリ"
   },
   "commandPalette": {
     "placeholder": "YouTubeのリンクまたは検索...",
@@ -71,7 +73,8 @@
     "signInToUpgrade": "ログインしてアップグレード",
     "signInToUpgradeDesc": "プラン特典の適用や複数端末でのデータ同期には、Googleログインが必要です。",
     "freeDiamondsNotice": "新規登録で、動画のAI文字起こしに使える無料ダイヤを毎日プレゼント！",
-    "guestUser": "ゲスト学習者"
+    "guestUser": "ゲスト学習者",
+    "signInFailedError": "ログインに失敗しました: {error}"
   },
   "player": {
     "paste": "貼り付け",
@@ -125,7 +128,9 @@
     "nowPlaying": "再生中",
     "videoCompleted": "動画を見終わりました",
     "embedErrorHelp": "この動画は埋め込み再生が許可されていません。YouTubeで直接ご覧ください。",
-    "watchOnYouTube": "YouTubeで視聴"
+    "watchOnYouTube": "YouTubeで視聴",
+    "previousSentence": "前の文",
+    "nextSentence": "次の文"
   },
   "subtitle": {
     "loop": "ループ",
@@ -220,7 +225,12 @@
     "dualSubs": "対訳字幕",
     "dualSubsHint": "母国語の翻訳字幕を同時に表示",
     "translating": "字幕を翻訳中...",
-    "reading": "読み方"
+    "reading": "読み方",
+    "dualSubtitles": "2言語字幕",
+    "subtitlesOn": "字幕 ON",
+    "readingGuide": "発音ガイド",
+    "display": "表示設定",
+    "title": "字幕"
   },
   "pro": {
     "title": "Voca サポーター",
@@ -232,7 +242,7 @@
     "premiumBadge": "ファウンダー",
     "getPro": "Vocaを支援する",
     "upgrade": "支援する",
-    "upgradeToPro": "サポーターになる",
+    "upgradeToPro": "Proにアップグレード",
     "upgradeToPremium": "ファウンダーになる",
     "viewPro": "特典を見る",
     "needMoreCredits": "ダイヤをもっと増やしたいですか？",
@@ -297,7 +307,12 @@
     "signInToUpgradePrompt": "プランをアップグレードするにはログインしてください",
     "createOrderFailed": "決済の開始に失敗しました。もう一度お試しください。",
     "qrAlt": "VietQR送金コード",
-    "nonProfitDisclaimer": "Vocaは非営利の教育支援プロジェクトです。いただいた支援金はすべて、サーバー維持費、AI音声認識の処理コスト、および辞書インフラの運用に充てられます。"
+    "nonProfitDisclaimer": "Vocaは非営利の教育支援プロジェクトです。いただいた支援金はすべて、サーバー維持費、AI音声認識の処理コスト、および辞書インフラの運用に充てられます。",
+    "checkoutComingSoon": "Proプランの登録は近日提供開始です！",
+    "featureUnlimitedTranscribe": "💎 無制限のAI Whisper文字起こし",
+    "featureSrsDecks": "⚡ 無制限の間隔反復SRS学習デッキ",
+    "featureGrammarRules": "📚 2,400以上の文法ルール＆解説",
+    "featureSync": "☁️ シームレスなクロスプラットフォーム同期"
   },
   "vocab": {
     "title": "単語帳",
@@ -334,7 +349,20 @@
     "syncHint": "Googleでログインして、単語帳を他のデバイスと同期。",
     "filterAll": "すべて",
     "filterWords": "単語",
-    "filterGrammar": "文法"
+    "filterGrammar": "文法",
+    "savedWords": "保存した単語",
+    "noSavedWords": "保存された単語はまだありません",
+    "tapWordHint": "字幕の単語をタップして辞書で調べ、SRSデッキに追加しましょう。",
+    "deleteWordConfirm": "単語帳から「{word}」を削除してもよろしいですか？",
+    "wordRemoved": "単語帳から削除しました",
+    "editNotes": "メモを編集",
+    "notesHint": "覚え方や個人的なメモを入力...",
+    "stageUpdated": "習得ステージを「{stage}」に更新しました",
+    "videoContextSentence": "動画内の文脈例文",
+    "srsStats": "間隔反復 (SM-2) 統計データ",
+    "setMasteryStage": "習得ステージを設定",
+    "markReview": "復習中に設定",
+    "markMastered": "習得済みに設定"
   },
   "popup": {
     "translationLang": "翻訳言語",
@@ -364,7 +392,9 @@
     "saveSuccess": "「{{pattern}}」を文法ノートに追加しました",
     "noGrammarSaved": "保存された文法はありません",
     "clickGrammarToSave": "動画の視聴中や辞書検索時に文法を保存すると、ここで復習できます。",
-    "moreDetails": "詳細"
+    "moreDetails": "詳細",
+    "highlightDesc": "JLPT / HSK / TOPIK / CEFR 文法ルールを強調表示",
+    "title": "文法"
   },
   "dictionary": {
     "title": "辞書",
@@ -460,7 +490,35 @@
     "profileUpdated": "プロフィールを更新しました！",
     "profileUpdateFailed": "プロフィールの更新に失敗しました。もう一度お試しください。",
     "countryHint": "グローバルランキングの名前の横に表示されます",
-    "language": "言語"
+    "language": "言語",
+    "subtitles": "字幕",
+    "subtitleSize": "文字サイズ",
+    "sizeSmall": "小",
+    "sizeMedium": "標準",
+    "sizeLarge": "大",
+    "readingDisplayDesc": "文字の上に読み仮名・発音ガイドを表示",
+    "dualSubtitles": "対訳字幕",
+    "dualSubtitlesDesc": "母国語の翻訳字幕を同時に表示",
+    "theme": "テーマ",
+    "themeDesc": "アプリの外観をカスタマイズ",
+    "themeSystem": "システム設定に従う",
+    "themeLight": "ライト",
+    "themeDark": "ダーク",
+    "uiLanguage": "表示言語",
+    "uiLanguageDesc": "画面の表示言語を変更",
+    "furiganaPinyin": "読み仮名・発音ガイド",
+    "alwaysShow": "常に表示",
+    "onTapOnly": "タップ時のみ",
+    "off": "オフ",
+    "subtitleSizeDesc": "字幕のフォントサイズを調整",
+    "nativeLanguage": "辞書解説言語",
+    "nativeLanguageDesc": "単語の意味を解説する言語",
+    "autoPause": "単語検索時に自動一時停止",
+    "autoPauseDesc": "単語をタップしたときに動画を一時停止します",
+    "system": "システムと情報",
+    "version": "バージョン",
+    "architecture": "アーキテクチャ",
+    "archDesc": "Edge + Supabase"
   },
   "study": {
     "title": "復習",
@@ -540,8 +598,8 @@
     "reviewDueNow": "今すぐ復習する",
     "searchQueue": "復習リストを検索...",
     "noCardsInQueue": "復習待ちのカードはありません",
-    "nextReview": "次の復習",
-    "dueNow": "今すぐ復習",
+    "nextReview": "次回の復習",
+    "dueNow": "復習期限です",
     "filterAll": "すべて",
     "filterWords": "単語",
     "filterGrammar": "文法",
@@ -556,7 +614,20 @@
     "combo": "コンボ",
     "comboStreak": "{{count}}問連続正解！",
     "highestCombo": "最大コンボ",
-    "xpEarned": "獲得XP"
+    "xpEarned": "獲得XP",
+    "addWord": "単語を追加",
+    "added": "追加済み",
+    "wordAdded": "「{word}」を単語帳に追加しました！",
+    "saveFailed": "単語の保存に失敗しました: {error}",
+    "repetitions": "復習回数",
+    "times": "回",
+    "currentInterval": "現在の間隔",
+    "days": "日",
+    "easeFactor": "難易度係数 (EF)",
+    "lastReviewed": "前回の復習",
+    "today": "今日",
+    "tomorrow": "明日",
+    "inDays": "{days}日後"
   },
   "streak": {
     "dayStreak": "連続記録",
@@ -582,7 +653,7 @@
     "howToExtend": "連続記録を伸ばすには毎日学習しましょう。フリーズがない状態で1日休むと、記録は0日にリセットされます。",
     "freezeExplanation": "ストリークフリーズを持っていると、学習し忘れた日でも記録が自動的に保護されます。残り{{count}}回分あります。",
     "reached": "達成しました",
-    "days": "日！",
+    "days": "日",
     "saved": "連続記録を保護しました！❄️",
     "daysReached": "{{count}}日連続達成！",
     "replenish": "回復",
@@ -601,13 +672,20 @@
     "longestExpedition": "最長遠征記録",
     "frostWards": "霜の結界",
     "infuseWard": "結界を補給",
-    "trailTitle": "週間遠征トレイル"
+    "trailTitle": "週間遠征トレイル",
+    "title": "連続学習日数",
+    "bestStreak": "自己ベスト",
+    "freezesLeft": "残りのフリーズ",
+    "fullStats": "詳しい統計",
+    "keepStreak": "今日も動画を見るかカードを復習して、連続日数を維持しましょう！",
+    "personalBest": "自己最高記録",
+    "activityLast7Days": "最近7日間の学習状況"
   },
   "history": {
     "title": "履歴",
     "subtitle": "前回の続きから再生",
-    "noHistory": "まだ動画を見ていません",
-    "noHistoryHint": "視聴した動画がここに表示されます",
+    "noHistory": "視聴履歴はまだありません",
+    "noHistoryHint": "インタラクティブ字幕付きの動画を視聴して、学習の進捗を記録しましょう。",
     "noFavorites": "お気に入りはまだありません",
     "noFavoritesHint": "ハートアイコンをタップして保存",
     "clearAll": "すべて削除",
@@ -633,7 +711,9 @@
     "syncHint": "ログインしてデバイス間で履歴を同期",
     "searchHistory": "履歴を検索...",
     "justNow": "たった今",
-    "overview": "概要"
+    "overview": "概要",
+    "clearHistory": "視聴履歴を消去",
+    "watchHistory": "視聴履歴"
   },
   "playlist": {
     "title": "プレイリスト",
@@ -642,7 +722,7 @@
     "myPlaylists": "マイリスト",
     "myPlaylist": "マイプレイリスト",
     "community": "コミュニティ",
-    "newPlaylist": "新規プレイリスト",
+    "newPlaylist": "新しいプレイリスト",
     "saveToPlaylist": "プレイリストに保存",
     "addedSuccess": "{{title}} に追加しました",
     "removedSuccess": "{{title}} から削除しました",
@@ -667,7 +747,7 @@
       "videosHint": "上の入力欄にYouTubeのリンクを貼り付けて、スマート字幕で学習を始めましょう",
       "feedErrorTitle": "おすすめ動画を読み込めませんでした",
       "feedErrorHint": "通信環境を確認して、もう一度お試しください。",
-      "noVideosTitle": "動画がありません",
+      "noVideosTitle": "動画がまだありません",
       "noVideosHint": "動画の再生中にこのプレイリストへ追加できます",
       "title": "プレイリストが見つかりません",
       "hint": "フィルターや検索キーワードを変更してみてください",
@@ -682,7 +762,7 @@
     "by": "作成者: {{author}}",
     "createPlaylist": "プレイリストを作成",
     "titleLabel": "タイトル",
-    "titlePlaceholder": "プレイリストのタイトルを入力",
+    "titlePlaceholder": "例: シティポップで学ぶ日本語",
     "descriptionLabel": "説明（任意）",
     "descriptionPlaceholder": "説明を追加...",
     "languageLabel": "言語",
@@ -690,7 +770,7 @@
     "tagsLabel": "タグ（最大5個）",
     "closePlaylist": "プレイリストを閉じる",
     "you": "マイリスト",
-    "curated": "厳選",
+    "curated": "おすすめ",
     "featured": "注目",
     "forYou": "あなたへのおすすめ",
     "searchResultsFor": "検索結果:",
@@ -707,7 +787,7 @@
     "transcribedVideos": "字幕付き動画",
     "sharePlaylist": "プレイリストを共有",
     "loopPlaylist": "プレイリストをループ再生",
-    "shufflePlaylist": "プレイリストをシャッフル",
+    "shufflePlaylist": "シャッフル再生",
     "moveUp": "上に移動",
     "moveDown": "下に移動",
     "moveToTop": "先頭へ移動",
@@ -742,11 +822,25 @@
     "continueStudying": "学習を続ける",
     "resume": "再開",
     "browseByLanguage": "言語別で探す",
-    "loopOn": "ループ再生中",
-    "shuffleOn": "シャッフル再生中",
+    "loopOn": "ループ再生 ON",
+    "shuffleOn": "シャッフル再生 ON",
     "toggleQueue": "再生リストを切り替え",
     "viewPlaylist": "プレイリストを表示",
-    "videoSingular": "動画"
+    "videoSingular": "動画",
+    "emptyDesc": "カスタムプレイリストを作成して、トピックや検定レベルごとに動画を整理しましょう。",
+    "addToPlaylist": "プレイリストに追加",
+    "createFirst": "+ 初めてのプレイリストを作成",
+    "createdSuccess": "プレイリストを作成しました",
+    "updatedSuccess": "プレイリストを更新しました",
+    "description": "説明（任意）",
+    "titleRequired": "プレイリストのタイトルを入力してください",
+    "descPlaceholder": "このコレクションについての短いメモ",
+    "playlistsSaved": "プレイリスト / 保存済み",
+    "emptyPlaylist": "このプレイリストは空です",
+    "emptyPlaylistHint": "「見つける」または再生画面から動画をブックマークして保存しましょう。",
+    "videoCountSuffix": "本の動画",
+    "updateFailed": "プレイリストの更新に失敗しました: {error}",
+    "saveFailed": "プレイリストの保存に失敗しました: {error}"
   },
   "common": {
     "all": "すべて",
@@ -770,7 +864,17 @@
     "confirm": "確認",
     "cancel": "キャンセル",
     "loadMore": "もっと読み込む",
-    "chunkLoadError": "アプリのリソースの読み込みに失敗しました。接続を確認してください。"
+    "chunkLoadError": "アプリのリソースの読み込みに失敗しました。接続を確認してください。",
+    "gotIt": "OK",
+    "clearAll": "すべて削除",
+    "language": "言語",
+    "loadFailed": "コンテンツを読み込めませんでした",
+    "paste": "クリップボードから貼り付け",
+    "reset": "リセット",
+    "save": "保存",
+    "remove": "削除",
+    "delete": "削除",
+    "apply": "適用"
   },
   "onboarding": {
     "welcomeTitle": "Vocaへようこそ",
@@ -1022,12 +1126,24 @@
     "howCadenceDesc": "音声の実際の発話ペースから測定されています。",
     "immersionTipTitle": "学習のヒント",
     "immersionTipPace": "速すぎると感じる場合は、再生速度を0.75倍にするか対訳字幕を有効にしてください。単語タップで意味を確認できます。",
-    "immersionTipFast": "速いネイティブ速度です。再生速度を0.75倍にするか、自動一時停止（P）を活用して1文ずつ確認しましょう。",
-    "immersionTipAdvanced": "高度な文法と豊富な語彙が含まれています。気になる単語をタップして辞書で確認したり、対訳字幕（D）を活用しましょう。",
-    "immersionTipBeginner": "聞き取りやすく学習に最適です！対訳字幕をオフにしてリスニングに挑戦し、新しい単語をタップして単語帳に保存してみましょう。",
+    "immersionTipFast": "ネイティブの速い話し方です。0.75倍速にするか、難しい文をループ再生してみましょう。",
+    "immersionTipAdvanced": "上級者向けコンテンツです。単語をタップして辞書で意味を調べましょう。",
+    "immersionTipBeginner": "聞き取りやすい話し方です。リスニング理解とシャドーイング練習に最適です。",
     "evaluationSummaryLinguistic": "字幕の文法パターン、語彙の難易度、発話スピードから推定されたレベルです。",
     "evaluationSummaryMetadata": "動画のタイトル、チャンネル、カリキュラム情報から判定されたレベルです。",
-    "confidenceScore": "信頼度"
+    "confidenceScore": "信頼度",
+    "immersionLevel": "習熟度レベル",
+    "grammar": "文法",
+    "spokenPace": "発話スピード",
+    "immersionTip": "学習のヒント",
+    "evaluatedLinguistic": "字幕の文法パターン、語彙の難易度、発話スピードから推定されたレベルです。",
+    "evaluatedCurriculum": "動画のタイトル、チャンネル、カリキュラム情報から判定されたレベルです。",
+    "targetLevel": "目標難易度レベル",
+    "analyzedFromSubtitles": "字幕から分析",
+    "curriculumMatch": "カリキュラム準拠",
+    "patterns": "文法パターン",
+    "detected": "検出済み",
+    "immersionTipDefault": "速すぎますか？0.75倍速にするか、設定で2言語字幕をオンにしてください。"
   },
   "gamification": {
     "level": "レベル",
@@ -1089,7 +1205,13 @@
     "rank47": "無限の記憶",
     "rank48": "字幕のルミナリー",
     "rank49": "伝説のポリグロット",
-    "rank50": "生きる生きた辞書"
+    "rank50": "生きる生きた辞書",
+    "aiCredits": "利用可能なAIクレジット",
+    "dayStreak": "連続日数",
+    "diamond": "ダイヤ",
+    "streak": "連続日数",
+    "polyglotScholar": "マルチリンガル学者",
+    "totalXp": "総獲得XP"
   },
   "leaderboard": {
     "title": "グローバルランキング",
@@ -1342,6 +1464,203 @@
     "quiz100": {
       "title": "クイズの覇者",
       "desc": "字幕クイズに100回正解する"
+    },
+    "completed": "達成済み",
+    "first_video": {
+      "title": "最初の一歩",
+      "desc": "Vocaで最初の動画レッスンを視聴する。"
+    },
+    "words_10": {
+      "title": "10単語マスター",
+      "desc": "単語帳に10個の新しい単語を追加する。"
+    },
+    "streak_7": {
+      "title": "7日間連続学習",
+      "desc": "7日間連続で学習イマージョンを維持する。"
+    },
+    "vocab_master": {
+      "title": "単語マスター",
+      "desc": "SRSで50個のフラッシュカードを復習・習得する。"
     }
+  },
+  "dict": {
+    "noResults": "該当する単語が見つかりませんでした",
+    "loadError": "定義を読み込めませんでした: {error}",
+    "definitions": "意味・解説"
+  },
+  "transcript": {
+    "search": "字幕を検索...",
+    "autoScroll": "自動スクロール",
+    "manual": "手動",
+    "noMatching": "一致する字幕が見つかりませんでした",
+    "noTranscript": "利用可能な文字起こしがありません",
+    "stopLooping": "文のループ再生を停止",
+    "loopSentence": "この文をループ再生"
+  },
+  "video": {
+    "jumpToCurrent": "再生位置へ移動",
+    "loopingSentence": "文をループ再生中",
+    "restrictedTitle": "著作権者による再生制限",
+    "restrictedDesc": "著作権者により外部サイトでの動画埋め込み再生が無効化されています。YouTubeで動画を再生しながら、Vocaで字幕と単語学習を利用できます。",
+    "watchOnYouTube": "YouTubeで視聴",
+    "linkCopied": "リンクをクリップボードにコピーしました！",
+    "curatedQueue": "おすすめプレイリスト • {{current}} / {{total}}",
+    "switchToLang": "{{lang}}に切り替え",
+    "useAITranscription": "AI文字起こしを使用",
+    "waitingForPlayback": "動画の再生を待機中...",
+    "toolbar": {
+      "loop": "ループ",
+      "added": "追加済み",
+      "quiz": "クイズ",
+      "options": "オプション"
+    }
+  },
+  "aiCredits": {
+    "explanation": "AIクレジットは、ふりがな生成、文法解析、文脈AI辞書説明に使用されます。",
+    "refillNotice": "24時間ごとに5 AIクレジットが無料で補充されます。",
+    "refresh": "クレジットを更新",
+    "refreshed": "AIクレジットが更新されました！"
+  },
+  "audio": {
+    "playing": "再生中...",
+    "pronounce": "発音",
+    "listenContext": "文脈の音声を聴く"
+  },
+  "credits": {
+    "title": "AIクレジット"
+  },
+  "explore": {
+    "all": "すべて",
+    "backToVideos": "すべての動画に戻る",
+    "filterByTopic": "トピックで絞り込み",
+    "myPlaylists": "マイプレイリスト",
+    "noPlaylists": "プレイリストが見つかりません",
+    "noPlaylistsDesc": "この言語のイマージョンプレイリストはありません。",
+    "noVideos": "イマージョン動画が見つかりません",
+    "paste": "貼り付け",
+    "playlists": "プレイリスト",
+    "resetFilters": "フィルターをリセット",
+    "searchHint": "YouTubeリンクを貼り付け、または検索...",
+    "topic": "トピック",
+    "topicAll": "すべて",
+    "topicTrending": "急上昇",
+    "topicAnimeDrama": "アニメ・ドラマ",
+    "topicMusic": "音楽",
+    "topicNews": "ニュース",
+    "topicVlog": "Vlog",
+    "topicConversation": "会話",
+    "videoDetected": "有効なYouTube動画 ({id}) が検出されました！",
+    "watchNow": "今すぐ見る",
+    "watchVideoTooltip": "YouTube動画を再生",
+    "discover": "見つける",
+    "filter": "フィルター",
+    "filterVideos": "動画を絞り込み",
+    "filterSubtitle": "トピックと難易度レベルで絞り込み",
+    "topics": "トピック＆カテゴリー",
+    "levelFilter": "難易度レベル",
+    "removedFromBookmarks": "ブックマークから削除しました",
+    "savedToBookmarks": "「{{title}}」をブックマークに保存しました"
+  },
+  "flashcards": {
+    "again": "もう一度",
+    "hard": "難しい",
+    "good": "普通",
+    "easy": "簡単",
+    "card": "カード",
+    "of": "/",
+    "showAnswer": "答えを表示",
+    "meaning": "意味",
+    "tapHint": "カードをタップして意味を表示",
+    "tapBackHint": "カードをタップして戻す",
+    "backToHome": "ホームに戻る",
+    "chooseDefinition": "正しい意味を選択してください：",
+    "selectAnswerAbove": "上の選択肢から選んでください",
+    "revealContext": "単語と文脈を表示",
+    "keepItUp": "その調子！",
+    "sessionComplete": "セッション完了！",
+    "sessionCompleteDesc": "このデッキのすべての間隔反復復習を完了しました。",
+    "sessionRecap": "学習のまとめ",
+    "recapReviewed": "復習済み",
+    "recapAccuracy": "正解率",
+    "recapGoodEasy": "普通 / 簡単",
+    "recapAgainHard": "もう一度 / 難しい",
+    "dailyBonus": "デイリー学習ボーナス",
+    "reloadCards": "カードを再読み込み",
+    "reviewMore": "さらに復習する",
+    "studyDeck": "SRS学習デッキ",
+    "mode": {
+      "flashcard": "フラッシュカード",
+      "cloze": "穴埋め問題",
+      "quiz": "クイズ"
+    }
+  },
+  "practice": {
+    "title": "イマージョン練習",
+    "subtitle": "発音とアクティブリコールをマスター",
+    "shadowing": "シャドーイング",
+    "cloze": "穴埋めクイズ",
+    "clozeTest": "穴埋めテスト",
+    "noCueSelected": "字幕が選択されていません。動画を再生して文を選択してください。",
+    "loopCue": "文をループ再生",
+    "stopLoop": "ループ停止",
+    "rateSetNotice": "シャドーイング用に速度を0.85倍に設定しました",
+    "chooseMissingWord": "上の文の空欄に入る単語を選択してください：",
+    "correct": "正解！ +15 XP",
+    "incorrect": "不正解です。次の文に挑戦しましょう！",
+    "replayCue": "字幕を再生"
+  },
+  "profile": {
+    "title": "アカウントとプロフィール",
+    "cloudSynced": "クラウド同期済み",
+    "guestMode": "ゲストモード（端末のみ）",
+    "levelProgress": "レベルの進行状況",
+    "signIn": "ログイン",
+    "signOut": "ログアウト",
+    "signOutConfirm": "ログアウトしてもよろしいですか？オフラインデータはこの端末に保存されたままになります。",
+    "learner": "学習者",
+    "guestLearner": "ゲスト学習者",
+    "aiCreditsDesc": "AI文字起こしおよびWhisperクレジット"
+  },
+  "search": {
+    "noResults": "見つかりませんでした",
+    "noResultsHint": "別の検索語を入力するか、YouTubeリンクを貼り付けてください"
+  },
+  "sidebar": {
+    "watch": "視聴＆学習",
+    "review": "フラッシュカード復習",
+    "vocab": "単語帳",
+    "playlists": "プレイリスト",
+    "history": "視聴履歴",
+    "settings": "設定"
+  },
+  "spotlight": {
+    "hint": "YouTubeリンクを貼り付け、または検索...",
+    "startLearning": "学習を開始",
+    "quickNavigation": "クイックナビゲーション",
+    "searchResults": "検索結果",
+    "watchSubtitle": "動画カタログとレッスンを見る",
+    "reviewSubtitle": "間隔反復システム (SRS)",
+    "vocabSubtitle": "保存した単語と文法表現",
+    "playlistsSubtitle": "厳選プレイリストと保存済み動画",
+    "historySubtitle": "最近視聴した動画の続きを見る",
+    "settingsSubtitle": "ふりがな、フォントサイズ、各種設定",
+    "bilingualImmersion": "タップして2言語イマージョンと文字起こしを開始",
+    "youtubeVideo": "YOUTUBE動画",
+    "loadVideo": "YouTube動画を読み込む: {id}"
+  },
+  "words": {
+    "title": "単語帳",
+    "empty": "このカテゴリーに保存された単語はありません",
+    "emptyHint": "動画を観ながら単語をタップして追加しましょう！",
+    "refreshTooltip": "単語を更新",
+    "searchPlaceholder": "単語、読み、意味を検索...",
+    "filterAll": "すべて",
+    "filterNew": "新規",
+    "filterLearning": "学習中",
+    "filterMastered": "習得済み",
+    "sortDateAdded": "追加日順",
+    "sortAlpha": "アルファベット順",
+    "sortMastery": "習得度順",
+    "sortInterval": "SRS間隔順"
   }
 }

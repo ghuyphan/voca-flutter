@@ -1,5 +1,16 @@
 // lib/models/voca_models.dart
 
+class RubyPart {
+  final String text;
+  final String? reading;
+  const RubyPart({required this.text, this.reading});
+  factory RubyPart.fromJson(Map<String, dynamic> json) => RubyPart(
+    text: json['text'] as String? ?? '',
+    reading: json['reading'] as String?,
+  );
+  Map<String, dynamic> toJson() => {'text': text, if (reading != null) 'reading': reading};
+}
+
 class Token {
   final String surface;
   final String? reading;
@@ -8,6 +19,10 @@ class Token {
   final String? baseForm;
   final String? partOfSpeech;
   final bool isPunctuation;
+  final List<RubyPart>? rubyParts;
+  final bool hasKanji;
+  final String? level; // 'new' | 'learning' | 'known' | 'ignored'
+  final bool isSaved;
 
   Token({
     required this.surface,
@@ -17,6 +32,10 @@ class Token {
     this.baseForm,
     this.partOfSpeech,
     this.isPunctuation = false,
+    this.rubyParts,
+    this.hasKanji = false,
+    this.level,
+    this.isSaved = false,
   });
 
   factory Token.fromJson(Map<String, dynamic> json) {
@@ -28,6 +47,12 @@ class Token {
       baseForm: json['baseForm'] as String?,
       partOfSpeech: json['partOfSpeech'] as String?,
       isPunctuation: json['isPunctuation'] as bool? ?? false,
+      rubyParts: (json['rubyParts'] as List<dynamic>?)
+          ?.map((e) => RubyPart.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      hasKanji: json['hasKanji'] as bool? ?? false,
+      level: json['level'] as String?,
+      isSaved: json['isSaved'] as bool? ?? false,
     );
   }
 
@@ -39,6 +64,10 @@ class Token {
     'baseForm': baseForm,
     'partOfSpeech': partOfSpeech,
     'isPunctuation': isPunctuation,
+    if (rubyParts != null) 'rubyParts': rubyParts!.map((e) => e.toJson()).toList(),
+    'hasKanji': hasKanji,
+    if (level != null) 'level': level,
+    if (isSaved) 'isSaved': isSaved,
   };
 }
 
@@ -161,7 +190,13 @@ class TranscriptResponse {
           [],
       availableLanguages: AvailableLanguages.fromJson(json['availableLanguages'] as Map<String, dynamic>?),
       subLanguages: (json['subLanguages'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
-      levels: (json['levels'] as Map<String, dynamic>?)?.map((k, v) => MapEntry(k, v.toString())) ?? {},
+      levels: (json['levels'] as Map<String, dynamic>?)?.map((k, v) {
+            if (v is Map) {
+              final levelStr = v['level'] ?? v['tier'] ?? v['label'];
+              return MapEntry(k, (levelStr ?? '').toString());
+            }
+            return MapEntry(k, v.toString());
+          }) ?? {},
       whisperAvailable: json['whisperAvailable'] as bool? ?? false,
       diamonds: json['diamonds'] as int? ?? 0,
       maxDiamonds: json['maxDiamonds'] as int? ?? 5,
@@ -212,6 +247,9 @@ class GrammarPattern {
     );
   }
 
+  String get meaning => shortExplanation.isNotEmpty ? shortExplanation : title;
+  String get explanation => longExplanation.isNotEmpty ? longExplanation : shortExplanation;
+
   Map<String, dynamic> toJson() => {
     'id': id,
     'language': language,
@@ -229,6 +267,8 @@ class GrammarExample {
   final String sentence;
   final String? romanization;
   final String translation;
+
+  String? get reading => romanization;
 
   GrammarExample({
     required this.sentence,
@@ -282,12 +322,12 @@ class DictionaryResult {
 
   factory DictionaryResult.fromJson(Map<String, dynamic> json) {
     return DictionaryResult(
-      word: json['word'] as String? ?? '',
-      from: json['from'] as String? ?? '',
-      to: json['to'] as String? ?? '',
-      source: json['source'] as String? ?? 'none',
+      word: json['word']?.toString() ?? '',
+      from: json['from']?.toString() ?? '',
+      to: json['to']?.toString() ?? '',
+      source: json['source']?.toString() ?? 'none',
       entries: (json['entries'] as List<dynamic>?)
-              ?.map((e) => DictionaryEntry.fromJson(e as Map<String, dynamic>))
+              ?.map((e) => DictionaryEntry.fromJson(Map<String, dynamic>.from(e as Map)))
               .toList() ??
           [],
     );
@@ -317,16 +357,16 @@ class DictionaryEntry {
 
   factory DictionaryEntry.fromJson(Map<String, dynamic> json) {
     return DictionaryEntry(
-      word: json['word'] as String?,
-      reading: json['reading'] as String?,
-      romaji: json['romaji'] as String?,
-      partOfSpeech: json['partOfSpeech'] as String?,
+      word: json['word']?.toString(),
+      reading: json['reading']?.toString(),
+      romaji: json['romaji']?.toString(),
+      partOfSpeech: json['partOfSpeech']?.toString(),
       definitions: (json['definitions'] as List<dynamic>?)
               ?.map((d) => d.toString())
               .toList() ??
           [],
-      level: json['level'] as String?,
-      audio: json['audio'] as String?,
+      level: json['level']?.toString(),
+      audio: json['audio']?.toString(),
       examples: (json['examples'] as List<dynamic>?)?.map((e) {
             if (e is Map) {
               return Map<String, dynamic>.from(e);
@@ -556,6 +596,8 @@ class PlaylistItem {
   final String visibility;
   final String language;
   final int videoCount;
+  final String? level;
+  final List<String> tags;
   final String? thumbnail;
   final List<String> videoIds;
   final DateTime createdAt;
@@ -569,6 +611,8 @@ class PlaylistItem {
     this.visibility = 'private',
     required this.language,
     this.videoCount = 0,
+    this.level,
+    this.tags = const [],
     this.thumbnail,
     this.videoIds = const [],
     required this.createdAt,
@@ -584,6 +628,8 @@ class PlaylistItem {
       visibility: json['visibility'] as String? ?? 'private',
       language: json['language'] as String? ?? 'ja',
       videoCount: (json['video_count'] as num?)?.toInt() ?? 0,
+      level: json['level'] as String?,
+      tags: (json['tags'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
       thumbnail: json['thumbnail'] as String?,
       videoIds: (json['video_ids'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
       createdAt: json['created_at'] != null
@@ -603,10 +649,80 @@ class PlaylistItem {
     'visibility': visibility,
     'language': language,
     'video_count': videoCount,
+    'level': level,
+    'tags': tags,
     'thumbnail': thumbnail,
     'video_ids': videoIds,
     'created_at': createdAt.toIso8601String(),
     'updated_at': updatedAt.toIso8601String(),
+  };
+}
+
+enum ProficiencyLevelTier {
+  beginner,
+  elementary,
+  intermediate,
+  upperIntermediate,
+  advanced;
+
+  static ProficiencyLevelTier fromString(String? val) {
+    if (val == null) return ProficiencyLevelTier.intermediate;
+    final lower = val.toLowerCase().replaceAll('-', '_').replaceAll(' ', '_');
+    if (lower == 'upper_intermediate' || lower == 'upperintermediate') {
+      return ProficiencyLevelTier.upperIntermediate;
+    }
+    for (final t in ProficiencyLevelTier.values) {
+      if (t.name.toLowerCase() == lower) return t;
+    }
+    return ProficiencyLevelTier.intermediate;
+  }
+}
+
+class VideoLevelInfo {
+  final String level;
+  final ProficiencyLevelTier tier;
+  final double score;
+  final double confidence;
+  final int grammarCount;
+  final double? speechRateCpm;
+  final String detectedFrom; // 'title' | 'linguistics' | 'server'
+  final Map<String, int>? breakdown;
+
+  VideoLevelInfo({
+    required this.level,
+    required this.tier,
+    this.score = 3.0,
+    this.confidence = 0.85,
+    this.grammarCount = 0,
+    this.speechRateCpm,
+    this.detectedFrom = 'server',
+    this.breakdown,
+  });
+
+  factory VideoLevelInfo.fromJson(Map<String, dynamic> json) {
+    return VideoLevelInfo(
+      level: json['level'] as String? ?? 'Intermediate',
+      tier: ProficiencyLevelTier.fromString(json['tier'] as String?),
+      score: (json['score'] as num?)?.toDouble() ?? 3.0,
+      confidence: (json['confidence'] as num?)?.toDouble() ?? 0.85,
+      grammarCount: (json['grammarCount'] as num?)?.toInt() ?? 0,
+      speechRateCpm: (json['speechRateCpm'] as num?)?.toDouble(),
+      detectedFrom: json['detectedFrom'] as String? ?? 'server',
+      breakdown: (json['breakdown'] as Map<String, dynamic>?)?.map(
+        (k, v) => MapEntry(k, (v as num).toInt()),
+      ),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'level': level,
+    'tier': tier.name,
+    'score': score,
+    'confidence': confidence,
+    'grammarCount': grammarCount,
+    'speechRateCpm': speechRateCpm,
+    'detectedFrom': detectedFrom,
+    if (breakdown != null) 'breakdown': breakdown,
   };
 }
 
@@ -619,6 +735,12 @@ class UserSettings {
   final String nativeLanguage;
   final bool autoPauseOnLookup;
   final double playbackRate;
+  final String themeMode; // 'system' | 'light' | 'dark'
+  final String uiLanguage; // 'en' | 'vi' | 'ja' | 'ko' | 'zh'
+  final String readingDisplayMode; // 'annotated' | 'native' | 'reading' | 'annotatedRomanized' | 'romanized'
+  final bool showDualSubtitles;
+  final String dualSubtitleTargetLang;
+  final bool hasSeenSubtitleCoachmark;
 
   UserSettings({
     this.rubyMode = RubyDisplayMode.always,
@@ -626,6 +748,12 @@ class UserSettings {
     this.nativeLanguage = 'en',
     this.autoPauseOnLookup = true,
     this.playbackRate = 1.0,
+    this.themeMode = 'system',
+    this.uiLanguage = 'en',
+    this.readingDisplayMode = 'annotated',
+    this.showDualSubtitles = true,
+    this.dualSubtitleTargetLang = 'en',
+    this.hasSeenSubtitleCoachmark = false,
   });
 
   UserSettings copyWith({
@@ -634,6 +762,12 @@ class UserSettings {
     String? nativeLanguage,
     bool? autoPauseOnLookup,
     double? playbackRate,
+    String? themeMode,
+    String? uiLanguage,
+    String? readingDisplayMode,
+    bool? showDualSubtitles,
+    String? dualSubtitleTargetLang,
+    bool? hasSeenSubtitleCoachmark,
   }) {
     return UserSettings(
       rubyMode: rubyMode ?? this.rubyMode,
@@ -641,6 +775,12 @@ class UserSettings {
       nativeLanguage: nativeLanguage ?? this.nativeLanguage,
       autoPauseOnLookup: autoPauseOnLookup ?? this.autoPauseOnLookup,
       playbackRate: playbackRate ?? this.playbackRate,
+      themeMode: themeMode ?? this.themeMode,
+      uiLanguage: uiLanguage ?? this.uiLanguage,
+      readingDisplayMode: readingDisplayMode ?? this.readingDisplayMode,
+      showDualSubtitles: showDualSubtitles ?? this.showDualSubtitles,
+      dualSubtitleTargetLang: dualSubtitleTargetLang ?? this.dualSubtitleTargetLang,
+      hasSeenSubtitleCoachmark: hasSeenSubtitleCoachmark ?? this.hasSeenSubtitleCoachmark,
     );
   }
 
@@ -650,6 +790,12 @@ class UserSettings {
     'nativeLanguage': nativeLanguage,
     'autoPauseOnLookup': autoPauseOnLookup,
     'playbackRate': playbackRate,
+    'themeMode': themeMode,
+    'uiLanguage': uiLanguage,
+    'readingDisplayMode': readingDisplayMode,
+    'showDualSubtitles': showDualSubtitles,
+    'dualSubtitleTargetLang': dualSubtitleTargetLang,
+    'hasSeenSubtitleCoachmark': hasSeenSubtitleCoachmark,
   };
 
   factory UserSettings.fromJson(Map<String, dynamic> json) {
@@ -665,6 +811,12 @@ class UserSettings {
       nativeLanguage: json['nativeLanguage'] as String? ?? 'en',
       autoPauseOnLookup: json['autoPauseOnLookup'] as bool? ?? true,
       playbackRate: (json['playbackRate'] as num?)?.toDouble() ?? 1.0,
+      themeMode: json['themeMode'] as String? ?? 'system',
+      uiLanguage: json['uiLanguage'] as String? ?? 'en',
+      readingDisplayMode: json['readingDisplayMode'] as String? ?? 'annotated',
+      showDualSubtitles: json['showDualSubtitles'] as bool? ?? true,
+      dualSubtitleTargetLang: json['dualSubtitleTargetLang'] as String? ?? 'en',
+      hasSeenSubtitleCoachmark: json['hasSeenSubtitleCoachmark'] as bool? ?? false,
     );
   }
 }

@@ -13,7 +13,8 @@
     "updatingDesc": "Getting the latest features ready for you...",
     "updateSuccess": "Updated to v{{version}}!",
     "reloadNow": "Reload",
-    "dataSafe": "Learning progress safely saved"
+    "dataSafe": "Learning progress safely saved",
+    "tagline": "Learn Languages with YouTube"
   },
   "nav": {
     "video": "Video",
@@ -31,7 +32,8 @@
     "settings": "Settings",
     "newVideo": "New Video",
     "quickLinks": "Quick Links",
-    "more": "More"
+    "more": "More",
+    "library": "Library"
   },
   "commandPalette": {
     "placeholder": "Paste a YouTube link or search actions...",
@@ -71,7 +73,8 @@
     "signInToUpgrade": "Sign in to Support",
     "signInToUpgradeDesc": "Sign in with Google to link your supporter perks and sync across devices",
     "freeDiamondsNotice": "New accounts receive free daily diamonds for video transcription!",
-    "guestUser": "Guest Learner"
+    "guestUser": "Guest Learner",
+    "signInFailedError": "Sign in failed: {error}"
   },
   "player": {
     "paste": "Paste",
@@ -125,7 +128,9 @@
     "nowPlaying": "Now playing",
     "videoCompleted": "Video Completed",
     "embedErrorHelp": "This video can't be played here. It may be restricted by the owner or set to private.",
-    "watchOnYouTube": "Watch on YouTube"
+    "watchOnYouTube": "Watch on YouTube",
+    "previousSentence": "Previous sentence",
+    "nextSentence": "Next sentence"
   },
   "subtitle": {
     "loop": "Loop",
@@ -220,7 +225,12 @@
     "dualSubs": "Dual Subtitles",
     "dualSubsHint": "Show translated subtitles below the original",
     "translating": "Translating...",
-    "reading": "Reading"
+    "reading": "Reading",
+    "dualSubtitles": "Dual Subtitles",
+    "subtitlesOn": "Subtitles on",
+    "readingGuide": "Reading Guide",
+    "display": "Display",
+    "title": "Subtitles"
   },
   "pro": {
     "title": "Voca Supporter",
@@ -232,7 +242,7 @@
     "premiumBadge": "Founder",
     "getPro": "Support Voca",
     "upgrade": "Support",
-    "upgradeToPro": "Become a Supporter",
+    "upgradeToPro": "Upgrade to Pro",
     "upgradeToPremium": "Become a Founder",
     "viewPro": "View Supporter Perks",
     "needMoreCredits": "Need more diamonds?",
@@ -297,7 +307,12 @@
     "signInToUpgradePrompt": "Sign in to support the project",
     "createOrderFailed": "Couldn't create contribution request. Please try again.",
     "qrAlt": "VietQR Transfer Code",
-    "nonProfitDisclaimer": "Voca is an independent educational project. All voluntary contributions directly support hosting and speech AI API costs."
+    "nonProfitDisclaimer": "Voca is an independent educational project. All voluntary contributions directly support hosting and speech AI API costs.",
+    "checkoutComingSoon": "Pro subscription checkout coming soon!",
+    "featureUnlimitedTranscribe": "💎 Unlimited AI Whisper & Transcription",
+    "featureSrsDecks": "⚡ Infinite Spaced Repetition SRS Decks",
+    "featureGrammarRules": "📚 2,400+ Grammar Rules & Breakdown",
+    "featureSync": "☁️ Seamless Cross-Platform Sync"
   },
   "vocab": {
     "title": "Vocabulary",
@@ -334,7 +349,20 @@
     "syncHint": "Sign in to sync your vocabulary across devices.",
     "filterAll": "All",
     "filterWords": "Words",
-    "filterGrammar": "Grammar"
+    "filterGrammar": "Grammar",
+    "savedWords": "Saved Vocabulary",
+    "noSavedWords": "No saved words yet",
+    "tapWordHint": "Tap any word in the interactive subtitles to translate and save it to your SRS deck.",
+    "deleteWordConfirm": "Are you sure you want to remove \"{word}\" from your vocabulary notebook?",
+    "wordRemoved": "Word removed from vocabulary",
+    "editNotes": "Edit Notes",
+    "notesHint": "Add personal mnemonic or memory hook...",
+    "stageUpdated": "Stage updated to {stage}",
+    "videoContextSentence": "VIDEO CONTEXT SENTENCE",
+    "srsStats": "SPACED REPETITION (SM-2) STATS",
+    "setMasteryStage": "SET MASTERY STAGE",
+    "markReview": "Mark as Review",
+    "markMastered": "Mark as Mastered"
   },
   "popup": {
     "translationLang": "Translation Language",
@@ -364,7 +392,9 @@
     "saveSuccess": "Added \"{{pattern}}\" to grammar notebook",
     "noGrammarSaved": "No grammar patterns saved yet",
     "clickGrammarToSave": "Save grammar patterns while watching videos or browsing the dictionary to practice them here.",
-    "moreDetails": "More details"
+    "moreDetails": "More details",
+    "highlightDesc": "Highlight detected JLPT / HSK / TOPIK / CEFR grammar rules",
+    "title": "Grammar"
   },
   "dictionary": {
     "title": "Dictionary",
@@ -460,7 +490,35 @@
     "profileUpdated": "Profile updated successfully!",
     "profileUpdateFailed": "Failed to update profile. Please try again.",
     "countryHint": "Appears next to your name on the global leaderboard",
-    "language": "Language"
+    "language": "Language",
+    "subtitles": "Subtitles",
+    "subtitleSize": "Subtitle Size",
+    "sizeSmall": "Small",
+    "sizeMedium": "Medium",
+    "sizeLarge": "Large",
+    "readingDisplayDesc": "Pronunciation guides above words",
+    "dualSubtitles": "Dual Subtitles",
+    "dualSubtitlesDesc": "Show translated subtitles below the original",
+    "theme": "Theme",
+    "themeDesc": "Customize app appearance",
+    "themeSystem": "System",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "uiLanguage": "App Language",
+    "uiLanguageDesc": "Change UI display language",
+    "furiganaPinyin": "Pronunciation Guides",
+    "alwaysShow": "Always",
+    "onTapOnly": "On Tap",
+    "off": "Off",
+    "subtitleSizeDesc": "Adjust subtitle font size",
+    "nativeLanguage": "Dictionary Definition Language",
+    "nativeLanguageDesc": "Language used for word definitions",
+    "autoPause": "Auto-Pause on Lookup",
+    "autoPauseDesc": "Automatically pause video when looking up a word",
+    "system": "System & About",
+    "version": "App Version",
+    "architecture": "Architecture",
+    "archDesc": "Edge + Supabase"
   },
   "study": {
     "title": "Study",
@@ -540,7 +598,7 @@
     "reviewDueNow": "Review Due Cards",
     "searchQueue": "Search queue...",
     "noCardsInQueue": "No cards in queue",
-    "nextReview": "Next review",
+    "nextReview": "Next Review",
     "dueNow": "Due now",
     "filterAll": "All Items",
     "filterWords": "Words",
@@ -556,7 +614,20 @@
     "combo": "Combo",
     "comboStreak": "{{count}} in a row!",
     "highestCombo": "Best Combo",
-    "xpEarned": "XP Earned"
+    "xpEarned": "XP Earned",
+    "addWord": "Add Word",
+    "added": "Added",
+    "wordAdded": "Added \"{word}\" to your study deck!",
+    "saveFailed": "Failed to save word: {error}",
+    "repetitions": "Repetitions",
+    "times": "times",
+    "currentInterval": "Current Interval",
+    "days": "days",
+    "easeFactor": "Ease Factor",
+    "lastReviewed": "Last Reviewed",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "inDays": "In {days} days"
   },
   "streak": {
     "dayStreak": "Streak",
@@ -582,7 +653,7 @@
     "howToExtend": "Practice daily to keep your streak. Missing a day resets it to 0.",
     "freezeExplanation": "Freezes protect your streak when you miss a day. {{count}} left.",
     "reached": "You reached",
-    "days": "days!",
+    "days": "days",
     "saved": "Streak Saved! ❄️",
     "daysReached": "You've reached {{count}} days!",
     "replenish": "Restore Freeze",
@@ -601,13 +672,20 @@
     "longestExpedition": "Longest Expedition",
     "frostWards": "Frost Wards",
     "infuseWard": "Infuse Frost Ward",
-    "trailTitle": "Weekly Expedition Trail"
+    "trailTitle": "Weekly Expedition Trail",
+    "title": "Day Streak",
+    "bestStreak": "Best Streak",
+    "freezesLeft": "Freezes Left",
+    "fullStats": "Full Stats",
+    "keepStreak": "Watch a video or review cards today to keep your streak!",
+    "personalBest": "Personal Best",
+    "activityLast7Days": "Activity (Last 7 Days)"
   },
   "history": {
     "title": "History",
     "subtitle": "Continue where you left off",
-    "noHistory": "No videos watched yet",
-    "noHistoryHint": "Videos you watch will appear here",
+    "noHistory": "No watch history yet",
+    "noHistoryHint": "Start watching immersion videos with interactive subtitles to track your learning progress.",
     "noFavorites": "No favorites yet",
     "noFavoritesHint": "Tap the heart icon on any video to add it to favorites",
     "clearAll": "Clear All",
@@ -618,7 +696,7 @@
     "noMatchesFound": "No matching videos",
     "noMatchesHint": "Try adjusting your search query or filters",
     "clearFilters": "Clear filters",
-    "exploreVideos": "Browse Videos",
+    "exploreVideos": "Explore Videos",
     "progress": "Progress",
     "inProgress": "In Progress",
     "completed": "Completed",
@@ -633,7 +711,9 @@
     "syncHint": "Sign in to sync history across devices",
     "searchHistory": "Search history...",
     "justNow": "Just now",
-    "overview": "Overview"
+    "overview": "Overview",
+    "clearHistory": "Clear Watch History",
+    "watchHistory": "Watch History"
   },
   "playlist": {
     "title": "Playlists",
@@ -682,7 +762,7 @@
     "by": "by {{author}}",
     "createPlaylist": "Create Playlist",
     "titleLabel": "Title",
-    "titlePlaceholder": "Enter playlist title",
+    "titlePlaceholder": "e.g. Japanese City Pop & Lyrics",
     "descriptionLabel": "Description (Optional)",
     "descriptionPlaceholder": "Add a description...",
     "languageLabel": "Language",
@@ -746,7 +826,21 @@
     "shuffleOn": "Shuffle on",
     "toggleQueue": "Playlist Queue",
     "viewPlaylist": "View Playlist",
-    "videoSingular": "video"
+    "videoSingular": "video",
+    "emptyDesc": "Create custom playlists to organize immersion videos by topic or exam tier.",
+    "addToPlaylist": "Add to Playlist",
+    "createFirst": "+ Create First Playlist",
+    "createdSuccess": "Playlist created successfully",
+    "updatedSuccess": "Playlist updated successfully",
+    "description": "Description (Optional)",
+    "titleRequired": "Please enter a title for the playlist",
+    "descPlaceholder": "Short notes about this collection",
+    "playlistsSaved": "Playlists / Saved",
+    "emptyPlaylist": "This playlist is empty",
+    "emptyPlaylistHint": "Bookmark videos from Explore or Player to save them here.",
+    "videoCountSuffix": "videos",
+    "updateFailed": "Failed to update playlist: {error}",
+    "saveFailed": "Failed to save playlist: {error}"
   },
   "common": {
     "all": "All",
@@ -770,7 +864,17 @@
     "confirm": "Confirm",
     "cancel": "Cancel",
     "loadMore": "Load more",
-    "chunkLoadError": "Couldn't load app data. Check your connection and reload."
+    "chunkLoadError": "Couldn't load app data. Check your connection and reload.",
+    "gotIt": "Got it",
+    "clearAll": "Clear All",
+    "language": "Language",
+    "loadFailed": "Could not load content",
+    "paste": "Paste from clipboard",
+    "reset": "Reset",
+    "save": "Save",
+    "remove": "Remove",
+    "delete": "Delete",
+    "apply": "Apply Filters"
   },
   "onboarding": {
     "welcomeTitle": "Welcome to Voca",
@@ -1022,12 +1126,24 @@
     "howCadenceDesc": "Speaking speed calculated from dialogue.",
     "immersionTipTitle": "Immersion Tip",
     "immersionTipPace": "Too fast? Slow to 0.75x or turn on dual subtitles.",
-    "immersionTipFast": "Fast speech. Try 0.75x speed or looping tricky lines.",
-    "immersionTipAdvanced": "Advanced content. Tap any word to look up its meaning.",
-    "immersionTipBeginner": "Clear speech. Great for listening and shadowing practice.",
+    "immersionTipFast": "Fast native speech. Try 0.75x or loop tricky sentences.",
+    "immersionTipAdvanced": "Advanced content. Tap any word to look up its meaning in the dictionary.",
+    "immersionTipBeginner": "Clear speech cadence. Great for listening comprehension and shadowing practice.",
     "evaluationSummaryLinguistic": "Level estimated from subtitle grammar patterns, vocabulary difficulty, and speech rate.",
     "evaluationSummaryMetadata": "Level matched from video title, channel, or curriculum information.",
-    "confidenceScore": "Confidence"
+    "confidenceScore": "Confidence",
+    "immersionLevel": "Video Difficulty Level",
+    "grammar": "Grammar",
+    "spokenPace": "Spoken Pace",
+    "immersionTip": "Immersion Tip",
+    "evaluatedLinguistic": "Level estimated from subtitle grammar patterns, vocabulary difficulty, and speech cadence.",
+    "evaluatedCurriculum": "Level matched from video title, channel, and curated curriculum data.",
+    "targetLevel": "Target Difficulty Level",
+    "analyzedFromSubtitles": "Analyzed from Subtitles",
+    "curriculumMatch": "Curriculum Match",
+    "patterns": "patterns",
+    "detected": "Detected",
+    "immersionTipDefault": "Too fast? Slow to 0.75x or turn on dual subtitles in options."
   },
   "gamification": {
     "level": "Level",
@@ -1089,7 +1205,13 @@
     "rank47": "Infinite Memory",
     "rank48": "Subtitle Luminary",
     "rank49": "Legendary Polyglot",
-    "rank50": "Living Lexicon"
+    "rank50": "Living Lexicon",
+    "aiCredits": "AI Credits Available",
+    "dayStreak": "Day Streak",
+    "diamond": "Diamond",
+    "streak": "Day Streak",
+    "polyglotScholar": "Polyglot Scholar",
+    "totalXp": "Total XP"
   },
   "leaderboard": {
     "title": "Global Ranking",
@@ -1342,6 +1464,203 @@
     "quiz100": {
       "title": "Quiz Champion",
       "desc": "Answer 100 subtitle quizzes correctly"
+    },
+    "completed": "Completed",
+    "first_video": {
+      "title": "First Video Watched",
+      "desc": "Watch your first interactive video lesson in Voca."
+    },
+    "words_10": {
+      "title": "10 Words Saved",
+      "desc": "Add 10 new vocabulary cards to your study deck."
+    },
+    "streak_7": {
+      "title": "7-Day Streak",
+      "desc": "Maintain your learning immersion for 7 consecutive days."
+    },
+    "vocab_master": {
+      "title": "Vocab Master",
+      "desc": "Review and master 50 vocabulary flashcards with SRS."
     }
+  },
+  "dict": {
+    "noResults": "No definition found",
+    "loadError": "Could not load definition: {error}",
+    "definitions": "Definitions"
+  },
+  "transcript": {
+    "search": "Search transcript...",
+    "autoScroll": "Auto-scroll",
+    "manual": "Manual",
+    "noMatching": "No matching cues found",
+    "noTranscript": "No transcript available",
+    "stopLooping": "Stop looping this sentence",
+    "loopSentence": "Loop this sentence"
+  },
+  "video": {
+    "jumpToCurrent": "Jump to active subtitle",
+    "loopingSentence": "LOOPING SENTENCE",
+    "restrictedTitle": "Playback Restricted by Owner",
+    "restrictedDesc": "YouTube owner disabled third-party embedding for this track. You can open it in YouTube while using Voca for interactive subtitles & vocabulary.",
+    "watchOnYouTube": "Watch on YouTube",
+    "linkCopied": "Link copied to clipboard!",
+    "curatedQueue": "Curated Playlist Queue • {{current}} / {{total}}",
+    "switchToLang": "Switch to {{lang}}",
+    "useAITranscription": "Use AI Transcription",
+    "waitingForPlayback": "Waiting for video playback...",
+    "toolbar": {
+      "loop": "Loop",
+      "added": "Added",
+      "quiz": "Quiz",
+      "options": "Options"
+    }
+  },
+  "aiCredits": {
+    "explanation": "AI Credits power furigana/ruby generation, grammar breakdowns, and contextual AI dictionary explanations.",
+    "refillNotice": "Free daily refill of 5 AI credits every 24 hours.",
+    "refresh": "Refresh Credits",
+    "refreshed": "AI Credits refreshed!"
+  },
+  "audio": {
+    "playing": "Playing...",
+    "pronounce": "Pronounce",
+    "listenContext": "Listen to context"
+  },
+  "credits": {
+    "title": "AI Credits"
+  },
+  "explore": {
+    "all": "All",
+    "backToVideos": "Back to All Videos",
+    "filterByTopic": "Filter by Topic",
+    "myPlaylists": "My Playlists",
+    "noPlaylists": "No playlists found",
+    "noPlaylistsDesc": "No immersion playlists found for this language.",
+    "noVideos": "No immersion videos found",
+    "paste": "Paste",
+    "playlists": "Playlists",
+    "resetFilters": "Reset All Filters",
+    "searchHint": "Paste YouTube URL or search...",
+    "topic": "Topic",
+    "topicAll": "All",
+    "topicTrending": "Trending",
+    "topicAnimeDrama": "Anime & Drama",
+    "topicMusic": "Music",
+    "topicNews": "News",
+    "topicVlog": "Vlog",
+    "topicConversation": "Conversation",
+    "videoDetected": "Valid YouTube Video ({id}) detected!",
+    "watchNow": "Watch Now",
+    "watchVideoTooltip": "Watch YouTube Video",
+    "discover": "Discover",
+    "filter": "Filters",
+    "filterVideos": "Filter Videos",
+    "filterSubtitle": "Refine by topic and difficulty level",
+    "topics": "Topics & Categories",
+    "levelFilter": "Difficulty Level",
+    "removedFromBookmarks": "Removed from bookmarks",
+    "savedToBookmarks": "Saved \"{{title}}\" to bookmarks"
+  },
+  "flashcards": {
+    "again": "Again",
+    "hard": "Hard",
+    "good": "Good",
+    "easy": "Easy",
+    "card": "Card",
+    "of": "of",
+    "showAnswer": "Show Answer",
+    "meaning": "MEANING",
+    "tapHint": "Tap card to reveal meaning",
+    "tapBackHint": "Tap card to flip back",
+    "backToHome": "Back to Home",
+    "chooseDefinition": "Choose the correct definition:",
+    "selectAnswerAbove": "Select an answer above",
+    "revealContext": "Reveal Word & Context",
+    "keepItUp": "Keep it up!",
+    "sessionComplete": "Session Complete!",
+    "sessionCompleteDesc": "You finished all spaced repetition reviews for this deck.",
+    "sessionRecap": "SESSION RECAP",
+    "recapReviewed": "Reviewed",
+    "recapAccuracy": "Accuracy",
+    "recapGoodEasy": "Good / Easy",
+    "recapAgainHard": "Again / Hard",
+    "dailyBonus": "Daily study bonus",
+    "reloadCards": "Reload cards",
+    "reviewMore": "Review More",
+    "studyDeck": "SRS Study Deck",
+    "mode": {
+      "flashcard": "Flashcard",
+      "cloze": "Cloze",
+      "quiz": "Quiz"
+    }
+  },
+  "practice": {
+    "title": "Immersion Practice",
+    "subtitle": "Master pronunciation and active recall",
+    "shadowing": "Shadowing",
+    "cloze": "Cloze Quiz",
+    "clozeTest": "CLOZE TEST",
+    "noCueSelected": "No active cue selected. Play the video to select a sentence.",
+    "loopCue": "Loop Sentence",
+    "stopLoop": "Stop Loop",
+    "rateSetNotice": "Playback set to 0.85x for Shadowing",
+    "chooseMissingWord": "Choose the missing word in the sentence above:",
+    "correct": "Correct! +15 XP",
+    "incorrect": "Not quite, try the next sentence!",
+    "replayCue": "Replay cue"
+  },
+  "profile": {
+    "title": "Account & Profile",
+    "cloudSynced": "Cloud Synced",
+    "guestMode": "Guest Mode (Local Only)",
+    "levelProgress": "Level Progress",
+    "signIn": "Sign In",
+    "signOut": "Sign Out",
+    "signOutConfirm": "Are you sure you want to sign out? Your offline progress will remain saved on this device.",
+    "learner": "Learner",
+    "guestLearner": "Guest Learner",
+    "aiCreditsDesc": "AI Transcription & Whisper credits"
+  },
+  "search": {
+    "noResults": "No results found",
+    "noResultsHint": "Try a different command or paste a YouTube link"
+  },
+  "sidebar": {
+    "watch": "Watch & Learn",
+    "review": "Review Flashcards",
+    "vocab": "Vocabulary Notebook",
+    "playlists": "Playlists",
+    "history": "Watch History",
+    "settings": "Settings"
+  },
+  "spotlight": {
+    "hint": "Paste YouTube link or search...",
+    "startLearning": "Start Learning",
+    "quickNavigation": "QUICK NAVIGATION",
+    "searchResults": "SEARCH RESULTS",
+    "watchSubtitle": "Explore video catalog & lessons",
+    "reviewSubtitle": "Spaced Repetition System (SRS)",
+    "vocabSubtitle": "Saved words & grammar expressions",
+    "playlistsSubtitle": "Curated playlists & saved videos",
+    "historySubtitle": "Resume recently watched videos",
+    "settingsSubtitle": "Furigana, font size & preferences",
+    "bilingualImmersion": "Tap to start bilingual immersion & transcription",
+    "youtubeVideo": "YOUTUBE VIDEO",
+    "loadVideo": "Load YouTube Video: {id}"
+  },
+  "words": {
+    "title": "Vocabulary Notebook",
+    "empty": "No vocabulary saved in this category yet",
+    "emptyHint": "Tap on words while watching videos to add them!",
+    "refreshTooltip": "Refresh words",
+    "searchPlaceholder": "Search words, readings, or meanings...",
+    "filterAll": "All",
+    "filterNew": "New",
+    "filterLearning": "Learning",
+    "filterMastered": "Mastered",
+    "sortDateAdded": "Date Added",
+    "sortAlpha": "Alphabetical",
+    "sortMastery": "Mastery Level",
+    "sortInterval": "SRS Interval"
   }
 }

@@ -1,0 +1,790 @@
+// lib/ui/sheets/video_settings_sheet.dart
+
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:signals_flutter/signals_flutter.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import '../../config/voca_theme.dart';
+import '../../models/voca_models.dart';
+import '../../services/i18n_service.dart';
+import '../../state/app_state.dart';
+import '../../state/player_state.dart';
+import 'add_to_playlist_sheet.dart';
+import 'voca_bottom_sheet.dart';
+
+/// YouTube-style nested multi-panel settings sheet.
+/// Ported 1:1 from lingua-tube's playerSettingsTemplate:
+/// - Main panel: Speed, Subtitle Size, Dual Subtitles (with flag), Reading mode,
+///   Grammar mode, Sleep timer, Save to playlist, Share video.
+/// - Sub-panels with back button: 'speed', 'fontSize', 'dualSub', 'reading', 'grammar', 'sleepTimer'.
+class VideoSettingsSheet extends StatefulWidget {
+  final VideoPlayerController controller;
+  final YoutubePlayerController ytController;
+  final VoidCallback? onSaveToPlaylist;
+  final VoidCallback? onShare;
+
+  const VideoSettingsSheet({
+    super.key,
+    required this.controller,
+    required this.ytController,
+    this.onSaveToPlaylist,
+    this.onShare,
+  });
+
+  static Future<void> show(
+    BuildContext context, {
+    required VideoPlayerController controller,
+    required YoutubePlayerController ytController,
+    VoidCallback? onSaveToPlaylist,
+    VoidCallback? onShare,
+  }) {
+    return showVocaBottomSheet(
+      context: context,
+      title: context.t('player.settings', null, 'Settings'),
+      showCloseButton: false,
+      maxHeightFactor: 0.85,
+      contentPadding: EdgeInsets.zero,
+      builder: (ctx) => VideoSettingsSheet(
+        controller: controller,
+        ytController: ytController,
+        onSaveToPlaylist: onSaveToPlaylist,
+        onShare: onShare,
+      ),
+    );
+  }
+
+  @override
+  State<VideoSettingsSheet> createState() => _VideoSettingsSheetState();
+}
+
+class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
+  String _currentView = 'main'; // 'main', 'speed', 'fontSize', 'dualSub', 'reading', 'grammar', 'sleepTimer'
+  String _sleepTimerOption = 'off'; // 'off', '5', '10', '15', '30', '45', '60', 'end'
+  Timer? _sleepTimer;
+
+  static const List<double> _playbackSpeeds = [
+    0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0
+  ];
+
+  static const List<Map<String, String>> _dualSubLanguages = [
+    {'code': 'vi', 'name': 'Tiếng Việt', 'flag': '🇻🇳'},
+    {'code': 'en', 'name': 'English', 'flag': '🇺🇸'},
+    {'code': 'ja', 'name': '日本語', 'flag': '🇯🇵'},
+    {'code': 'zh', 'name': '中文', 'flag': '🇨🇳'},
+    {'code': 'ko', 'name': '한국어', 'flag': '🇰🇷'},
+    {'code': 'es', 'name': 'Español', 'flag': '🇪🇸'},
+    {'code': 'fr', 'name': 'Français', 'flag': '🇫🇷'},
+    {'code': 'de', 'name': 'Deutsch', 'flag': '🇩🇪'},
+  ];
+
+  String _getReadingScriptIcon(String lang) {
+    switch (lang.toLowerCase()) {
+      case 'ja':
+        return 'あ';
+      case 'zh':
+        return '拼';
+      case 'ko':
+        return '한';
+      default:
+        return 'Aa';
+    }
+  }
+
+  String _getReadingModeName(String lang) {
+    switch (lang.toLowerCase()) {
+      case 'ja':
+        return 'Furigana';
+      case 'zh':
+        return 'Pinyin';
+      case 'ko':
+        return 'Romaja';
+      default:
+        return 'Reading Guide';
+    }
+  }
+
+  String _getFontSizeName(SubtitleSize size) {
+    switch (size) {
+      case SubtitleSize.small:
+        return context.t('settings.sizeSmall', null, 'Small');
+      case SubtitleSize.medium:
+        return context.t('settings.sizeMedium', null, 'Medium');
+      case SubtitleSize.large:
+        return context.t('settings.sizeLarge', null, 'Large');
+    }
+  }
+
+  String _getTargetLangName(String langCode) {
+    final found = _dualSubLanguages.firstWhere(
+      (l) => l['code'] == langCode,
+      orElse: () => {'code': langCode, 'name': langCode.toUpperCase(), 'flag': '🌐'},
+    );
+    return '${found['flag']} ${found['name']}';
+  }
+
+  void _handleShare() {
+    Navigator.pop(context);
+    if (widget.onShare != null) {
+      widget.onShare!();
+      return;
+    }
+    final videoId = widget.controller.videoId;
+    if (videoId.isNotEmpty) {
+      Clipboard.setData(ClipboardData(text: 'https://www.youtube.com/watch?v=$videoId'));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: context.vocaColors.bgSurface,
+          content: Text(
+            context.t('video.linkCopied', null, 'Video link copied to clipboard!'),
+            style: TextStyle(color: context.vocaColors.textPrimary),
+          ),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  void _handleSaveToPlaylist() {
+    Navigator.pop(context);
+    if (widget.onSaveToPlaylist != null) {
+      widget.onSaveToPlaylist!();
+      return;
+    }
+    final videoId = widget.controller.videoId;
+    if (videoId.isNotEmpty) {
+      AddToPlaylistSheet.show(context, videoId: videoId);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 200),
+      child: _buildCurrentView(context),
+    );
+  }
+
+  Widget _buildCurrentView(BuildContext context) {
+    switch (_currentView) {
+      case 'speed':
+        return _buildSpeedPanel(context);
+      case 'fontSize':
+        return _buildFontSizePanel(context);
+      case 'dualSub':
+        return _buildDualSubPanel(context);
+      case 'reading':
+        return _buildReadingPanel(context);
+      case 'grammar':
+        return _buildGrammarPanel(context);
+      case 'sleepTimer':
+        return _buildSleepTimerPanel(context);
+      case 'main':
+      default:
+        return _buildMainPanel(context);
+    }
+  }
+
+  // ==========================================
+  // PANEL HEADER WITH BACK BUTTON
+  // ==========================================
+  Widget _buildPanelHeader({
+    required BuildContext context,
+    required String title,
+    IconData? icon,
+  }) {
+    final colors = context.vocaColors;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: colors.borderColor)),
+      ),
+      child: Row(
+        children: [
+          InkWell(
+            onTap: () => setState(() => _currentView = 'main'),
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              width: 32,
+              height: 32,
+              alignment: Alignment.center,
+              child: Icon(Icons.arrow_back_rounded, size: 20, color: colors.textPrimary),
+            ),
+          ),
+          const SizedBox(width: 8),
+          if (icon != null) ...[
+            Icon(icon, size: 18, color: colors.accentPrimary),
+            const SizedBox(width: 8),
+          ],
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: colors.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================
+  // 1. MAIN PANEL
+  // ==========================================
+  Widget _buildMainPanel(BuildContext context) {
+    final colors = context.vocaColors;
+    final currentLang = AppState.instance.activeLanguage.value;
+    final isCJK = ['ja', 'zh', 'ko'].contains(currentLang.toLowerCase());
+
+    return Watch((context) {
+      final currentSpeed = widget.controller.playbackRate.value;
+      final fontSize = widget.controller.subtitleSize.value;
+      final showDual = widget.controller.showTranslation.value;
+      final showReading = widget.controller.showFurigana.value;
+      final targetLang = widget.controller.dualSubLanguage.value ?? 'en';
+
+      final speedLabel = currentSpeed == 1.0
+          ? (context.t('player.normal', null, 'Normal'))
+          : '${currentSpeed}x';
+
+      final readingLabel = showReading
+          ? _getReadingModeName(currentLang)
+          : (context.t('player.off', null, 'Off'));
+
+      final dualSubLabel = showDual
+          ? _getTargetLangName(targetLang)
+          : (context.t('player.off', null, 'Off'));
+
+      return SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+              child: Row(
+                children: [
+                  Icon(Icons.settings_outlined, size: 20, color: colors.accentPrimary),
+                  const SizedBox(width: 10),
+                  Text(
+                    context.t('player.settings', null, 'Settings'),
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Divider(height: 1, color: colors.borderColor),
+
+            // 1. Playback Speed
+            _buildMenuItem(
+              context: context,
+              icon: Icons.speed_rounded,
+              label: context.t('player.playbackSpeed', null, 'Playback speed'),
+              value: speedLabel,
+              onTap: () => setState(() => _currentView = 'speed'),
+            ),
+
+            // 2. Subtitle Size
+            _buildMenuItem(
+              context: context,
+              icon: Icons.format_size_rounded,
+              label: context.t('subtitle.fontSize', null, 'Subtitle size'),
+              value: _getFontSizeName(fontSize),
+              onTap: () => setState(() => _currentView = 'fontSize'),
+            ),
+
+            // 3. Dual Subtitles (for CJK languages)
+            if (isCJK)
+              _buildMenuItem(
+                context: context,
+                icon: Icons.translate_rounded,
+                label: context.t('subtitle.dualSubs', null, 'Dual Subtitles'),
+                value: dualSubLabel,
+                onTap: () => setState(() => _currentView = 'dualSub'),
+              ),
+
+            // 4. Reading Display (Furigana / Pinyin / Romaji)
+            _buildMenuItem(
+              context: context,
+              icon: Icons.text_fields_rounded,
+              label: _getReadingModeName(currentLang),
+              value: readingLabel,
+              onTap: () => setState(() => _currentView = 'reading'),
+            ),
+
+            // 5. Grammar Mode
+            _buildMenuItem(
+              context: context,
+              icon: Icons.auto_awesome_rounded,
+              label: context.t('grammar.mode', null, 'Grammar Mode'),
+              value: context.t('common.on', null, 'On'),
+              onTap: () => setState(() => _currentView = 'grammar'),
+            ),
+
+            // 6. Sleep Timer
+            _buildMenuItem(
+              context: context,
+              icon: Icons.timer_outlined,
+              label: context.t('player.sleepTimer', null, 'Sleep timer'),
+              value: _sleepTimerOption == 'off'
+                  ? context.t('player.off', null, 'Off')
+                  : (_sleepTimerOption == 'end'
+                      ? 'End of video'
+                      : '$_sleepTimerOption min'),
+              onTap: () => setState(() => _currentView = 'sleepTimer'),
+            ),
+
+            Divider(height: 1, color: colors.borderColor),
+
+            // 7. Save to Playlist
+            _buildMenuItem(
+              context: context,
+              icon: Icons.playlist_add_rounded,
+              label: context.t('playlist.saveToPlaylist', null, 'Save to playlist'),
+              onTap: _handleSaveToPlaylist,
+            ),
+
+            // 8. Share Video
+            _buildMenuItem(
+              context: context,
+              icon: Icons.share_rounded,
+              label: context.t('player.share', null, 'Share video'),
+              onTap: _handleShare,
+            ),
+
+            const SizedBox(height: 16),
+          ],
+        ),
+      );
+    });
+  }
+
+  Widget _buildMenuItem({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    String? value,
+    required VoidCallback onTap,
+  }) {
+    final colors = context.vocaColors;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: colors.textSecondary),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w500,
+                  color: colors.textPrimary,
+                ),
+              ),
+            ),
+            if (value != null) ...[
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: colors.textMuted,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(width: 6),
+            ],
+            Icon(Icons.chevron_right_rounded, size: 18, color: colors.textMuted),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ==========================================
+  // 2. SPEED PANEL
+  // ==========================================
+  Widget _buildSpeedPanel(BuildContext context) {
+    final currentSpeed = widget.controller.playbackRate.value;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildPanelHeader(
+          context: context,
+          title: context.t('player.playbackSpeed', null, 'Playback speed'),
+          icon: Icons.speed_rounded,
+        ),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: _playbackSpeeds.length,
+          itemBuilder: (context, index) {
+            final speed = _playbackSpeeds[index];
+            final isSelected = (currentSpeed - speed).abs() < 0.05;
+            final label = speed == 1.0
+                ? context.t('player.normal', null, 'Normal')
+                : '${speed}x';
+
+            return _buildOptionRow(
+              context: context,
+              label: label,
+              isSelected: isSelected,
+              onTap: () {
+                widget.controller.playbackRate.value = speed;
+                widget.ytController.setPlaybackRate(speed);
+                setState(() => _currentView = 'main');
+              },
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  // ==========================================
+  // 3. FONT SIZE PANEL
+  // ==========================================
+  Widget _buildFontSizePanel(BuildContext context) {
+    final currentSize = widget.controller.subtitleSize.value;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildPanelHeader(
+          context: context,
+          title: context.t('subtitle.fontSize', null, 'Subtitle size'),
+          icon: Icons.format_size_rounded,
+        ),
+        _buildOptionRow(
+          context: context,
+          label: context.t('settings.sizeSmall', null, 'Small'),
+          isSelected: currentSize == SubtitleSize.small,
+          onTap: () {
+            widget.controller.subtitleSize.value = SubtitleSize.small;
+            setState(() => _currentView = 'main');
+          },
+        ),
+        _buildOptionRow(
+          context: context,
+          label: context.t('settings.sizeMedium', null, 'Medium'),
+          isSelected: currentSize == SubtitleSize.medium,
+          onTap: () {
+            widget.controller.subtitleSize.value = SubtitleSize.medium;
+            setState(() => _currentView = 'main');
+          },
+        ),
+        _buildOptionRow(
+          context: context,
+          label: context.t('settings.sizeLarge', null, 'Large'),
+          isSelected: currentSize == SubtitleSize.large,
+          onTap: () {
+            widget.controller.subtitleSize.value = SubtitleSize.large;
+            setState(() => _currentView = 'main');
+          },
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  // ==========================================
+  // 4. DUAL SUBTITLES PANEL
+  // ==========================================
+  Widget _buildDualSubPanel(BuildContext context) {
+    final colors = context.vocaColors;
+    final showDual = widget.controller.showTranslation.value;
+    final currentTarget = widget.controller.dualSubLanguage.value ?? 'en';
+    final activeLearningLang = AppState.instance.activeLanguage.value.toLowerCase();
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildPanelHeader(
+          context: context,
+          title: context.t('subtitle.dualSubs', null, 'Dual Subtitles'),
+          icon: Icons.translate_rounded,
+        ),
+
+        // Off option
+        _buildOptionRow(
+          context: context,
+          label: context.t('player.off', null, 'Off'),
+          isSelected: !showDual,
+          leading: Icon(Icons.block_rounded, size: 18, color: colors.textMuted),
+          onTap: () {
+            widget.controller.showTranslation.value = false;
+            setState(() => _currentView = 'main');
+          },
+        ),
+
+        Divider(height: 1, color: colors.borderColor),
+
+        // Target language options with circle flags
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: _dualSubLanguages.length,
+          itemBuilder: (context, index) {
+            final item = _dualSubLanguages[index];
+            final code = item['code']!;
+            final name = item['name']!;
+            final flag = item['flag']!;
+            final isLearningLang = code == activeLearningLang;
+            final isSelected = showDual && currentTarget == code;
+
+            return _buildOptionRow(
+              context: context,
+              label: name,
+              isSelected: isSelected,
+              isDisabled: isLearningLang,
+              leading: Text(flag, style: const TextStyle(fontSize: 18)),
+              onTap: () {
+                widget.controller.dualSubLanguage.value = code;
+                widget.controller.showTranslation.value = true;
+                setState(() => _currentView = 'main');
+              },
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  // ==========================================
+  // 5. READING PANEL
+  // ==========================================
+  Widget _buildReadingPanel(BuildContext context) {
+    final colors = context.vocaColors;
+    final currentLang = AppState.instance.activeLanguage.value;
+    final showReading = widget.controller.showFurigana.value;
+    final readingTitle = _getReadingModeName(currentLang);
+    final scriptIcon = _getReadingScriptIcon(currentLang);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildPanelHeader(
+          context: context,
+          title: readingTitle,
+          icon: Icons.text_fields_rounded,
+        ),
+
+        // Off
+        _buildOptionRow(
+          context: context,
+          label: context.t('player.off', null, 'Off'),
+          isSelected: !showReading,
+          leading: Icon(Icons.block_rounded, size: 18, color: colors.textMuted),
+          onTap: () {
+            widget.controller.showFurigana.value = false;
+            setState(() => _currentView = 'main');
+          },
+        ),
+
+        // Annotated (Furigana / Pinyin / Romaja)
+        _buildOptionRow(
+          context: context,
+          label: readingTitle,
+          isSelected: showReading,
+          leading: Container(
+            width: 24,
+            height: 24,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: colors.accentPrimarySoft,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              scriptIcon,
+              style: TextStyle(
+                color: colors.accentPrimary,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+          ),
+          onTap: () {
+            widget.controller.showFurigana.value = true;
+            setState(() => _currentView = 'main');
+          },
+        ),
+
+        // Romaji option for Japanese
+        if (currentLang.toLowerCase() == 'ja')
+          _buildOptionRow(
+            context: context,
+            label: 'Romaji',
+            isSelected: false,
+            leading: Container(
+              width: 24,
+              height: 24,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: colors.bgSurface,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: colors.borderColor),
+              ),
+              child: Text(
+                'Aa',
+                style: TextStyle(
+                  color: colors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+            onTap: () {
+              widget.controller.showFurigana.value = true;
+              setState(() => _currentView = 'main');
+            },
+          ),
+
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  // ==========================================
+  // 6. GRAMMAR PANEL
+  // ==========================================
+  Widget _buildGrammarPanel(BuildContext context) {
+    final colors = context.vocaColors;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildPanelHeader(
+          context: context,
+          title: context.t('grammar.mode', null, 'Grammar Mode'),
+          icon: Icons.auto_awesome_rounded,
+        ),
+        _buildOptionRow(
+          context: context,
+          label: context.t('player.off', null, 'Off'),
+          isSelected: false,
+          leading: Icon(Icons.block_rounded, size: 18, color: colors.textMuted),
+          onTap: () => setState(() => _currentView = 'main'),
+        ),
+        _buildOptionRow(
+          context: context,
+          label: context.t('common.on', null, 'On (Highlight Patterns)'),
+          isSelected: true,
+          leading: Icon(Icons.auto_awesome_rounded, size: 18, color: colors.colorGrammar),
+          onTap: () => setState(() => _currentView = 'main'),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  // ==========================================
+  // 7. SLEEP TIMER PANEL
+  // ==========================================
+  Widget _buildSleepTimerPanel(BuildContext context) {
+    const timerMinutes = ['5', '10', '15', '30', '45', '60'];
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildPanelHeader(
+          context: context,
+          title: context.t('player.sleepTimer', null, 'Sleep timer'),
+          icon: Icons.timer_outlined,
+        ),
+        _buildOptionRow(
+          context: context,
+          label: context.t('player.off', null, 'Off'),
+          isSelected: _sleepTimerOption == 'off',
+          onTap: () {
+            _sleepTimer?.cancel();
+            setState(() {
+              _sleepTimerOption = 'off';
+              _currentView = 'main';
+            });
+          },
+        ),
+        for (final m in timerMinutes)
+          _buildOptionRow(
+            context: context,
+            label: '$m minutes',
+            isSelected: _sleepTimerOption == m,
+            onTap: () {
+              _sleepTimer?.cancel();
+              _sleepTimer = Timer(Duration(minutes: int.parse(m)), () {
+                widget.ytController.pauseVideo();
+              });
+              setState(() {
+                _sleepTimerOption = m;
+                _currentView = 'main';
+              });
+            },
+          ),
+        _buildOptionRow(
+          context: context,
+          label: context.t('player.sleepTimerEndOfVideo', null, 'End of video'),
+          isSelected: _sleepTimerOption == 'end',
+          onTap: () {
+            _sleepTimer?.cancel();
+            setState(() {
+              _sleepTimerOption = 'end';
+              _currentView = 'main';
+            });
+          },
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildOptionRow({
+    required BuildContext context,
+    required String label,
+    required bool isSelected,
+    bool isDisabled = false,
+    Widget? leading,
+    required VoidCallback onTap,
+  }) {
+    final colors = context.vocaColors;
+    return InkWell(
+      onTap: isDisabled ? null : onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+        color: isSelected ? colors.accentPrimarySoft.withOpacity(0.08) : Colors.transparent,
+        child: Row(
+          children: [
+            if (leading != null) ...[
+              leading,
+              const SizedBox(width: 12),
+            ],
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  color: isDisabled
+                      ? colors.textMuted
+                      : (isSelected ? colors.accentPrimary : colors.textPrimary),
+                ),
+              ),
+            ),
+            if (isSelected)
+              Icon(Icons.check_rounded, size: 20, color: colors.accentPrimary),
+          ],
+        ),
+      ),
+    );
+  }
+}

@@ -71,22 +71,45 @@ Mobile connectivity can be intermittent. Voca Flutter ensures flashcard study, s
 
 ---
 
-## 4. UI Layer Architecture
+## 4. UI Layer Architecture & Original App Reference
+
+All UI components, colors, and behaviors are ported faithfully from the original web app (`../lingua-tube`):
 
 ```
 lib/ui/
-├── main_shell.dart              # Persistent Scaffold with Material 3 NavigationBar
+├── shell/
+│   └── main_shell.dart          # Persistent Scaffold with Material 3 NavigationBar (80dp)
 ├── explore/
 │   └── explore_screen.dart      # Language selector, CEFR/JLPT filter pills, video card grid
 ├── video/
-│   └── video_player_screen.dart # 16:9 YouTube surface, error fallback banner, subtitle area
+│   ├── video_player_screen.dart # 16:9 YouTube surface, error fallback banner, subtitle area
+│   ├── video_header.dart        # Video title, back button, more options
+│   ├── center_controls.dart     # Play/pause, seek forward/back overlay
+│   ├── video_progress_bar.dart  # Scrubber bar with buffer track
+│   ├── video_bottom_bar.dart    # Speed, loop, dual-sub, font size, transcript button
+│   ├── miniplayer_bar.dart      # Docked floating miniplayer above bottom navigation
+│   └── transcript_view.dart     # Auto-scrolling interactive transcript sheet
 ├── study/
 │   └── study_deck_screen.dart   # SM-2 Flashcard flip animation, rating buttons (Again/Hard/Good/Easy)
 ├── vocabulary/
-│   └── vocabulary_screen.dart   # Filterable & searchable saved words list
+│   ├── vocabulary_screen.dart   # Filterable & searchable saved words list
+│   └── word_detail_sheet.dart   # Word details, dictionary audio & definition
+├── library/
+│   └── library_screen.dart      # Custom playlists, watch history, saved videos
+├── profile/
+│   └── profile_screen.dart      # Gamification stats, streak flame, diamonds, auth
+├── settings/
+│   └── settings_screen.dart     # Language preferences, theme mode, ruby display
 ├── widgets/
-│   └── interactive_subtitle_view.dart # Custom Ruby/Furigana text, Pinyin, and grammar spans
+│   ├── interactive_subtitle_view.dart # Custom Ruby/Furigana text, Pinyin, and grammar spans
+│   ├── spotlight_modal.dart     # Quick search and navigation modal
+│   ├── voca_level_badge.dart    # 5-tier educational level badge
+│   ├── voca_search_input.dart   # Instant clear and YouTube URL detection
+│   └── voca_shimmer.dart        # Skeleton loading animation
 └── sheets/
-    ├── dictionary_bottom_sheet.dart   # Multi-source dictionary definition modal
-    └── grammar_bottom_sheet.dart      # Grammar pattern explanation & example sentences
+    ├── voca_bottom_sheet.dart   # Base styled bottom sheet modal
+    ├── dictionary_bottom_sheet.dart # Multi-source dictionary definition modal
+    ├── grammar_bottom_sheet.dart# Grammar pattern explanation & example sentences
+    ├── subtitle_options_sheet.dart # Subtitle styling & audio options
+    └── gamification_dialogs.dart# Streak freeze & reward claim popups
 ```

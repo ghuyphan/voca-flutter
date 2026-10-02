@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import '../../config/voca_theme.dart';
+import '../../services/i18n_service.dart';
 import '../../state/app_state.dart';
 import '../profile/profile_screen.dart';
 
@@ -14,11 +15,13 @@ Future<void> showStreakDialog(BuildContext context) {
   return showDialog<void>(
     context: context,
     builder: (ctx) {
+      final colors = ctx.vocaColors;
+
       return Dialog(
-        backgroundColor: VocaTokens.bgCard,
+        backgroundColor: colors.bgCard,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: VocaTokens.borderColor),
+          side: BorderSide(color: colors.borderColor),
         ),
         insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
         child: Padding(
@@ -53,9 +56,9 @@ Future<void> showStreakDialog(BuildContext context) {
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: VocaTokens.colorFire.withOpacity(0.15),
+                    color: colors.colorFire.withOpacity(0.15),
                     shape: BoxShape.circle,
-                    border: Border.all(color: VocaTokens.colorFire.withOpacity(0.4), width: 2),
+                    border: Border.all(color: colors.colorFire.withOpacity(0.4), width: 2),
                   ),
                   child: const Center(
                     child: Text('🔥', style: TextStyle(fontSize: 32)),
@@ -66,16 +69,16 @@ Future<void> showStreakDialog(BuildContext context) {
                 // Streak count
                 Text(
                   '$currentStreak',
-                  style: const TextStyle(
-                    color: VocaTokens.textPrimary,
+                  style: TextStyle(
+                    color: colors.textPrimary,
                     fontSize: 36,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const Text(
-                  'Day Streak',
+                Text(
+                  ctx.t('gamification.streak', null, 'Day Streak'),
                   style: TextStyle(
-                    color: VocaTokens.colorFire,
+                    color: colors.colorFire,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.5,
@@ -86,11 +89,11 @@ Future<void> showStreakDialog(BuildContext context) {
                 // Motivation message
                 Text(
                   practicedToday
-                      ? 'Practiced today! Keep up the momentum!'
-                      : 'Watch a video or review cards today to keep your streak!',
+                      ? ctx.t('streak.practicedToday', null, 'Practiced today! Keep up the momentum!')
+                      : ctx.t('streak.keepStreak', null, 'Watch a video or review cards today to keep your streak!'),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: VocaTokens.textSecondary,
+                  style: TextStyle(
+                    color: colors.textSecondary,
                     fontSize: 13,
                   ),
                 ),
@@ -100,9 +103,9 @@ Future<void> showStreakDialog(BuildContext context) {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                   decoration: BoxDecoration(
-                    color: VocaTokens.bgSecondary,
+                    color: colors.bgSecondary,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: VocaTokens.borderColor),
+                    border: Border.all(color: colors.borderColor),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -117,7 +120,7 @@ Future<void> showStreakDialog(BuildContext context) {
                           Text(
                             dayLetter,
                             style: TextStyle(
-                              color: isToday ? VocaTokens.accentPrimary : VocaTokens.textMuted,
+                              color: isToday ? colors.accentPrimary : colors.textMuted,
                               fontSize: 12,
                               fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
                             ),
@@ -129,10 +132,10 @@ Future<void> showStreakDialog(BuildContext context) {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: isActive
-                                  ? VocaTokens.colorFire
-                                  : (isToday ? VocaTokens.bgHover : Colors.white10),
+                                  ? colors.colorFire
+                                  : (isToday ? colors.bgHover : (colors.isDark ? Colors.white10 : Colors.black12)),
                               border: isToday
-                                  ? Border.all(color: VocaTokens.accentPrimary, width: 1.5)
+                                  ? Border.all(color: colors.accentPrimary, width: 1.5)
                                   : null,
                             ),
                             child: Center(
@@ -142,8 +145,8 @@ Future<void> showStreakDialog(BuildContext context) {
                                       ? Container(
                                           width: 6,
                                           height: 6,
-                                          decoration: const BoxDecoration(
-                                            color: VocaTokens.accentPrimary,
+                                          decoration: BoxDecoration(
+                                            color: colors.accentPrimary,
                                             shape: BoxShape.circle,
                                           ),
                                         )
@@ -164,17 +167,20 @@ Future<void> showStreakDialog(BuildContext context) {
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: VocaTokens.bgSecondary,
+                          color: colors.bgSecondary,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: VocaTokens.borderColor),
+                          border: Border.all(color: colors.borderColor),
                         ),
                         child: Column(
                           children: [
-                            const Text('Best Streak', style: TextStyle(color: VocaTokens.textMuted, fontSize: 11)),
+                            Text(
+                              ctx.t('streak.bestStreak', null, 'Best Streak'),
+                              style: TextStyle(color: colors.textMuted, fontSize: 11),
+                            ),
                             const SizedBox(height: 4),
                             Text(
                               '$longestStreak days',
-                              style: const TextStyle(color: VocaTokens.textPrimary, fontWeight: FontWeight.bold, fontSize: 15),
+                              style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 15),
                             ),
                           ],
                         ),
@@ -185,17 +191,20 @@ Future<void> showStreakDialog(BuildContext context) {
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: VocaTokens.bgSecondary,
+                          color: colors.bgSecondary,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: VocaTokens.borderColor),
+                          border: Border.all(color: colors.borderColor),
                         ),
                         child: Column(
                           children: [
-                            const Text('Freezes Left', style: TextStyle(color: VocaTokens.textMuted, fontSize: 11)),
+                            Text(
+                              ctx.t('streak.freezesLeft', null, 'Freezes Left'),
+                              style: TextStyle(color: colors.textMuted, fontSize: 11),
+                            ),
                             const SizedBox(height: 4),
                             Text(
                               '🛡️ $freezes',
-                              style: const TextStyle(color: VocaTokens.textPrimary, fontWeight: FontWeight.bold, fontSize: 15),
+                              style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 15),
                             ),
                           ],
                         ),
@@ -212,10 +221,10 @@ Future<void> showStreakDialog(BuildContext context) {
                       child: OutlinedButton(
                         onPressed: () => Navigator.of(ctx).pop(),
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: VocaTokens.borderColor),
-                          foregroundColor: VocaTokens.textPrimary,
+                          side: BorderSide(color: colors.borderColor),
+                          foregroundColor: colors.textPrimary,
                         ),
-                        child: const Text('Close'),
+                        child: Text(ctx.t('common.close', null, 'Close')),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -228,10 +237,10 @@ Future<void> showStreakDialog(BuildContext context) {
                           );
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: VocaTokens.accentPrimary,
+                          backgroundColor: colors.accentPrimary,
                           foregroundColor: Colors.white,
                         ),
-                        child: const Text('Full Stats'),
+                        child: Text(ctx.t('streak.fullStats', null, 'Full Stats')),
                       ),
                     ),
                   ],
@@ -252,11 +261,13 @@ Future<void> showAchievementsDialog(BuildContext context) {
   return showDialog<void>(
     context: context,
     builder: (ctx) {
+      final colors = ctx.vocaColors;
+
       return Dialog(
-        backgroundColor: VocaTokens.bgCard,
+        backgroundColor: colors.bgCard,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: VocaTokens.borderColor),
+          side: BorderSide(color: colors.borderColor),
         ),
         insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
         child: Padding(
@@ -278,9 +289,9 @@ Future<void> showAchievementsDialog(BuildContext context) {
                     width: 64,
                     height: 64,
                     decoration: BoxDecoration(
-                      color: VocaTokens.accentTertiary.withOpacity(0.15),
+                      color: colors.accentTertiary.withOpacity(0.15),
                       shape: BoxShape.circle,
-                      border: Border.all(color: VocaTokens.accentTertiary.withOpacity(0.4), width: 2),
+                      border: Border.all(color: colors.accentTertiary.withOpacity(0.4), width: 2),
                     ),
                     child: const Center(
                       child: Text('🛡️', style: TextStyle(fontSize: 30)),
@@ -290,16 +301,16 @@ Future<void> showAchievementsDialog(BuildContext context) {
 
                   Text(
                     'Level $level Learner',
-                    style: const TextStyle(
-                      color: VocaTokens.textPrimary,
+                    style: TextStyle(
+                      color: colors.textPrimary,
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   Text(
                     '$xp Total XP',
-                    style: const TextStyle(
-                      color: VocaTokens.accentTertiary,
+                    style: TextStyle(
+                      color: colors.accentTertiary,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),
@@ -313,8 +324,8 @@ Future<void> showAchievementsDialog(BuildContext context) {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Level Progress', style: TextStyle(color: VocaTokens.textMuted, fontSize: 12)),
-                          Text('$curLevelXp / $targetXp XP', style: const TextStyle(color: VocaTokens.textSecondary, fontSize: 12)),
+                          Text(ctx.t('profile.levelProgress', null, 'Level Progress'), style: TextStyle(color: colors.textMuted, fontSize: 12)),
+                          Text('$curLevelXp / $targetXp XP', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -323,8 +334,8 @@ Future<void> showAchievementsDialog(BuildContext context) {
                         child: LinearProgressIndicator(
                           value: progress,
                           minHeight: 8,
-                          backgroundColor: VocaTokens.bgSecondary,
-                          valueColor: const AlwaysStoppedAnimation<Color>(VocaTokens.accentTertiary),
+                          backgroundColor: colors.bgSecondary,
+                          valueColor: AlwaysStoppedAnimation<Color>(colors.accentTertiary),
                         ),
                       ),
                     ],
@@ -335,9 +346,9 @@ Future<void> showAchievementsDialog(BuildContext context) {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      'Achievements (${achievements.where((a) => a.isUnlocked).length}/${achievements.length})',
-                      style: const TextStyle(
-                        color: VocaTokens.textPrimary,
+                      '${ctx.t('gamification.achievements', null, 'Achievements')} (${achievements.where((a) => a.isUnlocked).length}/${achievements.length})',
+                      style: TextStyle(
+                        color: colors.textPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                       ),
@@ -350,10 +361,10 @@ Future<void> showAchievementsDialog(BuildContext context) {
                       margin: const EdgeInsets.only(bottom: 8),
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       decoration: BoxDecoration(
-                        color: VocaTokens.bgSecondary,
+                        color: colors.bgSecondary,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: a.isUnlocked ? VocaTokens.accentTertiary.withOpacity(0.3) : VocaTokens.borderColor,
+                          color: a.isUnlocked ? colors.accentTertiary.withOpacity(0.3) : colors.borderColor,
                         ),
                       ),
                       child: Row(
@@ -361,7 +372,7 @@ Future<void> showAchievementsDialog(BuildContext context) {
                           Icon(
                             a.icon,
                             size: 22,
-                            color: a.isUnlocked ? VocaTokens.accentTertiary : VocaTokens.textMuted,
+                            color: a.isUnlocked ? colors.accentTertiary : colors.textMuted,
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -371,14 +382,14 @@ Future<void> showAchievementsDialog(BuildContext context) {
                                 Text(
                                   a.title,
                                   style: TextStyle(
-                                    color: a.isUnlocked ? VocaTokens.textPrimary : VocaTokens.textMuted,
+                                    color: a.isUnlocked ? colors.textPrimary : colors.textMuted,
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                                 Text(
                                   a.description,
-                                  style: const TextStyle(color: VocaTokens.textMuted, fontSize: 11),
+                                  style: TextStyle(color: colors.textMuted, fontSize: 11),
                                 ),
                               ],
                             ),
@@ -386,13 +397,13 @@ Future<void> showAchievementsDialog(BuildContext context) {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: a.isUnlocked ? VocaTokens.accentTertiary.withOpacity(0.15) : Colors.white10,
+                              color: a.isUnlocked ? colors.accentTertiary.withOpacity(0.15) : (colors.isDark ? Colors.white10 : Colors.black12),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
                               '+${a.xpReward} XP',
                               style: TextStyle(
-                                color: a.isUnlocked ? VocaTokens.accentTertiary : VocaTokens.textMuted,
+                                color: a.isUnlocked ? colors.accentTertiary : colors.textMuted,
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -408,10 +419,10 @@ Future<void> showAchievementsDialog(BuildContext context) {
                     onPressed: () => Navigator.of(ctx).pop(),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(44),
-                      side: const BorderSide(color: VocaTokens.borderColor),
-                      foregroundColor: VocaTokens.textPrimary,
+                      side: BorderSide(color: colors.borderColor),
+                      foregroundColor: colors.textPrimary,
                     ),
-                    child: const Text('Close'),
+                    child: Text(ctx.t('common.close', null, 'Close')),
                   ),
                 ],
               ),
@@ -430,11 +441,13 @@ Future<void> showAiCreditsDialog(BuildContext context) {
   return showDialog<void>(
     context: context,
     builder: (ctx) {
+      final colors = ctx.vocaColors;
+
       return Dialog(
-        backgroundColor: VocaTokens.bgCard,
+        backgroundColor: colors.bgCard,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: VocaTokens.borderColor),
+          side: BorderSide(color: colors.borderColor),
         ),
         insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
         child: Padding(
@@ -451,9 +464,9 @@ Future<void> showAiCreditsDialog(BuildContext context) {
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: VocaTokens.colorDiamond.withOpacity(0.15),
+                    color: colors.colorDiamond.withOpacity(0.15),
                     shape: BoxShape.circle,
-                    border: Border.all(color: VocaTokens.colorDiamond.withOpacity(0.4), width: 2),
+                    border: Border.all(color: colors.colorDiamond.withOpacity(0.4), width: 2),
                   ),
                   child: const Center(
                     child: Text('💎', style: TextStyle(fontSize: 30)),
@@ -463,27 +476,31 @@ Future<void> showAiCreditsDialog(BuildContext context) {
 
                 Text(
                   '$diamonds / $maxDiamonds',
-                  style: const TextStyle(
-                    color: VocaTokens.textPrimary,
+                  style: TextStyle(
+                    color: colors.textPrimary,
                     fontSize: 32,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const Text(
-                  'AI Credits Available',
+                Text(
+                  ctx.t('gamification.aiCredits', null, 'AI Credits Available'),
                   style: TextStyle(
-                    color: VocaTokens.colorDiamond,
+                    color: colors.colorDiamond,
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 12),
 
-                const Text(
-                  'AI Credits power furigana/ruby generation, grammar breakdowns, and contextual AI dictionary explanations.',
+                Text(
+                  ctx.t(
+                    'aiCredits.explanation',
+                    null,
+                    'AI Credits power furigana/ruby generation, grammar breakdowns, and contextual AI dictionary explanations.',
+                  ),
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: VocaTokens.textSecondary,
+                    color: colors.textSecondary,
                     fontSize: 13,
                   ),
                 ),
@@ -492,18 +509,18 @@ Future<void> showAiCreditsDialog(BuildContext context) {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: VocaTokens.bgSecondary,
+                    color: colors.bgSecondary,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: VocaTokens.borderColor),
+                    border: Border.all(color: colors.borderColor),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Icon(Icons.info_outline_rounded, color: VocaTokens.colorDiamond, size: 18),
-                      SizedBox(width: 10),
+                      Icon(Icons.info_outline_rounded, color: colors.colorDiamond, size: 18),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'Free daily refill of 5 AI credits every 24 hours.',
-                          style: TextStyle(color: VocaTokens.textPrimary, fontSize: 12),
+                          ctx.t('aiCredits.refillNotice', null, 'Free daily refill of 5 AI credits every 24 hours.'),
+                          style: TextStyle(color: colors.textPrimary, fontSize: 12),
                         ),
                       ),
                     ],
@@ -517,18 +534,18 @@ Future<void> showAiCreditsDialog(BuildContext context) {
                     await gamification.refreshDiamonds();
                     if (ctx.mounted) {
                       ScaffoldMessenger.of(ctx).showSnackBar(
-                        const SnackBar(
-                          content: Text('AI Credits refreshed!'),
-                          duration: Duration(seconds: 2),
+                        SnackBar(
+                          content: Text(ctx.t('aiCredits.refreshed', null, 'AI Credits refreshed!')),
+                          duration: const Duration(seconds: 2),
                         ),
                       );
                     }
                   },
                   icon: const Icon(Icons.refresh_rounded, size: 18),
-                  label: const Text('Refresh Credits'),
+                  label: Text(ctx.t('aiCredits.refresh', null, 'Refresh Credits')),
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size.fromHeight(44),
-                    backgroundColor: VocaTokens.colorDiamond,
+                    backgroundColor: colors.colorDiamond,
                     foregroundColor: Colors.white,
                   ),
                 ),
@@ -538,10 +555,10 @@ Future<void> showAiCreditsDialog(BuildContext context) {
                   onPressed: () => Navigator.of(ctx).pop(),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size.fromHeight(44),
-                    side: const BorderSide(color: VocaTokens.borderColor),
-                    foregroundColor: VocaTokens.textPrimary,
+                    side: BorderSide(color: colors.borderColor),
+                    foregroundColor: colors.textPrimary,
                   ),
-                  child: const Text('Close'),
+                  child: Text(ctx.t('common.close', null, 'Close')),
                 ),
               ],
             );
@@ -549,5 +566,133 @@ Future<void> showAiCreditsDialog(BuildContext context) {
         ),
       );
     },
+  );
+}
+
+/// Shows authentic Pro Upgrade Dialog matching lingua-tube's ProUpgradeDialogComponent.
+Future<void> showProUpgradeDialog(BuildContext context) {
+  return showDialog<void>(
+    context: context,
+    builder: (ctx) {
+      final colors = ctx.vocaColors;
+
+      return Dialog(
+        backgroundColor: colors.bgCard,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: colors.borderColor),
+        ),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Crown Crest Header
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: colors.accentPrimary.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: colors.accentPrimary.withOpacity(0.4), width: 2),
+                ),
+                child: const Center(
+                  child: Text('👑', style: TextStyle(fontSize: 32)),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              Text(
+                'VOCA Pro',
+                style: TextStyle(
+                  color: colors.textPrimary,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Unlock Unlimited Language Immersion',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: colors.accentPrimary,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Feature bullets
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: colors.bgSecondary,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: colors.borderColor),
+                ),
+                child: Column(
+                  children: [
+                    _buildProFeatureRow(colors, ctx.t('pro.featureUnlimitedTranscribe', null, '💎 Unlimited AI Whisper & Transcription')),
+                    const SizedBox(height: 8),
+                    _buildProFeatureRow(colors, ctx.t('pro.featureSrsDecks', null, '⚡ Infinite Spaced Repetition SRS Decks')),
+                    const SizedBox(height: 8),
+                    _buildProFeatureRow(colors, ctx.t('pro.featureGrammarRules', null, '📚 2,400+ Grammar Rules & Breakdown')),
+                    const SizedBox(height: 8),
+                    _buildProFeatureRow(colors, ctx.t('pro.featureSync', null, '☁️ Seamless Cross-Platform Sync')),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(ctx.t('pro.checkoutComingSoon', null, 'Pro subscription checkout coming soon!')),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(44),
+                  backgroundColor: colors.accentPrimary,
+                  foregroundColor: Colors.white,
+                ),
+                child: Text(ctx.t('pro.upgradeToPro', null, 'Upgrade to Pro'), style: const TextStyle(fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(height: 8),
+
+              OutlinedButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(44),
+                  side: BorderSide(color: colors.borderColor),
+                  foregroundColor: colors.textPrimary,
+                ),
+                child: Text(ctx.t('common.maybeLater', null, 'Maybe Later')),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+Widget _buildProFeatureRow(VocaColorPalette colors, String text) {
+  return Row(
+    children: [
+      Expanded(
+        child: Text(
+          text,
+          style: TextStyle(
+            color: colors.textPrimary,
+            fontSize: 12.5,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+    ],
   );
 }

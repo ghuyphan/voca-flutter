@@ -1,0 +1,367 @@
+// lib/ui/sheets/subtitle_options_sheet.dart
+
+import 'package:flutter/material.dart';
+import 'package:signals_flutter/signals_flutter.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import '../../config/voca_theme.dart';
+import '../../models/voca_models.dart';
+import '../../services/i18n_service.dart';
+import '../../state/app_state.dart';
+import '../../state/player_state.dart';
+import 'voca_bottom_sheet.dart';
+
+class SubtitleOptionsSheet extends StatefulWidget {
+  final VideoPlayerController controller;
+  final YoutubePlayerController ytController;
+
+  const SubtitleOptionsSheet({
+    super.key,
+    required this.controller,
+    required this.ytController,
+  });
+
+  static Future<void> show(
+    BuildContext context, {
+    required VideoPlayerController controller,
+    required YoutubePlayerController ytController,
+  }) {
+    return showVocaBottomSheet(
+      context: context,
+      title: context.t('settings.subtitles'),
+      showCloseButton: true,
+      contentPadding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+      builder: (_) => SubtitleOptionsSheet(
+        controller: controller,
+        ytController: ytController,
+      ),
+    );
+  }
+
+  @override
+  State<SubtitleOptionsSheet> createState() => _SubtitleOptionsSheetState();
+}
+
+class _SubtitleOptionsSheetState extends State<SubtitleOptionsSheet> {
+  bool _grammarModeEnabled = true;
+
+  String _getReadingIcon(String lang) {
+    switch (lang) {
+      case 'ja':
+        return 'あ';
+      case 'zh':
+        return '拼';
+      case 'ko':
+        return '한';
+      default:
+        return 'Aa';
+    }
+  }
+
+  String _getReadingTitle(BuildContext context, String lang) {
+    switch (lang) {
+      case 'ja':
+        return 'Furigana';
+      case 'zh':
+        return 'Pinyin';
+      case 'ko':
+        return 'Romaja';
+      default:
+        return context.t('subtitle.readingGuide', null, 'Reading Guide');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentLang = AppState.instance.activeLanguage.value;
+    final colors = context.vocaColors;
+
+    return SingleChildScrollView(
+      child: Watch((context) {
+        final subtitleSize = widget.controller.subtitleSize.value;
+        final showFurigana = widget.controller.showFurigana.value;
+        final showTranslation = widget.controller.showTranslation.value;
+        final rate = widget.controller.playbackRate.value;
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 1. Font Size Segmented Control
+            Text(
+              context.t('settings.subtitleSize', null, 'Subtitle Size').toUpperCase(),
+              style: TextStyle(
+                color: colors.textMuted,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                _buildSizeOption(
+                  colors: colors,
+                  label: context.t('settings.sizeSmall', null, 'Small'),
+                  sample: 'Aa',
+                  isSelected: subtitleSize == SubtitleSize.small,
+                  onTap: () => widget.controller.subtitleSize.value = SubtitleSize.small,
+                ),
+                const SizedBox(width: 8),
+                _buildSizeOption(
+                  colors: colors,
+                  label: context.t('settings.sizeMedium', null, 'Medium'),
+                  sample: 'Aa',
+                  isSelected: subtitleSize == SubtitleSize.medium,
+                  onTap: () => widget.controller.subtitleSize.value = SubtitleSize.medium,
+                ),
+                const SizedBox(width: 8),
+                _buildSizeOption(
+                  colors: colors,
+                  label: context.t('settings.sizeLarge', null, 'Large'),
+                  sample: 'Aa',
+                  isSelected: subtitleSize == SubtitleSize.large,
+                  onTap: () => widget.controller.subtitleSize.value = SubtitleSize.large,
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+
+            // 2. Playback Speed Selector
+            Text(
+              context.t('player.speed').toUpperCase(),
+              style: TextStyle(
+                color: colors.textMuted,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [0.75, 1.0, 1.25, 1.5].map((speed) {
+                final isSelected = (rate - speed).abs() < 0.05;
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: InkWell(
+                      onTap: () {
+                        widget.controller.playbackRate.value = speed;
+                        widget.ytController.setPlaybackRate(speed);
+                      },
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        height: 38,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: isSelected ? colors.accentPrimary : colors.bgSurface,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: isSelected ? colors.accentPrimary : colors.borderColor,
+                          ),
+                        ),
+                        child: Text(
+                          '${speed}x',
+                          style: TextStyle(
+                            color: isSelected ? Colors.white : colors.textPrimary,
+                            fontSize: 13,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 18),
+
+            // 3. Display Toggles Card
+            Text(
+              context.t('subtitle.display', null, 'Display').toUpperCase(),
+              style: TextStyle(
+                color: colors.textMuted,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Material(
+              color: colors.bgSurface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(color: colors.borderColor),
+              ),
+              child: Column(
+                children: [
+                  // Reading / Furigana toggle
+                  SwitchListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                    secondary: Container(
+                      width: 32,
+                      height: 32,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: colors.bgCard,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: colors.borderColor),
+                      ),
+                      child: Text(
+                        _getReadingIcon(currentLang),
+                        style: TextStyle(
+                          color: colors.accentPrimary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    title: Text(
+                      _getReadingTitle(context, currentLang),
+                      style: TextStyle(
+                        color: colors.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    subtitle: Text(
+                      context.t('settings.readingDisplayDesc'),
+                      style: TextStyle(color: colors.textMuted, fontSize: 11.5),
+                    ),
+                    value: showFurigana,
+                    activeColor: colors.accentPrimary,
+                    onChanged: (_) => widget.controller.toggleFurigana(),
+                  ),
+                  Divider(height: 1, color: colors.borderColorLight),
+
+                  // Grammar Mode toggle
+                  SwitchListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                    secondary: Container(
+                      width: 32,
+                      height: 32,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: colors.bgCard,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: colors.borderColor),
+                      ),
+                      child: Icon(
+                        Icons.auto_awesome_rounded,
+                        color: colors.colorGrammar,
+                        size: 17,
+                      ),
+                    ),
+                    title: Text(
+                      context.t('grammar.title'),
+                      style: TextStyle(
+                        color: colors.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    subtitle: Text(
+                      context.t('grammar.highlightDesc', null, 'Highlight detected JLPT / HSK / TOPIK / CEFR grammar rules'),
+                      style: TextStyle(color: colors.textMuted, fontSize: 11.5),
+                    ),
+                    value: _grammarModeEnabled,
+                    activeColor: colors.colorGrammar,
+                    onChanged: (val) {
+                      setState(() {
+                        _grammarModeEnabled = val;
+                      });
+                    },
+                  ),
+                  Divider(height: 1, color: colors.borderColorLight),
+
+                  // Dual Subtitle Translation toggle
+                  SwitchListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                    secondary: Container(
+                      width: 32,
+                      height: 32,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: colors.bgCard,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: colors.borderColor),
+                      ),
+                      child: Icon(
+                        Icons.translate_rounded,
+                        color: colors.accentSecondary,
+                        size: 17,
+                      ),
+                    ),
+                    title: Text(
+                      context.t('settings.dualSubtitles', null, 'Secondary Subtitles'),
+                      style: TextStyle(
+                        color: colors.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    subtitle: Text(
+                      context.t('settings.dualSubtitlesDesc'),
+                      style: TextStyle(color: colors.textMuted, fontSize: 11.5),
+                    ),
+                    value: showTranslation,
+                    activeColor: colors.accentPrimary,
+                    onChanged: (_) => widget.controller.toggleTranslation(),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+          ],
+        );
+      }),
+    );
+  }
+
+  Widget _buildSizeOption({
+    required VocaColorPalette colors,
+    required String label,
+    required String sample,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          height: 42,
+          decoration: BoxDecoration(
+            color: isSelected ? colors.accentPrimarySoft : colors.bgSurface,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected ? colors.accentPrimary : colors.borderColor,
+              width: isSelected ? 1.5 : 1.0,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                sample,
+                style: TextStyle(
+                  color: isSelected ? colors.accentPrimary : colors.textPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? colors.accentPrimary : colors.textSecondary,
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

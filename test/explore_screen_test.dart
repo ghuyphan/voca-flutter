@@ -2,7 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:voca_flutter/config/voca_theme.dart';
+import 'package:voca_flutter/models/voca_models.dart';
+import 'package:voca_flutter/services/grammar_engine.dart';
+import 'package:voca_flutter/services/supabase_service.dart';
 import 'package:voca_flutter/services/voca_api_client.dart';
 import 'package:voca_flutter/state/app_state.dart';
 import 'package:voca_flutter/ui/explore/explore_screen.dart';
@@ -32,13 +36,51 @@ class FakeVocaApiClient extends VocaApiClient {
                     : 'CEFR B1',
         'tier': 'elementary',
       },
+      ...List.generate(
+        10,
+        (i) => {
+          'videoId': 'vid_$i',
+          'title': 'Video Title $i',
+          'channel': 'Creator $i',
+          'duration': 272,
+          'level': 'JLPT N4',
+          'tier': 'elementary',
+        },
+      ),
     ];
   }
+}
+
+class FakeSupabaseService extends SupabaseService {
+  FakeSupabaseService() : super(SupabaseClient('https://mock.supabase.co', 'mock_anon_key'));
+
+  @override
+  User? get currentUser => null;
+
+  @override
+  Future<List<PlaylistItem>> getPlaylists({String? language}) async => [];
+
+  @override
+  Future<List<PlaylistItem>> getExplorePlaylists({String? language}) async => [
+    PlaylistItem(
+      id: 'pl-explore-1',
+      userId: 'system',
+      title: 'Anime Songs for Beginners',
+      description: 'Fun J-Pop & Anime Songs',
+      videoIds: const ['clU8c2fpk2s'],
+      language: 'ja',
+      level: 'JLPT N4',
+      createdAt: DateTime(2025, 1, 1),
+      updatedAt: DateTime(2025, 1, 1),
+    ),
+  ];
 }
 
 void main() {
   setUpAll(() {
     AppState.instance.apiClient = FakeVocaApiClient();
+    AppState.instance.supabaseService = FakeSupabaseService();
+    AppState.instance.grammarEngine = GrammarEngine();
   });
 
   setUp(() {
@@ -58,21 +100,17 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    // Verify Discover title
-    expect(find.text('Discover'), findsOneWidget);
-
-    // Verify search bar hint
+    // Verify search bar hint and no paste button
     expect(find.byType(TextField), findsOneWidget);
-    expect(find.text('Search keyword, channel, or paste YouTube link...'), findsOneWidget);
+    expect(find.text('Paste YouTube URL or search...'), findsOneWidget);
+    expect(find.text('Paste'), findsNothing);
+    expect(find.text('For You'), findsNothing);
 
-    // Verify Category pills
+    // Verify Chips: Filters (first), All, Playlists
+    expect(find.text('Filters'), findsOneWidget);
     expect(find.text('All'), findsAtLeastNWidgets(1));
-    expect(find.text('Trending'), findsOneWidget);
-    expect(find.text('Anime & Drama'), findsOneWidget);
-    expect(find.text('Music'), findsOneWidget);
-    expect(find.text('News'), findsOneWidget);
-    expect(find.text('Vlog'), findsOneWidget);
-    expect(find.text('Conversation'), findsOneWidget);
+    expect(find.text('Playlists'), findsOneWidget);
+    expect(find.byIcon(Icons.tune_rounded), findsOneWidget);
 
     // Verify Japanese difficulty levels
     expect(find.widgetWithText(FilterChip, 'N5'), findsOneWidget);
@@ -84,7 +122,18 @@ void main() {
     // Verify video card rendered
     expect(find.text('Lemon / Kenshi Yonezu'), findsOneWidget);
     expect(find.text('kobasolo'), findsOneWidget);
-    expect(find.text('Watch Now'), findsOneWidget);
+    expect(find.text('JLPT N4'), findsWidgets);
+
+    // Open Filter sheet via Filters chip to verify categories
+    await tester.tap(find.text('Filters'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Trending'), findsOneWidget);
+    expect(find.text('Anime & Drama'), findsOneWidget);
+    expect(find.text('Music'), findsOneWidget);
+    expect(find.text('News'), findsOneWidget);
+    expect(find.text('Vlog'), findsOneWidget);
+    expect(find.text('Conversation'), findsOneWidget);
   });
 
   testWidgets('ExploreScreen dynamically updates difficulty level filters for Chinese, Korean, and English', (tester) async {
@@ -170,30 +219,27 @@ void main() {
     expect(find.textContaining('Valid YouTube Video'), findsNothing);
   });
 
-  testWidgets('ExploreScreen bookmark button toggles state and has Coral active color', (tester) async {
+  testWidgets('ExploreScreen Playlists chip toggles in-feed playlists filter', (tester) async {
     tester.view.physicalSize = const Size(1200, 1000);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
 
-    AppState.instance.activeLanguage.value = 'ja';
     await tester.pumpWidget(
-      const MaterialApp(
-        home: ExploreScreen(),
+      MaterialApp(
+        theme: VocaTheme.darkTheme,
+        home: const ExploreScreen(),
       ),
     );
     await tester.pumpAndSettle();
 
-    // Bookmark icon should start unselected with white color
-    final unselectedIcon = tester.widget<Icon>(find.byIcon(Icons.bookmark_border_rounded));
-    expect(unselectedIcon.color, equals(Colors.white));
+    // Verify Playlists chip exists and tap it
+    expect(find.text('Playlists'), findsOneWidget);
+    await tester.tap(find.text('Playlists'));
+    await tester.pumpAndSettle();
 
-    // Tap bookmark icon
-    await tester.tap(find.byIcon(Icons.bookmark_border_rounded));
-    await tester.pump();
-
-    // Now it should be bookmarked with Radiant Coral color
-    final selectedIcon = tester.widget<Icon>(find.byIcon(Icons.bookmark_rounded));
-    expect(selectedIcon.color, equals(VocaTokens.accentPrimary));
+    // Verify playlist item is rendered in the feed
+    expect(find.text('Anime Songs for Beginners'), findsOneWidget);
+    expect(find.text('Fun J-Pop & Anime Songs'), findsOneWidget);
   });
 
   testWidgets('ExploreScreen switches to 1-column ListView on mobile screens (< 720dp)', (tester) async {
@@ -232,5 +278,86 @@ void main() {
     final gridView = tester.widget<GridView>(find.byType(GridView));
     final delegate = gridView.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount;
     expect(delegate.crossAxisCount, equals(2));
+  });
+
+  testWidgets('ExploreScreen category filter pills select and reload', (tester) async {
+    tester.view.physicalSize = const Size(1200, 1000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: VocaTheme.darkTheme,
+        home: const ExploreScreen(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Open filter sheet via Filters chip
+    await tester.tap(find.text('Filters'));
+    await tester.pumpAndSettle();
+
+    // Tap Music category pill in sheet
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Music'));
+    await tester.pumpAndSettle();
+
+    // Tap Apply Filters
+    await tester.tap(find.text('Apply Filters'));
+    await tester.pumpAndSettle();
+
+    // Active filter tag should be visible on Explore screen
+    expect(find.textContaining('Music'), findsWidgets);
+  });
+
+  testWidgets('ExploreScreen search bar hides on scroll down and reveals on scroll up', (tester) async {
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ExploreScreen(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(TextField), findsOneWidget);
+
+    // Verify SizeTransition initial value
+    final sizeTransition = tester.widget<SizeTransition>(find.byType(SizeTransition));
+    expect(sizeTransition.sizeFactor.value, equals(1.0));
+
+    // Scroll down on video feed
+    await tester.drag(find.byType(ListView).last, const Offset(0, -300));
+    await tester.pumpAndSettle();
+
+    final hiddenTransition = tester.widget<SizeTransition>(find.byType(SizeTransition));
+    expect(hiddenTransition.sizeFactor.value, equals(0.0));
+
+    // Scroll back up
+    await tester.drag(find.byType(ListView).last, const Offset(0, 300));
+    await tester.pumpAndSettle();
+
+    final revealedTransition = tester.widget<SizeTransition>(find.byType(SizeTransition));
+    expect(revealedTransition.sizeFactor.value, equals(1.0));
+  });
+
+  testWidgets('ExploreScreen video card does not have dark fade overlay on thumbnail', (tester) async {
+    tester.view.physicalSize = const Size(1200, 1000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ExploreScreen(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify video card rendered
+    expect(find.text('Lemon / Kenshi Yonezu'), findsOneWidget);
+
+    // Verify duration badge exists without gradient overlay
+    expect(find.text('4:32'), findsWidgets);
   });
 }

@@ -179,25 +179,94 @@ class VocaApiClient {
   }
 
   /// 6. Synchronized whole-video dual subtitles (Cloudflare R2 cached)
+  /// First checks GET /api/dual-subtitles for R2 pre-cached whole-video translation.
+  Future<List<SubtitleCue>?> getCachedDualSubtitles({
+    required String videoId,
+    required String sourceLang,
+    required String targetLang,
+  }) async {
+    try {
+      final response = await _dio.get('/api/dual-subtitles', queryParameters: {
+        'videoId': videoId,
+        'sourceLang': sourceLang,
+        'targetLang': targetLang,
+      });
+
+      if (response.data != null &&
+          response.data['cached'] == true &&
+          response.data['segments'] != null) {
+        return (response.data['segments'] as List)
+            .map((s) => SubtitleCue.fromJson(s as Map<String, dynamic>))
+            .toList();
+      }
+    } catch (e) {
+      // 404 or cache miss: normal flow
+    }
+    return null;
+  }
+
+  /// Synchronized whole-video dual subtitles (Cloudflare R2 cached or generated)
   Future<List<SubtitleCue>> getDualSubtitles({
     required String videoId,
     required String sourceLang,
     required String targetLang,
     required List<SubtitleCue> segments,
   }) async {
-    final response = await _dio.post('/api/dual-subtitles', data: {
-      'videoId': videoId,
-      'sourceLang': sourceLang,
-      'targetLang': targetLang,
-      'segments': segments.map((s) => {'start': s.start, 'duration': s.duration, 'text': s.text}).toList(),
-    });
-
-    if (response.data['segments'] != null) {
-      return (response.data['segments'] as List)
-          .map((s) => SubtitleCue.fromJson(s as Map<String, dynamic>))
-          .toList();
+    // 1. Try fast GET R2 cache first
+    final cached = await getCachedDualSubtitles(
+      videoId: videoId,
+      sourceLang: sourceLang,
+      targetLang: targetLang,
+    );
+    if (cached != null && cached.isNotEmpty) {
+      return cached;
     }
+
+    // 2. If <= 40 segments, request Cloudflare Worker batch
+    if (segments.length <= 40) {
+      try {
+        final response = await _dio.post('/api/dual-subtitles', data: {
+          'videoId': videoId,
+          'sourceLang': sourceLang,
+          'targetLang': targetLang,
+          'segments': segments
+              .map((s) => {'start': s.start, 'duration': s.duration, 'text': s.text})
+              .toList(),
+        });
+
+        if (response.data != null && response.data['segments'] != null) {
+          return (response.data['segments'] as List)
+              .map((s) => SubtitleCue.fromJson(s as Map<String, dynamic>))
+              .toList();
+        }
+      } catch (_) {}
+    }
+
     return segments;
+  }
+
+  /// Persist completed dual subtitle segments to Cloudflare R2 / Edge cache
+  Future<bool> saveDualSubtitles({
+    required String videoId,
+    required String sourceLang,
+    required String targetLang,
+    required List<Map<String, dynamic>> segments,
+  }) async {
+    try {
+      final response = await _dio.post('/api/dual-subtitles', data: {
+        'videoId': videoId,
+        'sourceLang': sourceLang,
+        'targetLang': targetLang,
+        'segments': segments,
+        'saveOnly': true,
+      });
+      return response.data != null &&
+          (response.data['success'] == true ||
+              response.data['saved'] == true ||
+              response.data['cached'] == true);
+    } catch (e) {
+      return false;
+    }
   }
 
   /// 7. Recommended videos list with pre-cached transcripts
