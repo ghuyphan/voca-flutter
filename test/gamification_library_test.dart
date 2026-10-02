@@ -226,7 +226,6 @@ void main() {
       // Mobile bottom nav destinations
       expect(find.text('Watch'), findsOneWidget);
       expect(find.text('Review'), findsOneWidget);
-      expect(find.byKey(const Key('bottom-nav__item--create')), findsOneWidget);
       expect(find.text('Vocab'), findsOneWidget);
       expect(find.text('More'), findsOneWidget);
 
@@ -240,23 +239,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Vocabulary Notebook'), findsOneWidget);
 
-      // Tapping Center + New Video button opens NewVideoSheet
-      await tester.tap(find.byKey(const Key('bottom-nav__item--create')));
-      await tester.pumpAndSettle();
-      expect(find.text('Learn from Any Video'), findsOneWidget);
-      expect(find.text('Start Learning'), findsOneWidget);
-
-      // Dismiss NewVideoSheet
-      await tester.tap(find.text('Start Learning'));
-      await tester.pumpAndSettle();
-      // Should show validation error for empty input
-      expect(find.text('Please enter a YouTube link or video ID'), findsOneWidget);
-
-      // Close NewVideoSheet
-      Navigator.of(tester.element(find.text('Learn from Any Video'))).pop();
-      await tester.pumpAndSettle();
-
-      // Tapping More opens MoreSheet
+      // Tapping More opens MoreScreen
       await tester.tap(find.text('More'));
       await tester.pumpAndSettle();
 

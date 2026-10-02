@@ -2,6 +2,7 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
@@ -11,13 +12,9 @@ import '../../state/app_state.dart';
 import '../../state/player_coordinator.dart';
 import '../../state/player_state.dart';
 import '../../utils/cyrb53_hasher.dart';
-import '../sheets/dictionary_bottom_sheet.dart';
-import '../sheets/grammar_bottom_sheet.dart';
 import '../sheets/video_settings_sheet.dart';
-import '../widgets/interactive_subtitle_view.dart';
 import 'center_controls.dart';
-import 'subtitle_controls_bar.dart';
-import 'transcript_view.dart';
+import 'subtitle_panel.dart';
 import 'video_bottom_bar.dart';
 import 'video_header.dart';
 import 'video_progress_bar.dart';
@@ -64,6 +61,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
   bool _leftSeekFeedback = false;
   bool _rightSeekFeedback = false;
+  int _seekAccumulator = 10;
   Timer? _seekFeedbackTimer;
   DateTime? _lastLeftTapTime;
   DateTime? _lastRightTapTime;
@@ -205,11 +203,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     final now = DateTime.now();
 
     if (x < boxWidth * 0.35) {
-      // Left 35%: Rewind 10s zone
+      // Left 35%: Rewind zone
       _pendingSingleTapTimer?.cancel();
       _pendingSingleTapTimer = null;
 
-      if (_lastLeftTapTime != null && now.difference(_lastLeftTapTime!).inMilliseconds < 250) {
+      if (_leftSeekFeedback || (_lastLeftTapTime != null && now.difference(_lastLeftTapTime!).inMilliseconds < 300)) {
         _lastLeftTapTime = null;
         _seekRelative(-10);
         _triggerSeekFeedback(isLeft: true);
@@ -221,11 +219,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         });
       }
     } else if (x > boxWidth * 0.65) {
-      // Right 35%: Forward 10s zone
+      // Right 35%: Forward zone
       _pendingSingleTapTimer?.cancel();
       _pendingSingleTapTimer = null;
 
-      if (_lastRightTapTime != null && now.difference(_lastRightTapTime!).inMilliseconds < 250) {
+      if (_rightSeekFeedback || (_lastRightTapTime != null && now.difference(_lastRightTapTime!).inMilliseconds < 300)) {
         _lastRightTapTime = null;
         _seekRelative(10);
         _triggerSeekFeedback(isLeft: false);
@@ -258,18 +256,29 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     _seekFeedbackTimer?.cancel();
     setState(() {
       if (isLeft) {
+        if (_leftSeekFeedback) {
+          _seekAccumulator += 10;
+        } else {
+          _seekAccumulator = 10;
+        }
         _leftSeekFeedback = true;
         _rightSeekFeedback = false;
       } else {
+        if (_rightSeekFeedback) {
+          _seekAccumulator += 10;
+        } else {
+          _seekAccumulator = 10;
+        }
         _rightSeekFeedback = true;
         _leftSeekFeedback = false;
       }
     });
-    _seekFeedbackTimer = Timer(const Duration(milliseconds: 650), () {
+    _seekFeedbackTimer = Timer(const Duration(milliseconds: 700), () {
       if (mounted) {
         setState(() {
           _leftSeekFeedback = false;
           _rightSeekFeedback = false;
+          _seekAccumulator = 10;
         });
       }
     });
@@ -324,12 +333,35 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
 
 
+  void _toggleFullscreen() {
+    final next = !_playerController.isFullscreen.value;
+    _playerController.isFullscreen.value = next;
+    if (next) {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    } else {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+      ]);
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    }
+  }
+
   @override
   void dispose() {
     _controlsAutoHideTimer?.cancel();
     _seekFeedbackTimer?.cancel();
     _pendingSingleTapTimer?.cancel();
     _saveWatchHistory();
+    if (_playerController.isFullscreen.value) {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+      ]);
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    }
     if (_ownsControllers) {
       _ytController.close();
     }
@@ -429,14 +461,14 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(color: Colors.white.withOpacity(0.2)),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.fast_rewind_rounded, color: Colors.white, size: 20),
-                          SizedBox(width: 4),
+                          const Icon(Icons.fast_rewind_rounded, color: Colors.white, size: 20),
+                          const SizedBox(width: 4),
                           Text(
-                            '10s',
-                            style: TextStyle(
+                            '${_seekAccumulator}s',
+                            style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
@@ -462,19 +494,19 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(color: Colors.white.withOpacity(0.2)),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            '10s',
-                            style: TextStyle(
+                            '${_seekAccumulator}s',
+                            style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
                             ),
                           ),
-                          SizedBox(width: 4),
-                          Icon(Icons.fast_forward_rounded, color: Colors.white, size: 20),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.fast_forward_rounded, color: Colors.white, size: 20),
                         ],
                       ),
                     ),
@@ -569,7 +601,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                 },
                               ),
 
-                              // Bottom Controls Row (Time, CC toggle, Dual Sub toggle, Settings, Miniplayer)
+                              // Bottom Controls Row (Time, CC toggle, Dual Sub toggle, Settings, Miniplayer, Fullscreen)
                               VideoBottomBar(
                                 isPlaying: isPlaying,
                                 isEnded: _isEnded,
@@ -579,6 +611,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                 subtitlesVisible: subsVisible,
                                 showDualSubtitles: showDual,
                                 isCJKLanguage: ['ja', 'zh', 'ko'].contains(AppState.instance.activeLanguage.value),
+                                isFullscreen: _playerController.isFullscreen.value,
+                                showSubtitlesToggle: _playerController.isFullscreen.value,
                                 onPlayPause: () {
                                   if (isPlaying) {
                                     _ytController.pauseVideo();
@@ -600,6 +634,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                   );
                                 },
                                 onToggleMiniplayer: _handleMinimize,
+                                onToggleFullscreen: _toggleFullscreen,
                               ),
                             ],
                           );
@@ -616,189 +651,118 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     );
   }
 
-  Widget _buildSubtitleView() {
-    return Watch((context) {
-      final activeCue = _playerController.activeCue.value;
-      final grammarMatches = _playerController.activeGrammarMatches.value;
-      final showFurigana = _playerController.showFurigana.value;
-      final showTranslation = _playerController.showTranslation.value;
-      final subtitleSize = _playerController.subtitleSize.value;
-
-      return InteractiveSubtitleView(
-        cue: activeCue,
-        grammarMatches: grammarMatches,
-        showFurigana: showFurigana,
-        showTranslation: showTranslation,
-        subtitleSize: subtitleSize,
-        isLooping: _playerController.isLoopingCue.value,
-        hasSubtitles: _playerController.cues.value.isNotEmpty,
-        isLoading: _playerController.isLoading.value,
-        isAIGenerating: _playerController.isAIGenerated.value && _playerController.cues.value.isEmpty,
-        onTokenTap: (token) {
-          _ytController.pauseVideo();
-          DictionaryBottomSheet.show(
-            context,
-            token: token,
-            sourceLang: AppState.instance.activeLanguage.value,
-            contextSentence: activeCue?.text,
-            contextTranslation: activeCue?.translation,
-          );
-        },
-        onGrammarTap: (pattern) {
-          _ytController.pauseVideo();
-          GrammarBottomSheet.show(context, pattern);
-        },
-      );
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    final isTabletOrLandscape =
-        mediaQuery.size.width >= VocaTokens.tabletBreakpoint ||
-            mediaQuery.orientation == Orientation.landscape;
+    return Watch((context) {
+      final isFullscreen = _playerController.isFullscreen.value;
+      final mediaQuery = MediaQuery.of(context);
+      final isTablet = mediaQuery.size.width >= VocaTokens.tabletBreakpoint;
+      final isLandscape = mediaQuery.orientation == Orientation.landscape;
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop) return;
-        _handleMinimize();
-      },
-      child: Scaffold(
-        backgroundColor: context.vocaColors.bgPrimary,
-        body: SafeArea(
-          child: isTabletOrLandscape
-              ? Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Left Pane (flex 3): 16:9 Youtube player + VideoHeader + sticky subtitle view + subtitle controls bar
-                    Expanded(
-                      flex: 3,
-                      child: Column(
-                        children: [
-                          _buildVideoPlayerArea(),
-                          Watch((context) {
-                            return VideoHeader(
-                              title: widget.title.isNotEmpty
-                                  ? widget.title
-                                  : _playerController.videoTitle.value,
-                              channel: widget.channel ?? _ytController.metadata.author,
-                              videoId: widget.videoId,
-                              level: widget.level ?? _playerController.difficultyLevel.value,
-                              controller: _playerController,
-                              ytController: _ytController,
-                              onCloseTap: _handleMinimize,
-                            );
-                          }),
-                          Expanded(
-                            child: SingleChildScrollView(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: _buildSubtitleView(),
-                            ),
-                          ),
-                          SubtitleControlsBar(
-                            controller: _playerController,
-                            ytController: _ytController,
-                          ),
-                        ],
-                      ),
-                    ),
+      // 1. True Fullscreen (Landscape video-only view)
+      if (isFullscreen || (isLandscape && !isTablet)) {
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, result) {
+            if (didPop) return;
+            _toggleFullscreen();
+          },
+          child: Scaffold(
+            backgroundColor: Colors.black,
+            body: Center(
+              child: _buildVideoPlayerArea(),
+            ),
+          ),
+        );
+      }
 
-                    // Right Pane (flex 2): Synchronized TranscriptView
-                    Expanded(
-                      flex: 2,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: context.vocaColors.bgPrimary,
-                          border: Border(
-                            left: BorderSide(color: context.vocaColors.borderColor),
-                          ),
+      // 2. Normal View (Portrait Mobile or Tablet)
+      return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) {
+          if (didPop) return;
+          _handleMinimize();
+        },
+        child: Scaffold(
+          backgroundColor: context.vocaColors.bgPrimary,
+          body: SafeArea(
+            child: isTablet
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Left Pane (flex 3): 16:9 Youtube player + VideoHeader
+                      Expanded(
+                        flex: 3,
+                        child: Column(
+                          children: [
+                            _buildVideoPlayerArea(),
+                            Watch((context) {
+                              return VideoHeader(
+                                title: widget.title.isNotEmpty
+                                    ? widget.title
+                                    : _playerController.videoTitle.value,
+                                channel: widget.channel ?? _ytController.metadata.author,
+                                videoId: widget.videoId,
+                                level: widget.level ?? _playerController.difficultyLevel.value,
+                                controller: _playerController,
+                                ytController: _ytController,
+                                onCloseTap: _handleMinimize,
+                              );
+                            }),
+                          ],
                         ),
-                        child: TranscriptView(
+                      ),
+
+                      // Right Pane (flex 2): Unified SubtitlePanel
+                      Expanded(
+                        flex: 2,
+                        child: SubtitlePanel(
                           controller: _playerController,
+                          ytController: _ytController,
                           onSeek: (seconds) => _ytController.seekTo(
                             seconds: seconds,
                             allowSeekAhead: true,
                           ),
-                          onTokenTap: (token) {
-                            _ytController.pauseVideo();
-                            final active = _playerController.activeCue.value;
-                            DictionaryBottomSheet.show(
-                              context,
-                              token: token,
-                              sourceLang: AppState.instance.activeLanguage.value,
-                              contextSentence: active?.text,
-                              contextTranslation: active?.translation,
-                            );
-                          },
-                          onGrammarTap: (pattern) {
-                            _ytController.pauseVideo();
-                            GrammarBottomSheet.show(context, pattern);
-                          },
                         ),
                       ),
-                    ),
-                  ],
-                )
-              : Column(
-                  children: [
-                    // 1. 16:9 Youtube Player with Gesture Detector, Center Controls & Bottom Bar
-                    _buildVideoPlayerArea(),
+                    ],
+                  )
+                : Column(
+                    children: [
+                      // 1. 16:9 Youtube Player with Gesture Detector, Center Controls & Bottom Bar
+                      _buildVideoPlayerArea(),
 
-                    // 2. VideoHeader (Title, channel, level badge, tracks, share, close)
-                    Watch((context) {
-                      return VideoHeader(
-                        title: widget.title.isNotEmpty
-                            ? widget.title
-                            : _playerController.videoTitle.value,
-                        channel: widget.channel ?? _ytController.metadata.author,
-                        videoId: widget.videoId,
-                        level: widget.level ?? _playerController.difficultyLevel.value,
-                        controller: _playerController,
-                        ytController: _ytController,
-                        onCloseTap: _handleMinimize,
-                      );
-                    }),
+                      // 2. VideoHeader (Title, channel, level badge, tracks [cc], share, close [x])
+                      Watch((context) {
+                        return VideoHeader(
+                          title: widget.title.isNotEmpty
+                              ? widget.title
+                              : _playerController.videoTitle.value,
+                          channel: widget.channel ?? _ytController.metadata.author,
+                          videoId: widget.videoId,
+                          level: widget.level ?? _playerController.difficultyLevel.value,
+                          controller: _playerController,
+                          ytController: _ytController,
+                          onCloseTap: _handleMinimize,
+                        );
+                      }),
 
-                    // 3. Active Subtitle Cue Card (Comfortable fixed height matching lingua-tube)
-                    _buildSubtitleView(),
-
-                    // 4. Synchronized Subtitle Cue List (flex scroll area)
-                    Expanded(
-                      child: TranscriptView(
-                        controller: _playerController,
-                        onSeek: (seconds) => _ytController.seekTo(
-                          seconds: seconds,
-                          allowSeekAhead: true,
+                      // 3. Unified SubtitlePanel (Active Subtitle + Cue List + 4-Pill Toolbar)
+                      Expanded(
+                        child: SubtitlePanel(
+                          controller: _playerController,
+                          ytController: _ytController,
+                          onSeek: (seconds) => _ytController.seekTo(
+                            seconds: seconds,
+                            allowSeekAhead: true,
+                          ),
                         ),
-                        onTokenTap: (token) {
-                          _ytController.pauseVideo();
-                          final active = _playerController.activeCue.value;
-                          DictionaryBottomSheet.show(
-                            context,
-                            token: token,
-                            sourceLang: AppState.instance.activeLanguage.value,
-                            contextSentence: active?.text,
-                            contextTranslation: active?.translation,
-                          );
-                        },
-                        onGrammarTap: (pattern) {
-                          _ytController.pauseVideo();
-                          GrammarBottomSheet.show(context, pattern);
-                        },
                       ),
-                    ),
-
-                    // 5. Authentic Subtitle Controls Toolbar ([Loop 1/3], [Added (count)], [Quiz], [Options])
-                    SubtitleControlsBar(
-                      controller: _playerController,
-                      ytController: _ytController,
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 }

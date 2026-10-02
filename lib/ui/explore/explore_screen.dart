@@ -31,7 +31,9 @@ class _ExploreScreenState extends State<ExploreScreen>
 
   late final AnimationController _searchBarAnimController;
   late final Animation<double> _searchBarAnimation;
+  late final Animation<Offset> _searchBarSlideAnimation;
   bool _isSearchBarVisible = true;
+  double _accumulatedDelta = 0.0;
 
   ExploreTab _currentTab = ExploreTab.videos;
   List<Map<String, dynamic>> _videos = [];
@@ -58,13 +60,22 @@ class _ExploreScreenState extends State<ExploreScreen>
     super.initState();
     _searchBarAnimController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 250),
+      duration: const Duration(milliseconds: 200),
       value: 1.0,
     );
     _searchBarAnimation = CurvedAnimation(
       parent: _searchBarAnimController,
-      curve: Curves.easeInOut,
+      curve: Curves.fastOutSlowIn,
+      reverseCurve: Curves.fastOutSlowIn,
     );
+    _searchBarSlideAnimation = Tween<Offset>(
+      begin: const Offset(0, -0.35),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _searchBarAnimController,
+      curve: Curves.fastOutSlowIn,
+      reverseCurve: Curves.fastOutSlowIn,
+    ));
 
     _searchController.addListener(_onSearchInputChanged);
     _searchFocusNode.addListener(_onFocusChanged);
@@ -441,40 +452,52 @@ class _ExploreScreenState extends State<ExploreScreen>
   }
 
   bool _onScrollNotification(ScrollNotification notification) {
-    if (_searchFocusNode.hasFocus) return false;
-
-    if (notification.metrics.pixels <= 10) {
-      if (!_isSearchBarVisible) {
-        _isSearchBarVisible = true;
-        _searchBarAnimController.forward();
-      }
-      return false;
-    }
+    if (notification.metrics.axis != Axis.vertical) return false;
 
     if (notification is ScrollUpdateNotification) {
       final delta = notification.scrollDelta ?? 0;
-      if (delta > 2 && notification.metrics.pixels > 30) {
+
+      // When dragging starts on the feed, dismiss search focus if active
+      if (_searchFocusNode.hasFocus && delta.abs() > 3) {
+        _searchFocusNode.unfocus();
+      }
+
+      // At or near the top of the feed: always restore search bar immediately
+      if (notification.metrics.pixels <= 10) {
+        _accumulatedDelta = 0;
+        if (!_isSearchBarVisible) {
+          _isSearchBarVisible = true;
+          _searchBarAnimController.forward();
+        }
+        return false;
+      }
+
+      // Accumulate vertical scroll delta to prevent micro-jitter toggles
+      if (delta > 0) {
+        if (_accumulatedDelta < 0) _accumulatedDelta = 0;
+        _accumulatedDelta += delta;
+      } else if (delta < 0) {
+        if (_accumulatedDelta > 0) _accumulatedDelta = 0;
+        _accumulatedDelta += delta;
+      }
+
+      // Intentional downward scroll: hide search bar
+      if (_accumulatedDelta > 15 && notification.metrics.pixels > 30) {
         if (_isSearchBarVisible) {
           _isSearchBarVisible = false;
           _searchBarAnimController.reverse();
         }
-      } else if (delta < -2) {
+      }
+      // Intentional upward scroll: reveal search bar
+      else if (_accumulatedDelta < -12) {
         if (!_isSearchBarVisible) {
           _isSearchBarVisible = true;
           _searchBarAnimController.forward();
         }
       }
     } else if (notification is UserScrollNotification) {
-      if (notification.direction == ScrollDirection.reverse && notification.metrics.pixels > 30) {
-        if (_isSearchBarVisible) {
-          _isSearchBarVisible = false;
-          _searchBarAnimController.reverse();
-        }
-      } else if (notification.direction == ScrollDirection.forward) {
-        if (!_isSearchBarVisible) {
-          _isSearchBarVisible = true;
-          _searchBarAnimController.forward();
-        }
+      if (notification.direction == ScrollDirection.idle) {
+        _accumulatedDelta = 0;
       }
     }
     return false;
@@ -500,53 +523,56 @@ class _ExploreScreenState extends State<ExploreScreen>
               axisAlignment: -1.0,
               child: FadeTransition(
                 opacity: _searchBarAnimation,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildSpotlightBar(colors, directVideoId, hasSearchFocus, rawInput),
+                child: SlideTransition(
+                  position: _searchBarSlideAnimation,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildSpotlightBar(colors, directVideoId, hasSearchFocus, rawInput),
 
-                    // Direct Video Detected Banner
-                    if (directVideoId != null)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                        child: InkWell(
-                          onTap: () => _handleDirectUrlOrSearch(rawInput),
-                          borderRadius: BorderRadius.circular(10),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: colors.accentPrimarySoft,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: colors.accentPrimary.withOpacity(0.4)),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.check_circle_rounded, color: colors.accentPrimary, size: 18),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    context.t('explore.videoDetected', {'id': directVideoId}, 'Valid YouTube Video ($directVideoId) detected!'),
-                                    style: TextStyle(
-                                      color: colors.textPrimary,
-                                      fontSize: 12.5,
-                                      fontWeight: FontWeight.w600,
+                      // Direct Video Detected Banner
+                      if (directVideoId != null)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                          child: InkWell(
+                            onTap: () => _handleDirectUrlOrSearch(rawInput),
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: colors.accentPrimarySoft,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: colors.accentPrimary.withOpacity(0.4)),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.check_circle_rounded, color: colors.accentPrimary, size: 18),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      context.t('explore.videoDetected', {'id': directVideoId}, 'Valid YouTube Video ($directVideoId) detected!'),
+                                      style: TextStyle(
+                                        color: colors.textPrimary,
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                Text(
-                                  '${context.t('explore.watchNow', null, 'Watch Now')} →',
-                                  style: TextStyle(
-                                    color: colors.accentPrimary,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
+                                  Text(
+                                    '${context.t('explore.watchNow', null, 'Watch Now')} →',
+                                    style: TextStyle(
+                                      color: colors.accentPrimary,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -1238,6 +1264,7 @@ class _ExploreScreenState extends State<ExploreScreen>
           if (!isTablet) {
             return ListView.separated(
               physics: const AlwaysScrollableScrollPhysics(),
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
               itemCount: _playlists.length,
               separatorBuilder: (_, __) => const SizedBox(height: 20),
@@ -1256,6 +1283,7 @@ class _ExploreScreenState extends State<ExploreScreen>
 
           return GridView.builder(
             physics: const AlwaysScrollableScrollPhysics(),
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: crossAxisCount,
@@ -1445,6 +1473,7 @@ class _ExploreScreenState extends State<ExploreScreen>
             // Mobile (< 720dp): Virtualized ListView with recycled cards
             return ListView.separated(
               physics: const AlwaysScrollableScrollPhysics(),
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
               itemCount: _videos.length,
               separatorBuilder: (_, __) => const SizedBox(height: 20),
@@ -1464,6 +1493,7 @@ class _ExploreScreenState extends State<ExploreScreen>
 
           return GridView.builder(
             physics: const AlwaysScrollableScrollPhysics(),
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: crossAxisCount,

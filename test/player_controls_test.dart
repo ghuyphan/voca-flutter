@@ -362,5 +362,25 @@ void main() {
       expect(find.byIcon(Icons.fullscreen_exit_rounded), findsNothing);
       expect(find.byIcon(Icons.fullscreen), findsNothing);
     });
+
+    testWidgets('renders fullscreen button when onToggleFullscreen callback is provided', (tester) async {
+      bool fullscreenTapped = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: VideoBottomBar(
+              isPlaying: true,
+              currentTime: 10.0,
+              duration: 100.0,
+              onToggleFullscreen: () => fullscreenTapped = true,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byIcon(Icons.fullscreen_rounded), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.fullscreen_rounded));
+      expect(fullscreenTapped, isTrue);
+    });
   });
 }

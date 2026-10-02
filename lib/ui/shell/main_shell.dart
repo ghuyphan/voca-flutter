@@ -12,11 +12,11 @@ import '../vocabulary/vocabulary_screen.dart';
 import '../library/library_screen.dart';
 import '../settings/settings_screen.dart';
 import '../widgets/kikyou_logo.dart';
-import '../sheets/more_sheet.dart';
 import '../sheets/new_video_sheet.dart';
 import '../sheets/gamification_dialogs.dart';
 import '../video/miniplayer_bar.dart';
 import '../video/video_player_screen.dart';
+import '../widgets/voca_bottom_nav_bar.dart';
 
 class MainShell extends StatefulWidget {
   final int initialIndex;
@@ -35,10 +35,11 @@ class _MainShellState extends State<MainShell> {
 
   late final List<Widget> _screens = [
     ExploreScreen(
-      onOpenPlaylists: () => setState(() => _currentIndex = 3),
+      onOpenPlaylists: () => setState(() => _currentIndex = 4),
     ),
     const StudyDeckScreen(),
     const VocabularyScreen(),
+    const SettingsScreen(),
     LibraryScreen(
       key: const ValueKey('library_playlists_tab'),
       initialTabIndex: 1,
@@ -67,16 +68,17 @@ class _MainShellState extends State<MainShell> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth >= VocaTokens.tabletBreakpoint;
+    final colors = context.vocaColors;
 
     return Watch((context) {
       final coordinator = PlayerCoordinator.instance;
       final hasActive = coordinator.hasActiveVideo;
       final isMini = coordinator.isMiniplayer.value;
-      final isFullScreenVideo = hasActive && !isMini;
+      final isTrueFullscreen = coordinator.playerController?.isFullscreen.value ?? false;
       final videoId = coordinator.activeVideoId.value;
 
       return Scaffold(
-        backgroundColor: VocaTokens.bgPrimary,
+        backgroundColor: colors.bgPrimary,
         body: Stack(
           children: [
             isTablet ? _buildTabletLayout(context) : _buildMobileLayout(context),
@@ -120,7 +122,7 @@ class _MainShellState extends State<MainShell> {
             ],
           ],
         ),
-        bottomNavigationBar: (isTablet || isFullScreenVideo)
+        bottomNavigationBar: (isTablet || isTrueFullscreen)
             ? null
             : _buildMobileBottomNav(context),
       );
@@ -131,15 +133,16 @@ class _MainShellState extends State<MainShell> {
   // TABLET / DESKTOP RESPONSIVE LAYOUT (>= 720dp)
   // ==========================================
   Widget _buildTabletLayout(BuildContext context) {
+    final colors = context.vocaColors;
     return Row(
       children: [
         // Left Navigation Rail / Sidebar (width ~240dp)
         Container(
           width: 240,
-          decoration: const BoxDecoration(
-            color: VocaTokens.bgSecondary,
+          decoration: BoxDecoration(
+            color: colors.bgSecondary,
             border: Border(
-              right: BorderSide(color: VocaTokens.borderColor, width: 1),
+              right: BorderSide(color: colors.borderColor, width: 1),
             ),
           ),
           child: _buildTabletSidebar(context),
@@ -158,6 +161,7 @@ class _MainShellState extends State<MainShell> {
 
   Widget _buildTabletSidebar(BuildContext context) {
     final gamification = AppState.instance.gamificationService;
+    final colors = context.vocaColors;
 
     return SafeArea(
       right: false,
@@ -165,16 +169,16 @@ class _MainShellState extends State<MainShell> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // 1. Brand header: Voca Kikyou flower icon + "VOCA" brand title
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 20, 20, 16),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
             child: Row(
               children: [
-                KikyouLogo(size: 28, color: VocaTokens.accentPrimary),
-                SizedBox(width: 12),
+                KikyouLogo(size: 28, color: colors.accentPrimary),
+                const SizedBox(width: 12),
                 Text(
                   'VOCA',
                   style: TextStyle(
-                    color: VocaTokens.textPrimary,
+                    color: colors.textPrimary,
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 2.0,
@@ -184,25 +188,25 @@ class _MainShellState extends State<MainShell> {
             ),
           ),
 
-          // 2. Elevated "+ New Video" button (Coral #FF6B82 background, white text)
+          // 2. Elevated "+ New Video" button
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: ElevatedButton.icon(
               onPressed: () => NewVideoSheet.show(context),
               icon: const Icon(Icons.add, size: 20, color: Colors.white),
-              label: const Text(
-                '+ New Video',
-                style: TextStyle(
+              label: Text(
+                '+ ${context.t('nav.newVideo', null, 'New Video')}',
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: VocaTokens.accentPrimary,
+                backgroundColor: colors.accentPrimary,
                 foregroundColor: Colors.white,
                 elevation: 3,
-                shadowColor: VocaTokens.accentPrimary.withOpacity(0.4),
+                shadowColor: colors.accentPrimary.withOpacity(0.4),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -218,30 +222,42 @@ class _MainShellState extends State<MainShell> {
             activeIcon: Icons.play_circle,
             label: context.t('nav.watch', null, 'Watch'),
             index: 0,
+            colors: colors,
           ),
           _buildSidebarNavItem(
             icon: Icons.school_outlined,
             activeIcon: Icons.school,
             label: context.t('nav.review', null, 'Review'),
             index: 1,
+            colors: colors,
           ),
           _buildSidebarNavItem(
             icon: Icons.book_outlined,
             activeIcon: Icons.menu_book,
             label: context.t('nav.vocab', null, 'Vocab'),
             index: 2,
+            colors: colors,
+          ),
+          _buildSidebarNavItem(
+            icon: Icons.grid_view_outlined,
+            activeIcon: Icons.grid_view_rounded,
+            label: context.t('nav.more', null, 'More'),
+            index: 3,
+            colors: colors,
           ),
           _buildSidebarNavItem(
             icon: Icons.playlist_play,
             activeIcon: Icons.playlist_play_rounded,
             label: context.t('nav.playlists', null, 'Playlists'),
-            index: 3,
+            index: 4,
+            colors: colors,
           ),
           _buildSidebarNavItem(
             icon: Icons.history,
             activeIcon: Icons.history_rounded,
             label: context.t('history.title', null, 'History'),
-            index: 4,
+            index: 5,
+            colors: colors,
           ),
 
           const Spacer(),
@@ -257,27 +273,27 @@ class _MainShellState extends State<MainShell> {
                   return Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
                     decoration: BoxDecoration(
-                      color: VocaTokens.bgCard,
+                      color: colors.bgCard,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: VocaTokens.borderColor),
+                      border: Border.all(color: colors.borderColor),
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         value: curLang,
                         isExpanded: true,
-                        dropdownColor: VocaTokens.bgCard,
-                        icon: const Icon(
+                        dropdownColor: colors.bgCard,
+                        icon: Icon(
                           Icons.keyboard_arrow_down,
                           size: 18,
-                          color: VocaTokens.textSecondary,
+                          color: colors.textSecondary,
                         ),
-                        items: const [
+                        items: [
                           DropdownMenuItem(
                             value: 'ja',
                             child: Text(
                               '🇯🇵 Japanese',
                               style: TextStyle(
-                                color: VocaTokens.textPrimary,
+                                color: colors.textPrimary,
                                 fontSize: 13,
                               ),
                             ),
@@ -287,7 +303,7 @@ class _MainShellState extends State<MainShell> {
                             child: Text(
                               '🇨🇳 Chinese',
                               style: TextStyle(
-                                color: VocaTokens.textPrimary,
+                                color: colors.textPrimary,
                                 fontSize: 13,
                               ),
                             ),
@@ -297,7 +313,7 @@ class _MainShellState extends State<MainShell> {
                             child: Text(
                               '🇰🇷 Korean',
                               style: TextStyle(
-                                color: VocaTokens.textPrimary,
+                                color: colors.textPrimary,
                                 fontSize: 13,
                               ),
                             ),
@@ -307,7 +323,7 @@ class _MainShellState extends State<MainShell> {
                             child: Text(
                               '🇺🇸 English',
                               style: TextStyle(
-                                color: VocaTokens.textPrimary,
+                                color: colors.textPrimary,
                                 fontSize: 13,
                               ),
                             ),
@@ -333,9 +349,9 @@ class _MainShellState extends State<MainShell> {
                   return Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                     decoration: BoxDecoration(
-                      color: VocaTokens.bgCard,
+                      color: colors.bgCard,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: VocaTokens.borderColor),
+                      border: Border.all(color: colors.borderColor),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -352,8 +368,8 @@ class _MainShellState extends State<MainShell> {
                                 const SizedBox(width: 4),
                                 Text(
                                   '$streak',
-                                  style: const TextStyle(
-                                    color: VocaTokens.textPrimary,
+                                  style: TextStyle(
+                                    color: colors.textPrimary,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 12.5,
                                   ),
@@ -367,7 +383,7 @@ class _MainShellState extends State<MainShell> {
                         Container(
                           width: 1,
                           height: 16,
-                          color: VocaTokens.borderColor,
+                          color: colors.borderColor,
                         ),
 
                         // Diamonds credit (💎 X/5)
@@ -382,8 +398,8 @@ class _MainShellState extends State<MainShell> {
                                 const SizedBox(width: 4),
                                 Text(
                                   '$diamonds/$maxDiamonds',
-                                  style: const TextStyle(
-                                    color: VocaTokens.textPrimary,
+                                  style: TextStyle(
+                                    color: colors.textPrimary,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 12.5,
                                   ),
@@ -397,17 +413,17 @@ class _MainShellState extends State<MainShell> {
                         Container(
                           width: 1,
                           height: 16,
-                          color: VocaTokens.borderColor,
+                          color: colors.borderColor,
                         ),
 
                         // Settings gear icon
                         IconButton(
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.settings_outlined,
                             size: 18,
-                            color: VocaTokens.textSecondary,
+                            color: colors.textSecondary,
                           ),
                           tooltip: 'Settings',
                           onPressed: () {
@@ -433,6 +449,7 @@ class _MainShellState extends State<MainShell> {
     required IconData activeIcon,
     required String label,
     required int index,
+    required VocaColorPalette colors,
   }) {
     final isSelected = _currentIndex == index;
 
@@ -446,10 +463,10 @@ class _MainShellState extends State<MainShell> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
             decoration: BoxDecoration(
-              color: isSelected ? VocaTokens.accentPrimarySoft : Colors.transparent,
+              color: isSelected ? colors.accentPrimarySoft : Colors.transparent,
               borderRadius: BorderRadius.circular(10),
               border: isSelected
-                  ? Border.all(color: VocaTokens.accentPrimary.withOpacity(0.3))
+                  ? Border.all(color: colors.accentPrimary.withOpacity(0.3))
                   : null,
             ),
             child: Row(
@@ -457,13 +474,13 @@ class _MainShellState extends State<MainShell> {
                 Icon(
                   isSelected ? activeIcon : icon,
                   size: 20,
-                  color: isSelected ? VocaTokens.accentPrimary : VocaTokens.textSecondary,
+                  color: isSelected ? colors.accentPrimary : colors.textSecondary,
                 ),
                 const SizedBox(width: 12),
                 Text(
                   label,
                   style: TextStyle(
-                    color: isSelected ? VocaTokens.accentPrimary : VocaTokens.textSecondary,
+                    color: isSelected ? colors.accentPrimary : colors.textSecondary,
                     fontSize: 14,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                   ),
@@ -487,141 +504,10 @@ class _MainShellState extends State<MainShell> {
   }
 
   Widget _buildMobileBottomNav(BuildContext context) {
-    return Container(
-      height: 64 + MediaQuery.of(context).padding.bottom,
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom),
-      decoration: const BoxDecoration(
-        color: VocaTokens.bgSecondary,
-        border: Border(
-          top: BorderSide(color: VocaTokens.borderColor, width: 1),
-        ),
-      ),
-      child: Row(
-        children: [
-          // 1. Watch
-          _buildMobileNavItem(
-            icon: Icons.play_circle_outline,
-            activeIcon: Icons.play_circle,
-            label: context.t('nav.watch', null, 'Watch'),
-            isSelected: _currentIndex == 0,
-            onTap: () => _onTabTapped(0),
-          ),
-
-          // 2. Review
-          _buildMobileNavItem(
-            icon: Icons.school_outlined,
-            activeIcon: Icons.school,
-            label: context.t('nav.review', null, 'Review'),
-            isSelected: _currentIndex == 1,
-            onTap: () => _onTabTapped(1),
-          ),
-
-          // 3. Center elevated circular Coral button with + icon
-          _buildMobileCreateButton(),
-
-          // 4. Vocab
-          _buildMobileNavItem(
-            icon: Icons.menu_book_outlined,
-            activeIcon: Icons.menu_book,
-            label: context.t('nav.vocab', null, 'Vocab'),
-            isSelected: _currentIndex == 2,
-            onTap: () => _onTabTapped(2),
-          ),
-
-          // 5. More
-          _buildMobileNavItem(
-            icon: Icons.more_horiz,
-            activeIcon: Icons.more_horiz,
-            label: context.t('nav.more', null, 'More'),
-            isSelected: false,
-            onTap: () => MoreSheet.show(
-              context,
-              onOpenPlaylists: () => _onTabTapped(3),
-              onOpenHistory: () => _onTabTapped(4),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMobileNavItem({
-    required IconData icon,
-    required IconData activeIcon,
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return Expanded(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          splashColor: VocaTokens.accentPrimarySoft,
-          highlightColor: Colors.transparent,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
-                decoration: BoxDecoration(
-                  color: isSelected ? VocaTokens.accentPrimarySoft : Colors.transparent,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(
-                  isSelected ? activeIcon : icon,
-                  size: 22,
-                  color: isSelected ? VocaTokens.accentPrimary : VocaTokens.textMuted,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected ? VocaTokens.accentPrimary : VocaTokens.textMuted,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMobileCreateButton() {
-    return Expanded(
-      child: Center(
-        child: Material(
-          key: const Key('bottom-nav__item--create'),
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(24),
-            onTap: () => NewVideoSheet.show(context),
-            child: Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                color: VocaTokens.accentPrimary,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: VocaTokens.accentPrimary.withOpacity(0.4),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.add,
-                color: Colors.white,
-                size: 24,
-              ),
-            ),
-          ),
-        ),
-      ),
+    final activeTab = _currentIndex >= 3 ? 3 : _currentIndex;
+    return VocaBottomNavBar(
+      currentIndex: activeTab,
+      onTabSelected: _onTabTapped,
     );
   }
 }

@@ -35,42 +35,45 @@ class SubtitleControlsBar extends StatelessWidget {
     final colors = context.vocaColors;
 
     return Container(
-      height: 48,
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 12),
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       decoration: BoxDecoration(
         color: colors.bgCard,
-        border: Border(
-          top: BorderSide(color: colors.borderColor, width: 1),
-        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.borderColor),
       ),
       child: Watch((context) {
         final isLooping = controller.isLoopingCue.value;
         final hasCues = controller.cues.value.isNotEmpty;
         final currentLang = AppState.instance.activeLanguage.value;
         final videoId = controller.videoId;
+        final savedCount = controller.savedWordCount.value;
 
         return Row(
           children: [
-            // 1. Loop Button: [repeat-1] Loop [1/3]
+            // 1. Loop Button: [repeat-1] Lặp câu [1/3]
             Expanded(
+              flex: savedCount > 0 ? 5 : 4,
               child: _buildCtrlButton(
                 context: context,
                 icon: isLooping ? Icons.repeat_one_rounded : Icons.repeat_rounded,
-                label: context.t('subtitle.loop', null, 'Loop'),
+                label: context.t('subtitle.loop', null, 'Lặp câu'),
                 isActive: isLooping,
                 badge: isLooping ? '1' : null,
                 onTap: hasCues ? () => controller.toggleLoopCurrentCue() : null,
               ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 6),
 
             // 2. Added Words Button: [bookmark-plus] Added [count]
             Expanded(
+              flex: savedCount > 0 ? 3 : 4,
               child: _buildCtrlButton(
                 context: context,
-                icon: Icons.bookmark_added_rounded,
-                label: context.t('nav.added', null, 'Added'),
+                icon: Icons.bookmark_border_rounded,
+                label: savedCount > 0 ? '' : context.t('nav.added', null, 'Đã lưu'),
                 isActive: false,
+                badge: savedCount > 0 ? '$savedCount' : null,
                 onTap: () {
                   SavedWordsSheet.show(
                     context,
@@ -80,26 +83,28 @@ class SubtitleControlsBar extends StatelessWidget {
                 },
               ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 6),
 
-            // 3. Quiz Button: [quiz] Quiz
+            // 3. Quiz Button: [swords/quiz] Luyện tập
             Expanded(
+              flex: 4,
               child: _buildCtrlButton(
                 context: context,
-                icon: Icons.quiz_rounded,
-                label: context.t('quiz.short', null, 'Quiz'),
+                icon: Icons.sports_kabaddi_rounded,
+                label: context.t('quiz.short', null, 'Luyện tập'),
                 isActive: isQuizActive,
                 onTap: onToggleQuiz,
               ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 6),
 
-            // 4. Options Button: [tune] Options
+            // 4. Options Button: [tune/settings] Tùy chọn
             Expanded(
+              flex: 4,
               child: _buildCtrlButton(
                 context: context,
                 icon: Icons.tune_rounded,
-                label: context.t('vocab.options', null, 'Options'),
+                label: context.t('vocab.options', null, 'Tùy chọn'),
                 isActive: false,
                 onTap: () {
                   if (ytController != null) {
@@ -131,14 +136,14 @@ class SubtitleControlsBar extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(10),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        height: 34,
-        padding: const EdgeInsets.symmetric(horizontal: 4),
+        height: 38,
+        padding: const EdgeInsets.symmetric(horizontal: 6),
         decoration: BoxDecoration(
           color: isActive ? colors.accentPrimary : colors.bgSurface,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: isActive ? colors.accentPrimary : colors.borderColor,
           ),
@@ -154,43 +159,52 @@ class SubtitleControlsBar extends StatelessWidget {
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               icon,
-              size: 14,
+              size: 15,
               color: !isEnabled
                   ? colors.textMuted
-                  : (isActive ? Colors.white : colors.textSecondary),
+                  : (isActive ? Colors.white : colors.textPrimary),
             ),
-            const SizedBox(width: 4),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-                  color: !isEnabled
-                      ? colors.textMuted
-                      : (isActive ? Colors.white : colors.textPrimary),
+            if (label.isNotEmpty) ...[
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                    color: !isEnabled
+                        ? colors.textMuted
+                        : (isActive ? Colors.white : colors.textPrimary),
+                  ),
                 ),
               ),
-            ),
+            ],
             if (badge != null) ...[
-              const SizedBox(width: 5),
+              const SizedBox(width: 4),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                 decoration: BoxDecoration(
-                  color: isActive ? Colors.white : colors.accentPrimary,
-                  borderRadius: BorderRadius.circular(10),
+                  color: isActive
+                      ? Colors.white.withOpacity(0.25)
+                      : colors.bgCard,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: colors.borderColor,
+                    width: 0.8,
+                  ),
                 ),
                 child: Text(
                   badge,
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: isActive ? colors.accentPrimary : Colors.white,
+                    color: isActive ? Colors.white : colors.accentPrimary,
                   ),
                 ),
               ),

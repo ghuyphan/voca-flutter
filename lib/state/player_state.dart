@@ -65,8 +65,14 @@ class VideoPlayerController {
   // --- Miniplayer State ---
   final isMiniplayer = signal<bool>(false);
 
+  // --- Fullscreen State ---
+  final isFullscreen = signal<bool>(false);
+
   // --- Quiz Mode Active Signal ---
   final isQuizActive = signal<bool>(false);
+
+  // --- Saved Words Count ---
+  final savedWordCount = signal<int>(0);
 
   // --- Dual Subtitles Target Language & Lookahead ---
   final dualSubLanguage = signal<String?>('vi');
@@ -310,7 +316,12 @@ class VideoPlayerController {
   // ============================================================================
 
   /// Load video and fetch synchronized transcripts
-  Future<void> loadVideo(String videoId, {bool preferAI = false, String? turnstileToken}) async {
+  Future<void> loadVideo(
+    String videoId, {
+    bool preferAI = false,
+    String? turnstileToken,
+    String? language,
+  }) async {
     currentVideoId.value = videoId;
     isLoading.value = true;
     statusMessage.value = 'Loading subtitles...';
@@ -321,7 +332,7 @@ class VideoPlayerController {
     isLoopingCue.value = false;
     loopingCue.value = null;
 
-    final targetLang = AppState.instance.activeLanguage.value;
+    final targetLang = language ?? AppState.instance.activeLanguage.value;
     await grammarEngine.loadLanguage(targetLang);
 
     try {

@@ -34,8 +34,8 @@ Future<T?> showVocaBottomSheet<T>({
 
       return AnimatedPadding(
         padding: EdgeInsets.only(bottom: viewInsets.bottom),
-        duration: const Duration(milliseconds: 100),
-        curve: Curves.easeOut,
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeOutCubic,
         child: Container(
           constraints: BoxConstraints(
             maxHeight: MediaQuery.of(ctx).size.height * maxHeightFactor,
@@ -56,85 +56,96 @@ Future<T?> showVocaBottomSheet<T>({
               ),
             ],
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Native Drag Handle Pill
-              if (showDragHandle)
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    margin: const EdgeInsets.only(top: 10, bottom: 6),
-                    decoration: BoxDecoration(
-                      color: colors.borderColorHover,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
+          child: AnimatedSize(
+            duration: const Duration(milliseconds: 240),
+            curve: Curves.easeOutCubic,
+            alignment: Alignment.topCenter,
+            child: Stack(
+              children: [
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Drag Handle Pill (Mobile)
+                    if (showDragHandle)
+                      Center(
+                        child: Container(
+                          width: 36,
+                          height: 4,
+                          margin: const EdgeInsets.only(top: 10, bottom: 6),
+                          decoration: BoxDecoration(
+                            color: colors.borderColorHover,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
 
-              // Sheet Header
-              if (title != null || trailingAction != null || showCloseButton)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 12, 10),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
+                    // Optional Title Header (if title specified)
+                    if (title != null) ...[
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(20, 8, showCloseButton ? 48 : 20, 10),
+                        child: Row(
                           children: [
-                            if (title != null)
-                              Text(
-                                title,
-                                style: TextStyle(
-                                  color: colors.textPrimary,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: -0.2,
-                                ),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    title,
+                                    style: TextStyle(
+                                      color: colors.textPrimary,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: -0.2,
+                                    ),
+                                  ),
+                                  if (subtitle != null) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      subtitle,
+                                      style: TextStyle(
+                                        color: colors.textSecondary,
+                                        fontSize: 12.5,
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
-                            if (subtitle != null) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                subtitle,
-                                style: TextStyle(
-                                  color: colors.textSecondary,
-                                  fontSize: 12.5,
-                                ),
-                              ),
-                            ],
+                            ),
+                            if (trailingAction != null) trailingAction,
                           ],
                         ),
                       ),
-                      if (trailingAction != null) ...[
-                        trailingAction,
-                        const SizedBox(width: 4),
-                      ],
-                      if (showCloseButton)
-                        IconButton(
-                          icon: Icon(Icons.close_rounded, color: colors.textMuted, size: 20),
-                          splashRadius: 20,
-                          visualDensity: VisualDensity.compact,
-                          onPressed: () => Navigator.of(ctx).pop(),
-                          tooltip: ctx.t('common.close', null, 'Close'),
-                        ),
+                      Divider(height: 1, color: colors.borderColorLight),
                     ],
+
+                    // Content Area with loose flex fit to dynamically wrap content
+                    Flexible(
+                      fit: FlexFit.loose,
+                      child: Padding(
+                        padding: contentPadding ?? const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                        child: builder(ctx),
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Absolute-positioned Close button matching lingua-tube's sheet-close-btn
+                if (showCloseButton)
+                  Positioned(
+                    top: 8,
+                    right: 10,
+                    child: IconButton(
+                      icon: Icon(Icons.close_rounded, color: colors.textMuted, size: 20),
+                      splashRadius: 20,
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      tooltip: ctx.t('common.close', null, 'Close'),
+                    ),
                   ),
-                ),
-
-              if (title != null)
-                Divider(height: 1, color: colors.borderColorLight),
-
-              // Content Area
-              Flexible(
-                child: Padding(
-                  padding: contentPadding ?? const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  child: builder(ctx),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       );

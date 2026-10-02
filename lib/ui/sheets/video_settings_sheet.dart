@@ -41,7 +41,6 @@ class VideoSettingsSheet extends StatefulWidget {
   }) {
     return showVocaBottomSheet(
       context: context,
-      title: context.t('player.settings', null, 'Settings'),
       showCloseButton: false,
       maxHeightFactor: 0.85,
       contentPadding: EdgeInsets.zero,

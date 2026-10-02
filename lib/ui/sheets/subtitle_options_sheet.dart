@@ -8,6 +8,7 @@ import '../../models/voca_models.dart';
 import '../../services/i18n_service.dart';
 import '../../state/app_state.dart';
 import '../../state/player_state.dart';
+import 'video_settings_sheet.dart';
 import 'voca_bottom_sheet.dart';
 
 class SubtitleOptionsSheet extends StatefulWidget {
@@ -311,6 +312,38 @@ class _SubtitleOptionsSheetState extends State<SubtitleOptionsSheet> {
               ),
             ),
             const SizedBox(height: 14),
+
+            // 4. More Video Settings Button
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  VideoSettingsSheet.show(
+                    context,
+                    controller: widget.controller,
+                    ytController: widget.ytController,
+                  );
+                },
+                icon: Icon(Icons.settings_rounded, size: 16, color: colors.textSecondary),
+                label: Text(
+                  context.t('player.settings', null, 'Cài đặt video & phát lại'),
+                  style: TextStyle(
+                    color: colors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: colors.borderColor),
+                  padding: const EdgeInsets.symmetric(vertical: 11),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
           ],
         );
       }),

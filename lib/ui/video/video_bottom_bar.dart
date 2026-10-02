@@ -20,7 +20,7 @@ export '../../utils/video_format_utils.dart' show formatVideoTime;
 ///   - Dual Subtitles toggle button (languages icon with active indicator bar)
 ///   - Settings gear button (opens settings sheet)
 ///   - Miniplayer toggle button (picture-in-picture)
-///   - Fullscreen button is explicitly REMOVED per user request.
+///   - Fullscreen button (toggles fullscreen landscape / exit)
 class VideoBottomBar extends StatelessWidget {
   // Playback state
   final bool isPlaying;
@@ -37,6 +37,8 @@ class VideoBottomBar extends StatelessWidget {
   final bool showDualSubtitles;
   final bool isCJKLanguage;
   final bool showDualSubtitlesToggle;
+  final bool showSubtitlesToggle;
+  final bool isFullscreen;
   final Color? accentColor;
 
   // Callbacks
@@ -45,6 +47,7 @@ class VideoBottomBar extends StatelessWidget {
   final VoidCallback? onToggleDualSubtitles;
   final VoidCallback? onOpenSettings;
   final VoidCallback? onToggleMiniplayer;
+  final VoidCallback? onToggleFullscreen;
 
   const VideoBottomBar({
     super.key,
@@ -60,12 +63,15 @@ class VideoBottomBar extends StatelessWidget {
     this.showDualSubtitles = false,
     this.isCJKLanguage = false,
     this.showDualSubtitlesToggle = true,
+    this.showSubtitlesToggle = true,
+    this.isFullscreen = false,
     this.accentColor,
     this.onPlayPause,
     this.onToggleSubtitles,
     this.onToggleDualSubtitles,
     this.onOpenSettings,
     this.onToggleMiniplayer,
+    this.onToggleFullscreen,
   });
 
   String get _effectiveCurrentTime =>
@@ -118,22 +124,23 @@ class VideoBottomBar extends StatelessWidget {
           const Spacer(),
 
           // ==========================================
-          // RIGHT CONTROLS
+          // RIGHT CONTROLS (1:1 with Pic 3 and lingua-tube)
           // ==========================================
           Row(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // 1. CC Subtitles toggle button
-              _buildSubtitlesButton(context, effectiveAccent),
+              if (showSubtitlesToggle) ...[
+                _buildSubtitlesButton(context, effectiveAccent),
+                const SizedBox(width: 4),
+              ],
 
               // 2. Dual Subtitles toggle button (CJK languages)
               if (showDualSubsButton) ...[
-                const SizedBox(width: 4),
                 _buildDualSubsButton(context, effectiveAccent),
+                const SizedBox(width: 4),
               ],
-
-              const SizedBox(width: 4),
 
               // 3. Settings gear button
               _buildControlButton(
@@ -143,16 +150,31 @@ class VideoBottomBar extends StatelessWidget {
                 onTap: onOpenSettings,
               ),
 
-              const SizedBox(width: 4),
-
-              // 4. Miniplayer toggle button
-              if (onToggleMiniplayer != null)
+              // 4. Miniplayer toggle button (Hidden in fullscreen matching lingua-tube @if (!isFullscreen()))
+              if (!isFullscreen && onToggleMiniplayer != null) ...[
+                const SizedBox(width: 4),
                 _buildControlButton(
                   icon: Icons.picture_in_picture_alt_rounded,
                   iconSize: 18,
                   tooltip: context.t('player.miniplayer', null, 'Miniplayer'),
                   onTap: onToggleMiniplayer,
                 ),
+              ],
+
+              // 5. Fullscreen toggle button
+              if (onToggleFullscreen != null) ...[
+                const SizedBox(width: 4),
+                _buildControlButton(
+                  icon: isFullscreen
+                      ? Icons.fullscreen_exit_rounded
+                      : Icons.fullscreen_rounded,
+                  iconSize: 20,
+                  tooltip: isFullscreen
+                      ? context.t('player.exitFullscreen', null, 'Exit fullscreen')
+                      : context.t('player.fullscreen', null, 'Fullscreen'),
+                  onTap: onToggleFullscreen,
+                ),
+              ],
             ],
           ),
         ],
