@@ -396,7 +396,7 @@ class _TranscriptViewState extends State<TranscriptView> {
     final grammarMatches = (cue.tokens.isNotEmpty)
         ? AppState.instance.grammarEngine.detectPatterns(
             cue.tokens,
-            AppState.instance.activeLanguage.value,
+            widget.controller.activeLanguage.value,
           )
         : const <GrammarMatch>[];
 

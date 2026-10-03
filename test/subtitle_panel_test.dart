@@ -9,9 +9,17 @@ import 'package:voca_flutter/state/player_state.dart';
 import 'package:voca_flutter/ui/video/subtitle_panel.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
+import 'package:signals_flutter/signals_flutter.dart';
+
 class _FakeApiClient extends Fake implements VocaApiClient {}
 
 class _FakeGrammarEngine extends Fake implements GrammarEngine {
+  @override
+  final loadedLanguages = signal<Set<String>>({});
+
+  @override
+  Future<void> loadLanguage(String language) async {}
+
   @override
   List<GrammarMatch> detectPatterns(List<Token> tokens, String language) => [];
 }
@@ -72,23 +80,23 @@ void main() {
       tokens: [
         Token(
           surface: '只留下',
-          rubyParts: [RubyPart(text: '只留下', reading: 'zhī liú xià')],
+          rubyParts: const [RubyPart(text: '只留下', reading: 'zhī liú xià')],
         ),
         Token(
           surface: '一条',
-          rubyParts: [RubyPart(text: '一条', reading: 'yī tiáo')],
+          rubyParts: const [RubyPart(text: '一条', reading: 'yī tiáo')],
         ),
         Token(
           surface: '街',
-          rubyParts: [RubyPart(text: '街', reading: 'jiē')],
+          rubyParts: const [RubyPart(text: '街', reading: 'jiē')],
         ),
         Token(
           surface: '的',
-          rubyParts: [RubyPart(text: '的', reading: 'de')],
+          rubyParts: const [RubyPart(text: '的', reading: 'de')],
         ),
         Token(
           surface: '眼眸',
-          rubyParts: [RubyPart(text: '眼眸', reading: 'yǎnmóu')],
+          rubyParts: const [RubyPart(text: '眼眸', reading: 'yǎnmóu')],
         ),
       ],
     );

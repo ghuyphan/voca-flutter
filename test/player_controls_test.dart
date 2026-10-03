@@ -266,10 +266,8 @@ void main() {
       expect(find.text('3:00'), findsOneWidget);
     });
 
-    testWidgets('renders CC subtitles and Settings and Miniplayer buttons', (tester) async {
-      bool ccTapped = false;
-      bool settingsTapped = false;
-      bool miniplayerTapped = false;
+    testWidgets('renders Dual Subtitles toggle and triggers callback', (tester) async {
+      bool dualSubsTapped = false;
 
       await tester.pumpWidget(
         MaterialApp(
@@ -278,43 +276,17 @@ void main() {
               isPlaying: false,
               currentTime: 0.0,
               duration: 120.0,
-              subtitlesVisible: true,
-              onToggleSubtitles: () => ccTapped = true,
-              onOpenSettings: () => settingsTapped = true,
-              onToggleMiniplayer: () => miniplayerTapped = true,
+              isCJKLanguage: true,
+              showDualSubtitles: true,
+              onToggleDualSubtitles: () => dualSubsTapped = true,
             ),
           ),
         ),
       );
 
-      expect(find.byIcon(Icons.closed_caption_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.picture_in_picture_alt_rounded), findsOneWidget);
-
-      await tester.tap(find.byIcon(Icons.closed_caption_rounded));
-      expect(ccTapped, isTrue);
-
-      await tester.tap(find.byIcon(Icons.settings_outlined));
-      expect(settingsTapped, isTrue);
-
-      await tester.tap(find.byIcon(Icons.picture_in_picture_alt_rounded));
-      expect(miniplayerTapped, isTrue);
-    });
-
-    testWidgets('renders AI subtitle icon when isAISubtitle is true', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: VideoBottomBar(
-              isPlaying: true,
-              isAISubtitle: true,
-            ),
-          ),
-        ),
-      );
-
-      expect(find.byIcon(Icons.auto_awesome_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.closed_caption_rounded), findsNothing);
+      expect(find.byIcon(Icons.translate_rounded), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.translate_rounded));
+      expect(dualSubsTapped, isTrue);
     });
 
     testWidgets('renders Dual Subtitles button only when isCJKLanguage is true', (tester) async {

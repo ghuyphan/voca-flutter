@@ -130,45 +130,19 @@ class VideoBottomBar extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // 1. CC Subtitles toggle button
-              if (showSubtitlesToggle) ...[
-                _buildSubtitlesButton(context, effectiveAccent),
-                const SizedBox(width: 4),
-              ],
-
-              // 2. Dual Subtitles toggle button (CJK languages)
+              // 1. Dual Subtitles toggle button (CJK languages)
               if (showDualSubsButton) ...[
                 _buildDualSubsButton(context, effectiveAccent),
                 const SizedBox(width: 4),
               ],
 
-              // 3. Settings gear button
-              _buildControlButton(
-                icon: Icons.settings_outlined,
-                iconSize: 18,
-                tooltip: context.t('player.settings', null, 'Settings'),
-                onTap: onOpenSettings,
-              ),
-
-              // 4. Miniplayer toggle button (Hidden in fullscreen matching lingua-tube @if (!isFullscreen()))
-              if (!isFullscreen && onToggleMiniplayer != null) ...[
-                const SizedBox(width: 4),
-                _buildControlButton(
-                  icon: Icons.picture_in_picture_alt_rounded,
-                  iconSize: 18,
-                  tooltip: context.t('player.miniplayer', null, 'Miniplayer'),
-                  onTap: onToggleMiniplayer,
-                ),
-              ],
-
-              // 5. Fullscreen toggle button
+              // 2. Fullscreen toggle button
               if (onToggleFullscreen != null) ...[
-                const SizedBox(width: 4),
                 _buildControlButton(
                   icon: isFullscreen
                       ? Icons.fullscreen_exit_rounded
                       : Icons.fullscreen_rounded,
-                  iconSize: 20,
+                  iconSize: 22,
                   tooltip: isFullscreen
                       ? context.t('player.exitFullscreen', null, 'Exit fullscreen')
                       : context.t('player.fullscreen', null, 'Fullscreen'),
@@ -256,73 +230,9 @@ class VideoBottomBar extends StatelessWidget {
   }
 
   /// Subtitles CC button with active indicator bar and AI icon if AI subtitle
-  Widget _buildSubtitlesButton(BuildContext context, Color accent) {
-    final indicatorColor =
-        isAISubtitle ? const Color(0xFF818CF8) : accent;
 
-    return Tooltip(
-      message: isAISubtitle
-          ? context.t('subtitle.aiCaptions', null, 'AI Captions')
-          : context.t('subtitle.title', null, 'Subtitles'),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onToggleSubtitles,
-          customBorder: const CircleBorder(),
-          child: Container(
-            width: 36,
-            height: 36,
-            alignment: Alignment.center,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Icon(
-                  isAISubtitle
-                      ? Icons.auto_awesome_rounded
-                      : Icons.closed_caption_rounded,
-                  size: 19,
-                  color: subtitlesVisible
-                      ? Colors.white
-                      : Colors.white.withOpacity(0.65),
-                  shadows: const [
-                    Shadow(
-                      color: Color.fromRGBO(0, 0, 0, 0.85),
-                      blurRadius: 2,
-                      offset: Offset(0, 1),
-                    ),
-                  ],
-                ),
-                // Active indicator bar at bottom
-                Positioned(
-                  bottom: 5,
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 150),
-                    opacity: subtitlesVisible ? 1.0 : 0.0,
-                    child: Container(
-                      width: 12,
-                      height: 2,
-                      decoration: BoxDecoration(
-                        color: indicatorColor,
-                        borderRadius: BorderRadius.circular(1),
-                        boxShadow: [
-                          BoxShadow(
-                            color: indicatorColor.withOpacity(0.6),
-                            blurRadius: 3,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
-  /// Dual subtitles toggle button with active indicator bar
+  /// Dual subtitles toggle button
   Widget _buildDualSubsButton(BuildContext context, Color accent) {
     return Tooltip(
       message: context.t('subtitle.dualSubtitles', null, 'Dual Subtitles'),
@@ -335,46 +245,26 @@ class VideoBottomBar extends StatelessWidget {
             width: 36,
             height: 36,
             alignment: Alignment.center,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Icon(
-                  Icons.translate_rounded,
-                  size: 18,
-                  color: showDualSubtitles
-                      ? Colors.white
-                      : Colors.white.withOpacity(0.65),
-                  shadows: const [
-                    Shadow(
-                      color: Color.fromRGBO(0, 0, 0, 0.85),
-                      blurRadius: 2,
-                      offset: Offset(0, 1),
-                    ),
-                  ],
-                ),
-                // Active indicator bar at bottom
-                Positioned(
-                  bottom: 5,
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 150),
-                    opacity: showDualSubtitles ? 1.0 : 0.0,
-                    child: Container(
-                      width: 12,
-                      height: 2,
-                      decoration: BoxDecoration(
-                        color: accent,
-                        borderRadius: BorderRadius.circular(1),
-                        boxShadow: [
-                          BoxShadow(
-                            color: accent.withOpacity(0.6),
-                            blurRadius: 3,
-                          ),
-                        ],
+            child: Icon(
+              Icons.translate_rounded,
+              size: 19,
+              color: showDualSubtitles
+                  ? accent
+                  : Colors.white.withOpacity(0.65),
+              shadows: showDualSubtitles
+                  ? [
+                      Shadow(
+                        color: accent.withOpacity(0.6),
+                        blurRadius: 4,
                       ),
-                    ),
-                  ),
-                ),
-              ],
+                    ]
+                  : const [
+                      Shadow(
+                        color: Color.fromRGBO(0, 0, 0, 0.85),
+                        blurRadius: 2,
+                        offset: Offset(0, 1),
+                      ),
+                    ],
             ),
           ),
         ),

@@ -5,7 +5,6 @@ import 'package:signals_flutter/signals_flutter.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../../config/voca_theme.dart';
 import '../../services/i18n_service.dart';
-import '../../state/app_state.dart';
 import '../../state/player_state.dart';
 import '../sheets/saved_words_sheet.dart';
 import '../sheets/subtitle_options_sheet.dart';
@@ -45,7 +44,7 @@ class SubtitleControlsBar extends StatelessWidget {
       child: Watch((context) {
         final isLooping = controller.isLoopingCue.value;
         final hasCues = controller.cues.value.isNotEmpty;
-        final currentLang = AppState.instance.activeLanguage.value;
+        final currentLang = controller.activeLanguage.value;
         final videoId = controller.videoId;
         final savedCount = controller.savedWordCount.value;
 

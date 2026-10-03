@@ -86,22 +86,15 @@ void main() {
       expect(find.byType(IconButton), findsNothing);
     });
 
-    testWidgets('renders full header with title, channel, level badge, and action buttons', (tester) async {
-      bool shareTapped = false;
-      bool closeTapped = false;
-      bool subtitleTapped = false;
-
+    testWidgets('renders full header with title, channel, and level badge', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: VideoHeader(
               title: 'Learn Japanese with Anime',
               channel: 'Nihongo Channel',
               videoId: 'test_123',
               level: 'JLPT N3',
-              onShareTap: () => shareTapped = true,
-              onCloseTap: () => closeTapped = true,
-              onSubtitleTap: () => subtitleTapped = true,
             ),
           ),
         ),
@@ -115,22 +108,10 @@ void main() {
       expect(find.byType(VocaLevelBadge), findsOneWidget);
       expect(find.text('JLPT N3'), findsOneWidget);
 
-      // Verify action buttons
-      expect(find.byIcon(Icons.subtitles_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.share_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.close_rounded), findsOneWidget);
-
-      // Tap subtitle button
-      await tester.tap(find.byIcon(Icons.subtitles_rounded));
-      expect(subtitleTapped, isTrue);
-
-      // Tap share button
-      await tester.tap(find.byIcon(Icons.share_rounded));
-      expect(shareTapped, isTrue);
-
-      // Tap close button
-      await tester.tap(find.byIcon(Icons.close_rounded));
-      expect(closeTapped, isTrue);
+      // Verify level badge is placed before channel name in the metadata row
+      final badgeX = tester.getTopLeft(find.byType(VocaLevelBadge)).dx;
+      final channelX = tester.getTopLeft(find.text('Nihongo Channel')).dx;
+      expect(badgeX, lessThan(channelX));
     });
 
     testWidgets('renders evaluating shimmer level badge when isLevelLoading is true and level is null', (tester) async {
@@ -154,24 +135,6 @@ void main() {
       expect(levelBadgeFinder, findsOneWidget);
       final levelBadge = tester.widget<VocaLevelBadge>(levelBadgeFinder);
       expect(levelBadge.isLoading, isTrue);
-    });
-
-    testWidgets('renders AI badge indicator on subtitle button when isAIGenerated is true', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: VideoHeader(
-              title: 'Video Title',
-              channel: 'Channel Name',
-              isAIGenerated: true,
-            ),
-          ),
-        ),
-      );
-
-      // Has AI text badge inside the subtitle action button
-      expect(find.text('AI'), findsOneWidget);
-      expect(find.byIcon(Icons.subtitles_rounded), findsOneWidget);
     });
   });
 }

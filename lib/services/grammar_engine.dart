@@ -1,12 +1,17 @@
 // lib/services/grammar_engine.dart
 
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:signals_flutter/signals_flutter.dart';
 import '../models/voca_models.dart';
 
 class GrammarEngine {
   final Map<String, List<GrammarPattern>> _patternsByLang = {};
   final Map<String, Map<String, List<GrammarPattern>>> _indicesByLang = {};
+
+  /// Reactive signal of loaded languages to trigger UI auto-recompute when pattern lazy loading finishes
+  final loadedLanguages = signal<Set<String>>({});
 
   static const List<String> _jaEndingPatterns = [
     'ている', 'ていた', 'ています', 'ていました',
@@ -44,7 +49,12 @@ class GrammarEngine {
 
   /// Initialize and load grammar patterns for target language from assets
   Future<void> loadLanguage(String lang) async {
-    if (_patternsByLang.containsKey(lang)) return;
+    if (_patternsByLang.containsKey(lang)) {
+      if (!loadedLanguages.value.contains(lang)) {
+        loadedLanguages.value = {...loadedLanguages.value, lang};
+      }
+      return;
+    }
 
     try {
       final jsonStr = await rootBundle.loadString('assets/grammar/grammar_$lang.json');
@@ -53,8 +63,9 @@ class GrammarEngine {
 
       _patternsByLang[lang] = patterns;
       _indicesByLang[lang] = _buildIndex(patterns, lang);
+      loadedLanguages.value = {...loadedLanguages.value, lang};
     } catch (e) {
-      print('[GrammarEngine] Warning: Could not load assets/grammar/grammar_$lang.json: $e');
+      debugPrint('[GrammarEngine] Warning: Could not load assets/grammar/grammar_$lang.json: $e');
     }
   }
 
@@ -92,7 +103,12 @@ class GrammarEngine {
   /// Detect grammar patterns in a sequence of subtitle tokens
   List<GrammarMatch> detectPatterns(List<Token> tokens, String lang) {
     final index = _indicesByLang[lang];
-    if (index == null || tokens.isEmpty) return [];
+    if (index == null) {
+      // Proactively load patterns in background matching lingua-tube behavior
+      loadLanguage(lang);
+      return [];
+    }
+    if (tokens.isEmpty) return [];
 
     final matches = <GrammarMatch>[];
 
@@ -115,6 +131,21 @@ class GrammarEngine {
             startIndex: i,
             endIndex: i + len - 1,
           ));
+        } else if (lang == 'ko' && norm.length >= 3) {
+          // Korean sub-sequence suffix checking (1:1 with lingua-tube)
+          for (int sLen = norm.length - 1; sLen >= 2; sLen--) {
+            final suffix = norm.substring(norm.length - sLen);
+            final suffixHits = index[suffix];
+            if (suffixHits != null && suffixHits.isNotEmpty) {
+              matches.add(GrammarMatch(
+                pattern: suffixHits.first,
+                tokenIndices: List.generate(len, (idx) => i + idx),
+                startIndex: i,
+                endIndex: i + len - 1,
+              ));
+              break;
+            }
+          }
         }
       }
     }

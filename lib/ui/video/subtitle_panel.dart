@@ -60,6 +60,8 @@ class _SubtitlePanelState extends State<SubtitlePanel>
     _scrollController.addListener(_onListScroll);
 
     _activeCueCleanup = effect(() {
+      final _ = widget.controller.cues.value;
+      _cueKeys.clear();
       final active = widget.controller.activeCue.value;
       final autoScroll = widget.controller.autoScrollTranscript.value;
       if (active != null && autoScroll && !_isScrolledAway) {
@@ -76,7 +78,7 @@ class _SubtitlePanelState extends State<SubtitlePanel>
   Future<void> _loadSavedWordsCount() async {
     try {
       final cards = await AppState.instance.supabaseService
-          .getVocabularyCards(language: AppState.instance.activeLanguage.value);
+          .getVocabularyCards(language: widget.controller.activeLanguage.value);
       if (mounted) {
         widget.controller.savedWordCount.value = cards.length;
       }
@@ -271,7 +273,7 @@ class _SubtitlePanelState extends State<SubtitlePanel>
                       DictionaryBottomSheet.show(
                         context,
                         token: token,
-                        sourceLang: AppState.instance.activeLanguage.value,
+                        sourceLang: widget.controller.activeLanguage.value,
                         contextSentence: cue.text,
                         contextTranslation: cue.translation,
                       );
@@ -799,7 +801,7 @@ class _SubtitlePanelState extends State<SubtitlePanel>
                 SavedWordsSheet.show(
                   context,
                   videoId: widget.controller.videoId,
-                  language: AppState.instance.activeLanguage.value,
+                  language: widget.controller.activeLanguage.value,
                 );
               },
               colors: colors,
@@ -825,7 +827,7 @@ class _SubtitlePanelState extends State<SubtitlePanel>
           ),
           const SizedBox(width: 6),
 
-          // 4. Options Button: [⚙️ Tùy chọn]
+          // 4. Options Button: [⚙️ Tùy chọn] (Opens SubtitleOptionsSheet with quick toggles & link to settings)
           Expanded(
             child: _buildPillBtn(
               icon: Icons.settings_outlined,

@@ -6,6 +6,7 @@ import '../models/voca_models.dart';
 import '../services/voca_api_client.dart';
 import '../services/grammar_engine.dart';
 import '../services/dual_sub_service.dart';
+import '../utils/language_utils.dart';
 import 'app_state.dart';
 
 class VideoPlayerController {
@@ -13,11 +14,29 @@ class VideoPlayerController {
   final GrammarEngine grammarEngine;
   late final DualSubService dualSubService;
 
+  // Language state tracking (1:1 port of lingua-tube subtitle.service.ts)
+  final loadedLanguage = signal<String?>(null);
+  late final ReadonlySignal<String> activeLanguage;
+
   VideoPlayerController({
     required this.apiClient,
     required this.grammarEngine,
   }) {
     dualSubService = DualSubService(apiClient: apiClient);
+
+    // Computed signal: Evaluates authentic language of subtitles (1:1 port of lingua-tube)
+    activeLanguage = computed(() {
+      final cueList = cues.value;
+      if (cueList.isNotEmpty) {
+        return detectSubtitleLanguage(
+          cueList,
+          loadedLanguage.value ?? AppState.instance.activeLanguage.value,
+        );
+      }
+      final loaded = loadedLanguage.value;
+      if (loaded != null && loaded.isNotEmpty) return loaded;
+      return AppState.instance.activeLanguage.value;
+    });
 
     // Computed signal: Find active cue using the Sticky Subtitle Rule (Rule 6)
     activeCue = computed(() {
@@ -26,10 +45,13 @@ class VideoPlayerController {
       return findActiveCue(time, cueList);
     });
 
-    // Automatically detect grammar patterns whenever the active cue changes
+    // Automatically detect grammar patterns whenever the active cue or loaded grammar changes
     activeGrammarMatches = computed(() {
+      // Re-evaluate when grammar patterns finish loading in background
+      grammarEngine.loadedLanguages.value;
+
       final cue = activeCue.value;
-      final lang = AppState.instance.activeLanguage.value;
+      final lang = activeLanguage.value;
       if (cue == null || cue.tokens.isEmpty) return <GrammarMatch>[];
       return grammarEngine.detectPatterns(cue.tokens, lang);
     });
@@ -332,13 +354,14 @@ class VideoPlayerController {
     isLoopingCue.value = false;
     loopingCue.value = null;
 
-    final targetLang = language ?? AppState.instance.activeLanguage.value;
-    await grammarEngine.loadLanguage(targetLang);
+    final requestedLang = language ?? AppState.instance.activeLanguage.value;
+    loadedLanguage.value = normalizeLanguageCode(requestedLang);
+    await grammarEngine.loadLanguage(requestedLang);
 
     try {
       final res = await apiClient.getTranscript(
         videoId: videoId,
-        lang: targetLang,
+        lang: requestedLang,
         preferAI: preferAI,
         turnstileToken: turnstileToken,
         onProgress: (status) => statusMessage.value = status,
@@ -349,7 +372,7 @@ class VideoPlayerController {
         isAIGenerated.value = true;
       }
       if (res.levels.isNotEmpty) {
-        difficultyLevel.value = res.levels[targetLang] ?? res.levels['overall'] ?? res.levels.values.first;
+        difficultyLevel.value = res.levels[requestedLang] ?? res.levels['overall'] ?? res.levels.values.first;
       }
 
       if (res.languageMismatch) {
@@ -365,14 +388,21 @@ class VideoPlayerController {
         statusMessage.value = null;
         isLoading.value = false;
 
-        // Asynchronously batch tokenize cues if needed
-        _tokenizeCues(videoId, targetLang, rawCues);
+        // Detect authentic language from subtitle cues (1:1 port of lingua-tube)
+        final authenticLang = activeLanguage.value;
+        loadedLanguage.value = authenticLang;
+
+        // Preload grammar patterns for authentic language
+        grammarEngine.loadLanguage(authenticLang);
+
+        // Asynchronously batch tokenize cues with authentic language
+        _tokenizeCues(videoId, authenticLang, rawCues);
 
         // Initialize DualSubService (Cloudflare R2 cache lookup + Two-tier streaming)
         final dualTarget = dualSubLanguage.value ?? 'vi';
         dualSubService.initializeForVideo(
           videoId: videoId,
-          sourceLang: targetLang,
+          sourceLang: authenticLang,
           targetLang: dualTarget,
           cues: cues.value,
           onCuesUpdated: (updatedCues) {

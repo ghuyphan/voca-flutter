@@ -3,13 +3,14 @@
 import 'package:flutter/material.dart';
 import '../../config/voca_theme.dart';
 import '../../services/i18n_service.dart';
+import '../explore/models/explore_category.dart';
 import 'voca_bottom_sheet.dart';
 
 class CategoryFilterSheet extends StatefulWidget {
   final String selectedCategory;
   final String selectedLevel;
   final List<String> availableLevels;
-  final List<String> categories;
+  final List<String>? categories;
   final void Function(String category, String level) onApply;
 
   const CategoryFilterSheet({
@@ -17,7 +18,7 @@ class CategoryFilterSheet extends StatefulWidget {
     required this.selectedCategory,
     required this.selectedLevel,
     required this.availableLevels,
-    required this.categories,
+    this.categories,
     required this.onApply,
   });
 
@@ -26,7 +27,7 @@ class CategoryFilterSheet extends StatefulWidget {
     required String selectedCategory,
     required String selectedLevel,
     required List<String> availableLevels,
-    required List<String> categories,
+    List<String>? categories,
     required void Function(String category, String level) onApply,
   }) {
     return showVocaBottomSheet(
@@ -60,49 +61,10 @@ class _CategoryFilterSheetState extends State<CategoryFilterSheet> {
     _level = widget.selectedLevel;
   }
 
-  IconData _getCategoryIcon(String category) {
-    switch (category) {
-      case 'Trending':
-        return Icons.local_fire_department_rounded;
-      case 'Anime & Drama':
-        return Icons.movie_filter_rounded;
-      case 'Music':
-        return Icons.music_note_rounded;
-      case 'News':
-        return Icons.newspaper_rounded;
-      case 'Vlog':
-        return Icons.videocam_rounded;
-      case 'Conversation':
-        return Icons.forum_rounded;
-      default:
-        return Icons.explore_rounded;
-    }
-  }
-
-  String _getCategoryLabel(BuildContext context, String category) {
-    switch (category) {
-      case 'All':
-        return context.t('explore.topicAll', null, 'All Topics');
-      case 'Trending':
-        return context.t('explore.topicTrending', null, 'Trending');
-      case 'Anime & Drama':
-        return context.t('explore.topicAnimeDrama', null, 'Anime & Drama');
-      case 'Music':
-        return context.t('explore.topicMusic', null, 'Music');
-      case 'News':
-        return context.t('explore.topicNews', null, 'News');
-      case 'Vlog':
-        return context.t('explore.topicVlog', null, 'Vlog');
-      case 'Conversation':
-        return context.t('explore.topicConversation', null, 'Conversation');
-      default:
-        return category;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final colors = context.vocaColors;
+    const categoryList = ExploreCategory.values;
 
     return SingleChildScrollView(
       child: Column(
@@ -123,20 +85,20 @@ class _CategoryFilterSheetState extends State<CategoryFilterSheet> {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: widget.categories.map((cat) {
-              final isSelected = _category == cat;
+            children: categoryList.map((cat) {
+              final isSelected = _category == cat.id;
               return ChoiceChip(
                 selected: isSelected,
                 avatar: Icon(
-                  _getCategoryIcon(cat),
+                  cat.icon,
                   size: 16,
                   color: isSelected ? Colors.white : colors.textMuted,
                 ),
-                label: Text(_getCategoryLabel(context, cat)),
+                label: Text(cat.getLabel(context)),
                 onSelected: (selected) {
                   if (selected) {
                     setState(() {
-                      _category = cat;
+                      _category = cat.id;
                     });
                   }
                 },

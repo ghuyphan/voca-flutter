@@ -14,8 +14,7 @@ import '../settings/settings_screen.dart';
 import '../widgets/kikyou_logo.dart';
 import '../sheets/new_video_sheet.dart';
 import '../sheets/gamification_dialogs.dart';
-import '../video/miniplayer_bar.dart';
-import '../video/video_player_screen.dart';
+import '../video/video_navigation_host.dart';
 import '../widgets/voca_bottom_nav_bar.dart';
 
 class MainShell extends StatefulWidget {
@@ -72,59 +71,17 @@ class _MainShellState extends State<MainShell> {
 
     return Watch((context) {
       final coordinator = PlayerCoordinator.instance;
-      final hasActive = coordinator.hasActiveVideo;
-      final isMini = coordinator.isMiniplayer.value;
       final isTrueFullscreen = coordinator.playerController?.isFullscreen.value ?? false;
-      final videoId = coordinator.activeVideoId.value;
 
-      return Scaffold(
-        backgroundColor: colors.bgPrimary,
-        body: Stack(
-          children: [
-            isTablet ? _buildTabletLayout(context) : _buildMobileLayout(context),
-            if (hasActive && videoId != null) ...[
-              Positioned.fill(
-                child: Visibility(
-                  visible: !isMini,
-                  maintainState: true,
-                  child: VideoPlayerScreen(
-                    key: ValueKey(videoId),
-                    videoId: videoId,
-                    title: coordinator.activeTitle.value,
-                    channel: coordinator.activeChannel.value,
-                    level: coordinator.activeLevel.value,
-                    playlistTitle: coordinator.activePlaylistTitle.value,
-                    playlistIndex: coordinator.activePlaylistIndex.value,
-                    playlistTotal: coordinator.activePlaylistTotal.value,
-                    sharedPlayerController: coordinator.playerController,
-                    sharedYtController: coordinator.ytController,
-                  ),
-                ),
-              ),
-              if (isMini)
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: MiniplayerBar(
-                    videoId: videoId,
-                    title: coordinator.activeTitle.value,
-                    channel: coordinator.activeChannel.value ?? 'YouTube',
-                    currentTime: coordinator.currentTime.value,
-                    duration: coordinator.duration.value,
-                    isPlaying: coordinator.isPlaying.value,
-                    isEnded: coordinator.isEnded.value,
-                    onTap: () => coordinator.expand(context),
-                    onPlayPause: () => coordinator.togglePlayPause(),
-                    onClose: () => coordinator.closeVideo(),
-                  ),
-                ),
-            ],
-          ],
+      return VideoNavigationHost(
+        bottomNavHeight: (isTablet || isTrueFullscreen) ? 0.0 : 80.0,
+        child: Scaffold(
+          backgroundColor: colors.bgPrimary,
+          body: isTablet ? _buildTabletLayout(context) : _buildMobileLayout(context),
+          bottomNavigationBar: (isTablet || isTrueFullscreen)
+              ? null
+              : _buildMobileBottomNav(context),
         ),
-        bottomNavigationBar: (isTablet || isTrueFullscreen)
-            ? null
-            : _buildMobileBottomNav(context),
       );
     });
   }

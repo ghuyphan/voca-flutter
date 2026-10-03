@@ -6,7 +6,6 @@ import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../../config/voca_theme.dart';
 import '../../models/voca_models.dart';
 import '../../services/i18n_service.dart';
-import '../../state/app_state.dart';
 import '../../state/player_state.dart';
 import 'video_settings_sheet.dart';
 import 'voca_bottom_sheet.dart';
@@ -73,7 +72,7 @@ class _SubtitleOptionsSheetState extends State<SubtitleOptionsSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final currentLang = AppState.instance.activeLanguage.value;
+    final currentLang = widget.controller.activeLanguage.value;
     final colors = context.vocaColors;
 
     return SingleChildScrollView(

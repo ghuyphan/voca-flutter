@@ -658,6 +658,51 @@ class PlaylistItem {
   };
 }
 
+class PlaylistVideo {
+  final String videoId;
+  final String title;
+  final String thumbnail;
+  final String? channel;
+  final double? duration;
+  final int position;
+  final String? level;
+
+  const PlaylistVideo({
+    required this.videoId,
+    required this.title,
+    required this.thumbnail,
+    this.channel,
+    this.duration,
+    this.position = 0,
+    this.level,
+  });
+
+  factory PlaylistVideo.fromJson(Map<String, dynamic> json, {int index = 0}) {
+    final vId = (json['video_id'] ?? json['videoId'] ?? json['id'] ?? '').toString();
+    return PlaylistVideo(
+      videoId: vId,
+      title: (json['title'] ?? 'YouTube Video').toString(),
+      thumbnail: (json['thumbnail'] ??
+              'https://img.youtube.com/vi/$vId/hqdefault.jpg')
+          .toString(),
+      channel: json['channel'] as String? ?? json['author'] as String?,
+      duration: (json['duration'] as num?)?.toDouble(),
+      position: (json['position'] as num?)?.toInt() ?? index,
+      level: json['level'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'video_id': videoId,
+    'title': title,
+    'thumbnail': thumbnail,
+    'channel': channel,
+    'duration': duration,
+    'position': position,
+    'level': level,
+  };
+}
+
 enum ProficiencyLevelTier {
   beginner,
   elementary,

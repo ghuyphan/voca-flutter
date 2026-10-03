@@ -2,13 +2,11 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../../config/voca_theme.dart';
 import '../../models/voca_models.dart';
 import '../../services/i18n_service.dart';
-import '../../state/app_state.dart';
 import '../../state/player_state.dart';
 import 'add_to_playlist_sheet.dart';
 import 'voca_bottom_sheet.dart';
@@ -106,11 +104,11 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
   String _getFontSizeName(SubtitleSize size) {
     switch (size) {
       case SubtitleSize.small:
-        return context.t('settings.sizeSmall', null, 'Small');
+        return context.t('settings.sizeSmall', null, 'Nhỏ');
       case SubtitleSize.medium:
-        return context.t('settings.sizeMedium', null, 'Medium');
+        return context.t('settings.sizeMedium', null, 'Vừa');
       case SubtitleSize.large:
-        return context.t('settings.sizeLarge', null, 'Large');
+        return context.t('settings.sizeLarge', null, 'Lớn');
     }
   }
 
@@ -120,29 +118,6 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
       orElse: () => {'code': langCode, 'name': langCode.toUpperCase(), 'flag': '🌐'},
     );
     return '${found['flag']} ${found['name']}';
-  }
-
-  void _handleShare() {
-    Navigator.pop(context);
-    if (widget.onShare != null) {
-      widget.onShare!();
-      return;
-    }
-    final videoId = widget.controller.videoId;
-    if (videoId.isNotEmpty) {
-      Clipboard.setData(ClipboardData(text: 'https://www.youtube.com/watch?v=$videoId'));
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: context.vocaColors.bgSurface,
-          content: Text(
-            context.t('video.linkCopied', null, 'Video link copied to clipboard!'),
-            style: TextStyle(color: context.vocaColors.textPrimary),
-          ),
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
   }
 
   void _handleSaveToPlaylist() {
@@ -234,8 +209,7 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
   // ==========================================
   Widget _buildMainPanel(BuildContext context) {
     final colors = context.vocaColors;
-    final currentLang = AppState.instance.activeLanguage.value;
-    final isCJK = ['ja', 'zh', 'ko'].contains(currentLang.toLowerCase());
+    final currentLang = widget.controller.activeLanguage.value;
 
     return Watch((context) {
       final currentSpeed = widget.controller.playbackRate.value;
@@ -244,17 +218,17 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
       final showReading = widget.controller.showFurigana.value;
       final targetLang = widget.controller.dualSubLanguage.value ?? 'en';
 
-      final speedLabel = currentSpeed == 1.0
-          ? (context.t('player.normal', null, 'Normal'))
+      final speedLabel = (currentSpeed - 1.0).abs() < 0.05
+          ? (context.t('player.normalSpeed', null, 'Bình thường (1x)'))
           : '${currentSpeed}x';
 
       final readingLabel = showReading
           ? _getReadingModeName(currentLang)
-          : (context.t('player.off', null, 'Off'));
+          : (context.t('player.off', null, 'Tắt'));
 
       final dualSubLabel = showDual
           ? _getTargetLangName(targetLang)
-          : (context.t('player.off', null, 'Off'));
+          : (context.t('player.off', null, 'Tắt'));
 
       return SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -269,7 +243,7 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
                   Icon(Icons.settings_outlined, size: 20, color: colors.accentPrimary),
                   const SizedBox(width: 10),
                   Text(
-                    context.t('player.settings', null, 'Settings'),
+                    context.t('player.settings', null, 'Cài đặt'),
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.bold,
@@ -285,7 +259,7 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
             _buildMenuItem(
               context: context,
               icon: Icons.speed_rounded,
-              label: context.t('player.playbackSpeed', null, 'Playback speed'),
+              label: context.t('player.playbackSpeed', null, 'Tốc độ phát'),
               value: speedLabel,
               onTap: () => setState(() => _currentView = 'speed'),
             ),
@@ -294,20 +268,19 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
             _buildMenuItem(
               context: context,
               icon: Icons.format_size_rounded,
-              label: context.t('subtitle.fontSize', null, 'Subtitle size'),
+              label: context.t('subtitle.fontSize', null, 'Cỡ chữ'),
               value: _getFontSizeName(fontSize),
               onTap: () => setState(() => _currentView = 'fontSize'),
             ),
 
-            // 3. Dual Subtitles (for CJK languages)
-            if (isCJK)
-              _buildMenuItem(
-                context: context,
-                icon: Icons.translate_rounded,
-                label: context.t('subtitle.dualSubs', null, 'Dual Subtitles'),
-                value: dualSubLabel,
-                onTap: () => setState(() => _currentView = 'dualSub'),
-              ),
+            // 3. Dual Subtitles
+            _buildMenuItem(
+              context: context,
+              icon: Icons.translate_rounded,
+              label: context.t('subtitle.dualSubs', null, 'Phụ đề song ngữ'),
+              value: dualSubLabel,
+              onTap: () => setState(() => _currentView = 'dualSub'),
+            ),
 
             // 4. Reading Display (Furigana / Pinyin / Romaji)
             _buildMenuItem(
@@ -322,8 +295,8 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
             _buildMenuItem(
               context: context,
               icon: Icons.auto_awesome_rounded,
-              label: context.t('grammar.mode', null, 'Grammar Mode'),
-              value: context.t('common.on', null, 'On'),
+              label: context.t('grammar.mode', null, 'Ngữ pháp'),
+              value: context.t('common.on', null, 'Bật'),
               onTap: () => setState(() => _currentView = 'grammar'),
             ),
 
@@ -331,31 +304,23 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
             _buildMenuItem(
               context: context,
               icon: Icons.timer_outlined,
-              label: context.t('player.sleepTimer', null, 'Sleep timer'),
+              label: context.t('player.sleepTimer', null, 'Hẹn giờ ngủ'),
               value: _sleepTimerOption == 'off'
-                  ? context.t('player.off', null, 'Off')
+                  ? context.t('player.off', null, 'Tắt')
                   : (_sleepTimerOption == 'end'
-                      ? 'End of video'
-                      : '$_sleepTimerOption min'),
+                      ? 'Kết thúc video'
+                      : '$_sleepTimerOption phút'),
               onTap: () => setState(() => _currentView = 'sleepTimer'),
             ),
 
             Divider(height: 1, color: colors.borderColor),
 
-            // 7. Save to Playlist
+            // 7. Save to Playlist (Exact Pic 4 bottom item)
             _buildMenuItem(
               context: context,
               icon: Icons.playlist_add_rounded,
-              label: context.t('playlist.saveToPlaylist', null, 'Save to playlist'),
+              label: context.t('playlist.saveToPlaylist', null, 'Lưu vào danh sách phát'),
               onTap: _handleSaveToPlaylist,
-            ),
-
-            // 8. Share Video
-            _buildMenuItem(
-              context: context,
-              icon: Icons.share_rounded,
-              label: context.t('player.share', null, 'Share video'),
-              onTap: _handleShare,
             ),
 
             const SizedBox(height: 16),
@@ -504,7 +469,7 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
     final colors = context.vocaColors;
     final showDual = widget.controller.showTranslation.value;
     final currentTarget = widget.controller.dualSubLanguage.value ?? 'en';
-    final activeLearningLang = AppState.instance.activeLanguage.value.toLowerCase();
+    final activeLearningLang = widget.controller.activeLanguage.value.toLowerCase();
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -566,7 +531,7 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
   // ==========================================
   Widget _buildReadingPanel(BuildContext context) {
     final colors = context.vocaColors;
-    final currentLang = AppState.instance.activeLanguage.value;
+    final currentLang = widget.controller.activeLanguage.value;
     final showReading = widget.controller.showFurigana.value;
     final readingTitle = _getReadingModeName(currentLang);
     final scriptIcon = _getReadingScriptIcon(currentLang);

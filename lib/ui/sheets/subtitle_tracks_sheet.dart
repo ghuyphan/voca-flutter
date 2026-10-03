@@ -87,7 +87,7 @@ class SubtitleTracksSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.vocaColors;
-    final activeLang = AppState.instance.activeLanguage.value;
+    final activeLang = controller.activeLanguage.value;
     final isAIGenerated = controller.isAIGenerated.value;
     final isOff = !controller.showFurigana.value && !controller.showTranslation.value;
 
@@ -140,7 +140,7 @@ class SubtitleTracksSheet extends StatelessWidget {
                 isSelected: false,
                 onTap: () {
                   AppState.instance.setLanguage(lang);
-                  controller.loadVideo(controller.videoId);
+                  controller.loadVideo(controller.videoId, language: lang);
                   Navigator.pop(context);
                 },
               ),
