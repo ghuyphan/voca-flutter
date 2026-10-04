@@ -8,12 +8,17 @@ import 'video_player_screen.dart';
 
 /// YouTube Mobile-style Stack Navigation Host
 ///
-/// Encapsulates all video player presentation with native, 60/120fps hardware-accelerated
+/// Encapsulates all video player presentation with native 60fps hardware-accelerated
 /// slide and fade transitions:
+/// - Single Player Invariant: VideoPlayerScreen is maintained continuously in the widget
+///   tree without being unmounted or recreated during minimize/expand transitions.
+///   This prevents the underlying WebView/PlatformView from reloading the HTML iframe,
+///   eliminating YouTube Error 150 ("Playback Restricted by Owner") and audio stutter.
 /// - When a video is opened/expanded: Slides smoothly up from the bottom dock to full bleed
-///   (covering the bottom navigation bar) without destroying or re-instantiating state.
+///   (covering the bottom navigation bar).
 /// - When minimized: Smoothly slides down to dock the MiniplayerBar above the bottom navigation bar.
-/// - State is preserved (`maintainState: true`) so video/audio plays continuously across expand/minimize.
+/// - Signal reactivity isolation: Playback timer ticks (4Hz) are isolated to leaf widgets
+///   in MiniplayerBar and VideoPlayerScreen, never rebuilding this root host.
 class VideoNavigationHost extends StatefulWidget {
   final Widget child;
   final double bottomNavHeight;
@@ -132,17 +137,14 @@ class _VideoNavigationHostState extends State<VideoNavigationHost>
                 videoId: videoId,
                 title: coordinator.activeTitle.value,
                 channel: coordinator.activeChannel.value ?? 'YouTube',
-                currentTime: coordinator.currentTime.value,
-                duration: coordinator.duration.value,
-                isPlaying: coordinator.isPlaying.value,
-                isEnded: coordinator.isEnded.value,
+                // Omit currentTime & isPlaying: MiniplayerBar subscribes in leaf Watch blocks
                 onTap: () => coordinator.expand(context),
                 onPlayPause: () => coordinator.togglePlayPause(),
                 onClose: () => coordinator.closeVideo(),
               ),
             ),
 
-          // 3. Full-Bleed Video Screen (Hardware-accelerated slide up/down)
+          // 3. Full-Bleed Video Screen (Hardware-accelerated slide up/down without unmounting)
           if (hasActive && videoId != null && coordinator.ytController != null)
             AnimatedBuilder(
               animation: _animController,

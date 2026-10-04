@@ -86,6 +86,12 @@ class PlayerCoordinator {
       activePlaylistIndex.value = playlistIndex ?? 0;
     } else if (playlistIndex != null) {
       activePlaylistIndex.value = playlistIndex;
+    } else {
+      // Opening standalone video -> cleanly clear previous playlist state
+      playlistVideos.value = [];
+      _unshuffledVideos = [];
+      activePlaylistTitle.value = null;
+      activePlaylistIndex.value = null;
     }
 
     if (activeVideoId.value == videoId && ytController != null) {

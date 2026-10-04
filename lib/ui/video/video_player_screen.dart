@@ -23,6 +23,7 @@ import 'subtitle_panel.dart';
 import 'video_bottom_bar.dart';
 import 'video_header.dart';
 import 'video_progress_bar.dart';
+import 'fullscreen_subtitle.dart';
 
 class VideoPlayerScreen extends StatefulWidget {
   final String videoId;
@@ -55,8 +56,8 @@ class VideoPlayerScreen extends StatefulWidget {
 class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   late final YoutubePlayerController _ytController;
   late final VideoPlayerController _playerController;
+  final _ytPlayerGlobalKey = GlobalKey();
   final bool _ownsControllers = false;
-
   YoutubeError? _playerError;
   DateTime _lastHistorySave = DateTime.now();
 
@@ -78,6 +79,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   DateTime? _lastLeftTapTime;
   DateTime? _lastRightTapTime;
   Timer? _pendingSingleTapTimer;
+  double _accumulatedDragDown = 0.0;
 
   @override
   void initState() {
@@ -185,9 +187,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         _saveWatchHistory();
       }
 
-      if (value.error != YoutubeError.none && value.error != _playerError) {
+      final newError = value.error == YoutubeError.none ? null : value.error;
+      if (newError != _playerError) {
         setState(() {
-          _playerError = value.error;
+          _playerError = newError;
         });
       }
     });
@@ -382,72 +385,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     super.dispose();
   }
 
-  Widget _buildFullscreenSubtitleOverlay() {
-    return Watch((context) {
-      final activeCue = _playerController.activeCue.value;
-      final showDual = _playerController.showTranslation.value;
-      if (activeCue == null) return const SizedBox.shrink();
-
-      return Center(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.72),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withOpacity(0.12)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.5),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                activeCue.text,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  shadows: [
-                    Shadow(
-                      color: Colors.black,
-                      blurRadius: 4,
-                      offset: Offset(0, 1),
-                    ),
-                  ],
-                ),
-              ),
-              if (showDual && activeCue.translation != null && activeCue.translation!.isNotEmpty) ...[
-                const SizedBox(height: 5),
-                Text(
-                  activeCue.translation!,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.85),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    shadows: const [
-                      Shadow(
-                        color: Colors.black,
-                        blurRadius: 4,
-                        offset: Offset(0, 1),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      );
-    });
-  }
-
   Widget _buildCustomControlsOverlay(BuildContext context, bool isFullscreen, double inlineWidth) {
     final effectiveWidth = isFullscreen ? MediaQuery.sizeOf(context).width : inlineWidth;
     final totalDuration = _ytController.metadata.duration.inSeconds.toDouble();
@@ -468,10 +405,23 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       return Stack(
         fit: StackFit.expand,
         children: [
-          // 1. Spatial Gesture Detector Layer (Double Tap Seek & Single Tap Controls)
+          // 1. Spatial Gesture Detector Layer (Double Tap Seek & Single Tap Controls + Swipe Down Minimize)
           GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTapUp: (details) => _handleSpatialTap(details, effectiveWidth),
+            onVerticalDragUpdate: (details) {
+              if (details.delta.dy > 0) {
+                _accumulatedDragDown += details.delta.dy;
+              }
+            },
+            onVerticalDragEnd: (details) {
+              final velocity = details.primaryVelocity ?? 0.0;
+              if ((velocity > 250 || _accumulatedDragDown > 50) && !isFullscreen) {
+                _handleMinimize();
+              }
+              _accumulatedDragDown = 0.0;
+            },
+            onVerticalDragCancel: () => _accumulatedDragDown = 0.0,
             child: const SizedBox.expand(),
           ),
 
@@ -505,16 +455,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
               ),
             ),
 
-          // 4. Fullscreen Subtitles Card (Positioned above bottom controls in fullscreen mode)
-          if (isFullscreen)
-            Positioned(
-              left: 32,
-              right: 32,
-              bottom: areVisible ? 72 : 24,
-              child: _buildFullscreenSubtitleOverlay(),
-            ),
-
-          // 5. Custom Controls Overlay with Smooth Fade Transition
+          // 4. Custom Controls Overlay with Smooth Fade Transition
           IgnorePointer(
             ignoring: !areVisible,
             child: AnimatedOpacity(
@@ -523,6 +464,19 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
               child: GestureDetector(
                 behavior: HitTestBehavior.translucent,
                 onTapUp: (details) => _handleSpatialTap(details, effectiveWidth),
+                onVerticalDragUpdate: (details) {
+                  if (details.delta.dy > 0) {
+                    _accumulatedDragDown += details.delta.dy;
+                  }
+                },
+                onVerticalDragEnd: (details) {
+                  final velocity = details.primaryVelocity ?? 0.0;
+                  if ((velocity > 250 || _accumulatedDragDown > 50) && !isFullscreen) {
+                    _handleMinimize();
+                  }
+                  _accumulatedDragDown = 0.0;
+                },
+                onVerticalDragCancel: () => _accumulatedDragDown = 0.0,
                 child: Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -706,6 +660,14 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
               ),
             ),
           ),
+
+          // 5. Fullscreen Subtitles Overlay (Frosted glass card with ruby, interactive tokens, drag handle)
+          if (isFullscreen)
+            FullscreenSubtitle(
+              controller: _playerController,
+              ytController: _ytController,
+              areControlsVisible: areVisible,
+            ),
         ],
       );
     });
@@ -766,27 +728,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       );
     }
 
-    if (isFullscreen) {
-      return SizedBox.expand(
-        child: YoutubePlayer(
-          controller: _ytController,
-          aspectRatio: 16 / 9,
-          backgroundColor: Colors.black,
-          enableFullScreenOnVerticalDrag: false,
-          autoFullScreen: false,
-          gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
-          controlsBuilder: (context, isFs) {
-            return _buildCustomControlsOverlay(context, true, MediaQuery.sizeOf(context).width);
-          },
-        ),
-      );
-    }
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final boxWidth = constraints.maxWidth;
 
-        return AspectRatio(
+        final playerWidget = AspectRatio(
           aspectRatio: 16 / 9,
           child: GestureDetector(
             onVerticalDragEnd: (details) {
@@ -796,6 +742,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
               }
             },
             child: YoutubePlayer(
+              key: _ytPlayerGlobalKey,
               controller: _ytController,
               aspectRatio: 16 / 9,
               backgroundColor: Colors.black,
@@ -803,11 +750,21 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
               autoFullScreen: false,
               gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
               controlsBuilder: (context, isFs) {
-                return _buildCustomControlsOverlay(context, isFs, boxWidth);
+                return _buildCustomControlsOverlay(context, isFs || isFullscreen, boxWidth);
               },
             ),
           ),
         );
+
+        if (isFullscreen) {
+          return SizedBox.expand(
+            child: Center(
+              child: playerWidget,
+            ),
+          );
+        }
+
+        return playerWidget;
       },
     );
   }
@@ -829,112 +786,113 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
             _handleMinimize();
           }
         },
-        child: isFullscreen
-            ? Scaffold(
-                backgroundColor: Colors.black,
-                body: SizedBox.expand(
-                  child: _buildVideoPlayerArea(isFullscreen: true),
-                ),
-              )
-            : Scaffold(
-                backgroundColor: context.vocaColors.bgPrimary,
-                body: SafeArea(
-                  child: isTablet
-                      ? Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // Left Pane (flex 3): 16:9 Youtube player + VideoHeader + Playlist
-                            Expanded(
-                              flex: 3,
-                              child: Column(
-                                children: [
-                                  _buildVideoPlayerArea(),
-                                  Watch((context) {
-                                    return VideoHeader(
-                                      title: widget.title.isNotEmpty
-                                          ? widget.title
-                                          : _playerController.videoTitle.value,
-                                      channel: widget.channel ?? _ytController.metadata.author,
-                                      videoId: widget.videoId,
-                                      level: widget.level ?? _playerController.difficultyLevel.value,
-                                      controller: _playerController,
-                                      ytController: _ytController,
-                                      onCloseTap: () => PlayerCoordinator.instance.closeVideo(),
-                                    );
-                                  }),
-                                  if (PlayerCoordinator.instance.hasPlaylist)
-                                    Watch((context) {
-                                      final coord = PlayerCoordinator.instance;
-                                      return MobilePlaylistBar(
-                                        title: coord.activePlaylistTitle.value ?? 'Playlist',
-                                        currentIndex: coord.activePlaylistIndex.value ?? 0,
-                                        totalVideos: coord.playlistTotal,
-                                      );
-                                    }),
-                                ],
+        child: Scaffold(
+          backgroundColor: isFullscreen ? Colors.black : context.vocaColors.bgPrimary,
+          body: SafeArea(
+            top: !isFullscreen,
+            bottom: !isFullscreen,
+            left: !isFullscreen,
+            right: !isFullscreen,
+            child: isFullscreen
+                ? _buildVideoPlayerArea(isFullscreen: true)
+                : (isTablet
+                    ? Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Left Pane (flex 3): 16:9 Youtube player + VideoHeader + Playlist
+                          Expanded(
+                            flex: 3,
+                            child: Column(
+                              children: [
+                                _buildVideoPlayerArea(isFullscreen: false),
+                                Watch((context) {
+                                  return VideoHeader(
+                                    title: widget.title.isNotEmpty
+                                        ? widget.title
+                                        : _playerController.videoTitle.value,
+                                    channel: widget.channel ?? _ytController.metadata.author,
+                                    videoId: widget.videoId,
+                                    level: widget.level ?? _playerController.difficultyLevel.value,
+                                    controller: _playerController,
+                                    ytController: _ytController,
+                                    onCloseTap: () => PlayerCoordinator.instance.closeVideo(),
+                                    onVerticalDragDown: _handleMinimize,
+                                  );
+                                }),
+                                Watch((context) {
+                                  final coord = PlayerCoordinator.instance;
+                                  if (!coord.hasPlaylist) return const SizedBox.shrink();
+                                  return MobilePlaylistBar(
+                                    title: coord.activePlaylistTitle.value ?? 'Playlist',
+                                    currentIndex: coord.activePlaylistIndex.value ?? 0,
+                                    totalVideos: coord.playlistTotal,
+                                  );
+                                }),
+                              ],
+                            ),
+                          ),
+
+                          // Right Pane (flex 2): Unified SubtitlePanel
+                          Expanded(
+                            flex: 2,
+                            child: SubtitlePanel(
+                              controller: _playerController,
+                              ytController: _ytController,
+                              onSeek: (seconds) => _ytController.seekTo(
+                                seconds: seconds,
+                                allowSeekAhead: true,
                               ),
                             ),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        children: [
+                          // 1. 16:9 Youtube Player with Gesture Detector, Center Controls & Bottom Bar
+                          _buildVideoPlayerArea(isFullscreen: false),
 
-                            // Right Pane (flex 2): Unified SubtitlePanel
-                            Expanded(
-                              flex: 2,
-                              child: SubtitlePanel(
-                                controller: _playerController,
-                                ytController: _ytController,
-                                onSeek: (seconds) => _ytController.seekTo(
-                                  seconds: seconds,
-                                  allowSeekAhead: true,
-                                ),
+                          // 2. VideoHeader (Title, channel, level badge, tracks [cc], share, close [x])
+                          Watch((context) {
+                            return VideoHeader(
+                              title: widget.title.isNotEmpty
+                                  ? widget.title
+                                  : _playerController.videoTitle.value,
+                              channel: widget.channel ?? _ytController.metadata.author,
+                              videoId: widget.videoId,
+                              level: widget.level ?? _playerController.difficultyLevel.value,
+                              controller: _playerController,
+                              ytController: _ytController,
+                              onCloseTap: () => PlayerCoordinator.instance.closeVideo(),
+                              onVerticalDragDown: _handleMinimize,
+                            );
+                          }),
+
+                          // 3. Compact Playlist Bar (If part of a playlist)
+                          Watch((context) {
+                            final coord = PlayerCoordinator.instance;
+                            if (!coord.hasPlaylist) return const SizedBox.shrink();
+                            return MobilePlaylistBar(
+                              title: coord.activePlaylistTitle.value ?? 'Playlist',
+                              currentIndex: coord.activePlaylistIndex.value ?? 0,
+                              totalVideos: coord.playlistTotal,
+                            );
+                          }),
+
+                          // 4. Unified SubtitlePanel (Active Subtitle + Cue List + 4-Pill Toolbar)
+                          Expanded(
+                            child: SubtitlePanel(
+                              controller: _playerController,
+                              ytController: _ytController,
+                              onSeek: (seconds) => _ytController.seekTo(
+                                seconds: seconds,
+                                allowSeekAhead: true,
                               ),
                             ),
-                          ],
-                        )
-                      : Column(
-                          children: [
-                            // 1. 16:9 Youtube Player with Gesture Detector, Center Controls & Bottom Bar
-                            _buildVideoPlayerArea(),
-
-                            // 2. VideoHeader (Title, channel, level badge, tracks [cc], share, close [x])
-                            Watch((context) {
-                              return VideoHeader(
-                                title: widget.title.isNotEmpty
-                                    ? widget.title
-                                    : _playerController.videoTitle.value,
-                                channel: widget.channel ?? _ytController.metadata.author,
-                                videoId: widget.videoId,
-                                level: widget.level ?? _playerController.difficultyLevel.value,
-                                controller: _playerController,
-                                ytController: _ytController,
-                                onCloseTap: () => PlayerCoordinator.instance.closeVideo(),
-                              );
-                            }),
-
-                            // 3. Compact Playlist Bar (If part of a playlist)
-                            if (PlayerCoordinator.instance.hasPlaylist)
-                              Watch((context) {
-                                final coord = PlayerCoordinator.instance;
-                                return MobilePlaylistBar(
-                                  title: coord.activePlaylistTitle.value ?? 'Playlist',
-                                  currentIndex: coord.activePlaylistIndex.value ?? 0,
-                                  totalVideos: coord.playlistTotal,
-                                );
-                              }),
-
-                            // 4. Unified SubtitlePanel (Active Subtitle + Cue List + 4-Pill Toolbar)
-                            Expanded(
-                              child: SubtitlePanel(
-                                controller: _playerController,
-                                ytController: _ytController,
-                                onSeek: (seconds) => _ytController.seekTo(
-                                  seconds: seconds,
-                                  allowSeekAhead: true,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                ),
-              ),
+                          ),
+                        ],
+                      )),
+          ),
+        ),
       );
     });
   }

@@ -9,6 +9,7 @@ import 'services/supabase_service.dart';
 import 'services/grammar_engine.dart';
 import 'services/gamification_service.dart';
 import 'services/i18n_service.dart';
+import 'services/toast_service.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'state/app_state.dart';
 import 'ui/shell/main_shell.dart';
@@ -68,6 +69,7 @@ class VocaApp extends StatelessWidget {
       }
 
       return MaterialApp(
+        scaffoldMessengerKey: ToastService.messengerKey,
         title: 'Voca',
         debugShowCheckedModeBanner: false,
         theme: VocaTheme.lightTheme,

@@ -345,10 +345,27 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                                 trailing: const Icon(Icons.play_circle_outline, color: Color(0xFF6366F1)),
                                 onTap: () {
                                   Navigator.of(ctx).pop();
+                                  final playlistVideos = playlist.videoIds.asMap().entries.map((entry) {
+                                    final i = entry.key;
+                                    final v = entry.value;
+                                    return PlaylistVideo(
+                                      videoId: v,
+                                      title: 'Video ${i + 1}',
+                                      thumbnail: 'https://img.youtube.com/vi/$v/hqdefault.jpg',
+                                      level: playlist.level,
+                                      position: i,
+                                    );
+                                  }).toList();
+
                                   PlayerCoordinator.instance.openVideo(
                                     context,
                                     videoId: vid,
-                                    title: 'Saved Video',
+                                    title: 'Video ${idx + 1}',
+                                    level: playlist.level,
+                                    playlistTitle: playlist.title,
+                                    playlistIndex: idx,
+                                    playlistTotal: playlist.videoIds.length,
+                                    playlist: playlistVideos,
                                   );
                                 },
                               );

@@ -5,6 +5,7 @@ import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../../config/voca_theme.dart';
 import '../../models/voca_models.dart';
 import '../../services/i18n_service.dart';
+import '../../services/toast_service.dart';
 import '../../state/app_state.dart';
 import '../../state/player_state.dart';
 
@@ -334,12 +335,10 @@ class _PracticeSheetState extends State<PracticeSheet> {
                       onPressed: () {
                         widget.ytController.setPlaybackRate(0.85);
                         widget.controller.playbackRate.value = 0.85;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(context.t('practice.rateSetNotice', null, 'Playback set to 0.85x for Shadowing')),
-                            duration: const Duration(seconds: 1),
-                            behavior: SnackBarBehavior.floating,
-                          ),
+                        ToastService.info(
+                          context,
+                          context.t('practice.rateSetNotice', null, 'Playback set to 0.85x for Shadowing'),
+                          duration: const Duration(seconds: 1),
                         );
                       },
                       icon: const Icon(Icons.slow_motion_video_rounded, size: 16),

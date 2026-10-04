@@ -637,6 +637,18 @@ class _ExploreScreenState extends State<ExploreScreen>
                               playlist: item,
                               onTap: () {
                                 if (item.videoIds.isNotEmpty) {
+                                  final playlistVideos = item.videoIds.asMap().entries.map((entry) {
+                                    final idx = entry.key;
+                                    final vid = entry.value;
+                                    return PlaylistVideo(
+                                      videoId: vid,
+                                      title: idx == 0 ? item.title : '${item.title} #${idx + 1}',
+                                      thumbnail: 'https://img.youtube.com/vi/$vid/hqdefault.jpg',
+                                      level: item.level,
+                                      position: idx,
+                                    );
+                                  }).toList();
+
                                   PlayerCoordinator.instance.openVideo(
                                     context,
                                     videoId: item.videoIds.first,
@@ -645,6 +657,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                                     playlistTitle: item.title,
                                     playlistIndex: 0,
                                     playlistTotal: item.videoIds.length,
+                                    playlist: playlistVideos,
                                   );
                                 }
                               },

@@ -28,6 +28,7 @@ class VideoHeader extends StatelessWidget {
   final bool isLevelLoading;
   final VoidCallback? onLevelTap;
   final VoidCallback? onCloseTap;
+  final VoidCallback? onVerticalDragDown;
   final VideoPlayerController? controller;
   final YoutubePlayerController? ytController;
 
@@ -41,6 +42,7 @@ class VideoHeader extends StatelessWidget {
     this.isLevelLoading = false,
     this.onLevelTap,
     this.onCloseTap,
+    this.onVerticalDragDown,
     this.controller,
     this.ytController,
   });
@@ -98,9 +100,16 @@ class VideoHeader extends StatelessWidget {
         isLevelLoading || (level == null && (controller?.isLoading.value ?? false));
     final effectiveLevel = level ?? controller?.difficultyLevel.value;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
-      child: Column(
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onVerticalDragEnd: (details) {
+        if (details.primaryVelocity != null && details.primaryVelocity! > 250) {
+          onVerticalDragDown?.call();
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -160,6 +169,7 @@ class VideoHeader extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 }

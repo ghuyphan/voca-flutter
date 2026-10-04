@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import '../../config/voca_theme.dart';
 import '../../services/i18n_service.dart';
+import '../../services/toast_service.dart';
 import '../../state/app_state.dart';
 import '../profile/profile_screen.dart';
 
@@ -533,11 +534,10 @@ Future<void> showAiCreditsDialog(BuildContext context) {
                   onPressed: () async {
                     await gamification.refreshDiamonds();
                     if (ctx.mounted) {
-                      ScaffoldMessenger.of(ctx).showSnackBar(
-                        SnackBar(
-                          content: Text(ctx.t('aiCredits.refreshed', null, 'AI Credits refreshed!')),
-                          duration: const Duration(seconds: 2),
-                        ),
+                      ToastService.success(
+                        ctx,
+                        ctx.t('aiCredits.refreshed', null, 'AI Credits refreshed!'),
+                        duration: const Duration(seconds: 2),
                       );
                     }
                   },
@@ -648,10 +648,9 @@ Future<void> showProUpgradeDialog(BuildContext context) {
               ElevatedButton(
                 onPressed: () {
                   Navigator.of(ctx).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(ctx.t('pro.checkoutComingSoon', null, 'Pro subscription checkout coming soon!')),
-                    ),
+                  ToastService.info(
+                    context,
+                    ctx.t('pro.checkoutComingSoon', null, 'Pro subscription checkout coming soon!'),
                   );
                 },
                 style: ElevatedButton.styleFrom(

@@ -1,8 +1,10 @@
 // lib/ui/video/miniplayer_bar.dart
 
 import 'package:flutter/material.dart';
+import 'package:signals_flutter/signals_flutter.dart';
 import '../../config/voca_theme.dart';
 import '../../services/i18n_service.dart';
+import '../../state/player_coordinator.dart';
 
 /// Floating docked Miniplayer Bar matching YouTube Mobile and lingua-tube:
 /// - Fixed above bottom navigation bar or docked at bottom
@@ -16,10 +18,11 @@ class MiniplayerBar extends StatelessWidget {
   final String videoId;
   final String title;
   final String channel;
-  final double currentTime;
-  final double duration;
-  final bool isPlaying;
+  final double? currentTime;
+  final double? duration;
+  final bool? isPlaying;
   final bool isEnded;
+  final Widget? videoWidget;
   final VoidCallback onTap;
   final VoidCallback onPlayPause;
   final VoidCallback onClose;
@@ -29,10 +32,11 @@ class MiniplayerBar extends StatelessWidget {
     required this.videoId,
     required this.title,
     required this.channel,
-    required this.currentTime,
-    required this.duration,
-    required this.isPlaying,
+    this.currentTime,
+    this.duration,
+    this.isPlaying,
     this.isEnded = false,
+    this.videoWidget,
     required this.onTap,
     required this.onPlayPause,
     required this.onClose,
@@ -41,7 +45,6 @@ class MiniplayerBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.vocaColors;
-    final progress = duration > 0 ? (currentTime / duration).clamp(0.0, 1.0) : 0.0;
 
     return Dismissible(
       key: ValueKey('miniplayer_$videoId'),
@@ -72,7 +75,7 @@ class MiniplayerBar extends StatelessWidget {
                 Expanded(
                   child: Row(
                     children: [
-                      // 1. Video Thumbnail (16:9 aspect)
+                      // 1. Video Thumbnail / Live Video (16:9 aspect)
                       Container(
                         width: 80,
                         height: 48,
@@ -80,13 +83,17 @@ class MiniplayerBar extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: Colors.black,
                           borderRadius: BorderRadius.circular(8),
-                          image: DecorationImage(
-                            image: NetworkImage(
-                              'https://img.youtube.com/vi/$videoId/hqdefault.jpg',
-                            ),
-                            fit: BoxFit.cover,
-                          ),
+                          image: videoWidget == null
+                              ? DecorationImage(
+                                  image: NetworkImage(
+                                    'https://img.youtube.com/vi/$videoId/hqdefault.jpg',
+                                  ),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
                         ),
+                        clipBehavior: Clip.antiAlias,
+                        child: videoWidget,
                       ),
                       const SizedBox(width: 10),
 
@@ -120,22 +127,28 @@ class MiniplayerBar extends StatelessWidget {
                         ),
                       ),
 
-                      // 3. Play / Pause / Replay Button
-                      IconButton(
-                        icon: Icon(
-                          isEnded
-                              ? Icons.replay_rounded
-                              : (isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded),
-                          color: colors.textPrimary,
-                          size: 24,
-                        ),
-                        tooltip: isEnded
-                            ? context.t('player.replay', null, 'Replay')
-                            : (isPlaying
-                                ? context.t('player.pause', null, 'Pause')
-                                : context.t('player.play', null, 'Play')),
-                        onPressed: onPlayPause,
-                      ),
+                      // 3. Play / Pause / Replay Button (Reactively bound)
+                      Watch((context) {
+                        final coord = PlayerCoordinator.instance;
+                        final playing = isPlaying ?? coord.isPlaying.value;
+                        final ended = isEnded || coord.isEnded.value;
+
+                        return IconButton(
+                          icon: Icon(
+                            ended
+                                ? Icons.replay_rounded
+                                : (playing ? Icons.pause_rounded : Icons.play_arrow_rounded),
+                            color: colors.textPrimary,
+                            size: 24,
+                          ),
+                          tooltip: ended
+                              ? context.t('player.replay', null, 'Replay')
+                              : (playing
+                                  ? context.t('player.pause', null, 'Pause')
+                                  : context.t('player.play', null, 'Play')),
+                          onPressed: onPlayPause,
+                        );
+                      }),
 
                       // 4. Close (X) Button
                       IconButton(
@@ -151,17 +164,24 @@ class MiniplayerBar extends StatelessWidget {
                   ),
                 ),
 
-                // 5. 2.5dp Bottom Progress Line
-                Container(
-                  height: 2.5,
-                  width: double.infinity,
-                  color: colors.borderColorLight,
-                  child: FractionallySizedBox(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: progress,
-                    child: Container(color: colors.accentPrimary),
-                  ),
-                ),
+                // 5. 2.5dp Bottom Progress Line (Reactively bound without rebuilding parent)
+                Watch((context) {
+                  final coord = PlayerCoordinator.instance;
+                  final cur = currentTime ?? coord.currentTime.value;
+                  final dur = duration ?? coord.duration.value;
+                  final p = dur > 0 ? (cur / dur).clamp(0.0, 1.0) : 0.0;
+
+                  return Container(
+                    height: 2.5,
+                    width: double.infinity,
+                    color: colors.borderColorLight,
+                    child: FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: p,
+                      child: Container(color: colors.accentPrimary),
+                    ),
+                  );
+                }),
               ],
             ),
           ),

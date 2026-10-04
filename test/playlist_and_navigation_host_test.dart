@@ -14,7 +14,9 @@ import 'package:voca_flutter/services/voca_api_client.dart';
 import 'package:voca_flutter/state/app_state.dart';
 import 'package:voca_flutter/state/player_coordinator.dart';
 import 'package:voca_flutter/ui/sheets/playlist_queue_sheet.dart';
+import 'package:voca_flutter/ui/video/miniplayer_bar.dart';
 import 'package:voca_flutter/ui/video/playlist/mobile_playlist_bar.dart';
+import 'package:voca_flutter/ui/video/video_header.dart';
 import 'package:voca_flutter/ui/video/video_navigation_host.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
@@ -259,6 +261,35 @@ void main() {
       expect(coordinator.playlistVideos.value.first.videoId, 'vid_0');
       expect(coordinator.playlistVideos.value.last.videoId, 'vid_9');
     });
+
+    test('opening standalone video cleanly purges previous playlist state', () {
+      final sampleVideos = [
+        const PlaylistVideo(videoId: 'v1', title: 'Video 1', thumbnail: 't1'),
+        const PlaylistVideo(videoId: 'v2', title: 'Video 2', thumbnail: 't2'),
+      ];
+
+      coordinator.openVideo(
+        null,
+        videoId: 'v1',
+        title: 'Video 1',
+        playlist: sampleVideos,
+        playlistTitle: 'My Playlist',
+        playlistIndex: 0,
+      );
+      expect(coordinator.hasPlaylist, isTrue);
+
+      // Now open a standalone video without playlist or index
+      coordinator.openVideo(
+        null,
+        videoId: 'standalone_vid',
+        title: 'Standalone Video',
+      );
+
+      expect(coordinator.hasPlaylist, isFalse);
+      expect(coordinator.playlistVideos.value, isEmpty);
+      expect(coordinator.activePlaylistTitle.value, isNull);
+      expect(coordinator.activePlaylistIndex.value, isNull);
+    });
   });
 
   group('PlaylistQueueSheet Widget Tests', () {
@@ -349,4 +380,119 @@ void main() {
       expect(find.byIcon(Icons.close_rounded), findsOneWidget);
     });
   });
+
+  group('VideoHeader Gesture Minimization Tests', () {
+    testWidgets('triggers onVerticalDragDown when dragging down with velocity', (tester) async {
+      bool dragDownTriggered = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: VocaTheme.darkTheme,
+          home: Scaffold(
+            body: VideoHeader(
+              title: 'Test Japanese Video',
+              channel: 'Voca Channel',
+              videoId: 'test_vid',
+              level: 'N3',
+              onVerticalDragDown: () {
+                dragDownTriggered = true;
+              },
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Test Japanese Video'), findsOneWidget);
+      expect(find.text('Voca Channel'), findsOneWidget);
+
+      // Perform a vertical fling down with sufficient velocity (> 250)
+      await tester.fling(find.byType(VideoHeader), const Offset(0, 300), 1000);
+      await tester.pumpAndSettle();
+
+      expect(dragDownTriggered, isTrue);
+    });
+  });
+
+  group('MiniplayerBar Interactive Tests', () {
+    testWidgets('renders embedded videoWidget and triggers callbacks', (tester) async {
+      bool tapCalled = false;
+      bool playPauseCalled = false;
+      bool closeCalled = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: VocaTheme.darkTheme,
+          home: Scaffold(
+            body: MiniplayerBar(
+              videoId: 'vid_123',
+              title: 'Cool Anime Clip',
+              channel: 'Anime Channel',
+              isPlaying: false,
+              videoWidget: const SizedBox(
+                key: Key('embedded_player'),
+                width: 80,
+                height: 48,
+              ),
+              onTap: () => tapCalled = true,
+              onPlayPause: () => playPauseCalled = true,
+              onClose: () => closeCalled = true,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Cool Anime Clip'), findsOneWidget);
+      expect(find.text('Anime Channel'), findsOneWidget);
+      expect(find.byKey(const Key('embedded_player')), findsOneWidget);
+      expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+
+      // Tap card
+      await tester.tap(find.text('Cool Anime Clip'));
+      expect(tapCalled, isTrue);
+
+      // Tap play/pause
+      await tester.tap(find.byIcon(Icons.play_arrow_rounded));
+      expect(playPauseCalled, isTrue);
+
+      // Tap close
+      await tester.tap(find.byIcon(Icons.close_rounded));
+      expect(closeCalled, isTrue);
+    });
+
+    testWidgets('reactively updates play/pause and replay icon states', (tester) async {
+      final coordinator = PlayerCoordinator.instance;
+      coordinator.isPlaying.value = true;
+      coordinator.isEnded.value = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: VocaTheme.darkTheme,
+          home: Scaffold(
+            body: MiniplayerBar(
+              videoId: 'vid_123',
+              title: 'Signal Test Video',
+              channel: 'Signal Channel',
+              onTap: () {},
+              onPlayPause: () {},
+              onClose: () {},
+            ),
+          ),
+        ),
+      );
+
+      // Playing -> pause icon
+      expect(find.byIcon(Icons.pause_rounded), findsOneWidget);
+
+      // Update coordinator signal to paused
+      coordinator.isPlaying.value = false;
+      await tester.pump();
+      expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+
+      // Update coordinator signal to ended
+      coordinator.isEnded.value = true;
+      await tester.pump();
+      expect(find.byIcon(Icons.replay_rounded), findsOneWidget);
+    });
+  });
 }
+
