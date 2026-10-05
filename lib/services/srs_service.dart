@@ -1,6 +1,7 @@
 // lib/services/srs_service.dart
 
 import 'dart:math';
+import '../config/voca_tokens.dart';
 
 enum SRSReviewRating {
   again(1),
@@ -29,33 +30,39 @@ class SRSCalculationResult {
 }
 
 class SpacedRepetitionService {
-  /// SuperMemo-2 (SM-2) scheduling calculation
+  /// Deterministic SuperMemo-2 (SM-2) scheduling calculation with accurate mastery progression
   static SRSCalculationResult calculateNextReview({
     required SRSReviewRating rating,
     required int currentRepetitions,
     required int currentInterval,
     required double currentEaseFactor,
+    String currentLevel = 'learning',
     DateTime? fromDate,
   }) {
     final now = fromDate ?? DateTime.now();
     int repetition = currentRepetitions;
     int interval = currentInterval;
     double ease = currentEaseFactor;
-    String level = 'learning';
+    String normalizedLevel = currentLevel.toLowerCase().trim();
+    if (normalizedLevel == 'mastered') normalizedLevel = 'known';
 
     switch (rating) {
       case SRSReviewRating.again:
         repetition = 0;
         interval = 0;
-        ease = max(1.3, ease - 0.20);
-        level = 'learning';
+        ease = max(SrsConfig.minEaseFactor, ease - 0.20);
+        // Lapse: whether new, learning, or known, Again sets card to learning
+        normalizedLevel = 'learning';
         break;
 
       case SRSReviewRating.hard:
         repetition += 1;
-        interval = repetition <= 1 ? 1 : (interval * 1.2).round();
-        ease = max(1.3, ease - 0.15);
-        level = 'learning';
+        interval = repetition <= 1 ? 1 : max(1, (interval * 1.2).round());
+        ease = max(SrsConfig.minEaseFactor, ease - 0.15);
+        if (normalizedLevel == 'new') {
+          normalizedLevel = 'learning';
+        }
+        // If it was already known, keep it known unless failed
         break;
 
       case SRSReviewRating.good:
@@ -65,9 +72,15 @@ class SpacedRepetitionService {
         } else if (repetition == 2) {
           interval = 6;
         } else {
-          interval = (interval * ease).round();
+          interval = max(1, (interval * ease).round());
         }
-        level = repetition >= 3 ? 'known' : 'learning';
+
+        // Progression check
+        if (interval >= SrsConfig.matureIntervalDays || repetition >= 3) {
+          normalizedLevel = 'known';
+        } else {
+          normalizedLevel = 'learning';
+        }
         break;
 
       case SRSReviewRating.easy:
@@ -77,21 +90,69 @@ class SpacedRepetitionService {
         } else if (repetition == 2) {
           interval = 8;
         } else {
-          interval = (interval * ease * 1.3).round();
+          interval = max(2, (interval * ease * 1.3).round());
         }
         ease += 0.15;
-        level = repetition >= 2 ? 'known' : 'learning';
+
+        // Easy graduation: if learner easily knew it from the start or rep >= 2
+        if (repetition >= 2 || interval >= 7 || currentLevel == 'new') {
+          normalizedLevel = 'known';
+        } else {
+          normalizedLevel = 'learning';
+        }
         break;
     }
 
-    final nextReviewAt = now.add(Duration(days: interval));
+    final nextReviewAt = interval <= 0
+        ? now // Due immediately for same-session relearning
+        : now.add(Duration(days: interval));
 
     return SRSCalculationResult(
       repetition: repetition,
       interval: interval,
       easeFactor: ease,
-      level: level,
+      level: normalizedLevel,
       nextReviewAt: nextReviewAt,
     );
+  }
+
+  /// Format an interval in days into a clean, human-readable compact badge (e.g. "<10m", "1d", "6d", "1mo")
+  static String formatInterval(int days, {bool isAgain = false}) {
+    if (isAgain || days <= 0) return '<10m';
+    if (days >= 30) return '${(days / 30).round()}mo';
+    return '${days}d';
+  }
+
+  /// Seeds appropriate SRS scheduling parameters when a card level is manually altered in the UI
+  static ({int repetition, int interval, double easeFactor, DateTime nextReviewAt}) seedSrsParamsForLevel(
+    String level, {
+    DateTime? fromDate,
+  }) {
+    final now = fromDate ?? DateTime.now();
+    switch (level.toLowerCase().trim()) {
+      case 'known':
+      case 'mastered':
+        return (
+          repetition: 3,
+          interval: SrsConfig.matureIntervalDays,
+          easeFactor: SrsConfig.defaultEaseFactor,
+          nextReviewAt: now.add(const Duration(days: SrsConfig.matureIntervalDays)),
+        );
+      case 'learning':
+        return (
+          repetition: 1,
+          interval: 1,
+          easeFactor: SrsConfig.defaultEaseFactor,
+          nextReviewAt: now.add(const Duration(days: 1)),
+        );
+      case 'new':
+      default:
+        return (
+          repetition: 0,
+          interval: 0,
+          easeFactor: SrsConfig.defaultEaseFactor,
+          nextReviewAt: now,
+        );
+    }
   }
 }

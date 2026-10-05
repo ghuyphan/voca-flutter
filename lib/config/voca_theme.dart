@@ -1,6 +1,7 @@
 // lib/config/voca_theme.dart
 
 import 'package:flutter/material.dart';
+export 'voca_tokens.dart';
 
 /// Authentic VOCA Design System static tokens (Dark Mode default)
 /// Preserved for backwards compatibility with existing direct usages.

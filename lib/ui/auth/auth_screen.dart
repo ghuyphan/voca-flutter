@@ -1,7 +1,11 @@
 // lib/ui/auth/auth_screen.dart
 
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:signals_flutter/signals_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../../config/voca_theme.dart';
 import '../../services/auth_service.dart';
 import '../../services/i18n_service.dart';
@@ -18,6 +22,36 @@ const String _googleSvg = '''
 </svg>
 ''';
 
+final RegExp _emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+
+enum AuthScreenMode {
+  landing,
+  signIn,
+  register,
+  resetPassword,
+}
+
+enum ActiveAuthAction {
+  google,
+  apple,
+  signIn,
+  register,
+  reset,
+}
+
+/// Production AuthScreen pairing the layout of ACTE with VOCA's design system:
+/// - Layout Architecture (ACTE):
+///     * Hero area with ambient emblem glow
+///     * Bottom CTA stack (Google, Apple, Continue with email, Continue as guest)
+///     * Interactive privacy consent checkbox on both landing and registration
+///     * Smooth slide-up bottom sheet for email authentication (Sign In / Register / Reset)
+///     * Hierarchical back button and Android PopScope navigation
+/// - VOCA App Styling & Theming:
+///     * Rich Obsidian (dark) & Crisp Porcelain (light) linear gradient canvas
+///     * Voca Radiant Coral (`accentPrimary`) primary action CTAs and focused glows
+///     * Authentic `.btn-google` elevated card styling with Google G emblem
+///     * Integrated top-bar Locale & UI Language switcher pill with native option picker
+///     * Reactive `Watch((context) => ...)` reactivity on `I18nService.instance.currentLanguage`
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
 
@@ -25,23 +59,31 @@ class AuthScreen extends StatefulWidget {
   State<AuthScreen> createState() => _AuthScreenState();
 }
 
-class _AuthScreenState extends State<AuthScreen> {
-  final _formKey = GlobalKey<FormState>();
+class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateMixin {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _nameController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  final _displayNameController = TextEditingController();
 
-  bool _isSignUp = false;
+  final _nameFocusNode = FocusNode();
+  final _emailFocusNode = FocusNode();
+  final _passwordFocusNode = FocusNode();
+  final _confirmPasswordFocusNode = FocusNode();
+
+  late final AnimationController _sheetAnimationController;
+  late final Animation<double> _sheetAnimation;
+
+  AuthScreenMode _screenMode = AuthScreenMode.landing;
+  ActiveAuthAction? _activeAction;
+  String? _authMessage;
+  String? _successMessage;
+
+  bool _hasAcceptedPolicyConsent = false;
   bool _showPassword = false;
-  bool _magicLinkSent = false;
+  bool _showConfirmPassword = false;
 
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    _nameController.dispose();
-    super.dispose();
-  }
+  bool get _isApplePlatform =>
+      defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS;
 
   AuthService? get _auth {
     try {
@@ -51,560 +93,1378 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _sheetAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 280),
+    );
+    _sheetAnimation = CurvedAnimation(
+      parent: _sheetAnimationController,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    _displayNameController.dispose();
+    _nameFocusNode.dispose();
+    _emailFocusNode.dispose();
+    _passwordFocusNode.dispose();
+    _confirmPasswordFocusNode.dispose();
+    _sheetAnimationController.dispose();
+    super.dispose();
+  }
+
+  void _resetMessages() {
+    setState(() {
+      _authMessage = null;
+      _successMessage = null;
+    });
+  }
+
+  void _openForm(AuthScreenMode mode) {
+    _resetMessages();
+    setState(() {
+      _screenMode = mode;
+      if (mode == AuthScreenMode.register) {
+        _hasAcceptedPolicyConsent = false;
+      }
+    });
+    _sheetAnimationController.forward();
+  }
+
+  void _goBackInFlow() {
+    _resetMessages();
+    FocusScope.of(context).unfocus();
+    if (_screenMode == AuthScreenMode.register || _screenMode == AuthScreenMode.resetPassword) {
+      setState(() => _screenMode = AuthScreenMode.signIn);
+    } else {
+      _dismissForm();
+    }
+  }
+
+  void _dismissForm() {
+    _resetMessages();
+    FocusScope.of(context).unfocus();
+    _sheetAnimationController.reverse().then((_) {
+      if (mounted) {
+        setState(() => _screenMode = AuthScreenMode.landing);
+      }
+    });
+  }
+
+
+  Future<void> _openLegalUrl(String url) async {
+    final uri = Uri.parse(url);
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      debugPrint('[AuthScreen] Error opening $url: $e');
+    }
+  }
+
   Future<void> _handleGoogleSignIn() async {
+    if (_activeAction != null) return;
     final auth = _auth;
     if (auth == null) return;
-    final success = await auth.signInWithGoogle();
-    if (success && mounted) {
-      ToastService.success(context, context.t('auth.welcomeBack', null, 'Welcome back!'));
-      Navigator.of(context).pop(true);
+
+    _resetMessages();
+    setState(() => _activeAction = ActiveAuthAction.google);
+
+    try {
+      final success = await auth.signInWithGoogle();
+      if (!mounted) return;
+      if (success) {
+        ToastService.success(context, context.t('auth.welcomeBack', null, 'Welcome back!'));
+        Navigator.of(context).pop(true);
+        return;
+      }
+      setState(() {
+        _authMessage = auth.authError.value ?? context.t('auth.signInFailed', null, 'Sign in failed. Please try again.');
+        _activeAction = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _authMessage = e.toString();
+        _activeAction = null;
+      });
     }
   }
 
   Future<void> _handleAppleSignIn() async {
-    final auth = _auth;
-    if (auth == null) return;
-    final success = await auth.signInWithApple();
-    if (success && mounted) {
-      ToastService.success(context, context.t('auth.welcomeBack', null, 'Welcome back!'));
-      Navigator.of(context).pop(true);
-    }
-  }
-
-  Future<void> _handleEmailSubmit() async {
-    if (!_formKey.currentState!.validate()) return;
-
+    if (_activeAction != null) return;
     final auth = _auth;
     if (auth == null) return;
 
-    final email = _emailController.text.trim();
-    final password = _passwordController.text;
+    _resetMessages();
+    setState(() => _activeAction = ActiveAuthAction.apple);
 
-    bool success;
-    if (_isSignUp) {
-      final name = _nameController.text.trim();
-      success = await auth.signUpWithEmail(email, password, name: name);
-      if (success && mounted) {
-        ToastService.success(context, context.t('auth.accountCreated', null, 'Account created successfully!'));
-        Navigator.of(context).pop(true);
-      }
-    } else {
-      success = await auth.signInWithEmail(email, password);
-      if (success && mounted) {
+    try {
+      final success = await auth.signInWithApple();
+      if (!mounted) return;
+      if (success) {
         ToastService.success(context, context.t('auth.welcomeBack', null, 'Welcome back!'));
         Navigator.of(context).pop(true);
+        return;
       }
+      setState(() {
+        _authMessage = auth.authError.value ?? context.t('auth.signInFailed', null, 'Sign in failed. Please try again.');
+        _activeAction = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _authMessage = e.toString();
+        _activeAction = null;
+      });
     }
   }
 
-  Future<void> _handleSendMagicLink() async {
-    final email = _emailController.text.trim();
-    if (email.isEmpty || !email.contains('@')) {
-      ToastService.warning(context, context.t('auth.enterValidEmail', null, 'Please enter a valid email address first.'));
+  Future<void> _handleEmailSignIn() async {
+    if (_activeAction != null) return;
+    final trimmedEmail = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (trimmedEmail.isEmpty) {
+      setState(() => _authMessage = context.t('auth.validationEmail', null, 'Enter your email address.'));
+      return;
+    }
+    if (!_emailRegex.hasMatch(trimmedEmail)) {
+      setState(() => _authMessage = context.t('auth.errorInvalidEmail', null, 'Enter a valid email address.'));
+      return;
+    }
+    if (password.isEmpty) {
+      setState(() => _authMessage = context.t('auth.validationPassword', null, 'Enter your password.'));
       return;
     }
 
     final auth = _auth;
     if (auth == null) return;
 
-    final success = await auth.sendMagicLink(email);
-    if (success && mounted) {
-      setState(() => _magicLinkSent = true);
-      ToastService.info(context, context.t('auth.magicLinkSent', null, 'Magic link sent! Check your email inbox.'));
+    _resetMessages();
+    setState(() => _activeAction = ActiveAuthAction.signIn);
+
+    try {
+      final success = await auth.signInWithEmail(trimmedEmail, password);
+      if (!mounted) return;
+      if (success) {
+        ToastService.success(context, context.t('auth.welcomeBack', null, 'Welcome back!'));
+        Navigator.of(context).pop(true);
+        return;
+      }
+      setState(() {
+        _authMessage = auth.authError.value ?? context.t('auth.signInFailed', null, 'Unable to sign in right now. Please try again.');
+        _activeAction = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _authMessage = e.toString();
+        _activeAction = null;
+      });
     }
   }
 
-  Widget _buildBenefitRow({
-    required IconData icon,
-    required String title,
-    required String subtitle,
+  Future<void> _handleRegister() async {
+    if (_activeAction != null) return;
+    final trimmedEmail = _emailController.text.trim();
+    final trimmedName = _displayNameController.text.trim();
+    final password = _passwordController.text;
+    final confirmPassword = _confirmPasswordController.text;
+
+    if (trimmedEmail.isEmpty) {
+      setState(() => _authMessage = context.t('auth.validationEmail', null, 'Enter your email address.'));
+      return;
+    }
+    if (!_emailRegex.hasMatch(trimmedEmail)) {
+      setState(() => _authMessage = context.t('auth.errorInvalidEmail', null, 'Enter a valid email address.'));
+      return;
+    }
+    if (trimmedName.length > 40) {
+      setState(() => _authMessage = context.t('auth.validationDisplayNameLength', null, 'Use 40 characters or fewer for your name.'));
+      return;
+    }
+    if (password.isEmpty) {
+      setState(() => _authMessage = context.t('auth.validationPassword', null, 'Enter your password.'));
+      return;
+    }
+    if (password.length < 6) {
+      setState(() => _authMessage = context.t('auth.validationPasswordLength', null, 'Use at least 6 characters for your password.'));
+      return;
+    }
+    if (confirmPassword.isEmpty) {
+      setState(() => _authMessage = context.t('auth.validationConfirmPassword', null, 'Confirm your password.'));
+      return;
+    }
+    if (password != confirmPassword) {
+      setState(() => _authMessage = context.t('auth.validationPasswordMatch', null, 'Your passwords do not match.'));
+      return;
+    }
+    if (!_hasAcceptedPolicyConsent) {
+      setState(() => _authMessage = context.t('auth.validationPrivacyConsent', null, 'Accept the privacy policy before creating your account.'));
+      return;
+    }
+
+    final auth = _auth;
+    if (auth == null) return;
+
+    _resetMessages();
+    setState(() => _activeAction = ActiveAuthAction.register);
+
+    try {
+      final success = await auth.signUpWithEmail(trimmedEmail, password, name: trimmedName);
+      if (!mounted) return;
+      if (success) {
+        ToastService.success(context, context.t('auth.accountCreated', null, 'Account created successfully!'));
+        Navigator.of(context).pop(true);
+        return;
+      }
+      setState(() {
+        _authMessage = auth.authError.value ?? context.t('auth.signUpFailed', null, 'Unable to create your account right now. Please try again.');
+        _activeAction = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _authMessage = e.toString();
+        _activeAction = null;
+      });
+    }
+  }
+
+  Future<void> _handlePasswordReset() async {
+    if (_activeAction != null) return;
+    final trimmedEmail = _emailController.text.trim();
+
+    if (trimmedEmail.isEmpty) {
+      setState(() => _authMessage = context.t('auth.validationEmail', null, 'Enter your email address.'));
+      return;
+    }
+    if (!_emailRegex.hasMatch(trimmedEmail)) {
+      setState(() => _authMessage = context.t('auth.errorInvalidEmail', null, 'Enter a valid email address.'));
+      return;
+    }
+
+    final auth = _auth;
+    if (auth == null) return;
+
+    _resetMessages();
+    setState(() => _activeAction = ActiveAuthAction.reset);
+
+    try {
+      final success = await auth.sendPasswordResetEmail(trimmedEmail);
+      if (!mounted) return;
+      if (success) {
+        setState(() {
+          _screenMode = AuthScreenMode.signIn;
+          _successMessage = context.t('auth.resetPasswordSent', {'email': trimmedEmail}, 'We sent a password reset link to $trimmedEmail.');
+          _activeAction = null;
+        });
+        return;
+      }
+      setState(() {
+        _authMessage = auth.authError.value ?? context.t('auth.resetPasswordFailed', null, 'Unable to send a reset link right now.');
+        _activeAction = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _authMessage = e.toString();
+        _activeAction = null;
+      });
+    }
+  }
+
+  void _submitForm() {
+    switch (_screenMode) {
+      case AuthScreenMode.signIn:
+        _handleEmailSignIn();
+        break;
+      case AuthScreenMode.register:
+        _handleRegister();
+        break;
+      case AuthScreenMode.resetPassword:
+        _handlePasswordReset();
+        break;
+      case AuthScreenMode.landing:
+        break;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Watch((context) {
+      // Re-trigger build whenever UI language changes in I18nService
+      final _ = I18nService.instance.currentLanguage.value;
+
+      final colors = context.vocaColors;
+      final isDark = colors.isDark;
+
+      // Subtle atmospheric gradient matching VOCA canvas tokens
+      final gradientColors = isDark
+          ? [colors.bgPrimary, colors.bgSecondary, colors.bgTertiary]
+          : [colors.bgPrimary, colors.bgSurface, colors.bgSecondary];
+
+      return PopScope(
+        canPop: _screenMode == AuthScreenMode.landing,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) {
+            _goBackInFlow();
+          }
+        },
+        child: Scaffold(
+          backgroundColor: colors.bgPrimary,
+          body: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: gradientColors,
+              ),
+            ),
+            child: Stack(
+              children: [
+                // 1. Landing Screen Content (Center Kikyou Emblem + CTAs)
+                _buildLandingContent(colors, isDark),
+
+                // 2. Animated Modal Backdrop Scrim
+                AnimatedBuilder(
+                  animation: _sheetAnimation,
+                  builder: (context, _) {
+                    if (_sheetAnimation.value <= 0.001) {
+                      return const SizedBox.shrink();
+                    }
+                    return Positioned.fill(
+                      child: GestureDetector(
+                        onTap: _dismissForm,
+                        child: Container(
+                          color: Colors.black.withOpacity(0.55 * _sheetAnimation.value),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+
+                // 3. ACTE-style AppSheet Email Form Modal
+                AnimatedBuilder(
+                  animation: _sheetAnimation,
+                  builder: (context, _) {
+                    if (_sheetAnimation.value <= 0.001 && _screenMode == AuthScreenMode.landing) {
+                      return const SizedBox.shrink();
+                    }
+                    return SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, 1),
+                        end: Offset.zero,
+                      ).animate(_sheetAnimation),
+                      child: Align(
+                        alignment: Alignment.bottomCenter,
+                        child: _buildFormSheet(colors, isDark),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    });
+  }
+
+  // ===========================================================================
+  // 1. LANDING CONTENT (ACTE Layout with VOCA App Styling)
+  // ===========================================================================
+
+  Widget _buildLandingContent(VocaColorPalette colors, bool isDark) {
+    return SafeArea(
+      child: AnimatedBuilder(
+        animation: _sheetAnimation,
+        builder: (context, child) {
+          final translateY = -28.0 * _sheetAnimation.value;
+          final opacity = (1.0 - 0.12 * _sheetAnimation.value).clamp(0.0, 1.0);
+
+          return Transform.translate(
+            offset: Offset(0, translateY),
+            child: Opacity(
+              opacity: opacity,
+              child: child,
+            ),
+          );
+        },
+        child: Column(
+          children: [
+            // Top App Bar with Back Button
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: IconButton(
+                  icon: Icon(Icons.arrow_back_rounded, color: colors.textSecondary, size: 24),
+                  tooltip: context.t('common.back', null, 'Back'),
+                  splashRadius: 22,
+                  onPressed: () => Navigator.of(context).pop(false),
+                ),
+              ),
+            ),
+
+            // Hero Emblem, Title & Subtitle (Centered vertically)
+            Expanded(
+              child: Center(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Ambient Coral Glow Container behind emblem
+                      Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Soft radial background halo
+                          Container(
+                            width: 140,
+                            height: 140,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  colors.accentPrimary.withOpacity(isDark ? 0.22 : 0.12),
+                                  Colors.transparent,
+                                ],
+                              ),
+                            ),
+                          ),
+
+                          // 104x104 App Icon Container
+                          Container(
+                            width: 104,
+                            height: 104,
+                            decoration: BoxDecoration(
+                              color: colors.bgCard,
+                              borderRadius: BorderRadius.circular(26),
+                              border: Border.all(color: colors.borderColor, width: 1.2),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(isDark ? 0.35 : 0.06),
+                                  blurRadius: 22,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(26),
+                              child: Image.asset(
+                                'assets/images/app_logo.png',
+                                width: 104,
+                                height: 104,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Center(
+                                    child: KikyouLogo(size: 60, color: colors.accentPrimary),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // VOCA Brand Title
+                      Text(
+                        'VOCA',
+                        style: TextStyle(
+                          color: colors.textPrimary,
+                          fontSize: 40,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 2.0,
+                        ),
+                      ),
+
+                      const SizedBox(height: 6),
+
+                      // Localized Hero Subtitle
+                      Text(
+                        context.t('auth.subtitle', null, 'Learn languages through authentic videos'),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: colors.textSecondary,
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.w500,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Bottom Actions (ACTE Hierarchy with VOCA Styling)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Landing Error Message Slot
+                  if (_authMessage != null && _screenMode == AuthScreenMode.landing) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        _authMessage!,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: colors.error,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+
+                  // 1. Google Sign-In Button (.btn-google style with card elevated surface)
+                  _buildSecondaryButton(
+                    label: _activeAction == ActiveAuthAction.google
+                        ? context.t('auth.signingIn', null, 'Signing in...')
+                        : context.t('auth.continueWithGoogle', null, 'Continue with Google'),
+                    leading: _activeAction == ActiveAuthAction.google
+                        ? null
+                        : SvgPicture.string(_googleSvg, width: 20, height: 20),
+                    isLoading: _activeAction == ActiveAuthAction.google,
+                    backgroundColor: colors.bgCard,
+                    textColor: colors.textPrimary,
+                    borderColor: colors.borderColor,
+                    onPressed: _handleGoogleSignIn,
+                    colors: colors,
+                  ),
+
+                  // 2. Apple Sign-In Button (for Apple platforms)
+                  if (_isApplePlatform) ...[
+                    const SizedBox(height: 12),
+                    _buildSecondaryButton(
+                      label: context.t('auth.signInApple', null, 'Sign in with Apple'),
+                      leading: Icon(Icons.apple_rounded, size: 22, color: colors.textPrimary),
+                      isLoading: _activeAction == ActiveAuthAction.apple,
+                      backgroundColor: colors.bgCard,
+                      textColor: colors.textPrimary,
+                      borderColor: colors.borderColor,
+                      onPressed: _handleAppleSignIn,
+                      colors: colors,
+                    ),
+                  ],
+
+                  const SizedBox(height: 12),
+
+                  // 3. Continue with Email Button (Surface container with Coral accent icon)
+                  _buildSecondaryButton(
+                    label: context.t('auth.continueWithEmail', null, 'Continue with email'),
+                    leading: Icon(Icons.mail_outline_rounded, size: 20, color: colors.accentPrimary),
+                    backgroundColor: colors.bgSurface,
+                    textColor: colors.textPrimary,
+                    borderColor: colors.borderColor,
+                    onPressed: () => _openForm(AuthScreenMode.signIn),
+                    colors: colors,
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  // 4. Continue as Guest Link Button
+                  InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: _activeAction != null ? null : () => Navigator.of(context).pop(false),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Text(
+                        context.t('auth.continueLocal', null, 'Continue as Guest'),
+                        style: TextStyle(
+                          color: colors.textSecondary,
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 4),
+
+                  // 5. Legal Terms & Privacy Consent Row
+                  _buildLegalConsentRow(colors),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // 2. FORM BOTTOM SHEET (ACTE Flow with VOCA Design System)
+  // ===========================================================================
+
+  Widget _buildFormSheet(VocaColorPalette colors, bool isDark) {
+    final viewInsets = MediaQuery.of(context).viewInsets;
+    final maxSheetHeight = MediaQuery.of(context).size.height * 0.88;
+
+    String formTitle;
+    String formDescription;
+    String submitButtonLabel;
+
+    switch (_screenMode) {
+      case AuthScreenMode.register:
+        formTitle = context.t('auth.registerTitle', null, 'Create your account');
+        formDescription = context.t('auth.registerDescription', null, 'Save your vocabulary, keep them backed up, and sync everywhere.');
+        submitButtonLabel = context.t('auth.createAccount', null, 'Create account');
+        break;
+      case AuthScreenMode.resetPassword:
+        formTitle = context.t('auth.resetTitle', null, 'Reset your password');
+        formDescription = context.t('auth.resetDescription', null, 'Enter your email and we will send you a password reset link.');
+        submitButtonLabel = context.t('auth.sendResetLink', null, 'Send reset link');
+        break;
+      case AuthScreenMode.signIn:
+      case AuthScreenMode.landing:
+        formTitle = context.t('auth.emailTitle', null, 'Continue with email');
+        formDescription = context.t('auth.emailDescription', null, 'Sign in to keep your vocabulary backed up and synced automatically.');
+        submitButtonLabel = context.t('auth.signIn', null, 'Sign In');
+        break;
+    }
+
+    final isFormSubmitting = _activeAction == ActiveAuthAction.signIn ||
+        _activeAction == ActiveAuthAction.register ||
+        _activeAction == ActiveAuthAction.reset;
+
+    return Container(
+      constraints: BoxConstraints(maxHeight: maxSheetHeight),
+      decoration: BoxDecoration(
+        color: colors.bgCard,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        border: Border(
+          top: BorderSide(color: colors.borderColor, width: 1.0),
+          left: BorderSide(color: colors.borderColor, width: 1.0),
+          right: BorderSide(color: colors.borderColor, width: 1.0),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.45),
+            blurRadius: 28,
+            offset: const Offset(0, -6),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Top Drag Handle
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onVerticalDragEnd: (details) {
+                if (details.primaryVelocity != null && details.primaryVelocity! > 250) {
+                  _dismissForm();
+                }
+              },
+              child: Center(
+                child: Container(
+                  width: 38,
+                  height: 4,
+                  margin: const EdgeInsets.only(top: 12, bottom: 8),
+                  decoration: BoxDecoration(
+                    color: colors.borderColorHover,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+            ),
+
+            // Scrollable Form Content
+            Flexible(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: EdgeInsets.fromLTRB(20, 8, 20, viewInsets.bottom + 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Form Header (Circular Back Button + Title + Description)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSheetBackButton(colors),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                formTitle,
+                                style: TextStyle(
+                                  color: colors.textPrimary,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                formDescription,
+                                style: TextStyle(
+                                  color: colors.textSecondary,
+                                  fontSize: 13.5,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 18),
+
+                    // Inline Success Banner
+                    if (_successMessage != null) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        margin: const EdgeInsets.only(bottom: 14),
+                        decoration: BoxDecoration(
+                          color: colors.success.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: colors.success.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.check_circle_rounded, color: colors.success, size: 18),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                _successMessage!,
+                                style: TextStyle(
+                                  color: colors.textPrimary,
+                                  fontSize: 13.5,
+                                  height: 1.35,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
+                    // Inline Error Banner
+                    if (_authMessage != null) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        margin: const EdgeInsets.only(bottom: 14),
+                        decoration: BoxDecoration(
+                          color: colors.error.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: colors.error.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.error_outline_rounded, color: colors.error, size: 18),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                _authMessage!,
+                                style: TextStyle(
+                                  color: colors.error,
+                                  fontSize: 13.5,
+                                  height: 1.35,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
+                    // Form Fields with Smooth Layout Transitions
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 240),
+                      curve: Curves.easeOutCubic,
+                      alignment: Alignment.topCenter,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Display Name (Register only)
+                          if (_screenMode == AuthScreenMode.register) ...[
+                            _buildAuthField(
+                              controller: _displayNameController,
+                              focusNode: _nameFocusNode,
+                              label: context.t('auth.displayNameLabel', null, 'Name (optional)'),
+                              placeholder: context.t('auth.displayNamePlaceholder', null, 'How should we call you?'),
+                              textCapitalization: TextCapitalization.words,
+                              textInputAction: TextInputAction.next,
+                              colors: colors,
+                              onSubmitted: () => _emailFocusNode.requestFocus(),
+                            ),
+                            const SizedBox(height: 14),
+                          ],
+
+                          // Email Field (All Modes)
+                          _buildAuthField(
+                            controller: _emailController,
+                            focusNode: _emailFocusNode,
+                            label: context.t('auth.emailLabel', null, 'Email'),
+                            placeholder: context.t('auth.emailPlaceholder', null, 'you@example.com'),
+                            keyboardType: TextInputType.emailAddress,
+                            textInputAction: _screenMode == AuthScreenMode.resetPassword
+                                ? TextInputAction.done
+                                : TextInputAction.next,
+                            colors: colors,
+                            onSubmitted: () {
+                              if (_screenMode == AuthScreenMode.resetPassword) {
+                                _submitForm();
+                              } else {
+                                _passwordFocusNode.requestFocus();
+                              }
+                            },
+                          ),
+
+                          // Password Field (Sign In & Register)
+                          if (_screenMode != AuthScreenMode.resetPassword) ...[
+                            const SizedBox(height: 14),
+                            _buildAuthField(
+                              controller: _passwordController,
+                              focusNode: _passwordFocusNode,
+                              label: context.t('auth.passwordLabel', null, 'Password'),
+                              placeholder: context.t('auth.passwordPlaceholder', null, 'Enter your password'),
+                              obscureText: !_showPassword,
+                              textInputAction: _screenMode == AuthScreenMode.register
+                                  ? TextInputAction.next
+                                  : TextInputAction.done,
+                              colors: colors,
+                              trailing: IconButton(
+                                icon: Icon(
+                                  _showPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                  size: 20,
+                                  color: colors.textMuted,
+                                ),
+                                splashRadius: 20,
+                                onPressed: () => setState(() => _showPassword = !_showPassword),
+                              ),
+                              onSubmitted: () {
+                                if (_screenMode == AuthScreenMode.register) {
+                                  _confirmPasswordFocusNode.requestFocus();
+                                } else {
+                                  _submitForm();
+                                }
+                              },
+                            ),
+                          ],
+
+                          // Confirm Password Field (Register only)
+                          if (_screenMode == AuthScreenMode.register) ...[
+                            const SizedBox(height: 14),
+                            _buildAuthField(
+                              controller: _confirmPasswordController,
+                              focusNode: _confirmPasswordFocusNode,
+                              label: context.t('auth.confirmPasswordLabel', null, 'Confirm password'),
+                              placeholder: context.t('auth.confirmPasswordPlaceholder', null, 'Type your password again'),
+                              obscureText: !_showConfirmPassword,
+                              textInputAction: TextInputAction.done,
+                              colors: colors,
+                              trailing: IconButton(
+                                icon: Icon(
+                                  _showConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                  size: 20,
+                                  color: colors.textMuted,
+                                ),
+                                splashRadius: 20,
+                                onPressed: () => setState(() => _showConfirmPassword = !_showConfirmPassword),
+                              ),
+                              onSubmitted: _submitForm,
+                            ),
+
+                            const SizedBox(height: 14),
+
+                            // Register Privacy Policy Consent Card (VOCA Styling)
+                            InkWell(
+                              borderRadius: BorderRadius.circular(14),
+                              onTap: () {
+                                setState(() => _hasAcceptedPolicyConsent = !_hasAcceptedPolicyConsent);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: colors.bgSurface,
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(color: colors.borderColor),
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    _buildCheckbox(
+                                      checked: _hasAcceptedPolicyConsent,
+                                      colors: colors,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text.rich(
+                                        TextSpan(
+                                          text: context.t('auth.privacyConsentPrefix', null, 'I agree to the '),
+                                          style: TextStyle(color: colors.textPrimary, fontSize: 13.5),
+                                          children: [
+                                            WidgetSpan(
+                                              alignment: PlaceholderAlignment.baseline,
+                                              baseline: TextBaseline.alphabetic,
+                                              child: GestureDetector(
+                                                onTap: () => _openLegalUrl('https://voca.study/privacy'),
+                                                child: Text(
+                                                  context.t('settings.privacyPolicy', null, 'Privacy Policy'),
+                                                  style: TextStyle(
+                                                    color: colors.accentPrimary,
+                                                    fontSize: 13.5,
+                                                    fontWeight: FontWeight.w600,
+                                                    decoration: TextDecoration.underline,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            const TextSpan(text: '.'),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+
+                          // Forgot Password Link (Sign In only)
+                          if (_screenMode == AuthScreenMode.signIn) ...[
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: () => _openForm(AuthScreenMode.resetPassword),
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.only(top: 8, bottom: 4),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: Text(
+                                  context.t('auth.forgotPassword', null, 'Forgot password?'),
+                                  style: TextStyle(
+                                    color: colors.accentPrimary,
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 18),
+
+                    // Primary Form Submit Button (VOCA Radiant Coral Signature CTA)
+                    _buildPrimaryActionButton(
+                      label: submitButtonLabel,
+                      isLoading: isFormSubmitting,
+                      colors: colors,
+                      onPressed: _submitForm,
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    // Mode Switch Links (Sign In <-> Register <-> Reset Password)
+                    if (_screenMode == AuthScreenMode.register) ...[
+                      _buildSwitchModeLink(
+                        prefix: context.t('auth.alreadyHaveAccountPrefix', null, 'Already have an account? '),
+                        action: context.t('auth.signInAction', null, 'Sign in'),
+                        colors: colors,
+                        onTap: () => _openForm(AuthScreenMode.signIn),
+                      ),
+                    ] else if (_screenMode == AuthScreenMode.resetPassword) ...[
+                      _buildSwitchModeLink(
+                        prefix: '',
+                        action: context.t('auth.backToSignIn', null, 'Back to sign in'),
+                        colors: colors,
+                        onTap: () => _openForm(AuthScreenMode.signIn),
+                      ),
+                    ] else ...[
+                      _buildSwitchModeLink(
+                        prefix: context.t('auth.needAccountPrefix', null, 'Need an account? '),
+                        action: context.t('auth.createOneAction', null, 'Create one'),
+                        colors: colors,
+                        onTap: () => _openForm(AuthScreenMode.register),
+                      ),
+                    ],
+
+                    const SizedBox(height: 12),
+
+                    // Bottom Legal Links (Privacy Policy & Support)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        GestureDetector(
+                          onTap: () => _openLegalUrl('https://voca.study/privacy'),
+                          child: Text(
+                            context.t('settings.privacyPolicy', null, 'Privacy Policy'),
+                            style: TextStyle(
+                              color: colors.textMuted,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '  •  ',
+                          style: TextStyle(color: colors.borderColorHover, fontSize: 12),
+                        ),
+                        GestureDetector(
+                          onTap: () => _openLegalUrl('https://voca.study/terms'),
+                          child: Text(
+                            context.t('settings.support', null, 'Terms & Support'),
+                            style: TextStyle(
+                              color: colors.textMuted,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // 3. ATOMIC REUSABLE WIDGETS (VOCA Design Tokens & Button Hierarchy)
+  // ===========================================================================
+
+  Widget _buildSheetBackButton(VocaColorPalette colors) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: colors.bgSurface,
+        shape: BoxShape.circle,
+        border: Border.all(color: colors.borderColor, width: 1.0),
+      ),
+      child: IconButton(
+        icon: Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: colors.textPrimary),
+        splashRadius: 20,
+        tooltip: context.t('common.back', null, 'Back'),
+        onPressed: _goBackInFlow,
+      ),
+    );
+  }
+
+  /// VOCA Signature Primary CTA Button (Radiant Coral with soft glow shadow)
+  Widget _buildPrimaryActionButton({
+    required String label,
+    required VoidCallback onPressed,
     required VocaColorPalette colors,
+    bool isLoading = false,
   }) {
-    return Row(
+    return Container(
+      height: 52,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: colors.accentPrimary.withOpacity(0.35),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ElevatedButton(
+        onPressed: isLoading ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: colors.accentPrimary,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: colors.accentPrimary.withOpacity(0.55),
+          disabledForegroundColor: Colors.white.withOpacity(0.55),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+        ),
+        child: isLoading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.2,
+                ),
+              ),
+      ),
+    );
+  }
+
+  /// VOCA Elevated Secondary Card Button (Used for Google, Apple, and Email landing cards)
+  Widget _buildSecondaryButton({
+    required String label,
+    required VoidCallback onPressed,
+    required VocaColorPalette colors,
+    Widget? leading,
+    bool isLoading = false,
+    required Color backgroundColor,
+    required Color textColor,
+    Color? borderColor,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: ElevatedButton(
+        onPressed: isLoading ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: backgroundColor,
+          foregroundColor: textColor,
+          disabledBackgroundColor: backgroundColor.withOpacity(0.55),
+          disabledForegroundColor: textColor.withOpacity(0.55),
+          elevation: 0,
+          shadowColor: Colors.black.withOpacity(0.06),
+          side: borderColor != null ? BorderSide(color: borderColor, width: 1.2) : BorderSide.none,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+        ),
+        child: isLoading
+            ? SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.0,
+                  valueColor: AlwaysStoppedAnimation<Color>(textColor),
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (leading != null) ...[
+                    leading,
+                    const SizedBox(width: 12),
+                  ],
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: textColor,
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildAuthField({
+    required TextEditingController controller,
+    required FocusNode focusNode,
+    required String label,
+    required String placeholder,
+    required VocaColorPalette colors,
+    bool obscureText = false,
+    TextInputType keyboardType = TextInputType.text,
+    TextCapitalization textCapitalization = TextCapitalization.none,
+    TextInputAction textInputAction = TextInputAction.next,
+    Widget? trailing,
+    VoidCallback? onSubmitted,
+  }) {
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: colors.accentPrimarySoft,
-            borderRadius: BorderRadius.circular(8),
+        Text(
+          label,
+          style: TextStyle(
+            color: colors.textSecondary,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
           ),
-          child: Icon(icon, color: colors.accentPrimary, size: 18),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  color: colors.textPrimary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  color: colors.textMuted,
-                  fontSize: 11.5,
-                  height: 1.3,
-                ),
-              ),
-            ],
+        const SizedBox(height: 7),
+        TextField(
+          controller: controller,
+          focusNode: focusNode,
+          obscureText: obscureText,
+          keyboardType: keyboardType,
+          textCapitalization: textCapitalization,
+          textInputAction: textInputAction,
+          onSubmitted: (_) => onSubmitted?.call(),
+          cursorColor: colors.accentPrimary,
+          style: TextStyle(
+            color: colors.textPrimary,
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+          ),
+          decoration: InputDecoration(
+            hintText: placeholder,
+            hintStyle: TextStyle(
+              color: colors.textMuted,
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+            ),
+            filled: true,
+            fillColor: colors.bgSurface,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: colors.borderColor, width: 1.0),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: colors.borderColor, width: 1.0),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: colors.accentPrimary, width: 1.5),
+            ),
+            suffixIcon: trailing,
           ),
         ),
       ],
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.vocaColors;
-    final auth = _auth;
-
-    final isLoggingIn = auth?.isLoggingIn.value ?? false;
-    final authError = auth?.authError.value;
-
-    return Scaffold(
-      backgroundColor: colors.bgPrimary,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.close_rounded, color: colors.textSecondary),
-          tooltip: context.t('common.close', null, 'Close'),
-          onPressed: () => Navigator.of(context).pop(false),
+  Widget _buildCheckbox({
+    required bool checked,
+    required VocaColorPalette colors,
+  }) {
+    return Container(
+      width: 22,
+      height: 22,
+      decoration: BoxDecoration(
+        color: checked ? colors.accentPrimary : colors.bgSurface,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: checked ? colors.accentPrimary : colors.borderColor,
+          width: 1.5,
         ),
       ),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // 1. Kikyou Flower Emblem & Brand Header
-                  Hero(
-                    tag: 'voca_kikyou_logo',
-                    child: KikyouLogo(size: 60, color: colors.accentPrimary),
+      child: checked
+          ? const Center(
+              child: Icon(Icons.check_rounded, size: 15, color: Colors.white),
+            )
+          : null,
+    );
+  }
+
+  Widget _buildSwitchModeLink({
+    required String prefix,
+    required String action,
+    required VocaColorPalette colors,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text.rich(
+          TextSpan(
+            text: prefix,
+            style: TextStyle(color: colors.textSecondary, fontSize: 13.5),
+            children: [
+              TextSpan(
+                text: action,
+                style: TextStyle(
+                  color: colors.accentPrimary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13.5,
+                ),
+              ),
+            ],
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLegalConsentRow(VocaColorPalette colors) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Text.rich(
+        TextSpan(
+          text: context.t('auth.landingPolicyConsentPrefix', null, 'By continuing, you agree to our '),
+          style: TextStyle(
+            color: colors.textSecondary.withOpacity(0.85),
+            fontSize: 12.5,
+            height: 1.35,
+          ),
+          children: [
+            WidgetSpan(
+              alignment: PlaceholderAlignment.baseline,
+              baseline: TextBaseline.alphabetic,
+              child: GestureDetector(
+                onTap: () => _openLegalUrl('https://voca.study/privacy'),
+                child: Text(
+                  context.t('settings.privacyPolicy', null, 'Privacy Policy'),
+                  style: TextStyle(
+                    color: colors.accentPrimary,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    decoration: TextDecoration.underline,
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'VOCA',
-                    style: TextStyle(
-                      color: colors.textPrimary,
-                      fontSize: 30,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 2.0,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    context.t('auth.subtitle', null, 'Learn languages through authentic videos'),
-                    style: TextStyle(
-                      color: colors.textSecondary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Value Propositions
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    decoration: BoxDecoration(
-                      color: colors.bgCard,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: colors.borderColor),
-                    ),
-                    child: Column(
-                      children: [
-                        _buildBenefitRow(
-                          icon: Icons.cloud_sync_rounded,
-                          title: 'Seamless Cloud Sync',
-                          subtitle: 'Access saved words & playlists across all your devices',
-                          colors: colors,
-                        ),
-                        const SizedBox(height: 10),
-                        _buildBenefitRow(
-                          icon: Icons.local_fire_department_rounded,
-                          title: 'Streak & Progress Guard',
-                          subtitle: 'Keep your immersion streak and review milestones safe',
-                          colors: colors,
-                        ),
-                        const SizedBox(height: 10),
-                        _buildBenefitRow(
-                          icon: Icons.leaderboard_outlined,
-                          title: 'Global Learner Ranks',
-                          subtitle: 'Climb leaderboards and track authentic immersion minutes',
-                          colors: colors,
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // 2. Error Feedback Card
-                  if (authError != null) ...[
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      margin: const EdgeInsets.only(bottom: 20),
-                      decoration: BoxDecoration(
-                        color: colors.error.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: colors.error.withOpacity(0.3)),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(Icons.error_outline_rounded, color: colors.error, size: 18),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              authError,
-                              style: TextStyle(
-                                color: colors.error,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-
-                  // 3. Social OAuth Buttons
-                  // Continue with Google
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: OutlinedButton(
-                      onPressed: isLoggingIn ? null : _handleGoogleSignIn,
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: colors.bgCard,
-                        foregroundColor: colors.textPrimary,
-                        side: BorderSide(color: colors.borderColor),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SvgPicture.string(_googleSvg),
-                          const SizedBox(width: 12),
-                          Text(
-                            context.t('auth.continueGoogle', null, 'Continue with Google'),
-                            style: TextStyle(
-                              color: colors.textPrimary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Sign in with Apple
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: OutlinedButton(
-                      onPressed: isLoggingIn ? null : _handleAppleSignIn,
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: colors.bgCard,
-                        foregroundColor: colors.textPrimary,
-                        side: BorderSide(color: colors.borderColor),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.apple_rounded, size: 22, color: colors.textPrimary),
-                          const SizedBox(width: 10),
-                          Text(
-                            context.t('auth.continueApple', null, 'Sign in with Apple'),
-                            style: TextStyle(
-                              color: colors.textPrimary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // 4. "Or continue with email" Divider
-                  Row(
-                    children: [
-                      Expanded(child: Divider(color: colors.borderColorLight, height: 1)),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        child: Text(
-                          context.t('auth.orEmail', null, 'Or continue with email'),
-                          style: TextStyle(
-                            color: colors.textMuted,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      Expanded(child: Divider(color: colors.borderColorLight, height: 1)),
-                    ],
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // 5. Form (Email & Password)
-                  Form(
-                    key: _formKey,
-                    child: Column(
-                      children: [
-                        if (_isSignUp) ...[
-                          TextFormField(
-                            controller: _nameController,
-                            style: TextStyle(color: colors.textPrimary, fontSize: 14),
-                            decoration: InputDecoration(
-                              labelText: context.t('auth.nameLabel', null, 'Full Name'),
-                              labelStyle: TextStyle(color: colors.textMuted, fontSize: 13),
-                              prefixIcon: Icon(Icons.person_outline_rounded, color: colors.textMuted, size: 20),
-                              filled: true,
-                              fillColor: colors.bgSurface,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: colors.borderColor),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: colors.borderColor),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: colors.accentPrimary, width: 1.5),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                        ],
-
-                        TextFormField(
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          autocorrect: false,
-                          style: TextStyle(color: colors.textPrimary, fontSize: 14),
-                          validator: (v) {
-                            if (v == null || v.trim().isEmpty) {
-                              return context.t('auth.emailRequired', null, 'Please enter your email');
-                            }
-                            if (!v.contains('@') || !v.contains('.')) {
-                              return context.t('auth.emailInvalid', null, 'Please enter a valid email');
-                            }
-                            return null;
-                          },
-                          decoration: InputDecoration(
-                            labelText: context.t('auth.emailLabel', null, 'Email address'),
-                            labelStyle: TextStyle(color: colors.textMuted, fontSize: 13),
-                            prefixIcon: Icon(Icons.mail_outline_rounded, color: colors.textMuted, size: 20),
-                            filled: true,
-                            fillColor: colors.bgSurface,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: colors.borderColor),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: colors.borderColor),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: colors.accentPrimary, width: 1.5),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 12),
-
-                        TextFormField(
-                          controller: _passwordController,
-                          obscureText: !_showPassword,
-                          style: TextStyle(color: colors.textPrimary, fontSize: 14),
-                          validator: (v) {
-                            if (v == null || v.isEmpty) {
-                              return context.t('auth.passwordRequired', null, 'Please enter your password');
-                            }
-                            if (v.length < 6) {
-                              return context.t('auth.passwordLength', null, 'Password must be at least 6 characters');
-                            }
-                            return null;
-                          },
-                          decoration: InputDecoration(
-                            labelText: context.t('auth.passwordLabel', null, 'Password'),
-                            labelStyle: TextStyle(color: colors.textMuted, fontSize: 13),
-                            prefixIcon: Icon(Icons.lock_outline_rounded, color: colors.textMuted, size: 20),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _showPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                                color: colors.textMuted,
-                                size: 19,
-                              ),
-                              onPressed: () => setState(() => _showPassword = !_showPassword),
-                            ),
-                            filled: true,
-                            fillColor: colors.bgSurface,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: colors.borderColor),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: colors.borderColor),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: colors.accentPrimary, width: 1.5),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 18),
-
-                        // Submit Button
-                        SizedBox(
-                          width: double.infinity,
-                          height: 48,
-                          child: ElevatedButton(
-                            onPressed: isLoggingIn ? null : _handleEmailSubmit,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: colors.accentPrimary,
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: isLoggingIn
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2.2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : Text(
-                                    _isSignUp
-                                        ? context.t('auth.createAccount', null, 'Create Account')
-                                        : context.t('auth.signIn', null, 'Sign In'),
-                                    style: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  // Toggle Sign In / Create Account
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      Text(
-                        _isSignUp
-                            ? context.t('auth.alreadyHaveAccount', null, 'Already have an account? ')
-                            : context.t('auth.dontHaveAccount', null, "Don't have an account? "),
-                        style: TextStyle(color: colors.textSecondary, fontSize: 13),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _isSignUp = !_isSignUp;
-                            auth?.authError.value = null;
-                          });
-                        },
-                        child: Text(
-                          _isSignUp
-                              ? context.t('auth.signIn', null, 'Sign In')
-                              : context.t('auth.createAccount', null, 'Sign Up'),
-                          style: TextStyle(
-                            color: colors.accentPrimary,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  // Magic Link option
-                  TextButton(
-                    onPressed: isLoggingIn ? null : _handleSendMagicLink,
-                    style: TextButton.styleFrom(
-                      foregroundColor: colors.textSecondary,
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    child: Text(
-                      _magicLinkSent
-                          ? context.t('auth.magicLinkResend', null, 'Resend Magic Link')
-                          : context.t('auth.magicLink', null, 'Email me a sign-in link (Passwordless)'),
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // 6. Continue as Guest (so learner is never blocked)
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(false),
-                    style: TextButton.styleFrom(
-                      foregroundColor: colors.textSecondary,
-                    ),
-                    child: Text(
-                      context.t('auth.continueAsGuest', null, 'Continue as Guest'),
-                      style: TextStyle(
-                        color: colors.textSecondary,
-                        fontSize: 13,
-                        decoration: TextDecoration.underline,
-                        decorationColor: colors.textSecondary.withOpacity(0.5),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
-          ),
+            TextSpan(
+              text: context.t('auth.landingPolicyConsentJoiner', null, ' and '),
+              style: TextStyle(color: colors.textSecondary.withOpacity(0.85), fontSize: 12.5),
+            ),
+            WidgetSpan(
+              alignment: PlaceholderAlignment.baseline,
+              baseline: TextBaseline.alphabetic,
+              child: GestureDetector(
+                onTap: () => _openLegalUrl('https://voca.study/terms'),
+                child: Text(
+                  context.t('settings.terms', null, 'Terms of Service'),
+                  style: TextStyle(
+                    color: colors.accentPrimary,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ),
+            const TextSpan(text: '.'),
+          ],
         ),
+        textAlign: TextAlign.center,
       ),
     );
   }

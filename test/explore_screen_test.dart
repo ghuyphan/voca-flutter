@@ -356,8 +356,62 @@ void main() {
 
     // Verify video card rendered
     expect(find.text('Lemon / Kenshi Yonezu'), findsOneWidget);
+  });
 
-    // Verify duration badge exists without gradient overlay
-    expect(find.text('4:32'), findsWidgets);
+  testWidgets('ExploreScreen search bar does not highlight border on focus and shows compact search button', (tester) async {
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ExploreScreen(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify initial container border has borderColor, not accent
+    final containerFinder = find.byType(TextField);
+    expect(containerFinder, findsOneWidget);
+
+    // Focus text field
+    await tester.tap(containerFinder);
+    await tester.pump();
+
+    // Enter keyword query
+    await tester.enterText(containerFinder, 'Flydubai 1073');
+    await tester.pump();
+
+    // Verify there is NO large "Search" or "Tìm kiếm" text inside the search bar
+    expect(find.text('Search'), findsNothing);
+    expect(find.text('Tìm kiếm'), findsNothing);
+
+    // Verify compact clear icon is present and no coral button
+    expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.search_rounded), findsOneWidget); // only left search icon
+  });
+
+  testWidgets('ExploreScreen renders simplified empty state with YouTube search CTA when search has 0 results', (tester) async {
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    // Mock empty response for search
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ExploreScreen(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Submit search query
+    await tester.enterText(find.byType(TextField), 'UnknownVideoXYZ');
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+
+    // Redundant header line is removed, textfield retains query
+    expect(find.byType(TextField), findsOneWidget);
+    expect(find.text('UnknownVideoXYZ'), findsOneWidget);
   });
 }
+

@@ -682,55 +682,175 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   Widget _buildVideoPlayerArea({bool isFullscreen = false}) {
     final colors = context.vocaColors;
     if (_playerError != null && _playerError != YoutubeError.none) {
-      return Container(
-        height: isFullscreen ? MediaQuery.sizeOf(context).height : 220,
+      final isRestricted = _playerError == YoutubeError.notEmbeddable ||
+          _playerError == YoutubeError.sameAsNotEmbeddable ||
+          _playerError == YoutubeError.sameAsNotEmbeddable2;
+      final isUnavailable = _playerError == YoutubeError.videoNotFound ||
+          _playerError == YoutubeError.cannotFindVideo;
+
+      final title = isRestricted
+          ? context.t('player.restrictedTitle', null, 'Playback Restricted by Owner')
+          : (isUnavailable
+              ? context.t('player.videoUnavailableTitle', null, 'Video Unavailable')
+              : context.t('player.playbackErrorTitle', null, 'Playback Error'));
+
+      final description = isRestricted
+          ? context.t(
+              'player.embedErrorHelp',
+              null,
+              'YouTube owner disabled third-party embedding for this track. You can open it in YouTube while using Voca for subtitles & vocabulary.',
+            )
+          : (isUnavailable
+              ? context.t(
+                  'player.videoUnavailableHelp',
+                  null,
+                  'This video is private, removed, or not available.',
+                )
+              : context.t(
+                  'player.playbackErrorHelp',
+                  null,
+                  'Unable to load video stream. Please check your connection and retry.',
+                ));
+
+      final icon = isRestricted
+          ? Icons.lock_outline_rounded
+          : (isUnavailable ? Icons.videocam_off_outlined : Icons.wifi_off_rounded);
+
+      final errorWidget = Container(
         color: colors.bgCard,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                Icons.lock_outline_rounded,
+                icon,
                 color: colors.accentTertiary,
-                size: 36,
+                size: 32,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Text(
-                'Playback Restricted by Owner',
+                title,
                 style: TextStyle(
                   color: colors.textPrimary,
                   fontWeight: FontWeight.bold,
-                  fontSize: 14,
+                  fontSize: 13.5,
                 ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 4),
               Text(
-                'YouTube owner disabled third-party embedding for this track. You can open it in YouTube while using Voca for subtitles & vocabulary.',
+                description,
                 style: TextStyle(
                   color: colors.textSecondary,
-                  fontSize: 11.5,
+                  fontSize: 11,
+                  height: 1.3,
                 ),
                 textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 12),
-              ElevatedButton.icon(
-                onPressed: () => launchUrl(
-                  Uri.parse('https://www.youtube.com/watch?v=${widget.videoId}'),
-                  mode: LaunchMode.externalApplication,
-                ),
-                icon: const Icon(Icons.open_in_new, size: 14),
-                label: const Text('Watch on YouTube', style: TextStyle(fontSize: 12.5)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colors.accentPrimary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                alignment: WrapAlignment.center,
+                children: [
+                  if (!isRestricted && !isUnavailable)
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          setState(() {
+                            _playerError = null;
+                          });
+                          _ytController.loadVideoById(videoId: widget.videoId);
+                        },
+                        borderRadius: VocaRadius.roundedSm,
+                        child: Ink(
+                          height: 32,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: colors.accentPrimary,
+                            borderRadius: VocaRadius.roundedSm,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.refresh_rounded, size: 14, color: Colors.white),
+                              const SizedBox(width: 5),
+                              Text(
+                                context.t('player.retry', null, 'Retry'),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => launchUrl(
+                        Uri.parse('https://www.youtube.com/watch?v=${widget.videoId}'),
+                        mode: LaunchMode.externalApplication,
+                      ),
+                      borderRadius: VocaRadius.roundedSm,
+                      child: Ink(
+                        height: 32,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: isRestricted ? colors.accentPrimary : colors.bgHover,
+                          borderRadius: VocaRadius.roundedSm,
+                          border: isRestricted ? null : Border.all(color: colors.borderColor),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.open_in_new_rounded,
+                              size: 13,
+                              color: isRestricted ? Colors.white : colors.textPrimary,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              context.t('player.watchOnYouTube', null, 'Watch on YouTube'),
+                              style: TextStyle(
+                                color: isRestricted ? Colors.white : colors.textPrimary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
         ),
+      );
+
+      if (isFullscreen) {
+        return SizedBox.expand(
+          child: Center(
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: errorWidget,
+            ),
+          ),
+        );
+      }
+
+      return AspectRatio(
+        aspectRatio: 16 / 9,
+        child: errorWidget,
       );
     }
 
@@ -781,15 +901,16 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       final mediaQuery = MediaQuery.of(context);
       final isTablet = mediaQuery.size.width >= VocaTokens.tabletBreakpoint;
       final isFullscreen = _playerController.isFullscreen.value;
+      final isMiniplayer = PlayerCoordinator.instance.isMiniplayer.value;
       final colors = context.vocaColors;
 
       return PopScope(
-        canPop: false,
+        canPop: isMiniplayer,
         onPopInvokedWithResult: (didPop, result) {
           if (didPop) return;
           if (_ytController.value.fullScreenOption.enabled || isFullscreen) {
             _toggleFullscreen();
-          } else {
+          } else if (!isMiniplayer) {
             _handleMinimize();
           }
         },

@@ -158,6 +158,22 @@ class VideoLevelService {
     return map[lang]?[tier] ?? tier.name.toUpperCase();
   }
 
+  /// Returns standard selectable level filter badges for a language
+  static List<String> getAvailableLevelFilters(String lang) {
+    switch (lang.toLowerCase()) {
+      case 'ja':
+        return const ['All', 'N5', 'N4', 'N3', 'N2', 'N1'];
+      case 'zh':
+        return const ['All', 'HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6'];
+      case 'ko':
+        return const ['All', 'TOPIK 1', 'TOPIK 2', 'TOPIK 3', 'TOPIK 4', 'TOPIK 5', 'TOPIK 6'];
+      case 'en':
+        return const ['All', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+      default:
+        return const ['All', 'Beginner', 'Elementary', 'Intermediate', 'Advanced'];
+    }
+  }
+
   /// Detects difficulty level from video title, channel, or metadata
   String? detectFromMetadata(String title, String channel, String lang) {
     final combined = '$title $channel'.trim();

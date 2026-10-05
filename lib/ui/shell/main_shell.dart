@@ -40,12 +40,7 @@ class _MainShellState extends State<MainShell> {
   );
 
   late final List<Widget> _screens = [
-    ExploreScreen(
-      onOpenPlaylists: () {
-        setState(() => _currentIndex = 3);
-        _libraryKey.currentState?.switchToPlaylists();
-      },
-    ),
+    const ExploreScreen(),
     StudyDeckScreen(
       onNavigateToExplore: () => setState(() => _currentIndex = 0),
     ),

@@ -45,7 +45,6 @@ class _ExploreSpotlightBarState extends State<ExploreSpotlightBar>
     } else {
       _focusNode = widget.focusNode!;
     }
-    _focusNode.addListener(_onFocusChange);
     widget.controller.addListener(_onTextChange);
     _checkClipboard();
   }
@@ -72,16 +71,11 @@ class _ExploreSpotlightBarState extends State<ExploreSpotlightBar>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _debounceTimer?.cancel();
-    _focusNode.removeListener(_onFocusChange);
     widget.controller.removeListener(_onTextChange);
     if (_ownsFocusNode) {
       _focusNode.dispose();
     }
     super.dispose();
-  }
-
-  void _onFocusChange() {
-    if (mounted) setState(() {});
   }
 
   void _onTextChange() {
@@ -119,9 +113,7 @@ class _ExploreSpotlightBarState extends State<ExploreSpotlightBar>
     final colors = context.vocaColors;
     final text = widget.controller.text;
     final hasText = text.isNotEmpty;
-    final isFocused = _focusNode.hasFocus;
     final directVideoId = hasText ? YouTubeUrlParser.extractVideoId(text.trim()) : null;
-    final isHighlighted = isFocused || directVideoId != null;
 
     return Container(
       height: 48,
@@ -131,8 +123,8 @@ class _ExploreSpotlightBarState extends State<ExploreSpotlightBar>
         color: colors.bgCard,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: isHighlighted ? colors.accentPrimary : colors.borderColor,
-          width: isHighlighted ? 1.5 : 1.0,
+          color: colors.borderColor,
+          width: 1.0,
         ),
         boxShadow: [
           BoxShadow(
@@ -144,10 +136,10 @@ class _ExploreSpotlightBarState extends State<ExploreSpotlightBar>
       ),
       child: Row(
         children: [
-          // Left Icon: Link icon if video detected, otherwise Search
+          // Left Icon: Link icon if video detected, otherwise Search (subtle, no focus highlight)
           Icon(
             directVideoId != null ? Icons.link_rounded : Icons.search_rounded,
-            color: isHighlighted ? colors.accentPrimary : colors.textMuted,
+            color: directVideoId != null ? colors.accentPrimary : colors.textMuted,
             size: 19,
           ),
           const SizedBox(width: 10),
@@ -179,9 +171,9 @@ class _ExploreSpotlightBarState extends State<ExploreSpotlightBar>
             ),
           ),
 
-          // Right Actions: Clear + Load/Search when non-empty, otherwise Paste
+          // Right Actions: Clear when non-empty, otherwise Paste
           if (hasText) ...[
-            // Clear button with tooltip
+            // Clear button
             Tooltip(
               message: context.t('common.clear', null, 'Clear'),
               child: InkWell(
@@ -198,55 +190,25 @@ class _ExploreSpotlightBarState extends State<ExploreSpotlightBar>
                 ),
               ),
             ),
-            const SizedBox(width: 8),
-
-            // Load / Search primary CTA button
-            ElevatedButton(
-              onPressed: () => _handleSubmit(text),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colors.accentPrimary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                minimumSize: const Size(0, 30),
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    directVideoId != null ? Icons.arrow_forward_rounded : Icons.search_rounded,
-                    size: 13,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    directVideoId != null
-                        ? context.t('player.load', null, 'Load')
-                        : context.t('player.search', null, 'Search'),
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-            ),
           ] else if (_hasClipboardText) ...[
-            // Contextual paste from clipboard button (only shown when clipboard contains text)
+            // Contextual paste from clipboard button
             Tooltip(
               message: context.t('commandPalette.paste', null, 'Paste from clipboard'),
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: _handlePasteFromClipboard,
-                  borderRadius: BorderRadius.circular(15),
+                  borderRadius: BorderRadius.circular(14),
                   child: Container(
-                    width: 30,
-                    height: 30,
+                    width: 28,
+                    height: 28,
                     decoration: BoxDecoration(
                       color: colors.bgSurface,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      Icons.assignment_turned_in_outlined,
-                      size: 16,
+                      Icons.content_paste_rounded,
+                      size: 15,
                       color: colors.textSecondary,
                     ),
                   ),

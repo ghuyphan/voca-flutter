@@ -304,6 +304,27 @@ class AuthService {
     }
   }
 
+  /// Send password reset email via Supabase Auth
+  Future<bool> sendPasswordResetEmail(String email) async {
+    isLoggingIn.value = true;
+    authError.value = null;
+    try {
+      await _client.auth.resetPasswordForEmail(
+        email.trim(),
+        redirectTo: 'voca://reset-callback',
+      );
+      return true;
+    } on AuthException catch (e) {
+      authError.value = e.message;
+      return false;
+    } catch (e) {
+      authError.value = e.toString();
+      return false;
+    } finally {
+      isLoggingIn.value = false;
+    }
+  }
+
   /// Sign Out and purge session cache
   Future<void> signOut() async {
     authError.value = null;

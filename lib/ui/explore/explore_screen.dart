@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:signals_flutter/signals_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../config/voca_theme.dart';
 import '../../models/voca_models.dart';
 import '../../services/i18n_service.dart';
@@ -20,9 +21,7 @@ import 'widgets/video_feed_card.dart';
 
 /// Clean, high-performance, signal-driven Explore Screen matching lingua-tube.
 class ExploreScreen extends StatefulWidget {
-  final VoidCallback? onOpenPlaylists;
-
-  const ExploreScreen({super.key, this.onOpenPlaylists});
+  const ExploreScreen({super.key});
 
   @override
   State<ExploreScreen> createState() => _ExploreScreenState();
@@ -163,18 +162,7 @@ class _ExploreScreenState extends State<ExploreScreen>
   }
 
   List<String> _getLevelsForLanguage(String lang) {
-    switch (lang) {
-      case 'ja':
-        return const ['All', 'N5', 'N4', 'N3', 'N2', 'N1'];
-      case 'zh':
-        return const ['All', 'HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6'];
-      case 'ko':
-        return const ['All', 'TOPIK 1', 'TOPIK 2', 'TOPIK 3', 'TOPIK 4', 'TOPIK 5', 'TOPIK 6'];
-      case 'en':
-        return const ['All', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
-      default:
-        return const ['All', 'Beginner', 'Elementary', 'Intermediate', 'Advanced'];
-    }
+    return VideoLevelService.getAvailableLevelFilters(lang);
   }
 
   String? _mapLevelToTier(String lang, String level) {
@@ -440,57 +428,6 @@ class _ExploreScreenState extends State<ExploreScreen>
     );
   }
 
-  Widget _buildFeedHeader(String searchQuery, VocaColorPalette colors) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-      child: Row(
-        children: [
-          Icon(Icons.search_rounded, size: 19, color: colors.accentPrimary),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              '${context.t('playlist.searchResultsFor', null, 'Results for')} "$searchQuery"',
-              style: TextStyle(
-                color: colors.textPrimary,
-                fontSize: 15.5,
-                fontWeight: FontWeight.bold,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          InkWell(
-            onTap: _clearSearch,
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: colors.bgSurface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: colors.borderColor),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.close_rounded, size: 12, color: colors.textSecondary),
-                  const SizedBox(width: 4),
-                  Text(
-                    context.t('common.clear', null, 'Clear'),
-                    style: TextStyle(
-                      color: colors.textSecondary,
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final colors = context.vocaColors;
@@ -540,11 +477,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                 ),
               ),
 
-              // 2. Search Results Header (when active query)
-              if (searchQuery.isNotEmpty)
-                _buildFeedHeader(searchQuery, colors),
-
-              // 3. Chips Bar: Filter button, All, Playlists, Level chips
+              // 2. Chips Bar: Filter button, All, Playlists, Level chips
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 child: ExploreChipsBar(
@@ -614,21 +547,32 @@ class _ExploreScreenState extends State<ExploreScreen>
                             onRefresh: () => _loadFeed(refresh: true),
                             color: colors.accentPrimary,
                             backgroundColor: colors.bgCard,
-                            child: SingleChildScrollView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              child: Padding(
-                                padding: const EdgeInsets.only(top: 48),
-                                child: VocaEmptyState(
-                                  icon: Icons.search_off_rounded,
-                                  variant: EmptyStateIconVariant.neutral,
-                                  title: context.t('playlist.empty.title', null, 'No playlists found'),
-                                  description: searchQuery.isNotEmpty
-                                      ? 'No playlists match "$searchQuery". Try different keywords or reset filters.'
-                                      : 'No playlists available for the selected level.',
-                                  actionLabel: context.t('explore.resetFilters', null, 'Reset All Filters'),
-                                  onAction: _resetFilters,
-                                ),
-                              ),
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                return SingleChildScrollView(
+                                  physics: const AlwaysScrollableScrollPhysics(),
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      minHeight: constraints.maxHeight,
+                                    ),
+                                    child: Center(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                                        child: VocaEmptyState(
+                                          icon: Icons.search_off_rounded,
+                                          variant: EmptyStateIconVariant.neutral,
+                                          title: context.t('playlist.empty.title', null, 'No playlists found'),
+                                          description: searchQuery.isNotEmpty
+                                              ? 'No playlists match "$searchQuery". Try different keywords or reset filters.'
+                                              : 'No playlists available for the selected level.',
+                                          actionLabel: context.t('explore.resetFilters', null, 'Reset All Filters'),
+                                          onAction: _resetFilters,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                           );
                         }
@@ -679,21 +623,84 @@ class _ExploreScreenState extends State<ExploreScreen>
                           onRefresh: () => _loadFeed(refresh: true),
                           color: colors.accentPrimary,
                           backgroundColor: colors.bgCard,
-                          child: SingleChildScrollView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 48),
-                              child: VocaEmptyState(
-                                icon: Icons.search_off_rounded,
-                                variant: EmptyStateIconVariant.neutral,
-                                title: context.t('explore.noVideos', null, 'No immersion videos found'),
-                                description: searchQuery.isNotEmpty
-                                    ? 'No results for "$searchQuery". Paste a direct YouTube link or try different keywords.'
-                                    : 'No videos found with the selected filters.',
-                                actionLabel: context.t('explore.resetFilters', null, 'Reset All Filters'),
-                                onAction: _resetFilters,
-                              ),
-                            ),
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              return SingleChildScrollView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    minHeight: constraints.maxHeight,
+                                  ),
+                                  child: Center(
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                                      child: searchQuery.isNotEmpty
+                                          ? VocaEmptyState(
+                                              icon: Icons.search_off_rounded,
+                                              variant: EmptyStateIconVariant.neutral,
+                                              title: context.t('playlist.empty.searchTitle', null, 'No matching videos found'),
+                                              description: context.t('playlist.empty.searchHint', null, 'Try different keywords or paste a YouTube link.'),
+                                              actions: Wrap(
+                                                spacing: 8,
+                                                runSpacing: 8,
+                                                alignment: WrapAlignment.center,
+                                                children: [
+                                                  OutlinedButton.icon(
+                                                    onPressed: _clearSearch,
+                                                    icon: Icon(Icons.close_rounded, size: 14, color: colors.textSecondary),
+                                                    label: Text(context.t('common.clear', null, 'Clear search')),
+                                                    style: OutlinedButton.styleFrom(
+                                                      foregroundColor: colors.textPrimary,
+                                                      side: BorderSide(color: colors.borderColor),
+                                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                                    ),
+                                                  ),
+                                                  ElevatedButton.icon(
+                                                    onPressed: () async {
+                                                      final uri = Uri.parse(
+                                                        'https://www.youtube.com/results?search_query=${Uri.encodeComponent(searchQuery)}',
+                                                      );
+                                                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                                    },
+                                                    icon: const Icon(Icons.open_in_new_rounded, size: 14, color: Colors.white),
+                                                    label: Text(context.t('explore.searchOnYouTube', null, 'Search on YouTube')),
+                                                    style: ElevatedButton.styleFrom(
+                                                      backgroundColor: colors.accentPrimary,
+                                                      foregroundColor: Colors.white,
+                                                      elevation: 0,
+                                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            )
+                                          : VocaEmptyState(
+                                              icon: Icons.filter_alt_off_rounded,
+                                              variant: EmptyStateIconVariant.neutral,
+                                              title: context.t('explore.noVideos', null, 'No videos found'),
+                                              description: context.t(
+                                                'explore.noFilterVideosDesc',
+                                                null,
+                                                'No videos found with the selected filters.',
+                                              ),
+                                              actions: OutlinedButton(
+                                                onPressed: _resetFilters,
+                                                style: OutlinedButton.styleFrom(
+                                                  foregroundColor: colors.textPrimary,
+                                                  side: BorderSide(color: colors.borderColor),
+                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                ),
+                                                child: Text(context.t('explore.resetFilters', null, 'Reset All Filters')),
+                                              ),
+                                            ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         );
                       }

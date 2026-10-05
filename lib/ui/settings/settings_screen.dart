@@ -1,31 +1,50 @@
 // lib/ui/settings/settings_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../config/voca_theme.dart';
 import '../../models/voca_models.dart';
-import '../../services/audio_service.dart';
 import '../../services/i18n_service.dart';
 import '../../services/toast_service.dart';
-import '../../services/video_level_service.dart';
 import '../../state/app_state.dart';
 import '../auth/auth_screen.dart';
-import '../onboarding/onboarding_screen.dart';
 import '../profile/edit_profile_screen.dart';
 import '../sheets/voca_bottom_sheet.dart';
 import '../widgets/kikyou_logo.dart';
 import '../widgets/voca_confirm_dialog.dart';
 import '../widgets/voca_option_picker.dart';
-import '../widgets/voca_switch.dart';
 
-/// Rebuilt SettingsScreen conforming strictly to native Inset Grouped layout.
-/// Features 6 modular sections: Account, Learning & Reading Guides, Video Player,
-/// Appearance, Safe Data & Cache pruning, and About & Support.
-class SettingsScreen extends StatelessWidget {
+const String _googleSvg = '''
+<svg viewBox="0 0 24 24" width="20" height="20">
+  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+</svg>
+''';
+
+const String kAppVersion = '1.2.4';
+const String kBuildDate = '2026-09-30';
+
+/// Strict 1:1 mobile port of the canonical Settings Sheet from lingua-tube:
+/// 1. Account Hero Card (Profile row when logged in, or calm Guest Sync card with Google sign-in)
+/// 2. Learning & Display Group (Learning Language, Interface Language, Reading Display)
+/// 3. Appearance Group (Dark Mode native switch with white thumb)
+/// 4. About & Updates Group (Version with What's New modal, Live Check for Updates, Discord Community)
+/// 5. Sign Out Action (when authenticated) & Simplified Clean Footer
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  bool _isCheckingUpdate = false;
+  String _updateStatusText = 'v$kAppVersion';
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +56,7 @@ class SettingsScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: colors.bgPrimary,
         elevation: 0,
-        scrolledUnderElevation: 0,
+        scrolledUnderElevation: 2,
         centerTitle: false,
         leading: canPop
             ? IconButton(
@@ -51,7 +70,7 @@ class SettingsScreen extends StatelessWidget {
           style: TextStyle(
             color: colors.textPrimary,
             fontSize: 20,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
             letterSpacing: -0.3,
           ),
         ),
@@ -69,54 +88,42 @@ class SettingsScreen extends StatelessWidget {
           final isDarkMode = AppState.instance.isDarkMode;
 
           return ListView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.only(bottom: 40),
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.only(top: 8, bottom: 48),
             children: [
-              // SECTION 1: ACCOUNT & PROFILE
-              _buildSectionHeader(
-                context.t('profile.title', null, 'Account & Profile'),
-                colors,
-              ),
+              // 1. TOP ACCOUNT HERO CARD
               _buildAccountCard(context, colors, currentUser, userProfile),
 
-              // SECTION 2: LEARNING & READING GUIDES
+              // 2. LEARNING & DISPLAY GROUP
               _buildSectionHeader(
-                context.t('settings.learningSection', null, 'Learning & Reading Guides'),
+                context.t('settings.learningSection', null, 'LEARNING & DISPLAY'),
                 colors,
               ),
-              _buildLearningGuidesGroup(context, colors, settings, targetLang),
+              _buildLearningDisplayGroup(context, colors, settings, targetLang),
 
-              // SECTION 3: VIDEO PLAYER & SUBTITLES
+              // 3. APPEARANCE GROUP
               _buildSectionHeader(
-                context.t('settings.playerSubtitles', null, 'Video Player & Subtitles'),
-                colors,
-              ),
-              _buildPlayerSubtitlesGroup(context, colors, settings),
-
-              // SECTION 4: APPEARANCE & INTERFACE
-              _buildSectionHeader(
-                context.t('settings.appearanceInterface', null, 'Appearance & Interface'),
+                context.t('settings.appearance', null, 'APPEARANCE'),
                 colors,
               ),
               _buildAppearanceGroup(context, colors, isDarkMode),
 
-              // SECTION 5: DATA & STORAGE
+              // 4. ABOUT & UPDATES GROUP
               _buildSectionHeader(
-                context.t('settings.dataStorage', null, 'Data & Storage'),
-                colors,
-              ),
-              _buildDataCacheGroup(context, colors),
-
-              // SECTION 6: ABOUT & SUPPORT
-              _buildSectionHeader(
-                context.t('settings.aboutSupport', null, 'About & Support'),
+                context.t('settings.about', null, 'ABOUT & UPDATES'),
                 colors,
               ),
               _buildAboutGroup(context, colors),
 
-              const SizedBox(height: 28),
+              // 5. SIGN OUT ACTION (When authenticated)
+              if (currentUser != null) ...[
+                const SizedBox(height: 16),
+                _buildSignOutTile(context, colors),
+              ],
 
-              // Branded App Footer
+              const SizedBox(height: 32),
+
+              // 6. SIMPLIFIED CLEAN FOOTER
               _buildAppFooter(colors),
             ],
           );
@@ -126,7 +133,7 @@ class SettingsScreen extends StatelessWidget {
   }
 
   // ===========================================================================
-  // SECTION 1: ACCOUNT & PROFILE
+  // 1. TOP ACCOUNT HERO CARD
   // ===========================================================================
 
   Widget _buildAccountCard(
@@ -138,10 +145,10 @@ class SettingsScreen extends StatelessWidget {
     final isAuthenticated = currentUser != null;
 
     if (!isAuthenticated) {
-      // Guest Mode: Prominent Kikyou card encouraging sign in
+      // Guest Mode: Clean banner matching lingua-tube account-guest-banner
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 16),
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: colors.bgCard,
           borderRadius: BorderRadius.circular(16),
@@ -149,7 +156,7 @@ class SettingsScreen extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(colors.isDark ? 0.25 : 0.04),
-              blurRadius: 10,
+              blurRadius: 8,
               offset: const Offset(0, 2),
             ),
           ],
@@ -160,39 +167,39 @@ class SettingsScreen extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: 36,
+                  height: 36,
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: colors.accentPrimarySoft,
-                    border: Border.all(
-                      color: colors.accentPrimary.withOpacity(0.25),
-                      width: 1.5,
-                    ),
+                    color: colors.accentPrimary.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Center(
-                    child: KikyouLogo(size: 26),
+                  child: Center(
+                    child: Icon(Icons.cloud_outlined, color: colors.accentPrimary, size: 20),
                   ),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        context.t('settings.signInVoca', null, 'Sign In to Voca'),
+                        context.t('settings.syncVocab', null, 'Sync vocabulary across devices'),
                         style: TextStyle(
                           color: colors.textPrimary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        context.t('settings.signInVocaHint', null, 'Sync across devices & keep your streak safe'),
+                        context.t(
+                          'settings.syncVocabHint',
+                          null,
+                          'Sign in to save your flashcards, streak, and history',
+                        ),
                         style: TextStyle(
-                          color: colors.textSecondary,
-                          fontSize: 12.5,
+                          color: colors.textMuted,
+                          fontSize: 12,
                           height: 1.3,
                         ),
                       ),
@@ -201,27 +208,40 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             SizedBox(
               width: double.infinity,
-              height: 40,
-              child: ElevatedButton(
+              height: 42,
+              child: OutlinedButton(
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const AuthScreen()),
                   );
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colors.accentPrimary,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
+                style: OutlinedButton.styleFrom(
+                  backgroundColor: colors.bgSurface,
+                  foregroundColor: colors.textPrimary,
+                  side: BorderSide(color: colors.borderColor),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  elevation: 0,
                 ),
-                child: Text(
-                  context.t('settings.signInRegister', null, 'Sign In / Register'),
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SvgPicture.string(_googleSvg, width: 18, height: 18),
+                    const SizedBox(width: 10),
+                    Text(
+                      context.t('settings.signInGoogle', null, 'Continue with Google'),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -230,7 +250,7 @@ class SettingsScreen extends StatelessWidget {
       );
     }
 
-    // Logged In User: Inset Grouped profile row + Sign Out action
+    // Logged In: Tappable Profile Tile matching lingua-tube account-user-row
     final meta = currentUser.userMetadata;
     final displayName = profile?.name ??
         (meta?['name'] ?? meta?['full_name']) as String? ??
@@ -242,180 +262,151 @@ class SettingsScreen extends StatelessWidget {
     final isPro = tier == 'PRO';
     final isFounder = tier == 'FOUNDER' || tier == 'PREMIUM';
 
-    return _buildGroupContainer(
-      colors: colors,
-      children: [
-        // Profile Info Row (Tap pushes EditProfileScreen)
-        InkWell(
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const EditProfileScreen()),
-            );
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Stack(
-                  alignment: Alignment.bottomRight,
-                  children: [
-                    VocaAvatarWidget(
-                      avatarUrl: avatarUrl,
-                      size: 52,
-                      border: Border.all(color: colors.accentPrimary, width: 2),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: colors.bgCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(colors.isDark ? 0.2 : 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Stack(
+                alignment: Alignment.bottomRight,
+                children: [
+                  VocaAvatarWidget(
+                    avatarUrl: avatarUrl,
+                    size: 46,
+                    border: Border.all(color: colors.borderColor, width: 1.5),
+                  ),
+                  Container(
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: colors.accentPrimary,
+                      border: Border.all(color: colors.bgCard, width: 1.5),
                     ),
-                    Container(
-                      width: 18,
-                      height: 18,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: colors.accentPrimary,
-                        border: Border.all(color: colors.bgCard, width: 1.5),
+                    child: const Icon(
+                      Icons.edit_rounded,
+                      size: 9,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            displayName,
+                            style: TextStyle(
+                              color: colors.textPrimary,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (countryCode != null && countryCode.isNotEmpty) ...[
+                          const SizedBox(width: 6),
+                          VocaFlagWidget(countryCode: countryCode, size: 14),
+                        ],
+                        const SizedBox(width: 8),
+                        _buildTierChip(tier, isPro: isPro, isFounder: isFounder, colors: colors),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      email,
+                      style: TextStyle(
+                        color: colors.textMuted,
+                        fontSize: 12,
                       ),
-                      child: const Icon(
-                        Icons.edit_rounded,
-                        size: 10,
-                        color: Colors.white,
-                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              displayName,
-                              style: TextStyle(
-                                color: colors.textPrimary,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (countryCode != null && countryCode.isNotEmpty) ...[
-                            const SizedBox(width: 6),
-                            VocaFlagWidget(countryCode: countryCode, size: 15),
-                          ],
-                          const SizedBox(width: 8),
-                          _buildTierBadge(tier, isPro: isPro, isFounder: isFounder, colors: colors),
-                        ],
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        email,
-                        style: TextStyle(
-                          color: colors.textSecondary,
-                          fontSize: 12.5,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: colors.textMuted,
-                  size: 20,
-                ),
-              ],
-            ),
+              ),
+              IconButton(
+                icon: Icon(Icons.logout_rounded, color: colors.error, size: 20),
+                tooltip: context.t('header.signOut', null, 'Sign Out'),
+                onPressed: () => _showSignOutDialog(context, colors),
+              ),
+            ],
           ),
         ),
-
-        _buildDivider(colors),
-
-        // Sign Out Action Tile
-        _buildActionTile(
-          context: context,
-          icon: Icons.logout_rounded,
-          iconColor: colors.error,
-          title: context.t('profile.signOut', null, 'Sign Out'),
-          titleColor: colors.error,
-          colors: colors,
-          showChevron: false,
-          onTap: () => _handleSignOut(context),
-        ),
-      ],
+      ),
     );
   }
 
-  Widget _buildTierBadge(
+  Widget _buildTierChip(
     String tier, {
     required bool isPro,
     required bool isFounder,
     required VocaColorPalette colors,
   }) {
-    Color badgeBg = colors.bgSurface;
-    Color badgeBorder = colors.borderColorLight;
-    Color badgeText = colors.textMuted;
+    Color chipBg = colors.bgSurface;
+    Color chipBorder = colors.borderColorLight;
+    Color chipText = colors.textMuted;
 
     if (isFounder) {
-      badgeBg = colors.accentTertiary.withOpacity(0.16);
-      badgeBorder = colors.accentTertiary.withOpacity(0.35);
-      badgeText = colors.accentTertiary;
+      chipBg = colors.accentTertiary.withOpacity(0.18);
+      chipBorder = colors.accentTertiary.withOpacity(0.4);
+      chipText = colors.accentTertiary;
     } else if (isPro) {
-      badgeBg = colors.accentSecondarySoft;
-      badgeBorder = colors.accentSecondary.withOpacity(0.35);
-      badgeText = colors.accentSecondary;
+      chipBg = colors.accentSecondarySoft;
+      chipBorder = colors.accentSecondary.withOpacity(0.4);
+      chipText = colors.accentSecondary;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
-        color: badgeBg,
+        color: chipBg,
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: badgeBorder),
+        border: Border.all(color: chipBorder),
       ),
       child: Text(
         tier,
         style: TextStyle(
-          fontSize: 9.5,
+          fontSize: 9,
           fontWeight: FontWeight.w800,
-          color: badgeText,
+          color: chipText,
           letterSpacing: 0.5,
         ),
       ),
     );
   }
 
-  Future<void> _handleSignOut(BuildContext context) async {
-    final confirmed = await showVocaConfirmDialog(
-      context: context,
-      title: context.t('profile.signOut', null, 'Sign Out'),
-      message: context.t(
-        'profile.signOutConfirm',
-        null,
-        'Are you sure you want to sign out? Your offline progress will remain saved on this device.',
-      ),
-      confirmText: context.t('profile.signOut', null, 'Sign Out'),
-      variant: ConfirmDialogVariant.danger,
-    );
-
-    if (confirmed == true) {
-      await AppState.instance.supabaseService.signOut();
-      if (context.mounted) {
-        ToastService.show(
-          context,
-          context.t('auth.signedOut', null, 'Signed out successfully'),
-          type: ToastType.info,
-        );
-      }
-    }
-  }
-
   // ===========================================================================
-  // SECTION 2: LEARNING & READING GUIDES
+  // 2. LEARNING & DISPLAY GROUP (Learning Language & UI Language next to each other)
   // ===========================================================================
 
-  Widget _buildLearningGuidesGroup(
+  Widget _buildLearningDisplayGroup(
     BuildContext context,
     VocaColorPalette colors,
     UserSettings settings,
@@ -424,94 +415,65 @@ class SettingsScreen extends StatelessWidget {
     final langFlag = _getLanguageCountryCode(targetLang);
     final langName = _getLanguageDisplayName(targetLang);
 
+    final i18n = I18nService.instance;
+    final currentUILang = i18n.currentLanguageInfo;
+    final uiLangCountryCode = _getLanguageCountryCode(currentUILang.code);
+
     // Dynamic Reading Guide Label based on active learning language
     final String readingGuideTitle;
-    final String readingGuideDesc;
     switch (targetLang) {
       case 'ja':
-        readingGuideTitle = context.t('settings.furiganaRuby', null, 'Furigana & Ruby');
-        readingGuideDesc = 'Japanese phonetic furigana annotations';
+        readingGuideTitle = context.t('settings.furiganaAndRuby', null, 'Furigana & Ruby');
         break;
       case 'zh':
         readingGuideTitle = context.t('settings.pinyinGuides', null, 'Pinyin Guides');
-        readingGuideDesc = 'Chinese pinyin with tone mark guides';
         break;
       case 'ko':
         readingGuideTitle = context.t('settings.romajiGuides', null, 'Romaji Guides');
-        readingGuideDesc = 'Korean latin romanization guides';
         break;
       case 'en':
       default:
         readingGuideTitle = context.t('settings.phonetics', null, 'Pronunciation Guides');
-        readingGuideDesc = 'IPA phonetics and stress mark guides';
         break;
     }
 
     final readingModeLabel = _getRubyModeLabel(context, settings.rubyMode);
-    final nativeLangCode = settings.nativeLanguage;
-    final nativeLangName = _getLanguageDisplayName(nativeLangCode);
-    final nativeLangFlag = _getLanguageCountryCode(nativeLangCode);
 
-    return _buildGroupContainer(
+    return _buildCardGroup(
       colors: colors,
       children: [
-        // 1. Target Learning Language
-        _buildActionTile(
+        // 1. Target Learning Language (Circle Flag Leading)
+        _buildSettingTile(
           context: context,
-          leadingWidget: VocaFlagWidget(countryCode: langFlag, size: 22),
+          leading: _buildFlagLeading(langFlag),
           title: context.t('settings.learningLanguage', null, 'Learning Language'),
-          value: langName,
+          valueText: langName,
           colors: colors,
           onTap: () => _pickLearningLanguage(context, targetLang),
         ),
 
         _buildDivider(colors),
 
-        // 2. Dynamic Reading Guides (Furigana / Pinyin / Romaji)
-        _buildActionTile(
+        // 2. App Interface Language (Circle Flag Leading - right next to Learning Language!)
+        _buildSettingTile(
           context: context,
-          icon: Icons.subtitles_rounded,
-          iconColor: colors.colorGrammar,
+          leading: _buildFlagLeading(uiLangCountryCode),
+          title: context.t('settings.interfaceLanguage', null, 'Interface Language'),
+          valueText: currentUILang.nativeName,
+          colors: colors,
+          onTap: () => _pickUILanguage(context),
+        ),
+
+        _buildDivider(colors),
+
+        // 3. Reading Display Mode (Furigana / Pinyin / Romaji / Off)
+        _buildSettingTile(
+          context: context,
+          leading: _buildIconBox(Icons.subtitles_outlined, colors),
           title: readingGuideTitle,
-          subtitle: readingGuideDesc,
-          value: readingModeLabel,
+          valueText: readingModeLabel,
           colors: colors,
           onTap: () => _pickRubyMode(context, settings.rubyMode, readingGuideTitle),
-        ),
-
-        _buildDivider(colors),
-
-        // 3. Native / Subtitle Target Translation Language
-        _buildActionTile(
-          context: context,
-          leadingWidget: VocaFlagWidget(countryCode: nativeLangFlag, size: 22),
-          title: context.t('popup.translationLang', null, 'Translation Language'),
-          subtitle: 'Dual subtitles and dictionary target definitions',
-          value: nativeLangName,
-          colors: colors,
-          onTap: () => _pickNativeLanguage(context, nativeLangCode),
-        ),
-
-        _buildDivider(colors),
-
-        // 4. Replay Onboarding Wizard (Hunter Prologue)
-        _buildActionTile(
-          context: context,
-          icon: Icons.auto_awesome_rounded,
-          iconColor: colors.accentPrimary,
-          title: context.t('onboarding.replayTour', null, 'Replay Hunter Prologue'),
-          subtitle: context.t('onboarding.replayTourDesc', null, 'Calibrate language, level, and companion guide'),
-          colors: colors,
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => OnboardingScreen(
-                  isReplay: true,
-                  onFinish: () => Navigator.of(context).pop(),
-                ),
-              ),
-            );
-          },
         ),
       ],
     );
@@ -522,30 +484,30 @@ class SettingsScreen extends StatelessWidget {
       context: context,
       title: context.t('settings.learningLanguage', null, 'Learning Language'),
       selectedValue: currentLang,
-      options: const [
+      options: [
         OptionItem(
           value: 'ja',
           label: '日本語',
-          example: 'Japanese',
-          leading: VocaFlagWidget(countryCode: 'jp', size: 22),
+          example: context.t('settings.japanese', null, 'Japanese'),
+          leading: const VocaFlagWidget(countryCode: 'jp', size: 22),
         ),
         OptionItem(
           value: 'zh',
           label: '中文',
-          example: 'Chinese (Mandarin)',
-          leading: VocaFlagWidget(countryCode: 'cn', size: 22),
+          example: context.t('settings.chinese', null, 'Chinese (Mandarin)'),
+          leading: const VocaFlagWidget(countryCode: 'cn', size: 22),
         ),
         OptionItem(
           value: 'ko',
           label: '한국어',
-          example: 'Korean',
-          leading: VocaFlagWidget(countryCode: 'kr', size: 22),
+          example: context.t('settings.korean', null, 'Korean'),
+          leading: const VocaFlagWidget(countryCode: 'kr', size: 22),
         ),
         OptionItem(
           value: 'en',
           label: 'English',
-          example: 'English',
-          leading: VocaFlagWidget(countryCode: 'us', size: 22),
+          example: context.t('settings.english', null, 'English'),
+          leading: const VocaFlagWidget(countryCode: 'us', size: 22),
         ),
       ],
     );
@@ -568,19 +530,19 @@ class SettingsScreen extends StatelessWidget {
         OptionItem(
           value: RubyDisplayMode.always.name,
           label: context.t('settings.alwaysShow', null, 'Always Show'),
-          example: 'Display reading annotations above all words',
+          example: context.t('settings.alwaysShowDesc', null, 'Display reading annotations above all words'),
           iconData: Icons.visibility_rounded,
         ),
         OptionItem(
           value: RubyDisplayMode.tap.name,
           label: context.t('settings.onTapOnly', null, 'On Tap Only'),
-          example: 'Reveal pronunciation when tapping a word',
+          example: context.t('settings.onTapOnlyDesc', null, 'Reveal pronunciation when tapping a word'),
           iconData: Icons.touch_app_rounded,
         ),
         OptionItem(
           value: RubyDisplayMode.never.name,
           label: context.t('settings.off', null, 'Off'),
-          example: 'Hide all phonetic guides for full immersion',
+          example: context.t('settings.offDesc', null, 'Hide all phonetic guides for full immersion'),
           iconData: Icons.visibility_off_rounded,
         ),
       ],
@@ -595,221 +557,18 @@ class SettingsScreen extends StatelessWidget {
     }
   }
 
-  Future<void> _pickNativeLanguage(BuildContext context, String currentLang) async {
-    final selected = await showVocaOptionPicker(
-      context: context,
-      title: context.t('settings.nativeLanguage', null, 'Translation Language'),
-      selectedValue: currentLang,
-      options: const [
-        OptionItem(
-          value: 'en',
-          label: 'English',
-          example: 'English',
-          leading: VocaFlagWidget(countryCode: 'us', size: 22),
-        ),
-        OptionItem(
-          value: 'vi',
-          label: 'Tiếng Việt',
-          example: 'Vietnamese',
-          leading: VocaFlagWidget(countryCode: 'vn', size: 22),
-        ),
-        OptionItem(
-          value: 'zh',
-          label: '中文',
-          example: 'Chinese',
-          leading: VocaFlagWidget(countryCode: 'cn', size: 22),
-        ),
-        OptionItem(
-          value: 'ja',
-          label: '日本語',
-          example: 'Japanese',
-          leading: VocaFlagWidget(countryCode: 'jp', size: 22),
-        ),
-        OptionItem(
-          value: 'ko',
-          label: '한국어',
-          example: 'Korean',
-          leading: VocaFlagWidget(countryCode: 'kr', size: 22),
-        ),
-      ],
-    );
-
-    if (selected != null) {
-      AppState.instance.setNativeLanguage(selected);
-    }
-  }
-
-  // ===========================================================================
-  // SECTION 3: VIDEO PLAYER & SUBTITLES
-  // ===========================================================================
-
-  Widget _buildPlayerSubtitlesGroup(
-    BuildContext context,
-    VocaColorPalette colors,
-    UserSettings settings,
-  ) {
-    final sizeLabel = _getSubtitleSizeLabel(context, settings.subtitleSize);
-
-    return _buildGroupContainer(
-      colors: colors,
-      children: [
-        // 1. Dual Subtitles Default Toggle (VocaSwitch)
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-          child: VocaSwitch(
-            value: settings.showDualSubtitles,
-            leading: _buildIconBox(Icons.subtitles_outlined, colors.accentPrimary, colors),
-            label: context.t('settings.dualSubtitles', null, 'Dual Subtitles'),
-            subtitle: context.t(
-              'settings.dualSubtitlesDesc',
-              null,
-              'Show translation alongside original subtitles',
-            ),
-            onChanged: (val) {
-              AppState.instance.updateUserSettings(settings.copyWith(showDualSubtitles: val));
-            },
-          ),
-        ),
-
-        _buildDivider(colors),
-
-        // 2. Subtitle Font Size Selector
-        _buildActionTile(
-          context: context,
-          icon: Icons.format_size_rounded,
-          iconColor: colors.accentSecondary,
-          title: context.t('settings.subtitleFontSize', null, 'Subtitle Font Size'),
-          subtitle: context.t('settings.subtitleSizeDesc', null, 'Adjust text size on video player'),
-          value: sizeLabel,
-          colors: colors,
-          onTap: () => _pickSubtitleSize(context, settings.subtitleSize),
-        ),
-
-        _buildDivider(colors),
-
-        // 3. Auto-Pause on Dictionary Lookup Toggle (VocaSwitch)
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-          child: VocaSwitch(
-            value: settings.autoPauseOnLookup,
-            leading: _buildIconBox(Icons.pause_circle_outline_rounded, colors.colorDiamond, colors),
-            label: context.t('settings.autoPauseOnLookup', null, 'Auto-pause on Lookup'),
-            subtitle: context.t(
-              'settings.autoPauseDesc',
-              null,
-              'Pause video automatically when tapping words',
-            ),
-            onChanged: (val) {
-              AppState.instance.setAutoPauseOnLookup(val);
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _pickSubtitleSize(BuildContext context, SubtitleSize currentSize) async {
-    final selected = await showVocaOptionPicker(
-      context: context,
-      title: context.t('settings.subtitleSize', null, 'Subtitle Font Size'),
-      selectedValue: currentSize.name,
-      options: [
-        OptionItem(
-          value: SubtitleSize.small.name,
-          label: context.t('settings.sizeSmall', null, 'Small'),
-          example: '14px compact captions',
-          iconData: Icons.text_fields_rounded,
-        ),
-        OptionItem(
-          value: SubtitleSize.medium.name,
-          label: context.t('settings.sizeMedium', null, 'Medium'),
-          example: '16px standard readability (recommended)',
-          iconData: Icons.text_fields_rounded,
-        ),
-        OptionItem(
-          value: SubtitleSize.large.name,
-          label: context.t('settings.sizeLarge', null, 'Large'),
-          example: '19px prominent captions',
-          iconData: Icons.text_fields_rounded,
-        ),
-      ],
-    );
-
-    if (selected != null) {
-      final size = SubtitleSize.values.firstWhere(
-        (e) => e.name == selected,
-        orElse: () => SubtitleSize.medium,
-      );
-      AppState.instance.setSubtitleSize(size);
-    }
-  }
-
-  // ===========================================================================
-  // SECTION 4: APPEARANCE & INTERFACE
-  // ===========================================================================
-
-  Widget _buildAppearanceGroup(
-    BuildContext context,
-    VocaColorPalette colors,
-    bool isDarkMode,
-  ) {
-    final i18n = I18nService.instance;
-    final currentUILang = i18n.currentLanguageInfo;
-
-    return _buildGroupContainer(
-      colors: colors,
-      children: [
-        // 1. Dark Mode Toggle (Moon / Sun with VocaSwitch)
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-          child: VocaSwitch(
-            value: isDarkMode,
-            leading: _buildIconBox(
-              isDarkMode ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
-              isDarkMode ? colors.accentSecondary : colors.accentTertiary,
-              colors,
-            ),
-            label: context.t('settings.darkMode', null, 'Dark Mode'),
-            subtitle: context.t(
-              'settings.darkModeDesc',
-              null,
-              'Toggle between Rich Obsidian and Crisp Porcelain',
-            ),
-            onChanged: (val) {
-              AppState.instance.setThemeMode(val ? 'dark' : 'light');
-            },
-          ),
-        ),
-
-        _buildDivider(colors),
-
-        // 2. App Interface Language Picker
-        _buildActionTile(
-          context: context,
-          icon: Icons.language_rounded,
-          iconColor: colors.accentPrimary,
-          title: context.t('settings.appInterfaceLanguage', null, 'App Interface Language'),
-          subtitle: 'UI buttons, dialogs, and navigation texts',
-          value: '${currentUILang.flag} ${currentUILang.nativeName}',
-          colors: colors,
-          onTap: () => _pickUILanguage(context),
-        ),
-      ],
-    );
-  }
-
   Future<void> _pickUILanguage(BuildContext context) async {
     final i18n = I18nService.instance;
     final selected = await showVocaOptionPicker(
       context: context,
-      title: context.t('settings.appInterfaceLanguage', null, 'App Interface Language'),
+      title: context.t('settings.interfaceLanguage', null, 'Interface Language'),
       selectedValue: i18n.currentLanguage.value,
       options: i18n.availableLanguages.map((l) {
         return OptionItem(
           value: l.code,
           label: l.nativeName,
           example: l.name,
-          icon: l.flag,
+          leading: VocaFlagWidget(countryCode: _getLanguageCountryCode(l.code), size: 22),
         );
       }).toList(),
     );
@@ -820,194 +579,193 @@ class SettingsScreen extends StatelessWidget {
   }
 
   // ===========================================================================
-  // SECTION 5: DATA & CACHE PRUNING
+  // 3. APPEARANCE GROUP (Dark Mode Switch)
   // ===========================================================================
 
-  Widget _buildDataCacheGroup(BuildContext context, VocaColorPalette colors) {
-    return _buildGroupContainer(
+  Widget _buildAppearanceGroup(
+    BuildContext context,
+    VocaColorPalette colors,
+    bool isDarkMode,
+  ) {
+    return _buildCardGroup(
       colors: colors,
       children: [
-        _buildActionTile(
+        _buildSwitchTile(
           context: context,
-          icon: Icons.cleaning_services_rounded,
-          iconColor: colors.colorFire,
-          title: context.t('settings.clearCache', null, 'Clear Subtitle & Dict Cache'),
-          subtitle: context.t(
-            'settings.clearCacheDesc',
-            null,
-            'Free temporary subtitles & dictionary cache safely',
+          leading: _buildIconBox(
+            isDarkMode ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
+            colors,
           ),
+          title: context.t('settings.darkMode', null, 'Dark Mode'),
+          value: isDarkMode,
           colors: colors,
-          onTap: () => _handleClearCache(context),
+          onChanged: (val) {
+            AppState.instance.setThemeMode(val ? 'dark' : 'light');
+          },
         ),
       ],
     );
   }
 
-  Future<void> _handleClearCache(BuildContext context) async {
-    final confirmed = await showVocaConfirmDialog(
-      context: context,
-      title: context.t('settings.clearCache', null, 'Clear Subtitle & Dict Cache'),
-      message: context.t(
-        'settings.clearCacheConfirm',
-        null,
-        'This will prune temporary subtitles and dictionary queries. Your saved vocabulary, study decks, and watch history will NEVER be affected.',
-      ),
-      confirmText: context.t('common.clear', null, 'Clear Cache'),
-      variant: ConfirmDialogVariant.danger,
-    );
-
-    if (confirmed == true) {
-      try {
-        // 1. Clear in-memory service caches
-        AudioService.instance.clearCache();
-        VideoLevelService.instance.clearCache();
-
-        // 2. Prune only temporary cache keys from SharedPreferences
-        final prefs = await SharedPreferences.getInstance();
-        final keys = prefs.getKeys().where(
-          (k) => k.startsWith('cache_') || k.startsWith('voca_sub_') || k.startsWith('voca_dict_'),
-        ).toList();
-        for (final k in keys) {
-          await prefs.remove(k);
-        }
-
-        if (context.mounted) {
-          ToastService.show(
-            context,
-            context.t('settings.cacheCleared', null, 'Subtitle & dictionary cache cleared safely.'),
-            type: ToastType.success,
-          );
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ToastService.show(context, 'Cache clear error: $e', type: ToastType.error);
-        }
-      }
-    }
-  }
-
   // ===========================================================================
-  // SECTION 6: ABOUT & SUPPORT
+  // 4. ABOUT & UPDATES GROUP (Real Version, Live Updates, Discord)
   // ===========================================================================
 
   Widget _buildAboutGroup(BuildContext context, VocaColorPalette colors) {
-    return _buildGroupContainer(
+    return _buildCardGroup(
       colors: colors,
       children: [
-        // App Version
-        _buildActionTile(
+        // 1. Version & Release Notes Modal
+        _buildSettingTile(
           context: context,
-          icon: Icons.info_outline_rounded,
-          iconColor: colors.textSecondary,
-          title: context.t('settings.appVersionLabel', null, 'Version'),
-          value: '1.0.0+1 (Voca Mobile)',
+          leading: _buildIconBox(Icons.info_outline_rounded, colors),
+          title: context.t('settings.appVersion', null, 'Version'),
+          valueText: 'v$kAppVersion',
+          trailingWidget: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: colors.accentPrimary.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.star_rounded, size: 12, color: colors.accentPrimary),
+                const SizedBox(width: 4),
+                Text(
+                  context.t('settings.whatsNew', null, "What's New"),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: colors.accentPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
           showChevron: false,
-          colors: colors,
-        ),
-
-        _buildDivider(colors),
-
-        // What's New Release Notes Dialog
-        _buildActionTile(
-          context: context,
-          icon: Icons.star_outline_rounded,
-          iconColor: colors.accentTertiary,
-          title: context.t('settings.whatsNew', null, "What's New"),
-          subtitle: 'Recent updates & feature highlights',
           colors: colors,
           onTap: () => _showWhatsNewDialog(context),
         ),
 
         _buildDivider(colors),
 
-        // Community & Discord
-        _buildActionTile(
+        // 2. Real Live Check for Updates (Queries Cloudflare API)
+        _buildSettingTile(
           context: context,
-          icon: Icons.chat_bubble_outline_rounded,
-          iconColor: colors.accentSecondary,
-          title: 'Discord Community & Feedback',
-          subtitle: 'Connect with language learners & team',
-          trailingWidget: Icon(Icons.open_in_new_rounded, size: 16, color: colors.textMuted),
+          leading: _buildIconBox(
+            _isCheckingUpdate ? Icons.hourglass_top_rounded : Icons.refresh_rounded,
+            colors,
+          ),
+          title: context.t('settings.checkForUpdates', null, 'Check for Updates'),
+          valueText: _isCheckingUpdate ? context.t('settings.checkingUpdates', null, 'Checking...') : _updateStatusText,
+          showChevron: false,
           colors: colors,
-          onTap: () => _openExternalUrl('https://discord.gg/voca'),
+          onTap: _isCheckingUpdate ? null : _handleCheckForUpdates,
         ),
 
         _buildDivider(colors),
 
-        // Privacy Policy
-        _buildActionTile(
+        // 3. Discord Community & Feedback
+        _buildSettingTile(
           context: context,
-          icon: Icons.privacy_tip_outlined,
-          iconColor: colors.textSecondary,
-          title: 'Privacy Policy',
-          trailingWidget: Icon(Icons.open_in_new_rounded, size: 16, color: colors.textMuted),
+          leading: _buildIconBox(Icons.forum_outlined, colors),
+          title: context.t('settings.discordCommunity', null, 'Discord Community'),
+          trailingIcon: Icons.open_in_new_rounded,
           colors: colors,
-          onTap: () => _openExternalUrl('https://voca.study/privacy'),
-        ),
-
-        _buildDivider(colors),
-
-        // Terms of Service
-        _buildActionTile(
-          context: context,
-          icon: Icons.description_outlined,
-          iconColor: colors.textSecondary,
-          title: 'Terms of Service',
-          trailingWidget: Icon(Icons.open_in_new_rounded, size: 16, color: colors.textMuted),
-          colors: colors,
-          onTap: () => _openExternalUrl('https://voca.study/terms'),
+          onTap: () async {
+            final uri = Uri.parse('https://discord.gg/voca');
+            if (await canLaunchUrl(uri)) {
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
+            }
+          },
         ),
       ],
     );
   }
 
+  Future<void> _handleCheckForUpdates() async {
+    setState(() => _isCheckingUpdate = true);
+    try {
+      final info = await AppState.instance.apiClient.fetchVersionInfo();
+      if (!mounted) return;
+
+      final serverVersion = (info?['version'] as String?) ?? kAppVersion;
+      setState(() {
+        _isCheckingUpdate = false;
+        _updateStatusText = context.t('settings.upToDateVersion', {'version': serverVersion}, 'v$serverVersion (Up to date)');
+      });
+
+      ToastService.show(
+        context,
+        context.t('settings.latestVersionToast', {'version': serverVersion}, 'You are running the latest version (v$serverVersion)'),
+        type: ToastType.info,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isCheckingUpdate = false;
+        _updateStatusText = context.t('settings.upToDateVersion', {'version': kAppVersion}, 'v$kAppVersion (Up to date)');
+      });
+      ToastService.show(
+        context,
+        context.t('settings.latestVersionToast', {'version': kAppVersion}, 'You are running the latest version (v$kAppVersion)'),
+        type: ToastType.info,
+      );
+    }
+  }
+
   void _showWhatsNewDialog(BuildContext context) {
     final colors = context.vocaColors;
-
     showVocaBottomSheet(
       context: context,
       title: context.t('settings.whatsNew', null, "What's New"),
-      subtitle: 'Version 1.0.0+1 (Voca Mobile)',
+      subtitle: '${context.t('settings.appVersion', null, 'Version')} $kAppVersion • $kBuildDate',
       builder: (ctx) {
         return SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildReleaseHighlight(
                 icon: Icons.bolt_rounded,
-                iconColor: colors.accentTertiary,
-                title: 'Buttery-Smooth Playback',
-                description:
-                    'Video controls and transcript scrolling are now noticeably faster, lighter on your battery, and run at a steady 60 frames per second.',
+                title: context.t('settings.whatsNewSmoothTitle', null, 'Buttery-Smooth Playback'),
+                description: context.t(
+                  'settings.whatsNewSmoothDesc',
+                  null,
+                  'Video controls and transcript scrolling run noticeably faster at a steady 60 frames per second.',
+                ),
                 colors: colors,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               _buildReleaseHighlight(
                 icon: Icons.cloud_done_rounded,
-                iconColor: colors.colorDiamond,
-                title: 'Rock-Solid Cloud Sync',
-                description:
-                    'Study anywhere with complete peace of mind. Saved vocabulary, SM-2 flashcard progress, and watch history synchronize seamlessly between offline and online.',
+                title: context.t('settings.whatsNewSyncTitle', null, 'Rock-Solid Cloud Sync'),
+                description: context.t(
+                  'settings.whatsNewSyncDesc',
+                  null,
+                  'Saved vocabulary, flashcard progress, and watch history synchronize seamlessly between offline and online.',
+                ),
                 colors: colors,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               _buildReleaseHighlight(
                 icon: Icons.tune_rounded,
-                iconColor: colors.accentPrimary,
-                title: 'Native Inset Preferences & Avatars',
-                description:
-                    'Clean grouped settings, 16 companion character presets, and regional flags representing your country on global leaderboards.',
+                title: context.t('settings.whatsNewScreensTitle', null, 'Rock-Steady Screens'),
+                description: context.t(
+                  'settings.whatsNewScreensDesc',
+                  null,
+                  'Opening settings, level sheets, and word popups is seamless without layout jumping or flickering.',
+                ),
                 colors: colors,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
-                height: 44,
-                child: ElevatedButton(
+                height: 42,
+                child: FilledButton(
                   onPressed: () => Navigator.of(ctx).pop(),
-                  style: ElevatedButton.styleFrom(
+                  style: FilledButton.styleFrom(
                     backgroundColor: colors.accentPrimary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
@@ -1015,12 +773,12 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ),
                   child: Text(
-                    context.t('common.done', null, 'Got it!'),
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    context.t('common.done', null, 'Done'),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
             ],
           ),
         );
@@ -1030,7 +788,6 @@ class SettingsScreen extends StatelessWidget {
 
   Widget _buildReleaseHighlight({
     required IconData icon,
-    required Color iconColor,
     required String title,
     required String description,
     required VocaColorPalette colors,
@@ -1038,15 +795,7 @@ class SettingsScreen extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            color: iconColor.withOpacity(0.14),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: iconColor, size: 20),
-        ),
+        Icon(icon, color: colors.accentPrimary, size: 22),
         const SizedBox(width: 14),
         Expanded(
           child: Column(
@@ -1057,16 +806,16 @@ class SettingsScreen extends StatelessWidget {
                 style: TextStyle(
                   color: colors.textPrimary,
                   fontSize: 14.5,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: 2),
               Text(
                 description,
                 style: TextStyle(
                   color: colors.textSecondary,
                   fontSize: 12.5,
-                  height: 1.4,
+                  height: 1.35,
                 ),
               ),
             ],
@@ -1076,17 +825,71 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _openExternalUrl(String urlString) async {
-    final uri = Uri.parse(urlString);
-    try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+  // ===========================================================================
+  // 5. SIGN OUT ACTION & DIALOG
+  // ===========================================================================
+
+  Widget _buildSignOutTile(BuildContext context, VocaColorPalette colors) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: colors.bgCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.borderColor),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => _showSignOutDialog(context, colors),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              _buildIconBox(Icons.logout_rounded, colors, iconColor: colors.error),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  context.t('header.signOut', null, 'Sign Out'),
+                  style: TextStyle(
+                    color: colors.error,
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showSignOutDialog(BuildContext context, VocaColorPalette colors) async {
+    final confirmed = await showVocaConfirmDialog(
+      context: context,
+      title: context.t('settings.signOutConfirmTitle', null, 'Sign Out?'),
+      message: context.t(
+        'settings.signOutConfirmMessage',
+        null,
+        "Saved words stay on this device, but won't sync until you sign back in.",
+      ),
+      confirmText: context.t('header.signOut', null, 'Sign Out'),
+      variant: ConfirmDialogVariant.danger,
+    );
+
+    if (confirmed == true && context.mounted) {
+      await AppState.instance.supabaseService.signOut();
+      if (context.mounted) {
+        ToastService.show(
+          context,
+          context.t('auth.signedOut', null, 'Signed out successfully'),
+          type: ToastType.info,
+        );
       }
-    } catch (_) {}
+    }
   }
 
   // ===========================================================================
-  // REUSABLE INSET GROUPED CONTAINERS & TILES
+  // REUSABLE ROW TILES & HEADERS
   // ===========================================================================
 
   Widget _buildSectionHeader(String title, VocaColorPalette colors) {
@@ -1096,15 +899,15 @@ class SettingsScreen extends StatelessWidget {
         title.toUpperCase(),
         style: TextStyle(
           color: colors.textMuted,
-          fontSize: 11.5,
+          fontSize: 11,
           fontWeight: FontWeight.w700,
-          letterSpacing: 0.6,
+          letterSpacing: 0.8,
         ),
       ),
     );
   }
 
-  Widget _buildGroupContainer({
+  Widget _buildCardGroup({
     required List<Widget> children,
     required VocaColorPalette colors,
   }) {
@@ -1127,89 +930,70 @@ class SettingsScreen extends StatelessWidget {
     return Divider(
       height: 1,
       thickness: 1,
-      indent: 58,
-      endIndent: 0,
-      color: colors.borderColorLight,
+      indent: 52,
+      endIndent: 16,
+      color: colors.borderColorLight.withOpacity(0.55),
     );
   }
 
-  Widget _buildActionTile({
+  Widget _buildSettingTile({
     required BuildContext context,
-    IconData? icon,
-    Color? iconColor,
-    Widget? leadingWidget,
+    required Widget leading,
     required String title,
-    String? subtitle,
-    String? value,
+    String? valueText,
     Color? titleColor,
+    IconData? trailingIcon,
     Widget? trailingWidget,
     bool showChevron = true,
     required VocaColorPalette colors,
     VoidCallback? onTap,
   }) {
-    final leading = leadingWidget ??
-        (icon != null
-            ? _buildIconBox(icon, iconColor ?? colors.textSecondary, colors)
-            : null);
-
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            if (leading != null) ...[
-              leading,
-              const SizedBox(width: 14),
-            ],
+            SizedBox(
+              width: 24,
+              height: 24,
+              child: Center(child: leading),
+            ),
+            const SizedBox(width: 12),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: titleColor ?? colors.textPrimary,
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        color: colors.textSecondary,
-                        fontSize: 12,
-                        height: 1.3,
-                      ),
-                    ),
-                  ],
-                ],
+              child: Text(
+                title,
+                style: TextStyle(
+                  color: titleColor ?? colors.textPrimary,
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            if (value != null) ...[
+            if (valueText != null && valueText.isNotEmpty) ...[
               const SizedBox(width: 8),
               Text(
-                value,
+                valueText,
                 style: TextStyle(
                   color: colors.textMuted,
-                  fontSize: 13.5,
+                  fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
             if (trailingWidget != null) ...[
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               trailingWidget,
-            ] else if (showChevron) ...[
+            ] else if (trailingIcon != null) ...[
+              const SizedBox(width: 6),
+              Icon(trailingIcon, size: 16, color: colors.textMuted),
+            ] else if (showChevron && onTap != null) ...[
               const SizedBox(width: 4),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: colors.textMuted,
-                size: 20,
-              ),
+              Icon(Icons.chevron_right_rounded, size: 18, color: colors.textMuted),
             ],
           ],
         ),
@@ -1217,46 +1001,98 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildIconBox(IconData icon, Color iconColor, VocaColorPalette colors) {
-    return Container(
-      width: 34,
-      height: 34,
-      decoration: BoxDecoration(
-        color: colors.bgSecondary,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: colors.borderColorLight),
+  Widget _buildSwitchTile({
+    required BuildContext context,
+    required Widget leading,
+    required String title,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+    required VocaColorPalette colors,
+  }) {
+    return InkWell(
+      onTap: () => onChanged(!value),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 24,
+              height: 24,
+              child: Center(child: leading),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  color: colors.textPrimary,
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Switch(
+              value: value,
+              onChanged: onChanged,
+              activeColor: Colors.white,
+              activeTrackColor: colors.accentPrimary,
+              inactiveThumbColor: colors.textSecondary,
+              inactiveTrackColor: colors.bgSurface,
+              trackOutlineColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return Colors.transparent;
+                }
+                return colors.borderColor;
+              }),
+            ),
+          ],
+        ),
       ),
-      child: Icon(icon, color: iconColor, size: 18),
+    );
+  }
+
+  Widget _buildIconBox(IconData icon, VocaColorPalette colors, {Color? iconColor}) {
+    return Container(
+      width: 24,
+      height: 24,
+      decoration: BoxDecoration(
+        color: colors.bgSurface,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: colors.borderColor),
+      ),
+      child: Center(
+        child: Icon(icon, size: 14, color: iconColor ?? colors.textSecondary),
+      ),
+    );
+  }
+
+  Widget _buildFlagLeading(String countryCode) {
+    return SizedBox(
+      width: 20,
+      height: 20,
+      child: ClipOval(
+        child: VocaFlagWidget(countryCode: countryCode, size: 20),
+      ),
     );
   }
 
   Widget _buildAppFooter(VocaColorPalette colors) {
     return Center(
-      child: Column(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const KikyouLogo(size: 16),
-              const SizedBox(width: 8),
-              Text(
-                'VOCA Mobile',
-                style: TextStyle(
-                  color: colors.textMuted,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
+          const KikyouLogo(size: 14),
+          const SizedBox(width: 8),
           Text(
-            'YouTube Language Immersion • 1.0.0+1',
+            'VOCA MOBILE • v$kAppVersion',
             style: TextStyle(
               color: colors.textTertiary,
-              fontSize: 11,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
             ),
           ),
         ],
@@ -1286,16 +1122,21 @@ class SettingsScreen extends StatelessWidget {
   }
 
   static String _getLanguageCountryCode(String code) {
-    switch (code) {
+    switch (code.toLowerCase()) {
       case 'ja':
+      case 'jp':
         return 'jp';
       case 'zh':
+      case 'cn':
         return 'cn';
       case 'ko':
+      case 'kr':
         return 'kr';
       case 'en':
+      case 'us':
         return 'us';
       case 'vi':
+      case 'vn':
         return 'vn';
       default:
         return code.toLowerCase();
@@ -1305,22 +1146,11 @@ class SettingsScreen extends StatelessWidget {
   static String _getRubyModeLabel(BuildContext context, RubyDisplayMode mode) {
     switch (mode) {
       case RubyDisplayMode.always:
-        return context.t('settings.alwaysShow', null, 'Always');
+        return context.t('settings.alwaysShow', null, 'Always Show');
       case RubyDisplayMode.tap:
-        return context.t('settings.onTapOnly', null, 'On Tap');
+        return context.t('settings.onTapOnly', null, 'On Tap Only');
       case RubyDisplayMode.never:
         return context.t('settings.off', null, 'Off');
-    }
-  }
-
-  static String _getSubtitleSizeLabel(BuildContext context, SubtitleSize size) {
-    switch (size) {
-      case SubtitleSize.small:
-        return context.t('settings.sizeSmall', null, 'Small');
-      case SubtitleSize.medium:
-        return context.t('settings.sizeMedium', null, 'Medium');
-      case SubtitleSize.large:
-        return context.t('settings.sizeLarge', null, 'Large');
     }
   }
 }

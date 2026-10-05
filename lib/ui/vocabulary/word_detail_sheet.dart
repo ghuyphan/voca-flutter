@@ -6,6 +6,7 @@ import '../../config/voca_theme.dart';
 import '../../models/voca_models.dart';
 import '../../services/audio_service.dart';
 import '../../services/i18n_service.dart';
+import '../../services/srs_service.dart';
 import '../../services/toast_service.dart';
 import '../../state/app_state.dart';
 import '../sheets/voca_bottom_sheet.dart';
@@ -72,10 +73,13 @@ class _WordDetailSheetState extends State<WordDetailSheet> {
 
   Future<void> _updateLevel(String newLevel) async {
     setState(() => _isSaving = true);
+    final seed = SpacedRepetitionService.seedSrsParamsForLevel(newLevel);
     final updated = _card.copyWith(
       level: newLevel,
-      srsRepetition: newLevel == 'mastered' ? 5 : _card.srsRepetition,
-      srsInterval: newLevel == 'mastered' ? 15 : _card.srsInterval,
+      srsRepetition: seed.repetition,
+      srsInterval: seed.interval,
+      srsEaseFactor: seed.easeFactor,
+      srsNextReviewAt: seed.nextReviewAt,
     );
 
     await AppState.instance.supabaseService.upsertVocabularyCard(updated);

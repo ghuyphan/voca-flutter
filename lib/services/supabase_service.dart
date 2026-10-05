@@ -274,6 +274,27 @@ class SupabaseService {
     return await _getHistoryFromLocal(limit: limit);
   }
 
+  /// Quickly retrieve last watched position in seconds for a specific video.
+  Future<double?> getVideoResumeSeconds(String videoId) async {
+    try {
+      final local = await _getHistoryFromLocal(limit: 100);
+      final match = local.firstWhere(
+        (e) => e['video_id'] == videoId,
+        orElse: () => <String, dynamic>{},
+      );
+      if (match.isNotEmpty) {
+        final rawProg = (match['progress'] as num?)?.toDouble() ?? 0.0;
+        final progress = rawProg <= 1.0 && rawProg > 0.0 ? rawProg * 100.0 : rawProg;
+        final dur = (match['duration'] as num?)?.toInt() ?? 0;
+        if (progress > 0 && progress < 95 && dur > 0) {
+          final calculated = (dur * progress / 100).round().toDouble();
+          if (calculated > 3) return calculated;
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
   Future<void> saveHistory({
     required String id,
     required String videoId,
@@ -441,108 +462,13 @@ class SupabaseService {
     }
   }
 
-  /// Curated fallback playlists for rich offline or guest immersion
-  List<PlaylistItem> _getCuratedPresets(String lang) {
-    final now = DateTime.now();
-    switch (lang) {
-      case 'ja':
-        return [
-          PlaylistItem(
-            id: 'curated_ja_anime',
-            userId: 'voca_curated',
-            title: 'Anime & J-Pop Immersion',
-            description: 'Learn Japanese through popular songs and anime clips',
-            language: 'ja',
-            visibility: 'public',
-            videoCount: 3,
-            thumbnail: 'https://i.ytimg.com/vi/clU8c2fpk2s/hqdefault.jpg',
-            videoIds: const ['clU8c2fpk2s', '8dqNwVUofxo', 'HWdaevrnCnQ'],
-            createdAt: now,
-            updatedAt: now,
-          ),
-          PlaylistItem(
-            id: 'curated_ja_conversation',
-            userId: 'voca_curated',
-            title: 'JLPT N4/N3 Core Comprehension',
-            description: 'Natural pacing and everyday conversation for intermediate learners',
-            language: 'ja',
-            visibility: 'public',
-            videoCount: 2,
-            thumbnail: 'https://i.ytimg.com/vi/BZRT37f8zZY/hqdefault.jpg',
-            videoIds: const ['BZRT37f8zZY', 'clU8c2fpk2s'],
-            createdAt: now,
-            updatedAt: now,
-          ),
-        ];
-      case 'zh':
-        return [
-          PlaylistItem(
-            id: 'curated_zh_hsk',
-            userId: 'voca_curated',
-            title: 'HSK Practical Dialogue & Stories',
-            description: 'Essential Chinese conversation with pinyin subtitles',
-            language: 'zh',
-            visibility: 'public',
-            videoCount: 2,
-            thumbnail: 'https://i.ytimg.com/vi/clU8c2fpk2s/hqdefault.jpg',
-            videoIds: const ['clU8c2fpk2s'],
-            createdAt: now,
-            updatedAt: now,
-          ),
-        ];
-      case 'ko':
-        return [
-          PlaylistItem(
-            id: 'curated_ko_kdrama',
-            userId: 'voca_curated',
-            title: 'K-Drama & Daily Korean Expressions',
-            description: 'Everyday colloquial Korean from authentic immersion videos',
-            language: 'ko',
-            visibility: 'public',
-            videoCount: 2,
-            thumbnail: 'https://i.ytimg.com/vi/clU8c2fpk2s/hqdefault.jpg',
-            videoIds: const ['clU8c2fpk2s'],
-            createdAt: now,
-            updatedAt: now,
-          ),
-        ];
-      case 'en':
-      default:
-        return [
-          PlaylistItem(
-            id: 'curated_en_ted',
-            userId: 'voca_curated',
-            title: 'Conversational English & Ideas',
-            description: 'Engaging talks and natural expressions for ESL learners',
-            language: 'en',
-            visibility: 'public',
-            videoCount: 2,
-            thumbnail: 'https://i.ytimg.com/vi/clU8c2fpk2s/hqdefault.jpg',
-            videoIds: const ['clU8c2fpk2s'],
-            createdAt: now,
-            updatedAt: now,
-          ),
-        ];
-    }
-  }
-
   /// Gathers all playlists available for the Explore screen:
-  /// User playlists + Published Community playlists + Curated presets
+  /// Published Community playlists + User playlists with videos
   Future<List<PlaylistItem>> getExplorePlaylists({String? language}) async {
     final List<PlaylistItem> result = [];
     final seenIds = <String>{};
 
-    // 1. User playlists with videos
-    try {
-      final userLists = await getPlaylists(language: language);
-      for (final p in userLists) {
-        if (p.videoIds.isNotEmpty && seenIds.add(p.id)) {
-          result.add(p);
-        }
-      }
-    } catch (_) {}
-
-    // 2. Published Community playlists from Supabase
+    // 1. Published Community playlists from Supabase
     try {
       final community = await getCommunityPlaylists(language: language);
       for (final p in community) {
@@ -552,13 +478,15 @@ class SupabaseService {
       }
     } catch (_) {}
 
-    // 3. Fallback curated presets for the active language
-    final seed = _getCuratedPresets(language ?? 'ja');
-    for (final p in seed) {
-      if (seenIds.add(p.id)) {
-        result.add(p);
+    // 2. User's own playlists containing videos
+    try {
+      final userLists = await getPlaylists(language: language);
+      for (final p in userLists) {
+        if (p.videoIds.isNotEmpty && seenIds.add(p.id)) {
+          result.add(p);
+        }
       }
-    }
+    } catch (_) {}
 
     return result;
   }

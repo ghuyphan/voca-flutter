@@ -332,4 +332,20 @@ class VocaApiClient {
       return null;
     }
   }
+
+  /// 11. Fetch current server version metadata and changelog
+  Future<Map<String, dynamic>?> fetchVersionInfo() async {
+    try {
+      final response = await _dio.get('/api/version');
+      if (response.data is Map<String, dynamic>) {
+        return response.data as Map<String, dynamic>;
+      } else if (response.data is Map) {
+        return Map<String, dynamic>.from(response.data as Map);
+      }
+      return null;
+    } catch (e) {
+      print('[VocaApiClient] Version fetch error: $e');
+      return null;
+    }
+  }
 }

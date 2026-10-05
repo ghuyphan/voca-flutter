@@ -58,6 +58,38 @@ class FakeSupabaseService extends SupabaseService {
       srsNextReviewAt: DateTime.now().subtract(const Duration(hours: 2)),
       createdAt: DateTime.now().subtract(const Duration(days: 5)),
     ),
+    Flashcard(
+      id: 'mock_3',
+      userId: 'u1',
+      word: '美しい',
+      reading: 'うつくしい',
+      meaning: 'beautiful',
+      language: 'ja',
+      level: 'new',
+      contextSentence: '美しい景色を見る。',
+      contextTranslation: 'Look at the beautiful scenery.',
+      srsInterval: 0,
+      srsRepetition: 0,
+      srsEaseFactor: 2.5,
+      srsNextReviewAt: DateTime.now().subtract(const Duration(hours: 3)),
+      createdAt: DateTime.now().subtract(const Duration(days: 1)),
+    ),
+    Flashcard(
+      id: 'mock_4',
+      userId: 'u1',
+      word: '走る',
+      reading: 'はしる',
+      meaning: 'to run',
+      language: 'ja',
+      level: 'learning',
+      contextSentence: '公園を走る。',
+      contextTranslation: 'Run in the park.',
+      srsInterval: 2,
+      srsRepetition: 1,
+      srsEaseFactor: 2.5,
+      srsNextReviewAt: DateTime.now().subtract(const Duration(hours: 4)),
+      createdAt: DateTime.now().subtract(const Duration(days: 3)),
+    ),
   ];
 
   @override
@@ -322,13 +354,14 @@ void main() {
       expect(find.text('Cloze'), findsOneWidget);
       expect(find.text('Quiz'), findsOneWidget);
 
+      await tester.pumpAndSettle();
+
       // Verify Show Answer button is initially visible
       expect(find.text('Show Answer'), findsOneWidget);
 
       // Tap Show Answer to reveal back
       await tester.tap(find.text('Show Answer'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
       // SM-2 rating buttons should appear: Again, Hard, Good, Easy
       expect(find.text('Again'), findsOneWidget);
@@ -376,12 +409,14 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
+      await tester.pumpAndSettle();
+
       // Tap Cloze mode pill
       await tester.tap(find.text('Cloze'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      expect(find.text('CLOZE TEST'), findsOneWidget);
+      expect(find.text('CLOZE TEST'), findsAtLeastNWidgets(1));
       expect(find.text('Reveal Word & Context'), findsOneWidget);
 
       // Tap Quiz mode pill

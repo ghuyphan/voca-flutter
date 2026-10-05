@@ -551,7 +551,7 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
           color: isFocused ? colors.accentPrimary : colors.borderColor,
-          width: isFocused ? 1.5 : 1.0,
+          width: 1.0,
         ),
         boxShadow: [
           BoxShadow(
@@ -565,7 +565,7 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
         children: [
           Icon(
             Icons.search_rounded,
-            color: isFocused ? colors.accentPrimary : colors.textMuted,
+            color: colors.textMuted,
             size: 19,
           ),
           const SizedBox(width: 10),

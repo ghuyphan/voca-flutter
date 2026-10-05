@@ -63,7 +63,7 @@ void main() {
   }
 
   group('SettingsScreen Tests', () {
-    testWidgets('renders all 6 Inset Grouped sections cleanly', (tester) async {
+    testWidgets('renders all settings sections cleanly like a real app', (tester) async {
       tester.view.physicalSize = const Size(800, 2400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -77,45 +77,29 @@ void main() {
       // AppBar title
       expect(find.text('Settings'), findsOneWidget);
 
-      // Section 1: Account
-      expect(find.text('ACCOUNT & PROFILE'), findsOneWidget);
-      expect(find.text('Sign In to Voca'), findsOneWidget);
-      expect(find.text('Sign In / Register'), findsOneWidget);
+      // Account Hero Card (Guest Mode)
+      expect(find.text('Sync vocabulary across devices'), findsOneWidget);
+      expect(find.text('Continue with Google'), findsOneWidget);
 
-      // Section 2: Learning & Reading Guides
-      expect(find.text('LEARNING & READING GUIDES'), findsOneWidget);
+      // Section 1: Learning & Display (Learning & UI languages next to each other)
+      expect(find.text('LEARNING & DISPLAY'), findsOneWidget);
       expect(find.text('Learning Language'), findsOneWidget);
+      expect(find.text('Interface Language'), findsOneWidget);
       expect(find.text('Furigana & Ruby'), findsOneWidget);
-      expect(find.text('Translation Language'), findsOneWidget);
-      expect(find.text('Recalibrate Learning Goals'), findsOneWidget);
 
-      // Section 3: Video Player & Subtitles
-      expect(find.text('VIDEO PLAYER & SUBTITLES'), findsOneWidget);
-      expect(find.text('Dual Subtitles'), findsOneWidget);
-      expect(find.text('Subtitle Font Size'), findsOneWidget);
-      expect(find.text('Auto-pause on Lookup'), findsOneWidget);
-
-      // Section 4: Appearance & Interface
-      expect(find.text('APPEARANCE & INTERFACE'), findsOneWidget);
+      // Section 2: Appearance
+      expect(find.text('APPEARANCE'), findsOneWidget);
       expect(find.text('Dark Mode'), findsOneWidget);
-      expect(find.text('App Interface Language'), findsOneWidget);
 
-      // Scroll to bottom for remaining sections
-      await tester.drag(find.byType(ListView), const Offset(0, -600));
-      await tester.pumpAndSettle();
-
-      // Section 5: Data & Storage
-      expect(find.text('DATA & STORAGE'), findsOneWidget);
-      expect(find.text('Clear Subtitle & Dict Cache'), findsOneWidget);
-
-      // Section 6: About & Support
-      expect(find.text('ABOUT & SUPPORT'), findsOneWidget);
+      // Section 3: About & Updates
+      expect(find.text('ABOUT & UPDATES'), findsOneWidget);
       expect(find.text('Version'), findsOneWidget);
-      expect(find.text('1.0.0+1 (Voca Mobile)'), findsOneWidget);
       expect(find.text("What's New"), findsOneWidget);
-      expect(find.text('Discord Community & Feedback'), findsOneWidget);
-      expect(find.text('Privacy Policy'), findsOneWidget);
-      expect(find.text('Terms of Service'), findsOneWidget);
+      expect(find.text('Check for Updates'), findsOneWidget);
+      expect(find.text('Discord Community'), findsOneWidget);
+
+      // Simplified clean footer
+      expect(find.text('VOCA MOBILE • v1.2.4'), findsOneWidget);
     });
 
     testWidgets('strictly removes raw emoji stat rows, library items, and bulky segmented buttons', (tester) async {
@@ -173,10 +157,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Bottom sheet is displayed
-      expect(find.text('Version 1.0.0+1 (Voca Mobile)'), findsOneWidget);
+      expect(find.text('Version 1.2.4 • 2026-09-30'), findsOneWidget);
       expect(find.text('Buttery-Smooth Playback'), findsOneWidget);
       expect(find.text('Rock-Solid Cloud Sync'), findsOneWidget);
-      expect(find.text('Native Inset Preferences & Avatars'), findsOneWidget);
+      expect(find.text('Rock-Steady Screens'), findsOneWidget);
       expect(find.text('Done'), findsOneWidget);
 
       // Tap Done to dismiss
@@ -230,20 +214,17 @@ void main() {
   });
 
   group('AuthScreen Tests', () {
-    testWidgets('renders Kikyou branding, benefits, and Google CTA', (tester) async {
+    testWidgets('renders VOCA branding and ACTE landing CTAs', (tester) async {
       await tester.pumpWidget(buildTestableWidget(const AuthScreen()));
       await tester.pumpAndSettle();
 
       // App Title & Tagline
       expect(find.text('VOCA'), findsOneWidget);
-
-      // Value Propositions
-      expect(find.text('Seamless Cloud Sync'), findsOneWidget);
-      expect(find.text('Streak & Progress Guard'), findsOneWidget);
-      expect(find.text('Global Learner Ranks'), findsOneWidget);
+      expect(find.text('Learn languages through authentic videos'), findsOneWidget);
 
       // Buttons
       expect(find.text('Continue with Google'), findsOneWidget);
+      expect(find.text('Continue with email'), findsOneWidget);
       expect(find.text('Continue as Guest'), findsOneWidget);
     });
   });

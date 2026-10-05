@@ -5,6 +5,7 @@ import '../../config/voca_theme.dart';
 import '../../models/voca_models.dart';
 import '../../services/audio_service.dart';
 import '../../services/i18n_service.dart';
+import '../../services/srs_service.dart';
 import '../../services/toast_service.dart';
 import '../../state/app_state.dart';
 import '../../utils/cyrb53_hasher.dart';
@@ -313,7 +314,8 @@ class _DictionaryBottomSheetState extends State<DictionaryBottomSheet> {
       final supabase = AppState.instance.supabaseService;
       final userId = supabase.currentUser?.id ?? 'guest';
 
-      final word = widget.token.surface;
+      final base = widget.token.baseForm?.trim();
+      final word = (base != null && base.isNotEmpty) ? base : widget.token.surface;
       final reading = widget.token.reading ?? _activeEntry?.reading;
       final romanization = widget.token.romanization ?? _activeEntry?.romaji;
       final pinyin = widget.token.pinyin;
@@ -363,7 +365,14 @@ class _DictionaryBottomSheetState extends State<DictionaryBottomSheet> {
   Future<void> _updateCardLevel(String newLevel) async {
     if (_savedCard == null) return;
     try {
-      final updated = _savedCard!.copyWith(level: newLevel);
+      final seed = SpacedRepetitionService.seedSrsParamsForLevel(newLevel);
+      final updated = _savedCard!.copyWith(
+        level: newLevel,
+        srsRepetition: seed.repetition,
+        srsInterval: seed.interval,
+        srsEaseFactor: seed.easeFactor,
+        srsNextReviewAt: seed.nextReviewAt,
+      );
       await AppState.instance.supabaseService.upsertVocabularyCard(updated);
       if (mounted) {
         setState(() {

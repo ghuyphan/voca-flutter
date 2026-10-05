@@ -1,6 +1,7 @@
 // lib/state/player_coordinator.dart
 
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
@@ -47,6 +48,8 @@ class PlayerCoordinator {
   @visibleForTesting
   YoutubePlayerController? testYtController;
   StreamSubscription? _videoStateSubscription;
+  StreamSubscription<YoutubePlayerValue>? _playerStateSubscription;
+  void Function()? _cuesDisposer;
   Timer? _autoAdvanceTimer;
 
   bool get hasActiveVideo =>
@@ -66,6 +69,14 @@ class PlayerCoordinator {
     if (!hasPlaylist) return false;
     final idx = activePlaylistIndex.value ?? 0;
     return isLooping.value || idx < playlistVideos.value.length - 1;
+  }
+
+  /// Platform-appropriate User-Agent for the embedded YouTube iframe.
+  static String get defaultPlayerUserAgent {
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      return 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
+    }
+    return 'Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36';
   }
 
   /// Open and play a video.
@@ -124,7 +135,7 @@ class PlayerCoordinator {
     // completely hide native controls, annotations, fullscreen buttons, and disable web pointer events)
     final newYtController = testYtController ??
         YoutubePlayerController(
-          params: const YoutubePlayerParams(
+          params: YoutubePlayerParams(
             showControls: false,
             showFullscreenButton: false,
             pointerEvents: PointerEvents.none,
@@ -137,8 +148,7 @@ class PlayerCoordinator {
             captionLanguage: '',
             origin: 'https://www.youtube-nocookie.com',
             privacyEnhancedMode: true,
-            userAgent:
-                'Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
+            userAgent: defaultPlayerUserAgent,
           ),
         );
     ytController = newYtController;
@@ -165,7 +175,7 @@ class PlayerCoordinator {
     _resumeFromHistoryIfAvailable(videoId, newYtController, newPlayerController);
 
     // Sync duration from cues if available before or alongside video metadata
-    newPlayerController.cues.subscribe((cList) {
+    _cuesDisposer = newPlayerController.cues.subscribe((cList) {
       if (cList.isNotEmpty && duration.value <= 0) {
         final lastCue = cList.last;
         final estimatedDur = lastCue.start + lastCue.duration;
@@ -204,7 +214,7 @@ class PlayerCoordinator {
     });
 
     // Listen to player state
-    newYtController.listen((value) {
+    _playerStateSubscription = newYtController.listen((value) {
       if (value.playerState == PlayerState.playing) {
         isPlaying.value = true;
         isEnded.value = false;
@@ -247,7 +257,18 @@ class PlayerCoordinator {
     VideoPlayerController targetPlayer,
   ) async {
     try {
-      final historyList = await AppState.instance.supabaseService.getHistory(limit: 50);
+      // 1. Fast local cache lookup first
+      final localResume = await AppState.instance.supabaseService.getVideoResumeSeconds(vId);
+      if (activeVideoId.value != vId) return; // Video changed in meantime
+      if (localResume != null && localResume > 3) {
+        targetYt.seekTo(seconds: localResume, allowSeekAhead: true);
+        currentTime.value = localResume;
+        targetPlayer.currentTime.value = localResume;
+        return;
+      }
+
+      // 2. Fallback to Supabase remote history
+      final historyList = await AppState.instance.supabaseService.getHistory(limit: 20);
       if (activeVideoId.value != vId) return; // Video changed in meantime
       final match = historyList.firstWhere(
         (item) => item['video_id'] == vId,
@@ -426,7 +447,7 @@ class PlayerCoordinator {
   }
 
   /// Saves current video progress to watch history (local & Supabase)
-  Future<void> _saveCurrentHistory() async {
+  Future<void> saveWatchHistory() async {
     final vId = activeVideoId.value;
     if (vId == null || vId.isEmpty) return;
     try {
@@ -451,6 +472,9 @@ class PlayerCoordinator {
     }
   }
 
+  Future<void> _saveCurrentHistory() => saveWatchHistory();
+  Future<void> saveCurrentHistory() => saveWatchHistory();
+
   /// Alias for close() for backward compatibility
   void closeVideo() => close();
 
@@ -458,10 +482,17 @@ class PlayerCoordinator {
     _autoAdvanceTimer?.cancel();
     _videoStateSubscription?.cancel();
     _videoStateSubscription = null;
+    _playerStateSubscription?.cancel();
+    _playerStateSubscription = null;
+    _cuesDisposer?.call();
+    _cuesDisposer = null;
     try {
       ytController?.close();
     } catch (_) {}
     ytController = null;
+    try {
+      playerController?.dispose();
+    } catch (_) {}
     playerController = null;
   }
 

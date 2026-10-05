@@ -278,7 +278,7 @@ void main() {
   });
 
   group('AuthScreen UI Rendering Tests', () {
-    testWidgets('renders all essential elements and value props', (tester) async {
+    testWidgets('renders all essential elements and landing CTAs', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: VocaTheme.darkTheme,
@@ -287,31 +287,24 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Brand Title
+      // Brand Title & Subtitle
       expect(find.text('VOCA'), findsOneWidget);
       expect(find.text('Learn languages through authentic videos'), findsOneWidget);
 
-      // 3 Value Propositions
-      expect(find.text('Seamless Cloud Sync'), findsOneWidget);
-      expect(find.text('Streak & Progress Guard'), findsOneWidget);
-      expect(find.text('Global Learner Ranks'), findsOneWidget);
-
-      // Social Sign-in Buttons
+      // Social Sign-in Button
       expect(find.text('Continue with Google'), findsOneWidget);
-      expect(find.text('Sign in with Apple'), findsOneWidget);
 
-      // Divider & Email Form
-      expect(find.text('Or continue with email'), findsOneWidget);
-      expect(find.text('Email address'), findsOneWidget);
-      expect(find.text('Password'), findsOneWidget);
-      expect(find.text('Sign In'), findsOneWidget); // Primary submit button
-      expect(find.text('Sign Up'), findsOneWidget); // Switch to sign up toggle
+      // Continue with email button
+      expect(find.text('Continue with email'), findsOneWidget);
 
-      // Bottom guest link
+      // Guest link
       expect(find.text('Continue as Guest'), findsOneWidget);
+
+      // Policy & terms consent
+      expect(find.text('Privacy Policy'), findsOneWidget);
     });
 
-    testWidgets('toggling between Sign In and Sign Up adds Full Name field', (tester) async {
+    testWidgets('opening email form sheet and toggling between Sign In and Register', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: VocaTheme.darkTheme,
@@ -320,19 +313,28 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // In Sign In mode: Full Name field does not exist
-      expect(find.text('Full Name'), findsNothing);
-
-      // Scroll to and tap Sign Up toggle
-      final signUpToggle = find.text('Sign Up');
-      await tester.ensureVisible(signUpToggle);
-      await tester.tap(signUpToggle);
+      // Open email sheet
+      final continueEmailBtn = find.text('Continue with email');
+      await tester.tap(continueEmailBtn);
       await tester.pumpAndSettle();
 
-      // In Sign Up mode: Full Name field appears
-      expect(find.text('Full Name'), findsOneWidget);
-      expect(find.text('Create Account'), findsOneWidget);
+      // In Sign In mode:
+      expect(find.text('Email'), findsOneWidget);
+      expect(find.text('Password'), findsOneWidget);
       expect(find.text('Sign In'), findsOneWidget);
+      expect(find.text('Need an account? Create one'), findsOneWidget);
+      expect(find.text('Name (optional)'), findsNothing);
+
+      // Tap switch to register
+      final switchRegisterBtn = find.text('Need an account? Create one');
+      await tester.tap(switchRegisterBtn);
+      await tester.pumpAndSettle();
+
+      // In Register mode: Name and Confirm password appear
+      expect(find.text('Name (optional)'), findsOneWidget);
+      expect(find.text('Confirm password'), findsOneWidget);
+      expect(find.text('Create account'), findsOneWidget);
+      expect(find.text('Already have an account? Sign in'), findsOneWidget);
     });
   });
 }

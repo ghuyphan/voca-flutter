@@ -562,7 +562,12 @@ class Flashcard {
       reviewCount: ((json['review_count'] ?? json['reviewCount']) as num?)?.toInt() ?? 0,
       srsNextReviewAt: parseDate(
         json['next_review_date'] ?? json['srs_next_review_at'] ?? json['nextReviewDate'],
-        DateTime.now(),
+        WordLevels.normalize(json['level']) == WordLevels.known
+            ? DateTime.now().add(Duration(
+                days: (((json['interval'] ?? json['srs_interval']) as num?)?.toInt() ?? 0) > 0
+                    ? (((json['interval'] ?? json['srs_interval']) as num?)?.toInt() ?? 21)
+                    : 21))
+            : DateTime.now(),
       ),
       srsLastReviewedAt: parseNullableDate(
         json['last_reviewed_at'] ?? json['srs_last_reviewed_at'] ?? json['lastReviewedAt'],
