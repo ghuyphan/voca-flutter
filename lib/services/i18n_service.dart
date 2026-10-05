@@ -47,6 +47,7 @@ class I18nService {
 
     for (final code in supportedLanguageCodes) {
       try {
+        assetBundle.evict('assets/i18n/$code.json');
         final jsonStr = await assetBundle.loadString('assets/i18n/$code.json');
         final decoded = jsonDecode(jsonStr);
         if (decoded is Map<String, dynamic>) {
@@ -68,6 +69,22 @@ class I18nService {
     }
 
     _isInitialized = true;
+  }
+
+  /// Reloads translations from assets on runtime hot-reload / dev changes.
+  Future<void> reload() async {
+    for (final code in supportedLanguageCodes) {
+      try {
+        rootBundle.evict('assets/i18n/$code.json');
+        final jsonStr = await rootBundle.loadString('assets/i18n/$code.json');
+        final decoded = jsonDecode(jsonStr);
+        if (decoded is Map<String, dynamic>) {
+          _translations[code] = decoded;
+        }
+      } catch (e) {
+        debugPrint('[I18nService] Could not reload assets/i18n/$code.json: $e');
+      }
+    }
   }
 
   /// Synchronously or directly load translations map (useful for unit tests)

@@ -8,8 +8,8 @@ import 'package:voca_flutter/services/i18n_service.dart';
 import 'package:voca_flutter/state/app_state.dart';
 import 'package:voca_flutter/ui/onboarding/models/onboarding_models.dart';
 import 'package:voca_flutter/ui/onboarding/onboarding_screen.dart';
-import 'package:voca_flutter/ui/onboarding/widgets/onboarding_selection_tile.dart';
-import 'package:voca_flutter/ui/onboarding/widgets/companion_speech_bubble.dart';
+import 'package:voca_flutter/ui/onboarding/widgets/onboarding_primitives.dart';
+import 'package:voca_flutter/ui/onboarding/widgets/pressable_scale.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -19,28 +19,51 @@ void main() {
 
     // Seed i18n English translations for tests
     I18nService.instance.loadTranslations('en', {
+      'settings': {
+        'japanese': 'Japanese',
+        'korean': 'Korean',
+        'chinese': 'Chinese',
+        'english': 'English',
+        'vietnamese': 'Vietnamese',
+      },
       'onboarding': {
         'welcomeTitle': 'Welcome to Voca',
         'welcomeSubtitle': 'Learn languages naturally through YouTube videos',
         'getStarted': 'Get Started',
         'realmTitle': 'Choose Your Language Realm',
-        'learningLanguageSubtitle': 'Pick the language you want to study',
+        'learningLanguageSubtitle': 'Pick the language you want to study with authentic media',
         'myLanguage': 'My Language',
-        'myLanguageHint': 'Interface & subtitles',
+        'myLanguageHint': 'Interface language & subtitle translations',
         'dualSubtitlesToggle': 'Translate subtitles',
         'dualSubtitlesHint': 'Show translations below video captions',
-        'chooseLevel': 'Calibrate Your Rank & Habit',
-        'levelSubtitle': 'We’ll suggest videos suited to your pace',
+        'chooseLevel': 'Calibrate Your Rank',
+        'levelSubtitle': "We'll suggest videos suited to your pace",
         'dailyGoalLabel': 'Daily Habit Pact',
-        'pactSubtitle': 'Habits build legends',
-        'companionTitle': 'Choose Your Companion Spirit',
-        'companionSubtitle': 'Pick a companion guide for your journey',
-        'starterTitle': 'Adventurer License Activated!',
-        'starterSubtitle': 'The Guild welcomes you with your initial supply cache',
+        'companionTitle': 'Choose Your Companion',
+        'companionSubtitle': 'Your companion guide brings unique passive mastery to your journey',
+        'starterTitle': "You're All Set!",
+        'starterSubtitle': 'Review your learning plan and customize your appearance before starting',
+        'claimStarterPack': 'Start Learning',
         'startLearning': 'Start Learning',
-        'guildCharter': 'Voca Guild Charter',
+        'saveCalibration': 'Save Preferences',
+        'planSummary': 'Learning Plan',
+        'planReady': 'Ready',
+        'appearance': 'Appearance',
+        'themeSystem': 'System',
+        'themeLight': 'Light',
+        'themeDark': 'Dark',
         'skip': 'Skip',
         'back': 'Back',
+        'continue': 'Continue',
+        'features': {
+          'subtitles': 'Bilingual subtitles with audio sync',
+          'dict': 'Tap any word to translate instantly',
+          'srs': 'Spaced repetition flashcards',
+        },
+        'demo': {
+          'ja': {'text': '日本語を勉強しましょう', 'translation': "Let's study Japanese together!"},
+          'ko': {'text': '함께 한국어를 배워요', 'translation': "Let's learn Korean together!"},
+        },
         'realmVibes': {
           'ja': 'Anime & Daily Life',
           'ko': 'K-Drama & Slang',
@@ -59,6 +82,25 @@ void main() {
           'novice': 'Novice',
           'apprentice': 'Apprentice',
           'adept': 'Adept',
+          'veteran': 'Veteran',
+          'master': 'Master',
+        },
+        'levels': {
+          'beginnerDesc': 'Simple phrases & clear speech',
+          'elementaryDesc': 'Routine everyday vocabulary',
+          'intermediateDesc': 'Natural conversations & vlogs',
+          'upperIntermediateDesc': 'News clips & deep topics',
+          'advancedDesc': 'Documentaries & native lectures',
+        },
+        'goals': {
+          'casual': 'Casual Scout',
+          'casualDesc': '5 min/day',
+          'regular': 'Immersion Hunter',
+          'regularDesc': '10 min/day',
+          'serious': 'Dungeon Raider',
+          'seriousDesc': '15 min/day',
+          'intense': 'Mythic Master',
+          'intenseDesc': '25 min/day',
         },
         'starterLoot': {
           'diamonds': 'Full AI Quota (💎)',
@@ -71,14 +113,15 @@ void main() {
           'freezeDesc': 'Streak freeze protection pre-loaded',
         },
       },
-      'common': {
-        'continue': 'Continue',
-      },
-      'levels': {
+      'level': {
         'beginner': 'Beginner',
-        'beginnerDesc': 'Just getting started',
         'elementary': 'Elementary',
-        'elementaryDesc': 'Basic everyday words',
+        'intermediate': 'Intermediate',
+        'upper_intermediate': 'Upper Intermediate',
+        'advanced': 'Advanced',
+      },
+      'auth': {
+        'alreadyHaveAccount': 'I already have an account',
       },
     });
   });
@@ -106,64 +149,69 @@ void main() {
     });
 
     test('Onboarding presets have expected options and data integrity', () {
-      expect(LearningRealmOption.all.length, equals(4));
+      expect(LearningLanguageOption.all.length, equals(4));
       expect(NativeLanguageOption.all.length, equals(5));
-      expect(RankLevelOption.all.length, equals(5));
+      expect(LevelOption.all.length, equals(5));
       expect(DailyGoalOption.all.length, equals(4));
-      expect(CompanionSpiritOption.all.length, equals(8));
-      expect(StarterLootItem.all.length, equals(4));
+      expect(CompanionOption.all.length, equals(8));
+    });
+
+    test('Exam badges adapt correctly based on learning language', () {
+      final beginner = LevelOption.byId('beginner');
+      expect(beginner.examBadge('ja'), equals('JLPT N5'));
+      expect(beginner.examBadge('zh'), equals('HSK 1'));
+      expect(beginner.examBadge('ko'), equals('TOPIK 1'));
+      expect(beginner.examBadge('en'), equals('A1'));
+
+      final advanced = LevelOption.byId('advanced');
+      expect(advanced.examBadge('ja'), equals('JLPT N1'));
+      expect(advanced.examBadge('zh'), equals('HSK 6'));
+      expect(advanced.examBadge('ko'), equals('TOPIK 6'));
+      expect(advanced.examBadge('en'), equals('C1-C2'));
     });
   });
 
-  group('Onboarding Widgets & Flow Tests', () {
-    testWidgets('OnboardingSelectionTile renders title, tagChip, and handles tap callback',
-        (tester) async {
+  group('Onboarding Primitives & Widgets Tests', () {
+    testWidgets('PressableScale fires tap callback and triggers selection', (tester) async {
       bool tapped = false;
 
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: OnboardingSelectionTile(
-              title: 'Japanese',
-              tagChip: '日本語',
-              subtitle: 'Anime & Daily Life',
-              isSelected: true,
-              onTap: () {
-                tapped = true;
-              },
+            body: PressableScale(
+              onTap: () => tapped = true,
+              child: const Text('Tap Me'),
             ),
           ),
         ),
       );
 
-      expect(find.text('Japanese'), findsOneWidget);
-      expect(find.text('日本語'), findsOneWidget);
-      expect(find.text('Anime & Daily Life'), findsOneWidget);
-      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
-
-      await tester.tap(find.byType(OnboardingSelectionTile));
+      expect(find.text('Tap Me'), findsOneWidget);
+      await tester.tap(find.text('Tap Me'));
       await tester.pump();
       expect(tapped, isTrue);
     });
 
-    testWidgets('CompanionSpeechBubble renders dynamic voice line quote', (tester) async {
+    testWidgets('RadioCheck renders correctly when selected or unselected', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: CompanionSpeechBubble(
-              quote: "I'll decode every complex sentence!",
-              accentColor: Colors.purple,
+            body: Column(
+              children: [
+                RadioCheck(selected: true),
+                RadioCheck(selected: false),
+              ],
             ),
           ),
         ),
       );
 
-      expect(find.text('“I\'ll decode every complex sentence!”'), findsOneWidget);
-      expect(find.byIcon(Icons.auto_awesome_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
     });
+  });
 
-    testWidgets('OnboardingScreen starts at Step 0 and navigates through steps to completion',
-        (tester) async {
+  group('Onboarding Flow Tests', () {
+    testWidgets('OnboardingScreen navigates through streamlined steps to completion', (tester) async {
       tester.view.physicalSize = const Size(400, 850);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -190,54 +238,63 @@ void main() {
       await tester.tap(find.text('Get Started'));
       await tester.pumpAndSettle();
 
-      // Step 1: Language Realm
+      // Step 1: Learning Language Realm
       expect(find.text('Choose Your Language Realm'), findsOneWidget);
       expect(find.text('Japanese'), findsWidgets);
       expect(find.text('Korean'), findsOneWidget);
-      expect(find.text('Continue'), findsOneWidget);
 
       // Select Korean
       await tester.tap(find.text('Korean'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap "Continue" -> Step 2
       await tester.tap(find.text('Continue'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
-      // Step 2: Pace & Level Ladder
-      expect(find.text('Calibrate Your Rank & Habit'), findsOneWidget);
-      expect(find.text('Daily Habit Pact'), findsOneWidget);
+      // Step 2: Native Language Step
+      expect(find.text('My Language'), findsOneWidget);
+      expect(find.text('Translate subtitles'), findsWidgets);
 
       // Tap "Continue" -> Step 3
       await tester.tap(find.text('Continue'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
-      // Step 3: Companion Spirit Guide
-      expect(find.text('Choose Your Companion Spirit'), findsOneWidget);
-      expect(find.text('Scholar Mage'), findsOneWidget);
-
-      // Select Guardian Knight
-      await tester.tap(find.text('Guardian Knight'));
-      await tester.pumpAndSettle();
+      // Step 3: Difficulty Ladder & Habit Pact
+      expect(find.text('Calibrate Your Rank'), findsOneWidget);
+      expect(find.text('DAILY HABIT PACT'), findsOneWidget);
 
       // Tap "Continue" -> Step 4
       await tester.tap(find.text('Continue'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
-      // Step 4: Adventurer License Activated
-      expect(find.text('Adventurer License Activated!'), findsOneWidget);
-      expect(find.text('VOCA GUILD CHARTER'), findsOneWidget);
+      // Step 4: Companion Guide & Appearance (Theme) Selection
+      expect(find.text('Choose Your Companion'), findsOneWidget);
       expect(find.text('Start Learning'), findsOneWidget);
 
-      // Tap "Start Learning"
+      // Verify Theme Selection cards exist directly on Step 4
+      expect(find.text('System'), findsOneWidget);
+      expect(find.text('Light'), findsOneWidget);
+      expect(find.text('Dark'), findsOneWidget);
+
+      // Tap "Light" theme to test theme selection
+      await tester.ensureVisible(find.text('Light'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Light'));
+      await tester.pumpAndSettle();
+
+      // Tap "Start Learning" to finish onboarding directly on Step 4
       await tester.tap(find.text('Start Learning'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
 
       expect(finished, isTrue);
       expect(AppState.instance.userSettings.value.hasCompletedOnboarding, isTrue);
-      expect(AppState.instance.userSettings.value.companionClass, equals('knight'));
       expect(AppState.instance.activeLanguage.value, equals('ko'));
+      expect(AppState.instance.userSettings.value.themeMode, equals('light'));
     });
 
     testWidgets('OnboardingScreen Skip button immediately completes onboarding', (tester) async {

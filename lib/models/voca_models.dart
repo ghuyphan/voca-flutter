@@ -1,4 +1,5 @@
 // lib/models/voca_models.dart
+export '../services/auth_service.dart' show UserProfile, SubscriptionTier;
 
 class RubyPart {
   final String text;
@@ -461,6 +462,25 @@ class DictionaryEntry {
   }
 }
 
+typedef WordLevel = String;
+
+class WordLevels {
+  static const String isNew = 'new';
+  static const String learning = 'learning';
+  static const String known = 'known';
+  static const String ignored = 'ignored';
+
+  static const List<String> all = [isNew, learning, known, ignored];
+
+  static String normalize(dynamic val) {
+    if (val == null) return isNew;
+    final s = val.toString().toLowerCase().trim();
+    if (s == 'mastered') return known;
+    if (s == learning || s == known || s == ignored) return s;
+    return isNew;
+  }
+}
+
 class Flashcard {
   final String id;
   final String userId;
@@ -470,10 +490,11 @@ class Flashcard {
   final String? pinyin;
   final String meaning;
   final String language;
-  final String level; // 'new' | 'learning' | 'known' | 'mastered'
+  final String level; // 'new' | 'learning' | 'known' | 'ignored'
   final int srsInterval;
   final int srsRepetition;
   final double srsEaseFactor;
+  final int reviewCount;
   final DateTime srsNextReviewAt;
   final DateTime? srsLastReviewedAt;
 
@@ -483,6 +504,8 @@ class Flashcard {
   final String? audio;
   final String? notes;
   final DateTime? createdAt;
+  final String? sourceVideoId;
+  final double? sourceTimestamp;
 
   Flashcard({
     required this.id,
@@ -493,10 +516,11 @@ class Flashcard {
     this.pinyin,
     required this.meaning,
     required this.language,
-    this.level = 'new',
+    String level = 'new',
     this.srsInterval = 0,
     this.srsRepetition = 0,
     this.srsEaseFactor = 2.5,
+    this.reviewCount = 0,
     required this.srsNextReviewAt,
     this.srsLastReviewedAt,
     this.partOfSpeech,
@@ -505,36 +529,52 @@ class Flashcard {
     this.audio,
     this.notes,
     this.createdAt,
-  });
+    this.sourceVideoId,
+    this.sourceTimestamp,
+  }) : level = WordLevels.normalize(level);
 
   factory Flashcard.fromJson(Map<String, dynamic> json) {
+    DateTime parseDate(dynamic val, DateTime fallback) {
+      if (val == null) return fallback;
+      if (val is DateTime) return val;
+      return DateTime.tryParse(val.toString()) ?? fallback;
+    }
+
+    DateTime? parseNullableDate(dynamic val) {
+      if (val == null) return null;
+      if (val is DateTime) return val;
+      return DateTime.tryParse(val.toString());
+    }
+
     return Flashcard(
-      id: json['id'] as String,
-      userId: json['user_id'] as String,
-      word: json['word'] as String,
+      id: json['id'] as String? ?? '',
+      userId: (json['user_id'] ?? json['userId']) as String? ?? 'guest',
+      word: json['word'] as String? ?? '',
       reading: json['reading'] as String?,
       romanization: json['romanization'] as String?,
       pinyin: json['pinyin'] as String?,
       meaning: json['meaning'] as String? ?? '',
-      language: json['language'] as String,
-      level: json['level'] as String? ?? 'new',
-      srsInterval: json['srs_interval'] as int? ?? 0,
-      srsRepetition: json['srs_repetition'] as int? ?? 0,
-      srsEaseFactor: (json['srs_ease_factor'] as num?)?.toDouble() ?? 2.5,
-      srsNextReviewAt: json['srs_next_review_at'] != null
-          ? DateTime.tryParse(json['srs_next_review_at'] as String) ?? DateTime.now()
-          : DateTime.now(),
-      srsLastReviewedAt: json['srs_last_reviewed_at'] != null
-          ? DateTime.tryParse(json['srs_last_reviewed_at'] as String)
-          : null,
+      language: json['language'] as String? ?? 'ja',
+      level: WordLevels.normalize(json['level']),
+      srsInterval: ((json['interval'] ?? json['srs_interval']) as num?)?.toInt() ?? 0,
+      srsRepetition: ((json['repetitions'] ?? json['srs_repetition']) as num?)?.toInt() ?? 0,
+      srsEaseFactor: ((json['ease_factor'] ?? json['srs_ease_factor']) as num?)?.toDouble() ?? 2.5,
+      reviewCount: ((json['review_count'] ?? json['reviewCount']) as num?)?.toInt() ?? 0,
+      srsNextReviewAt: parseDate(
+        json['next_review_date'] ?? json['srs_next_review_at'] ?? json['nextReviewDate'],
+        DateTime.now(),
+      ),
+      srsLastReviewedAt: parseNullableDate(
+        json['last_reviewed_at'] ?? json['srs_last_reviewed_at'] ?? json['lastReviewedAt'],
+      ),
       partOfSpeech: json['part_of_speech'] as String?,
-      contextSentence: json['context_sentence'] as String?,
-      contextTranslation: json['context_translation'] as String?,
+      contextSentence: (json['source_sentence'] ?? json['context_sentence'] ?? json['sourceSentence']) as String?,
+      contextTranslation: (json['context_translation'] ?? json['contextTranslation']) as String?,
       audio: json['audio'] as String?,
       notes: json['notes'] as String?,
-      createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'] as String)
-          : null,
+      createdAt: parseNullableDate(json['created_at'] ?? json['createdAt']),
+      sourceVideoId: (json['source_video_id'] ?? json['sourceVideoId'] ?? json['video_id'] ?? json['videoId']) as String?,
+      sourceTimestamp: ((json['source_timestamp'] ?? json['sourceTimestamp'] ?? json['timestamp']) as num?)?.toDouble(),
     );
   }
 
@@ -551,6 +591,7 @@ class Flashcard {
     int? srsInterval,
     int? srsRepetition,
     double? srsEaseFactor,
+    int? reviewCount,
     DateTime? srsNextReviewAt,
     DateTime? srsLastReviewedAt,
     String? partOfSpeech,
@@ -559,6 +600,8 @@ class Flashcard {
     String? audio,
     String? notes,
     DateTime? createdAt,
+    String? sourceVideoId,
+    double? sourceTimestamp,
   }) {
     return Flashcard(
       id: id ?? this.id,
@@ -569,10 +612,11 @@ class Flashcard {
       pinyin: pinyin ?? this.pinyin,
       meaning: meaning ?? this.meaning,
       language: language ?? this.language,
-      level: level ?? this.level,
+      level: level != null ? WordLevels.normalize(level) : this.level,
       srsInterval: srsInterval ?? this.srsInterval,
       srsRepetition: srsRepetition ?? this.srsRepetition,
       srsEaseFactor: srsEaseFactor ?? this.srsEaseFactor,
+      reviewCount: reviewCount ?? this.reviewCount,
       srsNextReviewAt: srsNextReviewAt ?? this.srsNextReviewAt,
       srsLastReviewedAt: srsLastReviewedAt ?? this.srsLastReviewedAt,
       partOfSpeech: partOfSpeech ?? this.partOfSpeech,
@@ -581,34 +625,94 @@ class Flashcard {
       audio: audio ?? this.audio,
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
+      sourceVideoId: sourceVideoId ?? this.sourceVideoId,
+      sourceTimestamp: sourceTimestamp ?? this.sourceTimestamp,
     );
   }
 
+  /// Canonical Supabase column representation matching `public.vocabulary` table schema.
   Map<String, dynamic> toBaseJson() => {
     'id': id,
     'user_id': userId,
     'word': word,
-    'reading': reading,
-    'romanization': romanization,
-    'pinyin': pinyin,
+    if (reading != null) 'reading': reading,
+    if (romanization != null) 'romanization': romanization,
+    if (pinyin != null) 'pinyin': pinyin,
     'meaning': meaning,
     'language': language,
-    'level': level,
-    'srs_interval': srsInterval,
-    'srs_repetition': srsRepetition,
-    'srs_ease_factor': srsEaseFactor,
-    'srs_next_review_at': srsNextReviewAt.toIso8601String(),
-    'srs_last_reviewed_at': srsLastReviewedAt?.toIso8601String(),
+    'level': WordLevels.normalize(level),
+    'interval': srsInterval,
+    'repetitions': srsRepetition,
+    'ease_factor': srsEaseFactor,
+    'review_count': reviewCount,
+    'next_review_date': srsNextReviewAt.toIso8601String(),
+    if (srsLastReviewedAt != null) 'last_reviewed_at': srsLastReviewedAt!.toIso8601String(),
+    if (sourceVideoId != null) 'source_video_id': sourceVideoId,
+    if (sourceTimestamp != null) 'source_timestamp': sourceTimestamp,
   };
 
+  /// Strict Supabase payload containing only existing columns in `public.vocabulary`.
+  Map<String, dynamic> toRemoteJson() {
+    final map = <String, dynamic>{
+      'id': id,
+      'user_id': userId,
+      'word': word,
+      'reading': reading ?? '',
+      'pinyin': pinyin ?? '',
+      'romanization': romanization ?? '',
+      'meaning': meaning,
+      'language': language,
+      'level': WordLevels.normalize(level),
+      'ease_factor': srsEaseFactor,
+      'interval': srsInterval,
+      'repetitions': srsRepetition,
+      'review_count': reviewCount,
+      'next_review_date': srsNextReviewAt.toIso8601String(),
+      'last_reviewed_at': srsLastReviewedAt?.toIso8601String(),
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+    if (contextSentence != null && contextSentence!.isNotEmpty) {
+      map['source_sentence'] = contextSentence;
+    }
+    if (audio != null && audio!.isNotEmpty) {
+      map['audio'] = audio;
+    }
+    if (createdAt != null) {
+      map['created_at'] = createdAt!.toIso8601String();
+    }
+    if (sourceVideoId != null && sourceVideoId!.isNotEmpty) {
+      map['source_video_id'] = sourceVideoId;
+    }
+    if (sourceTimestamp != null) {
+      map['source_timestamp'] = sourceTimestamp;
+    }
+    return map;
+  }
+
+  /// Full JSON representation supporting both canonical and legacy keys for local persistence.
   Map<String, dynamic> toJson() {
     final map = toBaseJson();
-    if (partOfSpeech != null) map['part_of_speech'] = partOfSpeech;
-    if (contextSentence != null) map['context_sentence'] = contextSentence;
+    if (contextSentence != null) {
+      map['source_sentence'] = contextSentence;
+      map['context_sentence'] = contextSentence;
+    }
     if (contextTranslation != null) map['context_translation'] = contextTranslation;
+    if (partOfSpeech != null) map['part_of_speech'] = partOfSpeech;
     if (audio != null) map['audio'] = audio;
     if (notes != null) map['notes'] = notes;
     if (createdAt != null) map['created_at'] = createdAt!.toIso8601String();
+    if (sourceVideoId != null) map['source_video_id'] = sourceVideoId;
+    if (sourceTimestamp != null) map['source_timestamp'] = sourceTimestamp;
+    map['updated_at'] = DateTime.now().toIso8601String();
+
+    // Legacy column aliases for local caches / backwards compatibility:
+    map['srs_interval'] = srsInterval;
+    map['srs_repetition'] = srsRepetition;
+    map['srs_ease_factor'] = srsEaseFactor;
+    map['srs_next_review_at'] = srsNextReviewAt.toIso8601String();
+    if (srsLastReviewedAt != null) {
+      map['srs_last_reviewed_at'] = srsLastReviewedAt!.toIso8601String();
+    }
     return map;
   }
 }
@@ -970,3 +1074,4 @@ class UserSettings {
     );
   }
 }
+

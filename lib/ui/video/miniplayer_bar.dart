@@ -18,6 +18,7 @@ class MiniplayerBar extends StatelessWidget {
   final String videoId;
   final String title;
   final String channel;
+  final String? thumbnail;
   final double? currentTime;
   final double? duration;
   final bool? isPlaying;
@@ -32,6 +33,7 @@ class MiniplayerBar extends StatelessWidget {
     required this.videoId,
     required this.title,
     required this.channel,
+    this.thumbnail,
     this.currentTime,
     this.duration,
     this.isPlaying,
@@ -83,48 +85,108 @@ class MiniplayerBar extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: Colors.black,
                           borderRadius: BorderRadius.circular(8),
-                          image: videoWidget == null
-                              ? DecorationImage(
-                                  image: NetworkImage(
-                                    'https://img.youtube.com/vi/$videoId/hqdefault.jpg',
-                                  ),
-                                  fit: BoxFit.cover,
-                                )
-                              : null,
                         ),
                         clipBehavior: Clip.antiAlias,
-                        child: videoWidget,
+                        child: videoWidget ??
+                            Watch((context) {
+                              final coord = PlayerCoordinator.instance;
+                              final rawThumb = (thumbnail != null && thumbnail!.trim().isNotEmpty)
+                                  ? thumbnail!.trim()
+                                  : ((coord.activeThumbnail.value != null && coord.activeThumbnail.value!.trim().isNotEmpty)
+                                      ? coord.activeThumbnail.value!.trim()
+                                      : (videoId.isNotEmpty ? 'https://img.youtube.com/vi/$videoId/mqdefault.jpg' : ''));
+
+                              if (rawThumb.isEmpty) {
+                                return Container(
+                                  width: 80,
+                                  height: 48,
+                                  color: colors.bgTertiary,
+                                  child: Icon(
+                                    Icons.play_circle_fill_rounded,
+                                    color: colors.accentPrimary,
+                                    size: 24,
+                                  ),
+                                );
+                              }
+
+                              return Image.network(
+                                rawThumb,
+                                width: 80,
+                                height: 48,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Image.network(
+                                  videoId.isNotEmpty ? 'https://img.youtube.com/vi/$videoId/0.jpg' : '',
+                                  width: 80,
+                                  height: 48,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    width: 80,
+                                    height: 48,
+                                    color: colors.bgTertiary,
+                                    child: Icon(
+                                      Icons.play_circle_fill_rounded,
+                                      color: colors.accentPrimary,
+                                      size: 24,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
                       ),
                       const SizedBox(width: 10),
 
-                      // 2. Video Title & Channel Meta
+                      // 2. Video Title & Channel Meta (Reactively bound to PlayerCoordinator)
                       Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              title.isNotEmpty ? title : context.t('player.loadingVideo', null, 'Loading...'),
-                              style: TextStyle(
-                                color: colors.textPrimary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
+                        child: Watch((context) {
+                          final coord = PlayerCoordinator.instance;
+                          final activeT = coord.activeTitle.value;
+                          final activeC = coord.activeChannel.value;
+
+                          final displayTitle = (title.isNotEmpty && title != 'YouTube Video')
+                              ? title
+                              : (activeT.isNotEmpty && activeT != 'YouTube Video'
+                                  ? activeT
+                                  : (title.isNotEmpty
+                                      ? title
+                                      : (activeT.isNotEmpty
+                                          ? activeT
+                                          : context.t('player.loadingVideo', null, 'Loading...'))));
+
+                          final displayChannel = (channel.isNotEmpty && channel != 'YouTube')
+                              ? channel
+                              : (activeC != null && activeC.isNotEmpty && activeC != 'YouTube'
+                                  ? activeC
+                                  : (channel.isNotEmpty
+                                      ? channel
+                                      : (activeC ?? 'YouTube')));
+
+                          return Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                displayTitle,
+                                style: TextStyle(
+                                  color: colors.textPrimary,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              channel.isNotEmpty ? channel : 'YouTube',
-                              style: TextStyle(
-                                color: colors.textMuted,
-                                fontSize: 11.5,
+                              const SizedBox(height: 2),
+                              Text(
+                                displayChannel,
+                                style: TextStyle(
+                                  color: colors.textMuted,
+                                  fontSize: 11.5,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
+                            ],
+                          );
+                        }),
                       ),
 
                       // 3. Play / Pause / Replay Button (Reactively bound)

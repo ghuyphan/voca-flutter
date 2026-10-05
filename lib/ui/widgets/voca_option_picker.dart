@@ -11,6 +11,7 @@ class OptionItem {
   final String? description;
   final String? icon; // Emoji or short text
   final IconData? iconData;
+  final Widget? leading;
   final String? badge;
   final Color? badgeColor;
 
@@ -21,6 +22,7 @@ class OptionItem {
     this.description,
     this.icon,
     this.iconData,
+    this.leading,
     this.badge,
     this.badgeColor,
   });
@@ -59,8 +61,11 @@ Future<String?> showVocaOptionPicker({
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                 child: Row(
                   children: [
-                    // Leading Icon or Emoji
-                    if (item.icon != null) ...[
+                    // Leading Icon, Emoji, or Custom Widget
+                    if (item.leading != null) ...[
+                      item.leading!,
+                      const SizedBox(width: 14),
+                    ] else if (item.icon != null) ...[
                       Text(item.icon!, style: const TextStyle(fontSize: 20)),
                       const SizedBox(width: 14),
                     ] else if (item.iconData != null) ...[

@@ -330,13 +330,14 @@ class _ExploreScreenState extends State<ExploreScreen>
     }
   }
 
-  void _navigateToPlayer(String videoId, String title, {String? channel, String? level}) {
+  void _navigateToPlayer(String videoId, String title, {String? channel, String? level, String? thumbnail}) {
     PlayerCoordinator.instance.openVideo(
       context,
       videoId: videoId,
       title: title,
       channel: channel,
       level: level,
+      thumbnail: thumbnail,
     );
   }
 
@@ -603,6 +604,10 @@ class _ExploreScreenState extends State<ExploreScreen>
                         );
                       }
 
+                      final coord = PlayerCoordinator.instance;
+                      final isMiniActive = coord.hasActiveVideo && coord.isMiniplayer.value;
+                      final feedBottomPadding = isMiniActive ? 168.0 : 96.0;
+
                       if (currentTab == ExploreTab.playlists) {
                         if (playlists.isEmpty) {
                           return RefreshIndicator(
@@ -630,6 +635,7 @@ class _ExploreScreenState extends State<ExploreScreen>
 
                         return ExploreResponsiveFeed(
                           itemCount: playlists.length,
+                          bottomPadding: feedBottomPadding,
                           onRefresh: () => _loadFeed(refresh: true),
                           itemBuilder: (context, index) {
                             final item = playlists[index];
@@ -643,7 +649,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                                     return PlaylistVideo(
                                       videoId: vid,
                                       title: idx == 0 ? item.title : '${item.title} #${idx + 1}',
-                                      thumbnail: 'https://img.youtube.com/vi/$vid/hqdefault.jpg',
+                                      thumbnail: 'https://i.ytimg.com/vi/$vid/hqdefault.jpg',
                                       level: item.level,
                                       position: idx,
                                     );
@@ -653,6 +659,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                                     context,
                                     videoId: item.videoIds.first,
                                     title: item.title,
+                                    thumbnail: 'https://i.ytimg.com/vi/${item.videoIds.first}/hqdefault.jpg',
                                     level: item.level,
                                     playlistTitle: item.title,
                                     playlistIndex: 0,
@@ -694,6 +701,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                       return ExploreResponsiveFeed(
                         itemCount: videos.length,
                         isLoadingMore: isLoadingMore,
+                        bottomPadding: feedBottomPadding,
                         onRefresh: () => _loadFeed(refresh: true),
                         itemBuilder: (context, index) {
                           final item = videos[index];
@@ -701,6 +709,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                           final title = item['title'] as String? ?? 'YouTube Video';
                           final channel = item['channel'] as String? ?? 'YouTube Creator';
                           final levelTag = VideoFeedCard.resolveVideoLevel(item, currentLang);
+                          final thumbnail = item['thumbnail'] as String?;
 
                           return VideoFeedCard(
                             video: item,
@@ -710,6 +719,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                               title,
                               channel: channel,
                               level: levelTag,
+                              thumbnail: thumbnail,
                             ),
                           );
                         },

@@ -39,6 +39,7 @@ The original web application is located at `../lingua-tube` (`/Users/huyphan/Dow
   - Replicate exact CSS dimensions, paddings, margins, border radii (`--border-radius-*`), font sizes (`--text-*`), font weights, line heights, letter spacings, and box shadows.
   - Replicate exact color tokens (Light & Dark modes, including hover, active, disabled, and transparent alpha variants).
   - Replicate exact motion, transitions, cubic-bezier timing functions (`--ease-spring`, `--transition-fast`), and gesture behaviors.
+  - *Deliberate Mobile UX Exception*: The Onboarding screen (`lib/ui/onboarding/`) is deliberately built as an ergonomic native mobile flow (one decision per step, horizontal snapping companion carousel, thumb-zone CTAs, and system locale detection) rather than a desktop modal. All Voca theme tokens, level badges, and SM-2 starter loot persist unchanged.
 
 ### ⚠️ RULE 2: Mandatory Anti-Bot User-Agent Header
 - The Cloudflare Pages edge (`https://voca.study`) strictly enforces Cloudflare bot protection. Generic Dart/HTTP scraper headers return HTTP 403 `{"error":"Access denied: automated requests not allowed","code":"BOT_DETECTED"}`.

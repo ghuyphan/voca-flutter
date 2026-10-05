@@ -25,6 +25,10 @@ class AudioService {
 
   bool isPlaying(String text) => _currentPlaying.value == text;
 
+  void clearCache() {
+    _cache.clear();
+  }
+
   Future<void> stop() async {
     try {
       await _player.stop();

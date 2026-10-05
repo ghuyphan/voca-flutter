@@ -314,10 +314,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   Future<void> _saveWatchHistory() async {
     try {
       final user = AppState.instance.supabaseService.currentUser;
-      if (user == null) return;
+      final userId = user?.id ?? 'guest';
 
       final videoId = widget.videoId;
-      final id = generateDeterministicRecordId([user.id, videoId]);
+      final id = generateDeterministicRecordId([userId, videoId]);
       final title = widget.title.isNotEmpty
           ? widget.title
           : _playerController.videoTitle.value;
@@ -331,7 +331,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           lastCue != null ? (lastCue.start + lastCue.duration).ceil() : 0;
       final dur = metaDur > 0 ? metaDur : fallbackDur;
       final currentSec = _playerController.currentTime.value;
-      final progress = dur > 0 ? (currentSec / dur).clamp(0.0, 1.0) : 0.0;
+      final progress = dur > 0 ? ((currentSec / dur) * 100).clamp(0.0, 100.0) : 0.0;
 
       await AppState.instance.supabaseService.saveHistory(
         id: id,
@@ -917,7 +917,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                     Padding(
                                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
                                       child: Text(
-                                        context.t('forYou', null, 'For You'),
+                                        context.t('player.moreVideos', null, context.t('playlist.forYou', null, 'For You')),
                                         style: TextStyle(
                                           fontSize: 14.5,
                                           fontWeight: FontWeight.w700,

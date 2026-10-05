@@ -6,6 +6,7 @@ import 'config/api_endpoints.dart';
 import 'config/voca_theme.dart';
 import 'services/voca_api_client.dart';
 import 'services/supabase_service.dart';
+import 'services/auth_service.dart';
 import 'services/grammar_engine.dart';
 import 'services/gamification_service.dart';
 import 'services/i18n_service.dart';
@@ -28,6 +29,7 @@ Future<void> main() async {
   final appState = AppState.instance;
   appState.apiClient = VocaApiClient();
   appState.supabaseService = SupabaseService(Supabase.instance.client);
+  appState.authService = AuthService(supabaseService: appState.supabaseService);
   appState.grammarEngine = GrammarEngine();
   appState.gamificationService = GamificationService(
     apiClient: appState.apiClient,
@@ -51,9 +53,20 @@ Future<void> main() async {
   runApp(const VocaApp());
 }
 
-class VocaApp extends StatelessWidget {
+class VocaApp extends StatefulWidget {
   final Widget? home;
   const VocaApp({super.key, this.home});
+
+  @override
+  State<VocaApp> createState() => _VocaAppState();
+}
+
+class _VocaAppState extends State<VocaApp> {
+  @override
+  void reassemble() {
+    super.reassemble();
+    I18nService.instance.reload();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +94,7 @@ class VocaApp extends StatelessWidget {
         darkTheme: VocaTheme.darkTheme,
         themeMode: themeMode,
         locale: Locale(lang),
-        home: home ??
+        home: widget.home ??
             (settings.hasCompletedOnboarding
                 ? const MainShell()
                 : const SplashScreen()),

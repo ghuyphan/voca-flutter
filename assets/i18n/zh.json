@@ -1,4 +1,5 @@
 {
+  "forYou": "为你推荐",
   "app": {
     "title": "Voca",
     "subtitle": "看 YouTube 视频学外语",
@@ -74,7 +75,8 @@
     "signInToUpgradeDesc": "登录 Google 账号以绑定会员订阅，支持多端数据同步",
     "freeDiamondsNotice": "新用户每日可免费获得用于视频转写的 AI 钻石！",
     "guestUser": "游客",
-    "signInFailedError": "登录失败: {error}"
+    "signInFailedError": "登录失败: {error}",
+    "alreadyHaveAccount": "已有账号？登录"
   },
   "player": {
     "paste": "粘贴",
@@ -916,6 +918,8 @@
     "pactTitle": "立下猎人誓约",
     "pactSubtitle": "每日习惯铸就传奇。选择你的每日节奏并校准等级",
     "dailyGoalLabel": "每日习惯誓约",
+    "goalBest": "推荐",
+    "goalDay": "每天",
     "goals": {
       "casual": "随性斥候",
       "casualDesc": "每天5分钟 • 1条短片",
@@ -967,8 +971,20 @@
     "trialTapHint": "点击下方发光的词语",
     "trialMineBtn": "采矿存入生词本 (+15 XP)",
     "trialMinedSuccess": "采矿成功！获得 +15 XP",
-    "starterTitle": "冒险者执照已激活！",
-    "starterSubtitle": "猎人公会为你授予初始补给宝匣",
+    "starterTitle": "一切准备就绪！",
+    "starterSubtitle": "确认你的学习计划，并选择你偏好的外观主题",
+    "planSummary": "学习计划",
+    "planReady": "已就绪",
+    "appearance": "外观主题",
+    "themeSystem": "跟随系统",
+    "themeLight": "浅色",
+    "themeDark": "深色",
+    "themeSystemDesc": "自适应设备设置",
+    "themeLightDesc": "明亮界面",
+    "themeDarkDesc": "暗黑界面",
+    "starterBonus": "起步奖励准备完毕",
+    "starterBonusDesc": "已为你的首次学习备齐 +50 XP、5次 AI 字幕额度及打卡护盾。",
+    "startLearning": "开始学习",
     "starterLoot": {
       "diamonds": "满额 AI 能量储备 (💎)",
       "diamondsDesc": "已备齐即时 AI 语音同步额度",
@@ -980,7 +996,7 @@
       "freezeDesc": "已备好连续打卡保护机制 (Streak Freeze)"
     },
     "enterRealm": "步入语言领域",
-    "claimStarterPack": "领取新手大礼包 (+50 XP)",
+    "claimStarterPack": "开始学习",
     "starterPackClaimed": "新手礼包激活成功！已获得 +50 XP 并点亮第 1 天连续打卡！",
     "perkKnight": "守护骑士：已备好连续打卡冰霜护盾！",
     "perkWizard": "博学法师：已开启语法与句法深度解析！",

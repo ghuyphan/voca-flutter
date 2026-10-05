@@ -55,7 +55,7 @@ class SpacedRepetitionService {
         repetition += 1;
         interval = repetition <= 1 ? 1 : (interval * 1.2).round();
         ease = max(1.3, ease - 0.15);
-        level = repetition >= 5 ? 'mastered' : (repetition >= 3 ? 'known' : 'learning');
+        level = 'learning';
         break;
 
       case SRSReviewRating.good:
@@ -67,7 +67,7 @@ class SpacedRepetitionService {
         } else {
           interval = (interval * ease).round();
         }
-        level = repetition >= 5 ? 'mastered' : (repetition >= 3 ? 'known' : 'learning');
+        level = repetition >= 3 ? 'known' : 'learning';
         break;
 
       case SRSReviewRating.easy:
@@ -80,7 +80,7 @@ class SpacedRepetitionService {
           interval = (interval * ease * 1.3).round();
         }
         ease += 0.15;
-        level = repetition >= 5 ? 'mastered' : (repetition >= 3 ? 'known' : 'learning');
+        level = repetition >= 2 ? 'known' : 'learning';
         break;
     }
 

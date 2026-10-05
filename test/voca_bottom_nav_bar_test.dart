@@ -13,7 +13,7 @@ void main() {
         'watch': 'Watch',
         'review': 'Review',
         'vocab': 'Vocab',
-        'more': 'More',
+        'library': 'Library',
       }
     });
     I18nService.instance.loadTranslations('vi', {
@@ -21,7 +21,7 @@ void main() {
         'watch': 'Xem',
         'review': 'Ôn tập',
         'vocab': 'Từ vựng',
-        'more': 'Thêm',
+        'library': 'Thư viện',
       }
     });
     I18nService.instance.currentLanguage.value = 'en';
@@ -55,7 +55,7 @@ void main() {
       expect(find.text('Watch'), findsOneWidget);
       expect(find.text('Review'), findsOneWidget);
       expect(find.text('Vocab'), findsOneWidget);
-      expect(find.text('More'), findsOneWidget);
+      expect(find.text('Library'), findsOneWidget);
 
       // Tap Review
       await tester.tap(find.text('Review'));
@@ -65,8 +65,8 @@ void main() {
       await tester.tap(find.text('Vocab'));
       expect(selectedTab, 2);
 
-      // Tap More
-      await tester.tap(find.text('More'));
+      // Tap Library
+      await tester.tap(find.text('Library'));
       expect(selectedTab, 3);
     });
 
@@ -87,7 +87,7 @@ void main() {
       expect(find.text('Watch'), findsOneWidget);
       expect(find.text('Review'), findsOneWidget);
       expect(find.text('Vocab'), findsOneWidget);
-      expect(find.text('More'), findsOneWidget);
+      expect(find.text('Library'), findsOneWidget);
     });
 
     testWidgets('Dynamically updates labels when UI locale changes reactively', (tester) async {
@@ -109,7 +109,7 @@ void main() {
       expect(find.text('Watch'), findsOneWidget);
       expect(find.text('Review'), findsOneWidget);
       expect(find.text('Vocab'), findsOneWidget);
-      expect(find.text('More'), findsOneWidget);
+      expect(find.text('Library'), findsOneWidget);
 
       // Switch language to Vietnamese reactively
       I18nService.instance.currentLanguage.value = 'vi';
@@ -118,7 +118,7 @@ void main() {
       expect(find.text('Xem'), findsOneWidget);
       expect(find.text('Ôn tập'), findsOneWidget);
       expect(find.text('Từ vựng'), findsOneWidget);
-      expect(find.text('Thêm'), findsOneWidget);
+      expect(find.text('Thư viện'), findsOneWidget);
 
       I18nService.instance.currentLanguage.value = 'en';
     });

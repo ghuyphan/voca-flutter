@@ -24,6 +24,10 @@ class VideoLevelService {
     isAnalyzing.value = false;
   }
 
+  void clearCache() {
+    _levelCache.clear();
+  }
+
   VideoLevelInfo? getCachedLevel(String videoId, String lang) {
     return _levelCache['${videoId}_$lang'];
   }

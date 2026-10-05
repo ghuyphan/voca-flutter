@@ -30,7 +30,73 @@ class SupabaseService {
     await client.auth.signOut();
   }
 
+  /// Fetch user profile from Supabase profiles table
+  Future<UserProfile?> fetchUserProfile([String? userId]) async {
+    final uid = userId ?? currentUser?.id;
+    if (uid == null) return null;
+    try {
+      final res = await client.from('profiles').select().eq('id', uid).maybeSingle();
+      if (res != null) {
+        return UserProfile.fromJson(res);
+      }
+    } catch (e) {
+      debugPrint('[SupabaseService] Remote fetch profile error: $e');
+    }
+
+    // Fallback: create profile from currentUser auth metadata
+    final user = currentUser;
+    if (user != null && user.id == uid) {
+      final meta = user.userMetadata;
+      final name = (meta?['name'] ?? meta?['full_name']) as String?;
+      final avatarUrl = (meta?['avatar_url'] ?? meta?['picture']) as String?;
+      return UserProfile(
+        id: user.id,
+        email: user.email ?? '',
+        name: name ?? (user.email ?? 'Learner').split('@').first,
+        avatarUrl: avatarUrl,
+      );
+    }
+    return null;
+  }
+
+  /// Update user profile in Supabase profiles table
+  Future<bool> updateUserProfile({
+    String? name,
+    String? avatarUrl,
+    String? country,
+  }) async {
+    final user = currentUser;
+    if (user == null) return false;
+
+    final updates = <String, dynamic>{
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+    if (name != null) updates['name'] = name.trim();
+    if (avatarUrl != null) updates['avatar_url'] = avatarUrl.trim();
+    if (country != null) updates['country'] = country.trim();
+
+    try {
+      await client.from('profiles').upsert({
+        'id': user.id,
+        'email': user.email,
+        ...updates,
+      });
+      return true;
+    } catch (e) {
+      debugPrint('[SupabaseService] Error updating profile with upsert: $e');
+      try {
+        await client.from('profiles').update(updates).eq('id', user.id);
+        return true;
+      } catch (e2) {
+        debugPrint('[SupabaseService] Error updating profile with update: $e2');
+        return false;
+      }
+    }
+  }
+
   final List<Flashcard> _localCards = [];
+
+  List<Flashcard> getLocalCards() => List.unmodifiable(_localCards);
 
   /// 1. Vocabulary / Flashcards Sync
   Future<List<Flashcard>> getVocabularyCards({String? language}) async {
@@ -41,21 +107,30 @@ class SupabaseService {
         if (language != null) {
           query = query.eq('language', language);
         }
-        final data = await query.order('srs_next_review_at', ascending: true);
-        final list = (data as List).map((row) => Flashcard.fromJson(row)).toList();
+        final data = await query.order('next_review_date', ascending: true);
+        final list = (data as List).map((row) => Flashcard.fromJson(Map<String, dynamic>.from(row as Map))).toList();
         if (list.isNotEmpty) {
-          _localCards.clear();
-          _localCards.addAll(list);
+          if (language != null) {
+            _localCards.removeWhere((c) => c.language == language);
+            _localCards.addAll(list);
+          } else {
+            _localCards.clear();
+            _localCards.addAll(list);
+          }
+          await _saveCardsToLocal(_localCards);
           return list;
         }
       } catch (e) {
-        print('[SupabaseService] Remote fetch error, falling back to local: $e');
+        debugPrint('[SupabaseService] Remote fetch error, falling back to local: $e');
       }
     }
 
     // Local / Guest fallback
     if (_localCards.isEmpty) {
-      _seedDefaultCards();
+      final cached = await _loadCardsFromLocal();
+      if (cached.isNotEmpty) {
+        _localCards.addAll(cached);
+      }
     }
     if (language != null) {
       return _localCards.where((c) => c.language == language).toList();
@@ -91,24 +166,26 @@ class SupabaseService {
     } else {
       _localCards.add(card);
     }
+    await _saveCardsToLocal(_localCards);
 
     final user = currentUser;
     if (user == null) return;
 
-    // 2. Sync to Supabase with resilient fallback
+    // 2. Sync to Supabase with canonical column mapping
     try {
-      await client.from('vocabulary').upsert(card.toJson());
-    } catch (_) {
+      await client.from('vocabulary').upsert(card.toRemoteJson());
+    } catch (e) {
       try {
         await client.from('vocabulary').upsert(card.toBaseJson());
-      } catch (e) {
-        print('[SupabaseService] Upsert error: $e');
+      } catch (err) {
+        debugPrint('[SupabaseService] Upsert vocabulary card error: $err');
       }
     }
   }
 
   Future<void> deleteVocabularyCard(String cardId) async {
     _localCards.removeWhere((c) => c.id == cardId);
+    await _saveCardsToLocal(_localCards);
 
     final user = currentUser;
     if (user == null) return;
@@ -116,215 +193,45 @@ class SupabaseService {
     try {
       await client.from('vocabulary').delete().eq('id', cardId).eq('user_id', user.id);
     } catch (e) {
-      print('[SupabaseService] Delete error: $e');
+      debugPrint('[SupabaseService] Delete vocabulary error: $e');
     }
   }
 
-  void _seedDefaultCards() {
-    final now = DateTime.now();
-    _localCards.addAll([
-      // Japanese
-      Flashcard(
-        id: 'sample_ja_1',
-        userId: 'guest',
-        word: '食べる',
-        reading: 'たべる',
-        romanization: 'taberu',
-        meaning: 'to eat, to consume',
-        language: 'ja',
-        level: 'learning',
-        partOfSpeech: 'verb',
-        contextSentence: '毎朝、美味しいご飯を食べるのが楽しみです。',
-        contextTranslation: 'I look forward to eating delicious meals every morning.',
-        srsInterval: 1,
-        srsRepetition: 1,
-        srsEaseFactor: 2.5,
-        srsNextReviewAt: now.subtract(const Duration(minutes: 5)),
-        createdAt: now.subtract(const Duration(days: 3)),
-      ),
-      Flashcard(
-        id: 'sample_ja_2',
-        userId: 'guest',
-        word: '約束',
-        reading: 'やくそく',
-        romanization: 'yakusoku',
-        meaning: 'promise, commitment, appointment',
-        language: 'ja',
-        level: 'learning',
-        partOfSpeech: 'noun',
-        contextSentence: '大切な友達との約束を絶対に守る。',
-        contextTranslation: 'I will definitely keep my promise with my dear friend.',
-        srsInterval: 3,
-        srsRepetition: 2,
-        srsEaseFactor: 2.5,
-        srsNextReviewAt: now.subtract(const Duration(minutes: 2)),
-        createdAt: now.subtract(const Duration(days: 4)),
-      ),
-      Flashcard(
-        id: 'sample_ja_3',
-        userId: 'guest',
-        word: '美しい',
-        reading: 'うつくしい',
-        romanization: 'utsukushii',
-        meaning: 'beautiful, lovely, graceful',
-        language: 'ja',
-        level: 'known',
-        partOfSpeech: 'adjective',
-        contextSentence: '夕暮れの富士山は息を呑むほど美しい。',
-        contextTranslation: 'Mount Fuji at dusk is breathtakingly beautiful.',
-        srsInterval: 6,
-        srsRepetition: 3,
-        srsEaseFactor: 2.6,
-        srsNextReviewAt: now.subtract(const Duration(hours: 1)),
-        createdAt: now.subtract(const Duration(days: 7)),
-      ),
-      Flashcard(
-        id: 'sample_ja_4',
-        userId: 'guest',
-        word: '練習',
-        reading: 'れんしゅう',
-        romanization: 'renshuu',
-        meaning: 'practice, training, drill',
-        language: 'ja',
-        level: 'new',
-        partOfSpeech: 'noun',
-        contextSentence: '毎日少しずつ日本語の会話練習を重ねる。',
-        contextTranslation: 'I practice Japanese conversation little by little every day.',
-        srsInterval: 0,
-        srsRepetition: 0,
-        srsEaseFactor: 2.5,
-        srsNextReviewAt: now.subtract(const Duration(minutes: 10)),
-        createdAt: now.subtract(const Duration(days: 1)),
-      ),
-      Flashcard(
-        id: 'sample_ja_5',
-        userId: 'guest',
-        word: '未来',
-        reading: 'みらい',
-        romanization: 'mirai',
-        meaning: 'future (distant or abstract)',
-        language: 'ja',
-        level: 'mastered',
-        partOfSpeech: 'noun',
-        contextSentence: '希望に満ちた明るい未来へ向かって進む。',
-        contextTranslation: 'Moving forward toward a bright future full of hope.',
-        srsInterval: 15,
-        srsRepetition: 5,
-        srsEaseFactor: 2.7,
-        srsNextReviewAt: now.add(const Duration(days: 12)),
-        createdAt: now.subtract(const Duration(days: 20)),
-      ),
+  Future<void> replaceLocalCards(List<Flashcard> cards) async {
+    _localCards.clear();
+    _localCards.addAll(cards);
+    await _saveCardsToLocal(_localCards);
+  }
 
-      // Chinese
-      Flashcard(
-        id: 'sample_zh_1',
-        userId: 'guest',
-        word: '朋友',
-        pinyin: 'péngyou',
-        meaning: 'friend, companion',
-        language: 'zh',
-        level: 'known',
-        partOfSpeech: 'noun',
-        contextSentence: '我们是认识很多年的好朋友。',
-        contextTranslation: 'We have been good friends for many years.',
-        srsInterval: 4,
-        srsRepetition: 2,
-        srsEaseFactor: 2.5,
-        srsNextReviewAt: now.subtract(const Duration(minutes: 5)),
-        createdAt: now.subtract(const Duration(days: 5)),
-      ),
-      Flashcard(
-        id: 'sample_zh_2',
-        userId: 'guest',
-        word: '学习',
-        pinyin: 'xuéxí',
-        meaning: 'to study, to learn',
-        language: 'zh',
-        level: 'learning',
-        partOfSpeech: 'verb',
-        contextSentence: '每天学习新词汇有助于提高语言能力。',
-        contextTranslation: 'Studying new vocabulary daily helps improve language proficiency.',
-        srsInterval: 2,
-        srsRepetition: 1,
-        srsEaseFactor: 2.5,
-        srsNextReviewAt: now.subtract(const Duration(minutes: 2)),
-        createdAt: now.subtract(const Duration(days: 3)),
-      ),
+  Future<void> _saveCardsToLocal(List<Flashcard> cards) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        'voca_local_flashcards',
+        jsonEncode(cards.map((c) => c.toJson()).toList()),
+      );
+    } catch (_) {}
+  }
 
-      // Korean
-      Flashcard(
-        id: 'sample_ko_1',
-        userId: 'guest',
-        word: '행복',
-        reading: 'haengbok',
-        romanization: 'haengbok',
-        meaning: 'happiness, bliss',
-        language: 'ko',
-        level: 'learning',
-        partOfSpeech: 'noun',
-        contextSentence: '소소한 일상 속에서 행복을 찾아요.',
-        contextTranslation: 'Finding happiness in small daily moments.',
-        srsInterval: 2,
-        srsRepetition: 1,
-        srsEaseFactor: 2.5,
-        srsNextReviewAt: now.subtract(const Duration(minutes: 5)),
-        createdAt: now.subtract(const Duration(days: 2)),
-      ),
-      Flashcard(
-        id: 'sample_ko_2',
-        userId: 'guest',
-        word: '시작',
-        reading: 'sijak',
-        romanization: 'sijak',
-        meaning: 'beginning, start',
-        language: 'ko',
-        level: 'new',
-        partOfSpeech: 'noun',
-        contextSentence: '새로운 도전의 시작이 정말 기대됩니다.',
-        contextTranslation: 'I am really looking forward to the start of a new challenge.',
-        srsInterval: 0,
-        srsRepetition: 0,
-        srsEaseFactor: 2.5,
-        srsNextReviewAt: now.subtract(const Duration(minutes: 1)),
-        createdAt: now.subtract(const Duration(days: 1)),
-      ),
-
-      // English
-      Flashcard(
-        id: 'sample_en_1',
-        userId: 'guest',
-        word: 'serendipity',
-        reading: 'ser-uhn-dip-i-tee',
-        meaning: 'finding valuable things unexpectedly',
-        language: 'en',
-        level: 'learning',
-        partOfSpeech: 'noun',
-        contextSentence: 'Finding this peaceful cafe was sheer serendipity.',
-        contextTranslation: 'Finding this peaceful cafe was sheer good fortune.',
-        srsInterval: 1,
-        srsRepetition: 1,
-        srsEaseFactor: 2.5,
-        srsNextReviewAt: now.subtract(const Duration(minutes: 5)),
-        createdAt: now.subtract(const Duration(days: 2)),
-      ),
-      Flashcard(
-        id: 'sample_en_2',
-        userId: 'guest',
-        word: 'resilience',
-        reading: 'ri-zil-yuhns',
-        meaning: 'capacity to recover quickly from difficulties',
-        language: 'en',
-        level: 'known',
-        partOfSpeech: 'noun',
-        contextSentence: 'Her resilience through challenging times inspired everyone.',
-        contextTranslation: 'Her resilience through difficult times inspired everyone.',
-        srsInterval: 6,
-        srsRepetition: 3,
-        srsEaseFactor: 2.6,
-        srsNextReviewAt: now.subtract(const Duration(hours: 1)),
-        createdAt: now.subtract(const Duration(days: 8)),
-      ),
-    ]);
+  Future<List<Flashcard>> _loadCardsFromLocal() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonStr = prefs.getString('voca_local_flashcards');
+      if (jsonStr == null) return [];
+      final List<dynamic> list = jsonDecode(jsonStr);
+      final rawCards = list
+          .map((e) => Flashcard.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+      final cleanCards = rawCards
+          .where((c) => !c.id.startsWith('sample_'))
+          .toList();
+      if (cleanCards.length != rawCards.length) {
+        await _saveCardsToLocal(cleanCards);
+      }
+      return cleanCards;
+    } catch (_) {
+      return [];
+    }
   }
 
   /// 2. Atomic Streak Recording via RPC

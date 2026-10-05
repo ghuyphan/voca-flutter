@@ -35,42 +35,89 @@ class _KikyouPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2;
+    final radius = math.min(size.width, size.height) / 2;
 
     final petalPaint = Paint()
       ..color = petalColor
       ..style = PaintingStyle.fill
       ..isAntiAlias = true;
 
-    // Authentic Kikyou Japanese flower: 5 pointed petals
-    const petals = 5;
-    final path = Path();
-    for (int i = 0; i < petals * 2; i++) {
-      final angle = (i * math.pi / petals) - (math.pi / 2);
-      final r = (i % 2 == 0) ? radius : radius * 0.42;
-      final x = center.dx + r * math.cos(angle);
-      final y = center.dy + r * math.sin(angle);
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+
+    final flowerPath = Path();
+    final singlePetal = _createPetalPath(radius / 300.0);
+
+    // 5 authentic Kikyou Japanese bellflower petals rotated radially
+    for (int i = 0; i < 5; i++) {
+      final matrix = Matrix4.rotationZ(i * 2 * math.pi / 5);
+      flowerPath.addPath(singlePetal.transform(matrix.storage), Offset.zero);
     }
+
+    // Single clean circular negative-space pistil cutout (even-odd fill rule)
+    final pistilRadius = radius * (38.0 / 300.0);
+    flowerPath.addOval(Rect.fromCircle(center: Offset.zero, radius: pistilRadius));
+    flowerPath.fillType = PathFillType.evenOdd;
+
+    canvas.drawPath(flowerPath, petalPaint);
+    canvas.restore();
+  }
+
+  Path _createPetalPath(double scale) {
+    final path = Path();
+    path.moveTo(0, -300 * scale);
+    path.cubicTo(
+      5.0 * scale,
+      -295.1 * scale,
+      18.55 * scale,
+      -287.5 * scale,
+      34.34 * scale,
+      -280.8 * scale,
+    );
+    path.cubicTo(
+      69.0 * scale,
+      -266.3 * scale,
+      117.0 * scale,
+      -227.9 * scale,
+      108.65 * scale,
+      -173.7 * scale,
+    );
+    path.cubicTo(
+      106.5 * scale,
+      -166.2 * scale,
+      105.2 * scale,
+      -161.9 * scale,
+      101.75 * scale,
+      -155.7 * scale,
+    );
+    path.lineTo(0, 0);
+    path.lineTo(-101.75 * scale, -155.7 * scale);
+    path.cubicTo(
+      -105.2 * scale,
+      -161.9 * scale,
+      -106.5 * scale,
+      -166.2 * scale,
+      -108.65 * scale,
+      -173.7 * scale,
+    );
+    path.cubicTo(
+      -117.0 * scale,
+      -227.9 * scale,
+      -69.0 * scale,
+      -266.3 * scale,
+      -34.34 * scale,
+      -280.8 * scale,
+    );
+    path.cubicTo(
+      -18.55 * scale,
+      -287.5 * scale,
+      -5.0 * scale,
+      -295.1 * scale,
+      0,
+      -300 * scale,
+    );
     path.close();
-    canvas.drawPath(path, petalPaint);
-
-    // Center circle core
-    final corePaint = Paint()
-      ..color = const Color(0xFFFFFDFB)
-      ..style = PaintingStyle.fill
-      ..isAntiAlias = true;
-    canvas.drawCircle(center, radius * 0.28, corePaint);
-
-    final innerDot = Paint()
-      ..color = petalColor
-      ..style = PaintingStyle.fill
-      ..isAntiAlias = true;
-    canvas.drawCircle(center, radius * 0.14, innerDot);
+    return path;
   }
 
   @override

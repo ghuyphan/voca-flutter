@@ -169,7 +169,7 @@ void main() {
 
       expect(updated.id, equals('c1'));
       expect(updated.word, equals('約束'));
-      expect(updated.level, equals('mastered'));
+      expect(updated.level, equals('known'));
       expect(updated.srsInterval, equals(15));
       expect(updated.partOfSpeech, equals('noun'));
     });
@@ -271,7 +271,7 @@ void main() {
       expect(learningCards.length, equals(1));
       expect(learningCards.first.word, equals('食べる'));
 
-      final masteredCards = cards.where((c) => c.level == 'mastered').toList();
+      final masteredCards = cards.where((c) => c.level == 'known').toList();
       expect(masteredCards.length, equals(1));
       expect(masteredCards.first.word, equals('約束'));
     });
@@ -317,8 +317,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Title & Modes
-      expect(find.text('SRS Study Deck'), findsOneWidget);
+      // Sliding Segmented Mode Selector (Flashcard, Cloze, Quiz)
       expect(find.text('Flashcard'), findsOneWidget);
       expect(find.text('Cloze'), findsOneWidget);
       expect(find.text('Quiz'), findsOneWidget);
@@ -410,15 +409,15 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('Vocabulary Notebook'), findsOneWidget);
+      expect(find.byType(VocabularyScreen), findsOneWidget);
       expect(find.byType(ListView), findsOneWidget);
       expect(find.byType(GridView), findsNothing);
 
       // Verify filter tabs
-      expect(find.text('All'), findsOneWidget);
-      expect(find.text('New'), findsOneWidget);
-      expect(find.text('Learning'), findsOneWidget);
-      expect(find.text('Mastered'), findsOneWidget);
+      expect(find.text('All'), findsWidgets);
+      expect(find.text('New'), findsWidgets);
+      expect(find.text('Learning'), findsWidgets);
+      expect(find.text('Known'), findsWidgets);
     });
 
     testWidgets('VocabularyScreen on tablet (width >= 720) renders 2-column GridView', (tester) async {
@@ -436,7 +435,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('Vocabulary Notebook'), findsOneWidget);
+      expect(find.byType(VocabularyScreen), findsOneWidget);
       expect(find.byType(GridView), findsOneWidget);
     });
   });

@@ -3,108 +3,152 @@
 import 'package:flutter/material.dart';
 import '../../../config/voca_theme.dart';
 import '../../../services/i18n_service.dart';
+import 'pressable_scale.dart';
 
-/// Top header for the onboarding wizard featuring back button,
-/// segmented linear progress bar, and skip action.
+/// Top bar: back button · segmented progress · skip.
+/// [progress] is 1-based; pass 0 to hide the progress bar (Welcome step).
 class OnboardingHeader extends StatelessWidget {
-  final int currentStep;
-  final int totalSteps;
-  final VoidCallback onBack;
-  final VoidCallback onSkip;
+  final int progress;
+  final int totalSegments;
   final bool showBack;
   final bool showSkip;
+  final VoidCallback onBack;
+  final VoidCallback onSkip;
 
   const OnboardingHeader({
     super.key,
-    required this.currentStep,
-    required this.totalSteps,
+    required this.progress,
+    required this.totalSegments,
+    required this.showBack,
+    required this.showSkip,
     required this.onBack,
     required this.onSkip,
-    this.showBack = true,
-    this.showSkip = true,
   });
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          // Back button (animates out on step 0)
-          SizedBox(
-            width: 40,
-            height: 40,
-            child: showBack && currentStep > 0
-                ? IconButton(
-                    icon: Icon(Icons.arrow_back_rounded, color: colors.textPrimary, size: 22),
-                    tooltip: context.t('onboarding.back', null, 'Back'),
-                    onPressed: onBack,
-                    padding: EdgeInsets.zero,
-                  )
-                : const SizedBox.shrink(),
-          ),
-
-          // Center: Segmented Step Progress Bar
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                children: List.generate(totalSteps, (index) {
-                  final isCompleted = currentStep > index;
-                  final isActive = currentStep == index;
-
-                  return Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 3),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOutCubic,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(2),
-                          color: isCompleted || isActive
-                              ? colors.accentPrimary
-                              : (context.isDark ? colors.borderColor : colors.borderColorLight),
-                          boxShadow: isActive
-                              ? [
-                                  BoxShadow(
-                                    color: colors.accentPrimary.withOpacity(0.4),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 1),
-                                  )
-                                ]
-                              : null,
+    return SizedBox(
+      height: 56,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Row(
+          children: [
+            // Back
+            SizedBox(
+              width: 48,
+              height: 48,
+              child: AnimatedOpacity(
+                opacity: showBack ? 1 : 0,
+                duration: const Duration(milliseconds: 180),
+                child: IgnorePointer(
+                  ignoring: !showBack,
+                  child: Semantics(
+                    button: true,
+                    label: context.t('onboarding.back', null, 'Back'),
+                    child: PressableScale(
+                      onTap: onBack,
+                      pressedScale: 0.9,
+                      child: Center(
+                        child: Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: colors.bgSurface,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: colors.borderColor),
+                          ),
+                          child: Icon(
+                            Icons.arrow_back_rounded,
+                            size: 20,
+                            color: colors.textPrimary,
+                          ),
                         ),
                       ),
                     ),
-                  );
-                }),
+                  ),
+                ),
               ),
             ),
-          ),
 
-          // Right: Skip button
-          SizedBox(
-            width: 48,
-            height: 40,
-            child: showSkip && currentStep < totalSteps - 1
-                ? TextButton(
+            // Progress
+            Expanded(
+              child: AnimatedOpacity(
+                opacity: progress > 0 ? 1 : 0,
+                duration: const Duration(milliseconds: 200),
+                child: Semantics(
+                  label: context.t(
+                    'onboarding.stepProgress',
+                    {'current': progress, 'total': totalSegments},
+                    'Step $progress of $totalSegments',
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Row(
+                      children: List.generate(totalSegments, (i) {
+                        final filled = i < progress;
+                        return Expanded(
+                          child: Container(
+                            height: 5,
+                            margin: EdgeInsets.only(
+                              right: i == totalSegments - 1 ? 0 : 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.bgTertiary,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            alignment: Alignment.centerLeft,
+                            child: AnimatedFractionallySizedBox(
+                              duration: const Duration(milliseconds: 420),
+                              curve: const Cubic(0.16, 1.0, 0.3, 1.0),
+                              widthFactor: filled ? 1 : 0,
+                              heightFactor: 1,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: colors.accentPrimary,
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            // Skip
+            SizedBox(
+              width: 64,
+              height: 48,
+              child: AnimatedOpacity(
+                opacity: showSkip ? 1 : 0,
+                duration: const Duration(milliseconds: 180),
+                child: IgnorePointer(
+                  ignoring: !showSkip,
+                  child: TextButton(
                     onPressed: onSkip,
                     style: TextButton.styleFrom(
                       padding: EdgeInsets.zero,
-                      foregroundColor: colors.textMuted,
+                      foregroundColor: colors.textSecondary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       textStyle: const TextStyle(
-                        fontSize: 13.5,
+                        fontSize: 15,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     child: Text(context.t('onboarding.skip', null, 'Skip')),
-                  )
-                : const SizedBox.shrink(),
-          ),
-        ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

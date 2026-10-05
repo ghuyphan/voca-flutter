@@ -205,6 +205,32 @@ class GrammarEngine {
         .toLowerCase();
   }
 
+  /// Checks whether a given word corresponds to a known grammar pattern
+  bool isGrammar(String word, String lang) {
+    final index = _indicesByLang[lang];
+    if (index == null) {
+      loadLanguage(lang);
+      return false;
+    }
+    final norm = _normalize(word);
+    return index.containsKey(norm);
+  }
+
+  /// Finds the first matching grammar pattern for a word
+  GrammarPattern? findPattern(String word, String lang) {
+    final index = _indicesByLang[lang];
+    if (index == null) {
+      loadLanguage(lang);
+      return null;
+    }
+    final norm = _normalize(word);
+    final hits = index[norm];
+    if (hits != null && hits.isNotEmpty) {
+      return hits.first;
+    }
+    return null;
+  }
+
   /// Detect grammar patterns in a sequence of subtitle tokens
   List<GrammarMatch> detectPatterns(List<Token> tokens, String lang, {String? uiLang}) {
     final effectiveUiLang = uiLang ?? (I18nService.instance.isInitialized ? I18nService.instance.currentLanguage.value : 'en');

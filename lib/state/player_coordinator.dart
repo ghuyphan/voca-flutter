@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../models/voca_models.dart';
+import '../utils/cyrb53_hasher.dart';
 import 'app_state.dart';
 import 'player_state.dart';
 
@@ -19,6 +20,7 @@ class PlayerCoordinator {
   final activeTitle = signal<String>('');
   final activeChannel = signal<String?>('YouTube');
   final activeLevel = signal<String?>(null);
+  final activeThumbnail = signal<String?>(null);
 
   // Playlist state signals
   final playlistVideos = signal<List<PlaylistVideo>>([]);
@@ -35,6 +37,9 @@ class PlayerCoordinator {
   final currentTime = signal<double>(0.0);
   final duration = signal<double>(0.0);
   final bufferedFraction = signal<double>(0.0);
+
+  // Completion & History tracking
+  bool _hasAwardedVideoCompletion = false;
 
   // Controllers held across miniplayer & expanded screen
   VideoPlayerController? playerController;
@@ -66,18 +71,20 @@ class PlayerCoordinator {
   /// Open and play a video.
   /// If the requested video is already the active video and is in miniplayer mode,
   /// this seamlessly expands the player back to full screen.
-  Future<void> openVideo(
+  void openVideo(
     BuildContext? context, {
     required String videoId,
     required String title,
     String? channel,
     String? level,
+    String? thumbnail,
     String? playlistTitle,
     int? playlistIndex,
     int? playlistTotal,
     List<PlaylistVideo>? playlist,
-  }) async {
+  }) {
     _autoAdvanceTimer?.cancel();
+    _hasAwardedVideoCompletion = false;
 
     if (playlist != null && playlist.isNotEmpty) {
       playlistVideos.value = List.from(playlist);
@@ -99,6 +106,9 @@ class PlayerCoordinator {
       expand(context);
       return;
     }
+
+    // Save history of currently playing video before switching
+    _saveCurrentHistory();
 
     // Clean up previous controllers first
     _disposeControllers();
@@ -133,10 +143,12 @@ class PlayerCoordinator {
         );
     ytController = newYtController;
 
-    // Set new active session metadata
+    // Set new active session metadata AFTER controllers are created
+    // so any Watch / Signal reaction has valid controllers immediately
     activeTitle.value = title;
     activeChannel.value = channel ?? 'YouTube';
     activeLevel.value = level;
+    activeThumbnail.value = thumbnail ?? 'https://i.ytimg.com/vi/$videoId/hqdefault.jpg';
     if (playlistTitle != null) {
       activePlaylistTitle.value = playlistTitle;
     }
@@ -144,6 +156,24 @@ class PlayerCoordinator {
     currentTime.value = 0.0;
     duration.value = 0.0;
     activeVideoId.value = videoId;
+
+    // Load video immediately
+    newYtController.loadVideoById(videoId: videoId);
+    newPlayerController.loadVideo(videoId);
+
+    // Asynchronously seek to previous watch progress if available
+    _resumeFromHistoryIfAvailable(videoId, newYtController, newPlayerController);
+
+    // Sync duration from cues if available before or alongside video metadata
+    newPlayerController.cues.subscribe((cList) {
+      if (cList.isNotEmpty && duration.value <= 0) {
+        final lastCue = cList.last;
+        final estimatedDur = lastCue.start + lastCue.duration;
+        if (estimatedDur > 0) {
+          duration.value = estimatedDur;
+        }
+      }
+    });
 
     // Listen to video state stream
     _videoStateSubscription = newYtController.videoStateStream.listen((state) {
@@ -154,10 +184,23 @@ class PlayerCoordinator {
       final metaDur = newYtController.metadata.duration.inSeconds.toDouble();
       if (metaDur > 0) {
         duration.value = metaDur;
+      } else if (duration.value <= 0 && newPlayerController.cues.value.isNotEmpty) {
+        final lastCue = newPlayerController.cues.value.last;
+        final estimatedDur = lastCue.start + lastCue.duration;
+        if (estimatedDur > 0) {
+          duration.value = estimatedDur;
+        }
       }
 
       newPlayerController.currentTime.value = time;
       newPlayerController.updatePlaybackTime(time);
+
+      // Check for >= 80% video completion to award XP and track gamification
+      final effectiveDur = duration.value > 0 ? duration.value : metaDur;
+      if (!_hasAwardedVideoCompletion && effectiveDur > 0 && (time / effectiveDur) >= 0.80) {
+        _hasAwardedVideoCompletion = true;
+        AppState.instance.gamificationService.recordVideoCompleted();
+      }
     });
 
     // Listen to player state
@@ -167,23 +210,63 @@ class PlayerCoordinator {
         isEnded.value = false;
         newPlayerController.isPlaying.value = true;
         disableNativeCaptions(newYtController);
+        if (activeTitle.value.isEmpty || activeTitle.value == 'YouTube Video') {
+          final metaTitle = newYtController.metadata.title;
+          if (metaTitle.isNotEmpty) activeTitle.value = metaTitle;
+        }
+        if (activeChannel.value == null || activeChannel.value == 'YouTube') {
+          final metaAuthor = newYtController.metadata.author;
+          if (metaAuthor.isNotEmpty) activeChannel.value = metaAuthor;
+        }
       } else if (value.playerState == PlayerState.paused) {
         isPlaying.value = false;
         newPlayerController.isPlaying.value = false;
+        _saveCurrentHistory();
       } else if (value.playerState == PlayerState.ended) {
         isPlaying.value = false;
         isEnded.value = true;
         newPlayerController.isPlaying.value = false;
         newPlayerController.handleVideoEnded();
 
+        if (!_hasAwardedVideoCompletion) {
+          _hasAwardedVideoCompletion = true;
+          AppState.instance.gamificationService.recordVideoCompleted();
+        }
+        _saveCurrentHistory();
+
         // Auto-advance to next video if part of a playlist
         _handleAutoAdvance();
       }
     });
 
-    // Load video and captions
-    newYtController.loadVideoById(videoId: videoId);
-    newPlayerController.loadVideo(videoId);
+  }
+
+  void _resumeFromHistoryIfAvailable(
+    String vId,
+    YoutubePlayerController targetYt,
+    VideoPlayerController targetPlayer,
+  ) async {
+    try {
+      final historyList = await AppState.instance.supabaseService.getHistory(limit: 50);
+      if (activeVideoId.value != vId) return; // Video changed in meantime
+      final match = historyList.firstWhere(
+        (item) => item['video_id'] == vId,
+        orElse: () => <String, dynamic>{},
+      );
+      if (match.isNotEmpty) {
+        final rawProg = (match['progress'] as num?)?.toDouble() ?? 0.0;
+        final progress = rawProg <= 1.0 && rawProg > 0.0 ? rawProg * 100.0 : rawProg;
+        final dur = (match['duration'] as num?)?.toInt() ?? 0;
+        if (progress > 0 && progress < 95 && dur > 0) {
+          final calculated = (dur * progress / 100).round();
+          if (calculated > 3) {
+            targetYt.seekTo(seconds: calculated.toDouble(), allowSeekAhead: true);
+            currentTime.value = calculated.toDouble();
+            targetPlayer.currentTime.value = calculated.toDouble();
+          }
+        }
+      }
+    } catch (_) {}
   }
 
   void _handleAutoAdvance() {
@@ -307,8 +390,16 @@ class PlayerCoordinator {
   void togglePlayPause() {
     if (ytController == null) return;
     if (isPlaying.value) {
+      isPlaying.value = false;
+      playerController?.isPlaying.value = false;
       ytController!.pauseVideo();
     } else {
+      isPlaying.value = true;
+      playerController?.isPlaying.value = true;
+      if (isEnded.value) {
+        ytController!.seekTo(seconds: 0.0, allowSeekAhead: true);
+        isEnded.value = false;
+      }
       ytController!.playVideo();
     }
   }
@@ -316,11 +407,13 @@ class PlayerCoordinator {
   /// Stop playback, clear the active video, and dismiss the miniplayer.
   void close() {
     _autoAdvanceTimer?.cancel();
+    _saveCurrentHistory();
     _disposeControllers();
     activeVideoId.value = null;
     activeTitle.value = '';
     activeChannel.value = null;
     activeLevel.value = null;
+    activeThumbnail.value = null;
     playlistVideos.value = [];
     _unshuffledVideos = [];
     activePlaylistTitle.value = null;
@@ -330,6 +423,32 @@ class PlayerCoordinator {
     isEnded.value = false;
     currentTime.value = 0.0;
     duration.value = 0.0;
+  }
+
+  /// Saves current video progress to watch history (local & Supabase)
+  Future<void> _saveCurrentHistory() async {
+    final vId = activeVideoId.value;
+    if (vId == null || vId.isEmpty) return;
+    try {
+      final user = AppState.instance.supabaseService.currentUser;
+      final userId = user?.id ?? 'guest';
+      final id = generateDeterministicRecordId([userId, vId]);
+      final dur = duration.value.round();
+      final cur = currentTime.value;
+      final progress = dur > 0 ? ((cur / dur) * 100).clamp(0.0, 100.0) : 0.0;
+      await AppState.instance.supabaseService.saveHistory(
+        id: id,
+        videoId: vId,
+        title: activeTitle.value.isNotEmpty ? activeTitle.value : 'YouTube Video',
+        thumbnail: 'https://img.youtube.com/vi/$vId/hqdefault.jpg',
+        channel: activeChannel.value ?? 'YouTube',
+        duration: dur,
+        language: AppState.instance.activeLanguage.value,
+        progress: progress,
+      );
+    } catch (e) {
+      debugPrint('[PlayerCoordinator] Error saving watch history: $e');
+    }
   }
 
   /// Alias for close() for backward compatibility

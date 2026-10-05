@@ -7,6 +7,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 import '../models/voca_models.dart';
 import '../services/voca_api_client.dart';
 import '../services/supabase_service.dart';
+import '../services/auth_service.dart';
 import '../services/grammar_engine.dart';
 import '../services/gamification_service.dart';
 import '../services/i18n_service.dart';
@@ -17,11 +18,29 @@ class AppState {
 
   late VocaApiClient apiClient;
   late SupabaseService supabaseService;
+  AuthService? _authService;
+  AuthService get authService {
+    if (_authService == null) {
+      try {
+        _authService = AuthService(supabaseService: supabaseService);
+      } catch (_) {}
+    }
+    return _authService!;
+  }
+  set authService(AuthService s) => _authService = s;
   late GrammarEngine grammarEngine;
   late GamificationService gamificationService;
 
   final activeLanguage = signal<String>('ja');
   final userSettings = signal<UserSettings>(UserSettings());
+  final Signal<UserProfile?> _fallbackUserProfile = signal<UserProfile?>(null);
+  Signal<UserProfile?> get userProfile {
+    try {
+      return authService.userProfile;
+    } catch (_) {
+      return _fallbackUserProfile;
+    }
+  }
 
   // Convenience proxies to gamification signals for backwards compatibility
   Signal<int> get diamonds => gamificationService.diamonds;
@@ -86,6 +105,41 @@ class AppState {
     } catch (e) {
       debugPrint('[AppState] Error loading user settings: $e');
     }
+
+    // 4. Initialize Auth Service & Load Cached Profile
+    try {
+      if (_authService != null) {
+        await _authService!.init();
+      } else {
+        try {
+          await authService.init();
+        } catch (_) {}
+      }
+    } catch (e) {
+      debugPrint('[AppState] Auth initialization skipped or failed: $e');
+    }
+  }
+
+  Future<void> refreshUserProfile() async {
+    try {
+      await authService.init();
+    } catch (_) {}
+  }
+
+  Future<bool> updateUserProfile({
+    String? name,
+    String? avatarUrl,
+    String? country,
+  }) async {
+    try {
+      return await authService.updateUserProfile(
+        name: name,
+        avatarUrl: avatarUrl,
+        country: country,
+      );
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<void> updateUserSettings(UserSettings newSettings) async {
@@ -131,7 +185,65 @@ class AppState {
     updateUserSettings(userSettings.value.copyWith(hasSeenSubtitleCoachmark: true));
   }
 
-  Future<void> completeOnboarding({
+  String applyCompanionPerk(String companionId) {
+    switch (companionId) {
+      case 'knight':
+        gamificationService.streakFreezes.value = 2;
+        return I18nService.instance.t(
+          'onboarding.perkKnight',
+          null,
+          'Guardian Knight: Frost Ward Streak Shield activated!',
+        );
+      case 'wizard':
+        return I18nService.instance.t(
+          'onboarding.perkWizard',
+          null,
+          'Scholar Mage: Grammar & Syntax Insights turned ON!',
+        );
+      case 'alchemist':
+        gamificationService.addXp(25, reason: 'alchemist_word_mining_bonus');
+        return I18nService.instance.t(
+          'onboarding.perkAlchemist',
+          null,
+          'Vocab Alchemist: +25 Extra Bonus XP transmuted!',
+        );
+      case 'ranger':
+        return I18nService.instance.t(
+          'onboarding.perkRanger',
+          null,
+          'Immersion Ranger: Dual Subtitles enabled for real talk!',
+        );
+      case 'bard':
+        setReadingDisplayMode('annotated');
+        return I18nService.instance.t(
+          'onboarding.perkBard',
+          null,
+          'Minstrel Bard: Phonetic Pronunciation guides enabled!',
+        );
+      case 'miner':
+        gamificationService.addXp(35, reason: 'miner_word_mining_bonus');
+        return I18nService.instance.t(
+          'onboarding.perkMiner',
+          null,
+          'Sentence Miner: Word-mining radar calibrated! +35 Miner XP discovered!',
+        );
+      case 'sovereign':
+        return I18nService.instance.t(
+          'onboarding.perkSovereign',
+          null,
+          'Mythic Sovereign: Polyglot Mantle bestowed! Dual Subtitles & Grammar Insights active!',
+        );
+      case 'shinobi':
+      default:
+        return I18nService.instance.t(
+          'onboarding.perkShinobi',
+          null,
+          'Shadow Shinobi: Rapid native immersion calibrated!',
+        );
+    }
+  }
+
+  Future<String> completeOnboarding({
     required String learningLanguage,
     required String companionClass,
     required String preferredLevel,
@@ -142,11 +254,17 @@ class AppState {
   }) async {
     setLanguage(learningLanguage);
 
+    final perkMsg = applyCompanionPerk(companionClass);
+
+    final effectiveDualSubtitles = (companionClass == 'ranger' || companionClass == 'sovereign')
+        ? true
+        : showDualSubtitles;
+
     final updated = userSettings.value.copyWith(
       hasCompletedOnboarding: true,
       nativeLanguage: nativeLanguage,
       dualSubtitleTargetLang: nativeLanguage,
-      showDualSubtitles: showDualSubtitles,
+      showDualSubtitles: effectiveDualSubtitles,
       preferredLevel: preferredLevel,
       companionClass: companionClass,
       dailyGoalMinutes: dailyGoalMinutes,
@@ -157,8 +275,10 @@ class AppState {
       try {
         gamificationService.addXp(50, reason: 'onboarding_starter_pack');
         await gamificationService.recordActivity();
-        if (gamificationService.streakFreezes.value < 2) {
+        if (companionClass == 'knight') {
           gamificationService.streakFreezes.value = 2;
+        } else {
+          gamificationService.streakFreezes.value = 1;
         }
       } catch (_) {}
     }
@@ -175,6 +295,8 @@ class AppState {
     } catch (e) {
       debugPrint('[AppState] Profile sync skipped: $e');
     }
+
+    return perkMsg;
   }
 
   Future<void> refreshDiamonds() async {

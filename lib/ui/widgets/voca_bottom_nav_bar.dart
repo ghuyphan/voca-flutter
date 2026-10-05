@@ -64,7 +64,7 @@ class VocaBottomNavBar extends StatelessWidget {
       final watchLabel = context.t('nav.watch', null, 'Watch');
       final reviewLabel = context.t('nav.review', null, 'Review');
       final vocabLabel = context.t('nav.vocab', null, 'Vocab');
-      final moreLabel = context.t('nav.more', null, 'More');
+      final libraryLabel = context.t('nav.library', null, 'Library');
 
       return ClipRect(
         child: BackdropFilter(
@@ -119,11 +119,11 @@ class VocaBottomNavBar extends StatelessWidget {
                     colors: colors,
                   ),
 
-                  // 4. More (Personal Hub)
+                  // 4. Library (Personal Hub)
                   _VocaNavItem(
-                    icon: Icons.grid_view_rounded,
-                    activeIcon: Icons.grid_view_rounded,
-                    label: moreLabel,
+                    icon: Icons.video_library_outlined,
+                    activeIcon: Icons.video_library_rounded,
+                    label: libraryLabel,
                     isSelected: currentIndex == 3,
                     onTap: () {
                       onTabSelected(3);

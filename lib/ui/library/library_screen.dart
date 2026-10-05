@@ -1,12 +1,22 @@
 // lib/ui/library/library_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../../config/voca_theme.dart';
 import '../../models/voca_models.dart';
+import '../../services/i18n_service.dart';
+import '../../services/toast_service.dart';
 import '../../state/app_state.dart';
-import '../../state/player_coordinator.dart';
+import '../settings/settings_screen.dart';
+import '../sheets/create_playlist_sheet.dart';
+import '../widgets/voca_confirm_dialog.dart';
+import '../widgets/voca_empty_state.dart';
+import 'widgets/history_filter_toolbar.dart';
+import 'widgets/history_video_card.dart';
+import 'widgets/library_playlist_card.dart';
+import 'widgets/library_top_bar.dart';
 
+/// Rebuilt Library Screen matching lingua-tube's history-page and playlist-page 1:1.
+/// Features a sleek top segmented switcher, solid filter toolbar, and responsive feeds.
 class LibraryScreen extends StatefulWidget {
   final VoidCallback? onNavigateToExplore;
   final int initialTabIndex;
@@ -18,45 +28,64 @@ class LibraryScreen extends StatefulWidget {
   });
 
   @override
-  State<LibraryScreen> createState() => _LibraryScreenState();
+  State<LibraryScreen> createState() => LibraryScreenState();
 }
 
-class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
+class LibraryScreenState extends State<LibraryScreen> {
+  int _currentTab = 0; // 0: Watch History, 1: Playlists
+
   List<Map<String, dynamic>> _historyItems = [];
   List<PlaylistItem> _playlists = [];
   bool _isLoadingHistory = true;
   bool _isLoadingPlaylists = true;
 
+  // History Filter & Search State
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  String _selectedLangFilter = 'all';
+  String _selectedLevelFilter = 'all';
+  bool _showOnlyFavorites = false;
+  Set<String> _savedVideoIds = {};
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(
-      length: 2,
-      vsync: this,
-      initialIndex: widget.initialTabIndex.clamp(0, 1),
-    );
+    _currentTab = widget.initialTabIndex.clamp(0, 1);
+    _searchController.addListener(_onSearchChanged);
     _loadHistory();
     _loadPlaylists();
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
     super.dispose();
+  }
+
+  void switchToPlaylists() {
+    if (_currentTab != 1) setState(() => _currentTab = 1);
+  }
+
+  void switchToHistory() {
+    if (_currentTab != 0) setState(() => _currentTab = 0);
+  }
+
+  void _onSearchChanged() {
+    setState(() => _searchQuery = _searchController.text.trim().toLowerCase());
   }
 
   Future<void> _loadHistory() async {
     setState(() => _isLoadingHistory = true);
     try {
-      final history = await AppState.instance.supabaseService.getHistory(limit: 50);
+      final history = await AppState.instance.supabaseService.getHistory(limit: 100);
       if (mounted) {
         setState(() {
           _historyItems = history;
           _isLoadingHistory = false;
         });
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) setState(() => _isLoadingHistory = false);
     }
   }
@@ -65,810 +94,392 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
     setState(() => _isLoadingPlaylists = true);
     try {
       final playlists = await AppState.instance.supabaseService.getPlaylists();
+      final defaultSaved = playlists.firstWhere(
+        (p) => p.id == 'default_saved',
+        orElse: () => PlaylistItem(
+          id: 'default_saved',
+          userId: 'guest',
+          title: 'Saved Videos',
+          language: 'all',
+          videoIds: const [],
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+
       if (mounted) {
         setState(() {
           _playlists = playlists;
+          _savedVideoIds = Set.from(defaultSaved.videoIds);
           _isLoadingPlaylists = false;
         });
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) setState(() => _isLoadingPlaylists = false);
     }
   }
 
-  Future<void> _deleteHistoryItem(String id) async {
+  Future<void> _toggleFavorite(Map<String, dynamic> item) async {
+    final videoId = item['video_id'] as String? ?? item['videoId'] as String? ?? '';
+    if (videoId.isEmpty) return;
+
+    final isFav = _savedVideoIds.contains(videoId);
+    setState(() {
+      if (isFav) {
+        _savedVideoIds.remove(videoId);
+      } else {
+        _savedVideoIds.add(videoId);
+      }
+    });
+
+    if (isFav) {
+      await AppState.instance.supabaseService.removeVideoFromPlaylist(
+        playlistId: 'default_saved',
+        videoId: videoId,
+      );
+    } else {
+      await AppState.instance.supabaseService.addVideoToPlaylist(
+        playlistId: 'default_saved',
+        videoId: videoId,
+        thumbnail: item['thumbnail'] as String?,
+      );
+    }
+  }
+
+  Future<void> _removeHistoryItem(Map<String, dynamic> item) async {
+    final id = item['id'] as String? ?? item['video_id'] as String? ?? '';
+    final index = _historyItems.indexOf(item);
+
+    setState(() => _historyItems.remove(item));
     await AppState.instance.supabaseService.deleteHistoryItem(id);
-    _loadHistory();
+
+    if (!mounted) return;
+    final colors = context.vocaColors;
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: colors.bgCard,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: BorderSide(color: colors.borderColor),
+        ),
+        content: Text(
+          'Video removed from history',
+          style: TextStyle(color: colors.textPrimary, fontSize: 13),
+        ),
+        action: SnackBarAction(
+          label: 'Undo',
+          textColor: colors.accentPrimary,
+          onPressed: () async {
+            setState(() {
+              if (index >= 0 && index <= _historyItems.length) {
+                _historyItems.insert(index, item);
+              } else {
+                _historyItems.add(item);
+              }
+            });
+            await AppState.instance.supabaseService.saveHistory(
+              id: id,
+              videoId: item['video_id'] as String? ?? '',
+              title: item['title'] as String? ?? '',
+              thumbnail: item['thumbnail'] as String? ?? '',
+              channel: item['channel'] as String? ?? '',
+              duration: (item['duration'] as num?)?.toInt() ?? 0,
+              language: item['language'] as String? ?? 'ja',
+              progress: (item['progress'] as num?)?.toDouble() ?? 0.0,
+            );
+          },
+        ),
+        duration: const Duration(seconds: 4),
+      ),
+    );
   }
 
   Future<void> _clearAllHistory() async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showVocaConfirmDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
-        title: const Text('Clear Watch History', style: TextStyle(color: Colors.white)),
-        content: const Text(
-          'Are you sure you want to remove all videos from your watch history?',
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFEF4444),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Clear All'),
-          ),
-        ],
+      title: context.t('history.clearConfirm', null, 'Clear Watch History'),
+      message: context.t(
+        'history.clearAllWarning',
+        null,
+        'This will permanently remove all videos from your watch history.',
       ),
+      confirmText: context.t('history.clearAll', null, 'Clear All'),
+      variant: ConfirmDialogVariant.danger,
+      isDestructive: true,
+      icon: Icons.delete_outline_rounded,
     );
 
     if (confirmed == true) {
       await AppState.instance.supabaseService.clearHistory();
-      _loadHistory();
+      if (mounted) {
+        setState(() => _historyItems.clear());
+        ToastService.info(context, 'Watch history cleared');
+      }
     }
   }
 
-  Future<void> _showCreatePlaylistDialog() async {
-    final titleController = TextEditingController();
-    final descController = TextEditingController();
-    String selectedLang = AppState.instance.activeLanguage.value;
+  List<Map<String, dynamic>> _getFilteredHistory() {
+    return _historyItems.where((item) {
+      final title = (item['title'] as String? ?? '').toLowerCase();
+      final channel = (item['channel'] as String? ?? '').toLowerCase();
+      final lang = (item['language'] as String? ?? '').toLowerCase();
+      final videoId = item['video_id'] as String? ?? item['videoId'] as String? ?? '';
 
-    final created = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: const Color(0xFF1E293B),
-          title: const Text('New Playlist', style: TextStyle(color: Colors.white)),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: titleController,
-                  autofocus: true,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Playlist Title',
-                    labelStyle: TextStyle(color: Colors.white70),
-                    hintText: 'e.g. JLPT N3 Grammar Lessons',
-                    hintStyle: TextStyle(color: Colors.white30),
-                    enabledBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: Colors.white24),
-                    ),
-                    focusedBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFF6366F1)),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: descController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Description (Optional)',
-                    labelStyle: TextStyle(color: Colors.white70),
-                    hintText: 'Short summary of this collection',
-                    hintStyle: TextStyle(color: Colors.white30),
-                    enabledBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: Colors.white24),
-                    ),
-                    focusedBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFF6366F1)),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text('Language', style: TextStyle(color: Colors.white70, fontSize: 13)),
-                const SizedBox(height: 8),
-                DropdownButton<String>(
-                  value: selectedLang,
-                  dropdownColor: const Color(0xFF1E293B),
-                  isExpanded: true,
-                  underline: Container(height: 1, color: Colors.white24),
-                  items: const [
-                    DropdownMenuItem(value: 'ja', child: Text('🇯🇵 Japanese', style: TextStyle(color: Colors.white))),
-                    DropdownMenuItem(value: 'zh', child: Text('🇨🇳 Chinese', style: TextStyle(color: Colors.white))),
-                    DropdownMenuItem(value: 'ko', child: Text('🇰🇷 Korean', style: TextStyle(color: Colors.white))),
-                    DropdownMenuItem(value: 'en', child: Text('🇺🇸 English', style: TextStyle(color: Colors.white))),
-                  ],
-                  onChanged: (val) {
-                    if (val != null) {
-                      setDialogState(() => selectedLang = val);
-                    }
-                  },
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (titleController.text.trim().isNotEmpty) {
-                  Navigator.of(ctx).pop(true);
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6366F1),
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Create'),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (created == true && titleController.text.trim().isNotEmpty) {
-      await AppState.instance.supabaseService.createPlaylist(
-        title: titleController.text.trim(),
-        description: descController.text.trim().isEmpty ? null : descController.text.trim(),
-        language: selectedLang,
-      );
-      _loadPlaylists();
-    }
+      if (_searchQuery.isNotEmpty && !title.contains(_searchQuery) && !channel.contains(_searchQuery)) {
+        return false;
+      }
+      if (_selectedLangFilter != 'all' && lang != _selectedLangFilter) {
+        return false;
+      }
+      if (_selectedLevelFilter != 'all') {
+        final level = (item['level'] as String? ?? '').replaceAll(' ', '').toUpperCase();
+        final filter = _selectedLevelFilter.replaceAll(' ', '').toUpperCase();
+        if (level.isNotEmpty && !level.contains(filter)) {
+          return false;
+        }
+      }
+      if (_showOnlyFavorites && !_savedVideoIds.contains(videoId)) {
+        return false;
+      }
+      return true;
+    }).toList();
   }
 
-  void _openPlaylistDetails(PlaylistItem playlist) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: const Color(0xFF1E293B),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.7,
-          minChildSize: 0.4,
-          maxChildSize: 0.95,
-          expand: false,
-          builder: (_, scrollController) {
-            return Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.white24,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              playlist.title,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            if (playlist.description != null) ...[
-                              const SizedBox(height: 4),
-                              Text(
-                                playlist.description!,
-                                style: const TextStyle(color: Colors.white60, fontSize: 13),
-                              ),
-                            ],
-                            const SizedBox(height: 4),
-                            Text(
-                              '${playlist.videoCount} videos',
-                              style: const TextStyle(color: Color(0xFF38BDF8), fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (playlist.id != 'default_saved')
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                          onPressed: () async {
-                            Navigator.of(ctx).pop();
-                            await AppState.instance.supabaseService.deletePlaylist(playlist.id);
-                            _loadPlaylists();
-                          },
-                        ),
-                    ],
-                  ),
-                  const Divider(color: Colors.white12, height: 24),
-                  Expanded(
-                    child: playlist.videoIds.isEmpty
-                        ? const Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.playlist_remove_rounded, color: Colors.white24, size: 48),
-                                SizedBox(height: 12),
-                                Text(
-                                  'This playlist is empty',
-                                  style: TextStyle(color: Colors.white70, fontSize: 15),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'Bookmark videos from Explore or Player to save them here.',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(color: Colors.white38, fontSize: 12),
-                                ),
-                              ],
-                            ),
-                          )
-                        : ListView.separated(
-                            controller: scrollController,
-                            itemCount: playlist.videoIds.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 10),
-                            itemBuilder: (context, idx) {
-                              final vid = playlist.videoIds[idx];
-                              return ListTile(
-                                tileColor: const Color(0xFF0F172A),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                leading: ClipRRect(
-                                  borderRadius: BorderRadius.circular(6),
-                                  child: Image.network(
-                                    'https://i.ytimg.com/vi/$vid/hqdefault.jpg',
-                                    width: 72,
-                                    height: 48,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => Container(
-                                      width: 72,
-                                      height: 48,
-                                      color: Colors.black26,
-                                      child: const Icon(Icons.play_arrow, color: Colors.white38),
-                                    ),
-                                  ),
-                                ),
-                                title: Text(
-                                  'Video $vid',
-                                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                trailing: const Icon(Icons.play_circle_outline, color: Color(0xFF6366F1)),
-                                onTap: () {
-                                  Navigator.of(ctx).pop();
-                                  final playlistVideos = playlist.videoIds.asMap().entries.map((entry) {
-                                    final i = entry.key;
-                                    final v = entry.value;
-                                    return PlaylistVideo(
-                                      videoId: v,
-                                      title: 'Video ${i + 1}',
-                                      thumbnail: 'https://img.youtube.com/vi/$v/hqdefault.jpg',
-                                      level: playlist.level,
-                                      position: i,
-                                    );
-                                  }).toList();
-
-                                  PlayerCoordinator.instance.openVideo(
-                                    context,
-                                    videoId: vid,
-                                    title: 'Video ${idx + 1}',
-                                    level: playlist.level,
-                                    playlistTitle: playlist.title,
-                                    playlistIndex: idx,
-                                    playlistTotal: playlist.videoIds.length,
-                                    playlist: playlistVideos,
-                                  );
-                                },
-                              );
-                            },
-                          ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  String _formatWatchedDate(dynamic dateVal) {
-    if (dateVal == null) return '';
-    DateTime? dt;
-    if (dateVal is DateTime) {
-      dt = dateVal;
-    } else {
-      dt = DateTime.tryParse(dateVal.toString());
-    }
-    if (dt == null) return '';
-
-    final diff = DateTime.now().difference(dt);
-    if (diff.inMinutes < 60) {
-      return diff.inMinutes <= 1 ? 'Just now' : '${diff.inMinutes}m ago';
-    } else if (diff.inHours < 24) {
-      return '${diff.inHours}h ago';
-    } else if (diff.inDays < 7) {
-      return '${diff.inDays}d ago';
-    } else {
-      return DateFormat('MMM d').format(dt);
-    }
-  }
-
-  String _formatDuration(int seconds) {
-    if (seconds <= 0) return '0:00';
-    final m = seconds ~/ 60;
-    final s = seconds % 60;
-    return '$m:${s.toString().padLeft(2, '0')}';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: VocaTokens.bgPrimary,
-      appBar: AppBar(
-        backgroundColor: VocaTokens.bgPrimary,
-        elevation: 0,
-        title: const Text(
-          'Library',
-          style: TextStyle(color: VocaTokens.textPrimary, fontWeight: FontWeight.bold),
-        ),
-        actions: [
-          if (_tabController.index == 0 && _historyItems.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.delete_sweep_outlined, color: Colors.white70),
-              tooltip: 'Clear History',
-              onPressed: _clearAllHistory,
-            ),
-          if (_tabController.index == 1)
-            IconButton(
-              icon: const Icon(Icons.add, color: Color(0xFF38BDF8)),
-              tooltip: 'New Playlist',
-              onPressed: _showCreatePlaylistDialog,
-            ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: VocaTokens.accentPrimary,
-          indicatorWeight: 3,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white60,
-          onTap: (_) => setState(() {}),
-          tabs: const [
-            Tab(icon: Icon(Icons.history_rounded, size: 20), text: 'Watch History'),
-            Tab(icon: Icon(Icons.playlist_play_rounded, size: 22), text: 'Playlists / Saved'),
-          ],
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          // Tab 1: Watch History
-          _buildWatchHistoryTab(),
-
-          // Tab 2: Playlists / Saved
-          _buildPlaylistsTab(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWatchHistoryTab() {
+  // ==========================================
+  // TAB 1: WATCH HISTORY VIEW
+  // ==========================================
+  Widget _buildHistoryTab(VocaColorPalette colors) {
     if (_isLoadingHistory) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFF6366F1)));
+      return Center(child: CircularProgressIndicator(color: colors.accentPrimary));
     }
 
-    if (_historyItems.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF1E293B),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.history_toggle_off_rounded, color: Colors.white30, size: 48),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'No watch history yet',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Start watching immersion videos with interactive subtitles to track your learning progress.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white60, fontSize: 13.5),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: () {
-                  if (widget.onNavigateToExplore != null) {
-                    widget.onNavigateToExplore!();
-                  }
-                },
-                icon: const Icon(Icons.explore_outlined, size: 18),
-                label: const Text('Explore Videos'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6366F1),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
+    final filteredItems = _getFilteredHistory();
 
     return RefreshIndicator(
       onRefresh: _loadHistory,
-      color: const Color(0xFF6366F1),
-      child: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: _historyItems.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (context, index) {
-          final item = _historyItems[index];
-          final videoId = item['video_id'] as String? ?? '';
-          final title = item['title'] as String? ?? 'Untitled Video';
-          final channel = item['channel'] as String? ?? 'YouTube';
-          final duration = (item['duration'] as num?)?.toInt() ?? 0;
-          final progress = (item['progress'] as num?)?.toDouble() ?? 0.0;
-          final watchedAt = item['watched_at'];
-          final id = item['id'] as String? ?? videoId;
-          final progressPercent = (progress * 100).clamp(0, 100).toInt();
-
-          return Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E293B),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white12),
+      color: colors.accentPrimary,
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        slivers: [
+          // Filter Toolbar
+          SliverToBoxAdapter(
+            child: HistoryFilterToolbar(
+              searchController: _searchController,
+              searchQuery: _searchQuery,
+              selectedLang: _selectedLangFilter,
+              selectedLevel: _selectedLevelFilter,
+              showOnlyFavorites: _showOnlyFavorites,
+              hasHistoryItems: _historyItems.isNotEmpty,
+              onClearHistory: _clearAllHistory,
+              onLangChanged: (lang) => setState(() {
+                _selectedLangFilter = lang;
+                _selectedLevelFilter = 'all';
+              }),
+              onLevelChanged: (lvl) => setState(() => _selectedLevelFilter = lvl),
+              onFavoritesChanged: (favs) => setState(() => _showOnlyFavorites = favs),
             ),
-            clipBehavior: Clip.antiAlias,
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  // One-tap resume: resume at watched progress
-                  PlayerCoordinator.instance.openVideo(
-                    context,
-                    videoId: videoId,
-                    title: title,
-                  );
-                  _loadHistory();
-                },
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Video Thumbnail with Duration badge & Progress Bar
-                      Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: SizedBox(
-                              width: 120,
-                              height: 68,
-                              child: Image.network(
-                                'https://i.ytimg.com/vi/$videoId/hqdefault.jpg',
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(
-                                  color: Colors.black38,
-                                  child: const Icon(Icons.broken_image, color: Colors.white30),
-                                ),
-                              ),
-                            ),
-                          ),
-                          // Duration badge
-                          if (duration > 0)
-                            Positioned(
-                              bottom: 4,
-                              right: 4,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.8),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  _formatDuration(duration),
-                                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            ),
-                          // Progress Bar along bottom of thumbnail
-                          Positioned(
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            child: ClipRRect(
-                              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(8)),
-                              child: LinearProgressIndicator(
-                                value: progress,
-                                minHeight: 3,
-                                backgroundColor: Colors.black45,
-                                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFEF4444)),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(width: 12),
+          ),
 
-                      // Metadata & Resume info
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              title,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              channel,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(color: Colors.white60, fontSize: 11.5),
-                            ),
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF6366F1).withOpacity(0.15),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    '$progressPercent% watched',
-                                    style: const TextStyle(
-                                      color: Color(0xFF818CF8),
-                                      fontSize: 10.5,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                if (watchedAt != null)
-                                  Text(
-                                    _formatWatchedDate(watchedAt),
-                                    style: const TextStyle(color: Colors.white38, fontSize: 11),
-                                  ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
+          // History Video List or Empty State
+          if (filteredItems.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: _buildEmptyHistoryState(colors),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final item = filteredItems[index];
+                    final videoId = item['video_id'] as String? ?? item['videoId'] as String? ?? '';
+                    final isFav = _savedVideoIds.contains(videoId);
 
-                      // More options (Remove from history)
-                      PopupMenuButton<String>(
-                        icon: const Icon(Icons.more_vert, color: Colors.white60, size: 18),
-                        color: const Color(0xFF1E293B),
-                        onSelected: (val) {
-                          if (val == 'delete') {
-                            _deleteHistoryItem(id);
-                          }
-                        },
-                        itemBuilder: (ctx) => [
-                          const PopupMenuItem(
-                            value: 'delete',
-                            child: Row(
-                              children: [
-                                Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
-                                SizedBox(width: 8),
-                                Text('Remove', style: TextStyle(color: Colors.redAccent)),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                    return HistoryVideoCard(
+                      item: item,
+                      isFavorite: isFav,
+                      onToggleFavorite: () => _toggleFavorite(item),
+                      onRemove: () => _removeHistoryItem(item),
+                    );
+                  },
+                  childCount: filteredItems.length,
                 ),
               ),
             ),
-          );
-        },
+        ],
       ),
     );
   }
 
-  Widget _buildPlaylistsTab() {
+  Widget _buildEmptyHistoryState(VocaColorPalette colors) {
+    final hasActiveFilter = _searchQuery.isNotEmpty || _selectedLangFilter != 'all' || _selectedLevelFilter != 'all';
+
+    if (hasActiveFilter) {
+      return Center(
+        child: VocaEmptyState(
+          icon: Icons.search_off_rounded,
+          variant: EmptyStateIconVariant.neutral,
+          compact: true,
+          title: context.t('history.noMatchesFound', null, 'No matches found'),
+          description: context.t('history.noMatchesHint', null, 'Try adjusting your search keywords or active filters.'),
+          actionLabel: context.t('history.clearFilters', null, 'Clear Filters'),
+          onAction: () {
+            _searchController.clear();
+            setState(() {
+              _selectedLangFilter = 'all';
+              _selectedLevelFilter = 'all';
+              _showOnlyFavorites = false;
+            });
+          },
+        ),
+      );
+    }
+
+    if (_showOnlyFavorites) {
+      return Center(
+        child: VocaEmptyState(
+          icon: Icons.favorite_border_rounded,
+          variant: EmptyStateIconVariant.neutral,
+          compact: true,
+          title: context.t('history.noFavorites', null, 'No favorites yet'),
+          description: context.t('history.noFavoritesHint', null, 'Tap the heart icon on any video in your history to save it here.'),
+          actionLabel: context.t('history.exploreVideos', null, 'Browse Videos'),
+          onAction: () => widget.onNavigateToExplore?.call(),
+        ),
+      );
+    }
+
+    return Center(
+      child: VocaEmptyState(
+        icon: Icons.history_rounded,
+        variant: EmptyStateIconVariant.neutral,
+        compact: true,
+        title: context.t('history.noHistory', null, 'No watch history'),
+        description: context.t('history.noHistoryHint', null, 'Videos you watch with interactive subtitles will appear here.'),
+        actionLabel: context.t('history.exploreVideos', null, 'Browse Videos'),
+        onAction: () => widget.onNavigateToExplore?.call(),
+      ),
+    );
+  }
+
+  // ==========================================
+  // TAB 2: PLAYLISTS VIEW
+  // ==========================================
+  Widget _buildPlaylistsTab(VocaColorPalette colors) {
     if (_isLoadingPlaylists) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFF6366F1)));
+      return Center(child: CircularProgressIndicator(color: colors.accentPrimary));
+    }
+
+    if (_playlists.isEmpty) {
+      return Center(
+        child: VocaEmptyState(
+          icon: Icons.playlist_play_rounded,
+          variant: EmptyStateIconVariant.neutral,
+          compact: true,
+          title: context.t('playlist.empty.myTitle', null, 'No playlists yet'),
+          description: context.t('playlist.empty.myHint', null, 'Create custom playlists to organize immersion videos for your learning goals.'),
+          actionLabel: context.t('playlist.newPlaylist', null, 'Create Playlist'),
+          onAction: () {
+            CreatePlaylistSheet.show(context, onSaved: _loadPlaylists);
+          },
+        ),
+      );
     }
 
     return RefreshIndicator(
       onRefresh: _loadPlaylists,
-      color: const Color(0xFF6366F1),
+      color: colors.accentPrimary,
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
         children: [
-          // Header with Create Playlist Action
+          // Header Row with "Create Playlist" Button
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Flexible(
-                child: Text(
-                  '${_playlists.length} Playlists',
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600),
+              Text(
+                '${_playlists.length} ${context.t('nav.playlists', null, 'Playlists')}',
+                style: TextStyle(
+                  color: colors.textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(width: 8),
               ElevatedButton.icon(
-                onPressed: _showCreatePlaylistDialog,
-                icon: const Icon(Icons.add, size: 16),
-                label: const Text('New Playlist'),
+                onPressed: () {
+                  CreatePlaylistSheet.show(
+                    context,
+                    onSaved: _loadPlaylists,
+                  );
+                },
+                icon: const Icon(Icons.add_rounded, size: 16),
+                label: Text(context.t('playlist.newPlaylist', null, 'New Playlist')),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6366F1),
+                  backgroundColor: colors.accentPrimary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                  elevation: 0,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
-          // Playlists Grid / Cards
+          // Hydrated Playlist Cards
           ..._playlists.map((playlist) {
-            final isDefault = playlist.id == 'default_saved';
-            final thumbUrl = playlist.thumbnail ??
-                (playlist.videoIds.isNotEmpty
-                    ? 'https://i.ytimg.com/vi/${playlist.videoIds.first}/hqdefault.jpg'
-                    : null);
-
-            return Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isDefault ? const Color(0xFF6366F1).withOpacity(0.4) : Colors.white12,
-                ),
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () => _openPlaylistDetails(playlist),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Row(
-                      children: [
-                        // Playlist Thumbnail or Icon
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            width: 72,
-                            height: 72,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: isDefault
-                                    ? [const Color(0xFF6366F1), const Color(0xFF8B5CF6)]
-                                    : [const Color(0xFF334155), const Color(0xFF1E293B)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                            ),
-                            child: thumbUrl != null
-                                ? Image.network(
-                                    thumbUrl,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => Center(
-                                      child: Icon(
-                                        isDefault ? Icons.bookmark_rounded : Icons.playlist_play_rounded,
-                                        color: Colors.white70,
-                                        size: 32,
-                                      ),
-                                    ),
-                                  )
-                                : Center(
-                                    child: Icon(
-                                      isDefault ? Icons.bookmark_rounded : Icons.playlist_play_rounded,
-                                      color: Colors.white70,
-                                      size: 32,
-                                    ),
-                                  ),
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-
-                        // Title, details, count
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  if (isDefault)
-                                    const Padding(
-                                      padding: EdgeInsets.only(right: 6),
-                                      child: Icon(Icons.star_rounded, color: Colors.amberAccent, size: 16),
-                                    ),
-                                  Expanded(
-                                    child: Text(
-                                      playlist.title,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              if (playlist.description != null) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  playlist.description!,
-                                  style: const TextStyle(color: Colors.white60, fontSize: 12),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                              const SizedBox(height: 6),
-                              Row(
-                                children: [
-                                  const Icon(Icons.video_library_rounded, size: 13, color: Color(0xFF38BDF8)),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${playlist.videoCount} videos',
-                                    style: const TextStyle(color: Color(0xFF38BDF8), fontSize: 12),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  if (playlist.language != 'all')
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white10,
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Text(
-                                        playlist.language.toUpperCase(),
-                                        style: const TextStyle(color: Colors.white70, fontSize: 10),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const Icon(Icons.chevron_right_rounded, color: Colors.white30),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+            return LibraryPlaylistCard(
+              playlist: playlist,
+              onRefresh: _loadPlaylists,
+              onTap: () {
+                LibraryPlaylistDetailSheet.show(
+                  context,
+                  playlist: playlist,
+                  onUpdated: _loadPlaylists,
+                );
+              },
             );
           }),
         ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.vocaColors;
+
+    return Scaffold(
+      backgroundColor: colors.bgPrimary,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // 1. Sleek Top Bar (Segmented Control + Settings Gear)
+            LibraryTopBar(
+              currentTab: _currentTab,
+              onTabChanged: (index) => setState(() => _currentTab = index),
+              onSettingsPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                );
+              },
+            ),
+
+            // 2. Active Tab Content (Watch History vs Playlists)
+            Expanded(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                child: _currentTab == 0
+                    ? _buildHistoryTab(colors)
+                    : _buildPlaylistsTab(colors),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

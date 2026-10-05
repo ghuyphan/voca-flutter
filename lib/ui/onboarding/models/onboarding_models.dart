@@ -3,369 +3,222 @@
 import 'package:flutter/material.dart';
 import '../../../config/voca_theme.dart';
 
-/// Supported target learning language option in Voca
-class LearningRealmOption {
-  final String code;
-  final String name;
-  final String nativeName;
-  final String flagEmoji;
-  final String vibeKey;
-  final String defaultCompanion;
-  final Color accentColor;
-
-  const LearningRealmOption({
-    required this.code,
-    required this.name,
-    required this.nativeName,
-    required this.flagEmoji,
-    required this.vibeKey,
-    required this.defaultCompanion,
-    required this.accentColor,
-  });
-
-  String get flagAsset => 'assets/flags/${code == 'en' ? 'gb' : code}.svg';
-
-  static const List<LearningRealmOption> all = [
-    LearningRealmOption(
-      code: 'ja',
-      name: 'Japanese',
-      nativeName: '日本語',
-      flagEmoji: '🇯🇵',
-      vibeKey: 'onboarding.realmVibes.ja',
-      defaultCompanion: 'wizard',
-      accentColor: Color(0xFFFF6B82),
-    ),
-    LearningRealmOption(
-      code: 'ko',
-      name: 'Korean',
-      nativeName: '한국어',
-      flagEmoji: '🇰🇷',
-      vibeKey: 'onboarding.realmVibes.ko',
-      defaultCompanion: 'bard',
-      accentColor: Color(0xFFA78BFA),
-    ),
-    LearningRealmOption(
-      code: 'zh',
-      name: 'Chinese',
-      nativeName: '中文',
-      flagEmoji: '🇨🇳',
-      vibeKey: 'onboarding.realmVibes.zh',
-      defaultCompanion: 'alchemist',
-      accentColor: Color(0xFFFBBF24),
-    ),
-    LearningRealmOption(
-      code: 'en',
-      name: 'English',
-      nativeName: 'English',
-      flagEmoji: '🇬🇧',
-      vibeKey: 'onboarding.realmVibes.en',
-      defaultCompanion: 'ranger',
-      accentColor: Color(0xFF38BDF8),
-    ),
-  ];
+/// Maps a language code to its bundled flag asset in `assets/flags/`.
+String flagAssetFor(String code) {
+  const map = {
+    'ja': 'jp',
+    'ko': 'kr',
+    'zh': 'cn',
+    'en': 'gb',
+    'vi': 'vn',
+  };
+  return 'assets/flags/${map[code] ?? code}.svg';
 }
 
-/// Interface & subtitle translation language option
+/// i18n key holding the localized display name of a language (e.g. "Japanese").
+String languageNameKey(String code) {
+  const map = {
+    'ja': 'settings.japanese',
+    'ko': 'settings.korean',
+    'zh': 'settings.chinese',
+    'en': 'settings.english',
+    'vi': 'settings.vietnamese',
+  };
+  return map[code] ?? code;
+}
+
+/// Target learning language.
+class LearningLanguageOption {
+  final String code;
+  final String englishName;
+  final String nativeName;
+  final String defaultCompanion;
+
+  const LearningLanguageOption({
+    required this.code,
+    required this.englishName,
+    required this.nativeName,
+    required this.defaultCompanion,
+  });
+
+  String get flagAsset => flagAssetFor(code);
+  String get vibeKey => 'onboarding.realmVibes.$code';
+  String get featuresKey => 'onboarding.langFeatures.$code';
+
+  static const List<LearningLanguageOption> all = [
+    LearningLanguageOption(
+      code: 'ja',
+      englishName: 'Japanese',
+      nativeName: '日本語',
+      defaultCompanion: 'wizard',
+    ),
+    LearningLanguageOption(
+      code: 'ko',
+      englishName: 'Korean',
+      nativeName: '한국어',
+      defaultCompanion: 'bard',
+    ),
+    LearningLanguageOption(
+      code: 'zh',
+      englishName: 'Chinese',
+      nativeName: '中文',
+      defaultCompanion: 'alchemist',
+    ),
+    LearningLanguageOption(
+      code: 'en',
+      englishName: 'English',
+      nativeName: 'English',
+      defaultCompanion: 'ranger',
+    ),
+  ];
+
+  static LearningLanguageOption byCode(String code) =>
+      all.firstWhere((o) => o.code == code, orElse: () => all.first);
+}
+
+/// Interface & subtitle-translation language (matches I18nService locales).
 class NativeLanguageOption {
   final String code;
-  final String name;
+  final String englishName;
   final String nativeName;
-  final String flagEmoji;
 
   const NativeLanguageOption({
     required this.code,
-    required this.name,
+    required this.englishName,
     required this.nativeName,
-    required this.flagEmoji,
   });
 
-  String get flagAsset => 'assets/flags/${code == 'en' ? 'gb' : code}.svg';
+  String get flagAsset => flagAssetFor(code);
 
   static const List<NativeLanguageOption> all = [
-    NativeLanguageOption(code: 'en', name: 'English', nativeName: 'English', flagEmoji: '🇬🇧'),
-    NativeLanguageOption(code: 'vi', name: 'Vietnamese', nativeName: 'Tiếng Việt', flagEmoji: '🇻🇳'),
-    NativeLanguageOption(code: 'ja', name: 'Japanese', nativeName: '日本語', flagEmoji: '🇯🇵'),
-    NativeLanguageOption(code: 'ko', name: 'Korean', nativeName: '한국어', flagEmoji: '🇰🇷'),
-    NativeLanguageOption(code: 'zh', name: 'Chinese', nativeName: '中文', flagEmoji: '🇨🇳'),
+    NativeLanguageOption(code: 'en', englishName: 'English', nativeName: 'English'),
+    NativeLanguageOption(code: 'vi', englishName: 'Vietnamese', nativeName: 'Tiếng Việt'),
+    NativeLanguageOption(code: 'ja', englishName: 'Japanese', nativeName: '日本語'),
+    NativeLanguageOption(code: 'ko', englishName: 'Korean', nativeName: '한국어'),
+    NativeLanguageOption(code: 'zh', englishName: 'Chinese', nativeName: '中文'),
   ];
+
+  static const Set<String> supportedCodes = {'en', 'vi', 'ja', 'ko', 'zh'};
+
+  static NativeLanguageOption byCode(String code) =>
+      all.firstWhere((o) => o.code == code, orElse: () => all.first);
 }
 
-/// 5-tier proficiency ladder aligned with standard exams
-class RankLevelOption {
+/// 5-tier proficiency ladder aligned with backend tiers.
+class LevelOption {
   final String id;
   final String rankKey;
-  final String titleKey;
-  final String descKey;
-  final String examBadge;
   final IconData icon;
-  final Color badgeBg;
-  final Color badgeText;
-  final Color badgeBorder;
 
-  const RankLevelOption({
+  const LevelOption({
     required this.id,
     required this.rankKey,
-    required this.titleKey,
-    required this.descKey,
-    required this.examBadge,
     required this.icon,
-    required this.badgeBg,
-    required this.badgeText,
-    required this.badgeBorder,
   });
 
-  static const List<RankLevelOption> all = [
-    RankLevelOption(
-      id: 'beginner',
-      rankKey: 'novice',
-      titleKey: 'levels.beginner',
-      descKey: 'levels.beginnerDesc',
-      examBadge: 'JLPT N5 • HSK 1 • A1',
-      icon: Icons.wb_twilight_rounded,
-      badgeBg: VocaTokens.levelBeginnerBg,
-      badgeText: VocaTokens.levelBeginnerText,
-      badgeBorder: VocaTokens.levelBeginnerBorder,
-    ),
-    RankLevelOption(
-      id: 'elementary',
-      rankKey: 'apprentice',
-      titleKey: 'levels.elementary',
-      descKey: 'levels.elementaryDesc',
-      examBadge: 'JLPT N4 • HSK 2 • A2',
-      icon: Icons.filter_drama_rounded,
-      badgeBg: VocaTokens.levelElementaryBg,
-      badgeText: VocaTokens.levelElementaryText,
-      badgeBorder: VocaTokens.levelElementaryBorder,
-    ),
-    RankLevelOption(
-      id: 'intermediate',
-      rankKey: 'adept',
-      titleKey: 'levels.intermediate',
-      descKey: 'levels.intermediateDesc',
-      examBadge: 'JLPT N3 • HSK 3-4 • B1',
-      icon: Icons.bolt_rounded,
-      badgeBg: VocaTokens.levelIntermediateBg,
-      badgeText: VocaTokens.levelIntermediateText,
-      badgeBorder: VocaTokens.levelIntermediateBorder,
-    ),
-    RankLevelOption(
-      id: 'upper_intermediate',
-      rankKey: 'veteran',
-      titleKey: 'levels.upperIntermediate',
-      descKey: 'levels.upperIntermediateDesc',
-      examBadge: 'JLPT N2 • HSK 5 • B2',
-      icon: Icons.shield_rounded,
-      badgeBg: VocaTokens.levelUpperBg,
-      badgeText: VocaTokens.levelUpperText,
-      badgeBorder: VocaTokens.levelUpperBorder,
-    ),
-    RankLevelOption(
-      id: 'advanced',
-      rankKey: 'master',
-      titleKey: 'levels.advanced',
-      descKey: 'levels.advancedDesc',
-      examBadge: 'JLPT N1 • HSK 6 • C1-C2',
-      icon: Icons.workspace_premium_rounded,
-      badgeBg: VocaTokens.levelAdvancedBg,
-      badgeText: VocaTokens.levelAdvancedText,
-      badgeBorder: VocaTokens.levelAdvancedBorder,
-    ),
+  String get titleKey => 'level.$id';
+
+  String get descKey {
+    const map = {
+      'beginner': 'onboarding.levels.beginnerDesc',
+      'elementary': 'onboarding.levels.elementaryDesc',
+      'intermediate': 'onboarding.levels.intermediateDesc',
+      'upper_intermediate': 'onboarding.levels.upperIntermediateDesc',
+      'advanced': 'onboarding.levels.advancedDesc',
+    };
+    return map[id] ?? '';
+  }
+
+  String get rankNameKey => 'onboarding.ranks.$rankKey';
+
+  /// Theme-aware level colors (keyword match on the tier id).
+  LevelColorInfo colors({required bool isDark}) =>
+      LevelColorInfo.forLevel(id, isDark: isDark);
+
+  /// Exam badge for the selected learning language (port of web `getLevelExamBadge`).
+  String examBadge(String lang) {
+    const table = {
+      'zh': ['HSK 1', 'HSK 2', 'HSK 3-4', 'HSK 5', 'HSK 6'],
+      'ko': ['TOPIK 1', 'TOPIK 2', 'TOPIK 3-4', 'TOPIK 5', 'TOPIK 6'],
+      'en': ['A1', 'A2', 'B1', 'B2', 'C1-C2'],
+      'ja': ['JLPT N5', 'JLPT N4', 'JLPT N3', 'JLPT N2', 'JLPT N1'],
+    };
+    final idx = all.indexWhere((l) => l.id == id).clamp(0, 4);
+    return (table[lang] ?? table['ja']!)[idx];
+  }
+
+  static const List<LevelOption> all = [
+    LevelOption(id: 'beginner', rankKey: 'novice', icon: Icons.spa_rounded),
+    LevelOption(id: 'elementary', rankKey: 'apprentice', icon: Icons.menu_book_rounded),
+    LevelOption(id: 'intermediate', rankKey: 'adept', icon: Icons.bolt_rounded),
+    LevelOption(id: 'upper_intermediate', rankKey: 'veteran', icon: Icons.shield_rounded),
+    LevelOption(id: 'advanced', rankKey: 'master', icon: Icons.workspace_premium_rounded),
   ];
+
+  static LevelOption byId(String id) =>
+      all.firstWhere((o) => o.id == id, orElse: () => all.first);
 }
 
-/// Daily commitment pace options
+/// Daily practice pace.
 class DailyGoalOption {
   final String id;
   final int minutes;
-  final String titleKey;
-  final String descKey;
-  final IconData icon;
   final bool isRecommended;
 
   const DailyGoalOption({
     required this.id,
     required this.minutes,
-    required this.titleKey,
-    required this.descKey,
-    required this.icon,
     this.isRecommended = false,
   });
 
+  String get titleKey => 'onboarding.goals.$id';
+  String get descKey => 'onboarding.goals.${id}Desc';
+
   static const List<DailyGoalOption> all = [
-    DailyGoalOption(
-      id: 'casual',
-      minutes: 5,
-      titleKey: 'onboarding.goals.casual',
-      descKey: 'onboarding.goals.casualDesc',
-      icon: Icons.timer_outlined,
-    ),
-    DailyGoalOption(
-      id: 'regular',
-      minutes: 10,
-      titleKey: 'onboarding.goals.regular',
-      descKey: 'onboarding.goals.regularDesc',
-      icon: Icons.local_fire_department_rounded,
-      isRecommended: true,
-    ),
-    DailyGoalOption(
-      id: 'serious',
-      minutes: 15,
-      titleKey: 'onboarding.goals.serious',
-      descKey: 'onboarding.goals.seriousDesc',
-      icon: Icons.military_tech_rounded,
-    ),
-    DailyGoalOption(
-      id: 'intense',
-      minutes: 25,
-      titleKey: 'onboarding.goals.intense',
-      descKey: 'onboarding.goals.intenseDesc',
-      icon: Icons.stars_rounded,
-    ),
+    DailyGoalOption(id: 'casual', minutes: 5),
+    DailyGoalOption(id: 'regular', minutes: 10, isRecommended: true),
+    DailyGoalOption(id: 'serious', minutes: 15),
+    DailyGoalOption(id: 'intense', minutes: 25),
   ];
+
+  static DailyGoalOption byMinutes(int minutes) =>
+      all.firstWhere((o) => o.minutes == minutes, orElse: () => all[1]);
 }
 
-/// 8 Companion Spirit Guide Archetypes
-class CompanionSpiritOption {
+/// Companion guide archetype.
+class CompanionOption {
   final String id;
-  final String nameKey;
-  final String traitKey;
-  final String quoteKey;
   final IconData icon;
   final Color color;
-  final String perkKey;
 
-  const CompanionSpiritOption({
+  const CompanionOption({
     required this.id,
-    required this.nameKey,
-    required this.traitKey,
-    required this.quoteKey,
     required this.icon,
     required this.color,
-    required this.perkKey,
   });
 
   String get avatarAsset => 'assets/avatars/$id.webp';
+  String get nameKey => 'onboarding.companions.$id';
+  String get traitKey => 'onboarding.companions.${id}Trait';
+  String get quoteKey => 'onboarding.companions.${id}Quote';
+  String get perkKey =>
+      'onboarding.perk${id[0].toUpperCase()}${id.substring(1)}';
 
-  static const List<CompanionSpiritOption> all = [
-    CompanionSpiritOption(
-      id: 'wizard',
-      nameKey: 'onboarding.companions.wizard',
-      traitKey: 'onboarding.companions.wizardTrait',
-      quoteKey: 'onboarding.companions.wizardQuote',
-      icon: Icons.auto_stories_rounded,
-      color: Color(0xFFA78BFA),
-      perkKey: 'onboarding.perkWizard',
-    ),
-    CompanionSpiritOption(
-      id: 'knight',
-      nameKey: 'onboarding.companions.knight',
-      traitKey: 'onboarding.companions.knightTrait',
-      quoteKey: 'onboarding.companions.knightQuote',
-      icon: Icons.shield_rounded,
-      color: Color(0xFF38BDF8),
-      perkKey: 'onboarding.perkKnight',
-    ),
-    CompanionSpiritOption(
-      id: 'shinobi',
-      nameKey: 'onboarding.companions.shinobi',
-      traitKey: 'onboarding.companions.shinobiTrait',
-      quoteKey: 'onboarding.companions.shinobiQuote',
-      icon: Icons.flash_on_rounded,
-      color: Color(0xFFFF6B82),
-      perkKey: 'onboarding.perkShinobi',
-    ),
-    CompanionSpiritOption(
-      id: 'ranger',
-      nameKey: 'onboarding.companions.ranger',
-      traitKey: 'onboarding.companions.rangerTrait',
-      quoteKey: 'onboarding.companions.rangerQuote',
-      icon: Icons.explore_rounded,
-      color: Color(0xFF34D399),
-      perkKey: 'onboarding.perkRanger',
-    ),
-    CompanionSpiritOption(
-      id: 'miner',
-      nameKey: 'onboarding.companions.miner',
-      traitKey: 'onboarding.companions.minerTrait',
-      quoteKey: 'onboarding.companions.minerQuote',
-      icon: Icons.hardware_rounded,
-      color: Color(0xFFF59E0B),
-      perkKey: 'onboarding.perkMiner',
-    ),
-    CompanionSpiritOption(
-      id: 'alchemist',
-      nameKey: 'onboarding.companions.alchemist',
-      traitKey: 'onboarding.companions.alchemistTrait',
-      quoteKey: 'onboarding.companions.alchemistQuote',
-      icon: Icons.science_rounded,
-      color: Color(0xFFFBBF24),
-      perkKey: 'onboarding.perkAlchemist',
-    ),
-    CompanionSpiritOption(
-      id: 'bard',
-      nameKey: 'onboarding.companions.bard',
-      traitKey: 'onboarding.companions.bardTrait',
-      quoteKey: 'onboarding.companions.bardQuote',
-      icon: Icons.music_note_rounded,
-      color: Color(0xFFEC4899),
-      perkKey: 'onboarding.perkBard',
-    ),
-    CompanionSpiritOption(
-      id: 'sovereign',
-      nameKey: 'onboarding.companions.sovereign',
-      traitKey: 'onboarding.companions.sovereignTrait',
-      quoteKey: 'onboarding.companions.sovereignQuote',
-      icon: Icons.workspace_premium_rounded,
-      color: Color(0xFFEAB308),
-      perkKey: 'onboarding.perkSovereign',
-    ),
+  static const List<CompanionOption> all = [
+    CompanionOption(id: 'wizard', icon: Icons.auto_stories_rounded, color: Color(0xFF8B5CF6)), // Violet
+    CompanionOption(id: 'knight', icon: Icons.shield_rounded, color: Color(0xFF0284C7)), // Cobalt Blue
+    CompanionOption(id: 'shinobi', icon: Icons.flash_on_rounded, color: Color(0xFFEF4444)), // Crimson Red
+    CompanionOption(id: 'ranger', icon: Icons.explore_rounded, color: Color(0xFF10B981)), // Emerald Green
+    CompanionOption(id: 'miner', icon: Icons.hardware_rounded, color: Color(0xFFF97316)), // Vibrant Orange
+    CompanionOption(id: 'alchemist', icon: Icons.science_rounded, color: Color(0xFF06B6D4)), // Electric Cyan
+    CompanionOption(id: 'bard', icon: Icons.music_note_rounded, color: Color(0xFFEC4899)), // Magenta Pink
+    CompanionOption(id: 'sovereign', icon: Icons.workspace_premium_rounded, color: Color(0xFFEAB308)), // Radiant Gold
   ];
-}
 
-/// Starter supply cache rewards
-class StarterLootItem {
-  final String titleKey;
-  final String descKey;
-  final IconData icon;
-  final Color iconColor;
-  final Color bgTint;
+  static int indexOf(String id) {
+    final i = all.indexWhere((c) => c.id == id);
+    return i < 0 ? 0 : i;
+  }
 
-  const StarterLootItem({
-    required this.titleKey,
-    required this.descKey,
-    required this.icon,
-    required this.iconColor,
-    required this.bgTint,
-  });
-
-  static const List<StarterLootItem> all = [
-    StarterLootItem(
-      titleKey: 'onboarding.starterLoot.diamonds',
-      descKey: 'onboarding.starterLoot.diamondsDesc',
-      icon: Icons.diamond_rounded,
-      iconColor: Color(0xFF38BDF8),
-      bgTint: Color(0x1F38BDF8),
-    ),
-    StarterLootItem(
-      titleKey: 'onboarding.starterLoot.xp',
-      descKey: 'onboarding.starterLoot.xpDesc',
-      icon: Icons.auto_awesome_rounded,
-      iconColor: Color(0xFFFF6B82),
-      bgTint: Color(0x1FFF6B82),
-    ),
-    StarterLootItem(
-      titleKey: 'onboarding.starterLoot.hearth',
-      descKey: 'onboarding.starterLoot.hearthDesc',
-      icon: Icons.local_fire_department_rounded,
-      iconColor: Color(0xFFFB923C),
-      bgTint: Color(0x1FFB923C),
-    ),
-    StarterLootItem(
-      titleKey: 'onboarding.starterLoot.freeze',
-      descKey: 'onboarding.starterLoot.freezeDesc',
-      icon: Icons.ac_unit_rounded,
-      iconColor: Color(0xFF818CF8),
-      bgTint: Color(0x1F818CF8),
-    ),
-  ];
+  static CompanionOption byId(String id) => all[indexOf(id)];
 }

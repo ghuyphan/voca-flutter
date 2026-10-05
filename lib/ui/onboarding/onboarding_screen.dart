@@ -2,22 +2,25 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:signals_flutter/signals_flutter.dart';
 import '../../config/voca_theme.dart';
 import '../../services/i18n_service.dart';
 import '../../services/toast_service.dart';
 import '../../state/app_state.dart';
+import '../auth/auth_screen.dart';
 import '../shell/main_shell.dart';
+import 'onboarding_controller.dart';
 import 'steps/welcome_step.dart';
-import 'steps/language_step.dart';
-import 'steps/pace_level_step.dart';
+import 'steps/learning_language_step.dart';
+import 'steps/native_language_step.dart';
+import 'steps/level_goal_step.dart';
 import 'steps/companion_step.dart';
-import 'steps/license_step.dart';
 import 'widgets/onboarding_header.dart';
 import 'widgets/onboarding_bottom_bar.dart';
 
-/// Complete, high-performance, native Onboarding Screen for VOCA.
-/// Features 5 guided interactive steps with tactile micro-interactions,
-/// live companion speech bubble, holographic guild pass, and starter loot rewards.
+/// Complete, modern native Onboarding Screen for VOCA.
+/// Features tactile micro-interactions, signal reactivity, live companion preview,
+/// and smooth page navigation with smart device-locale detection.
 class OnboardingScreen extends StatefulWidget {
   final VoidCallback? onFinish;
   final bool isReplay;
@@ -33,34 +36,19 @@ class OnboardingScreen extends StatefulWidget {
 }
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
+  late final OnboardingController _controller;
   late final PageController _pageController;
-  int _currentStep = 0;
-  static const int _totalSteps = 5;
-  bool _isCompleting = false;
-
-  // Selected State Defaults
-  String _selectedLearningLang = 'ja';
-  String _selectedNativeLang = 'en';
-  bool _showDualSubtitles = true;
-  String _selectedLevel = 'beginner';
-  int _selectedDailyGoal = 10;
-  String _selectedCompanion = 'wizard';
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
+    _controller = OnboardingController(isReplay: widget.isReplay);
+    _pageController = PageController(initialPage: _controller.step.value);
 
-    // Initialize with current user settings if available
-    final currentSettings = AppState.instance.userSettings.value;
-    _selectedLearningLang = AppState.instance.activeLanguage.value;
-    _selectedNativeLang = currentSettings.nativeLanguage.isNotEmpty
-        ? currentSettings.nativeLanguage
-        : I18nService.instance.currentLanguage.value;
-    _showDualSubtitles = currentSettings.showDualSubtitles;
-    _selectedLevel = currentSettings.preferredLevel;
-    _selectedCompanion = currentSettings.companionClass;
-    _selectedDailyGoal = currentSettings.dailyGoalMinutes;
+    // Auto-apply detected device locale if first time
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _controller.applyDetectedLocaleIfNeeded();
+    });
   }
 
   @override
@@ -70,10 +58,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _nextStep() {
-    if (_currentStep < _totalSteps - 1) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 320),
-        curve: Curves.easeInOutCubic,
+    if (_controller.step.value < OnboardingController.lastStep) {
+      _controller.next();
+      _pageController.animateToPage(
+        _controller.step.value,
+        duration: const Duration(milliseconds: 360),
+        curve: const Cubic(0.16, 1.0, 0.3, 1.0),
       );
     } else {
       _finishOnboarding();
@@ -81,10 +71,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _prevStep() {
-    if (_currentStep > 0) {
-      _pageController.previousPage(
-        duration: const Duration(milliseconds: 320),
-        curve: Curves.easeInOutCubic,
+    if (_controller.canGoBack) {
+      _controller.back();
+      _pageController.animateToPage(
+        _controller.step.value,
+        duration: const Duration(milliseconds: 360),
+        curve: const Cubic(0.16, 1.0, 0.3, 1.0),
       );
     }
   }
@@ -93,35 +85,55 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     _finishOnboarding(isSkipped: true);
   }
 
+  Future<void> _openAuth() async {
+    final loggedIn = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => const AuthScreen()),
+    );
+    if (loggedIn == true && mounted) {
+      _finishOnboarding();
+    }
+  }
+
   Future<void> _finishOnboarding({bool isSkipped = false}) async {
-    if (_isCompleting) return;
-    setState(() => _isCompleting = true);
+    if (_controller.isCompleting.value) return;
+    _controller.isCompleting.value = true;
 
     HapticFeedback.mediumImpact();
 
-    await AppState.instance.completeOnboarding(
-      learningLanguage: _selectedLearningLang,
-      companionClass: _selectedCompanion,
-      preferredLevel: _selectedLevel,
-      nativeLanguage: _selectedNativeLang,
-      showDualSubtitles: _showDualSubtitles,
-      dailyGoalMinutes: _selectedDailyGoal,
+    final perkMsg = await AppState.instance.completeOnboarding(
+      learningLanguage: _controller.learningLang.value,
+      companionClass: _controller.companion.value,
+      preferredLevel: _controller.level.value,
+      nativeLanguage: _controller.nativeLang.value,
+      showDualSubtitles: _controller.showDualSubtitles.value,
+      dailyGoalMinutes: _controller.dailyGoal.value,
       isReplay: widget.isReplay,
     );
 
     if (!mounted) return;
 
     if (!widget.isReplay) {
-      final msg = context.t(
+      final baseMsg = context.t(
         'onboarding.starterPackClaimed',
         null,
         'Starter Pack Activated! +50 XP & Day 1 Streak ignited.',
       );
+      final toastMessage = perkMsg.isNotEmpty ? '$baseMsg $perkMsg' : baseMsg;
+
       ToastService.show(
         context,
-        msg,
+        toastMessage,
         type: ToastType.success,
-        duration: const Duration(milliseconds: 4000),
+        duration: const Duration(milliseconds: 4500),
+      );
+    } else {
+      ToastService.show(
+        context,
+        perkMsg.isNotEmpty
+            ? perkMsg
+            : context.t('onboarding.saveCalibration', null, 'Preferences saved!'),
+        type: ToastType.success,
+        duration: const Duration(milliseconds: 3000),
       );
     }
 
@@ -141,19 +153,26 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  String _getBottomBarLabel() {
-    if (_currentStep == 0) {
+  String _getBottomBarLabel(int currentStep) {
+    if (currentStep == OnboardingController.welcomeStep) {
       return context.t('onboarding.getStarted', null, 'Get Started');
-    } else if (_currentStep == _totalSteps - 1) {
-      return context.t('onboarding.startLearning', null, 'Start Learning');
+    } else if (currentStep == OnboardingController.lastStep) {
+      if (widget.isReplay) {
+        return context.t('onboarding.saveCalibration', null, 'Save Changes');
+      }
+      return context.t(
+        'onboarding.startLearning',
+        null,
+        'Start Learning',
+      );
     } else {
-      return context.t('common.continue', null, 'Continue');
+      return context.t('onboarding.continue', null, 'Continue');
     }
   }
 
-  IconData _getBottomBarIcon() {
-    if (_currentStep == _totalSteps - 1) {
-      return Icons.auto_awesome_rounded;
+  IconData _getBottomBarIcon(int currentStep) {
+    if (currentStep == OnboardingController.lastStep && widget.isReplay) {
+      return Icons.check_rounded;
     }
     return Icons.arrow_forward_rounded;
   }
@@ -162,98 +181,113 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget build(BuildContext context) {
     final colors = context.colors;
 
-    return PopScope(
-      canPop: _currentStep == 0,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && _currentStep > 0) {
-          _prevStep();
-        }
-      },
-      child: Scaffold(
-        backgroundColor: colors.bgPrimary,
-        body: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              // Top Header with Back, Segmented Bar & Skip
-              OnboardingHeader(
-                currentStep: _currentStep,
-                totalSteps: _totalSteps,
-                showBack: _currentStep > 0,
-                onBack: _prevStep,
-                onSkip: _skipOnboarding,
-              ),
+    return Watch((context) {
+      final currentStep = _controller.step.value;
+      final learningLang = _controller.learningLang.value;
+      final nativeLang = _controller.nativeLang.value;
+      final showDualSubtitles = _controller.showDualSubtitles.value;
+      final selectedLevel = _controller.level.value;
+      final selectedDailyGoal = _controller.dailyGoal.value;
+      final selectedCompanion = _controller.companion.value;
+      final selectedThemeMode = _controller.themeMode.value;
+      final isCompleting = _controller.isCompleting.value;
+      final canGoBack = _controller.canGoBack;
 
-              // Page Content
-              Expanded(
-                child: PageView(
-                  controller: _pageController,
-                  physics: const ClampingScrollPhysics(),
-                  onPageChanged: (page) {
-                    setState(() => _currentStep = page);
-                  },
-                  children: [
-                    // Step 0: Welcome & Core Values
-                    const WelcomeStep(),
-
-                    // Step 1: Learning Realm & Subtitle Translation Settings
-                    LanguageStep(
-                      selectedLearningLanguage: _selectedLearningLang,
-                      onLearningLanguageChanged: (lang) {
-                        setState(() => _selectedLearningLang = lang);
-                      },
-                      selectedNativeLanguage: _selectedNativeLang,
-                      onNativeLanguageChanged: (lang) {
-                        setState(() => _selectedNativeLang = lang);
-                      },
-                      showDualSubtitles: _showDualSubtitles,
-                      onDualSubtitlesChanged: (val) {
-                        setState(() => _showDualSubtitles = val);
-                      },
-                    ),
-
-                    // Step 2: Difficulty Ladder & Habit Pact
-                    PaceLevelStep(
-                      selectedLevel: _selectedLevel,
-                      onLevelChanged: (lvl) {
-                        setState(() => _selectedLevel = lvl);
-                      },
-                      selectedDailyGoal: _selectedDailyGoal,
-                      onDailyGoalChanged: (goal) {
-                        setState(() => _selectedDailyGoal = goal);
-                      },
-                    ),
-
-                    // Step 3: Companion Spirit Guide Selection
-                    CompanionStep(
-                      selectedCompanion: _selectedCompanion,
-                      onCompanionChanged: (comp) {
-                        setState(() => _selectedCompanion = comp);
-                      },
-                    ),
-
-                    // Step 4: Adventurer License Activated & Starter Loot Cache
-                    LicenseStep(
-                      learningLanguage: _selectedLearningLang,
-                      rankId: _selectedLevel,
-                      companionId: _selectedCompanion,
-                      dailyGoalMinutes: _selectedDailyGoal,
-                    ),
-                  ],
+      return PopScope(
+        canPop: !canGoBack,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop && canGoBack) {
+            _prevStep();
+          }
+        },
+        child: Scaffold(
+          backgroundColor: colors.bgPrimary,
+          body: SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                // Top Header with Back, Segmented Bar & Skip
+                OnboardingHeader(
+                  progress: currentStep,
+                  totalSegments: OnboardingController.progressSteps,
+                  showBack: canGoBack,
+                  showSkip: currentStep < OnboardingController.lastStep,
+                  onBack: _prevStep,
+                  onSkip: _skipOnboarding,
                 ),
-              ),
 
-              // Sticky Bottom Action Bar
-              OnboardingBottomBar(
-                label: _getBottomBarLabel(),
-                icon: _getBottomBarIcon(),
-                onPressed: _nextStep,
-                isLoading: _isCompleting,
-              ),
-            ],
+                // Page Content
+                Expanded(
+                  child: PageView(
+                    controller: _pageController,
+                    physics: const ClampingScrollPhysics(),
+                    onPageChanged: (page) {
+                      _controller.step.value = page;
+                    },
+                    children: [
+                      // Step 0: Welcome & Core Values
+                      WelcomeStep(demoLanguage: learningLang),
+
+                      // Step 1: Target Learning Language
+                      LearningLanguageStep(
+                        selectedLanguage: learningLang,
+                        onSelect: _controller.selectLearningLanguage,
+                      ),
+
+                      // Step 2: Native App Language & Dual Subtitle Configuration
+                      NativeLanguageStep(
+                        selectedLanguage: nativeLang,
+                        onSelect: _controller.selectNativeLanguage,
+                        showDualSubtitles: showDualSubtitles,
+                        onToggleDualSubtitles: (val) {
+                          _controller.showDualSubtitles.value = val;
+                        },
+                      ),
+
+                      // Step 3: Difficulty Ladder & Habit Pact
+                      LevelGoalStep(
+                        learningLanguage: learningLang,
+                        selectedLevel: selectedLevel,
+                        onSelectLevel: (lvl) {
+                          _controller.level.value = lvl;
+                        },
+                        selectedDailyGoal: selectedDailyGoal,
+                        onSelectDailyGoal: (goal) {
+                          _controller.dailyGoal.value = goal;
+                        },
+                      ),
+
+                      // Step 4: Companion Guide & Appearance Theme
+                      CompanionStep(
+                        selectedCompanion: selectedCompanion,
+                        onCompanionChanged: (comp) {
+                          _controller.companion.value = comp;
+                        },
+                        themeMode: selectedThemeMode,
+                        onThemeChanged: _controller.setThemeMode,
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Sticky Bottom Action Bar with Optional Secondary Link on Step 0
+                OnboardingBottomBar(
+                  label: _getBottomBarLabel(currentStep),
+                  icon: _getBottomBarIcon(currentStep),
+                  onPressed: _nextStep,
+                  isLoading: isCompleting,
+                  secondaryLabel: currentStep == OnboardingController.welcomeStep
+                      ? context.t('auth.alreadyHaveAccount', null, 'I already have an account')
+                      : null,
+                  onSecondary: currentStep == OnboardingController.welcomeStep
+                      ? _openAuth
+                      : null,
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-    );
+      );
+    });
   }
 }

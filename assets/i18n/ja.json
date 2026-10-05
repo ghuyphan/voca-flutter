@@ -1,4 +1,5 @@
 {
+  "forYou": "あなたへのおすすめ",
   "app": {
     "title": "Voca",
     "subtitle": "YouTubeで学ぼう",
@@ -74,7 +75,8 @@
     "signInToUpgradeDesc": "プラン特典の適用や複数端末でのデータ同期には、Googleログインが必要です。",
     "freeDiamondsNotice": "新規登録で、動画のAI文字起こしに使える無料ダイヤを毎日プレゼント！",
     "guestUser": "ゲスト学習者",
-    "signInFailedError": "ログインに失敗しました: {error}"
+    "signInFailedError": "ログインに失敗しました: {error}",
+    "alreadyHaveAccount": "既にアカウントをお持ちの方"
   },
   "player": {
     "paste": "貼り付け",
@@ -916,6 +918,8 @@
     "pactTitle": "ハンターの誓約",
     "pactSubtitle": "日々の習慣が伝説を創る。毎日の目標とランクを調整しましょう",
     "dailyGoalLabel": "日課の誓約",
+    "goalBest": "おすすめ",
+    "goalDay": "毎日",
     "goals": {
       "casual": "気ままな斥候",
       "casualDesc": "1日5分 • 短編クリップ1本",
@@ -967,8 +971,20 @@
     "trialTapHint": "下の光る単語をタップ",
     "trialMineBtn": "単語帳に採掘する (+15 XP)",
     "trialMinedSuccess": "採掘完了！ +15 XP 獲得",
-    "starterTitle": "冒険者ライセンス承認！",
-    "starterSubtitle": "ギルドから最初の冒険者補給品が授与されました",
+    "starterTitle": "準備完了！",
+    "starterSubtitle": "学習プランを確認し、お好みのテーマを選択しましょう",
+    "planSummary": "学習プラン",
+    "planReady": "準備完了",
+    "appearance": "外観テーマ",
+    "themeSystem": "システム",
+    "themeLight": "ライト",
+    "themeDark": "ダーク",
+    "themeSystemDesc": "端末の設定に連動",
+    "themeLightDesc": "ポーセリン",
+    "themeDarkDesc": "オブシディアン",
+    "starterBonus": "スタートダッシュ特典",
+    "starterBonusDesc": "最初の学習に向けて +50 XP、AI字幕クレジット5回分、ストリーク保護が用意されました。",
+    "startLearning": "学習を開始する",
     "starterLoot": {
       "diamonds": "AIクレジット満タン (💎)",
       "diamondsDesc": "AI音声同期の利用枠がスタンバイ",
@@ -980,7 +996,7 @@
       "freezeDesc": "連続学習ストリークの保護ストック"
     },
     "enterRealm": "言語の領域へ踏み出す",
-    "claimStarterPack": "補給品を受け取る (+50 XP)",
+    "claimStarterPack": "学習を開始する",
     "starterPackClaimed": "スターターパックを受け取りました！+50 XP＆Day 1ストリーク点火！",
     "perkKnight": "守護騎士：連続学習ストリークの氷結の盾をスタンバイ！",
     "perkWizard": "賢者魔導士：文法・構文の解析モードを有効化しました！",

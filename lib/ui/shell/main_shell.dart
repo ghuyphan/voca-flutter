@@ -32,6 +32,8 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   late int _currentIndex;
 
+  final GlobalKey<LibraryScreenState> _libraryKey = GlobalKey<LibraryScreenState>();
+
   late final List<ScrollController> _scrollControllers = List.generate(
     _screens.length,
     (_) => ScrollController(),
@@ -39,19 +41,17 @@ class _MainShellState extends State<MainShell> {
 
   late final List<Widget> _screens = [
     ExploreScreen(
-      onOpenPlaylists: () => setState(() => _currentIndex = 4),
+      onOpenPlaylists: () {
+        setState(() => _currentIndex = 3);
+        _libraryKey.currentState?.switchToPlaylists();
+      },
     ),
-    const StudyDeckScreen(),
-    const VocabularyScreen(),
-    const SettingsScreen(),
-    LibraryScreen(
-      key: const ValueKey('library_playlists_tab'),
-      initialTabIndex: 1,
+    StudyDeckScreen(
       onNavigateToExplore: () => setState(() => _currentIndex = 0),
     ),
+    const VocabularyScreen(),
     LibraryScreen(
-      key: const ValueKey('library_history_tab'),
-      initialTabIndex: 0,
+      key: _libraryKey,
       onNavigateToExplore: () => setState(() => _currentIndex = 0),
     ),
   ];
@@ -111,9 +111,11 @@ class _MainShellState extends State<MainShell> {
     return Watch((context) {
       final coordinator = PlayerCoordinator.instance;
       final isTrueFullscreen = coordinator.playerController?.isFullscreen.value ?? false;
+      final bottomInset = MediaQuery.of(context).padding.bottom;
+      final navHeight = (isTablet || isTrueFullscreen) ? 0.0 : (62.0 + bottomInset);
 
       return VideoNavigationHost(
-        bottomNavHeight: (isTablet || isTrueFullscreen) ? 0.0 : 80.0,
+        bottomNavHeight: navHeight,
         child: Scaffold(
           backgroundColor: colors.bgPrimary,
           body: isTablet ? _buildTabletLayout(context) : _buildMobileLayout(context),
@@ -235,24 +237,10 @@ class _MainShellState extends State<MainShell> {
             colors: colors,
           ),
           _buildSidebarNavItem(
-            icon: Icons.grid_view_outlined,
-            activeIcon: Icons.grid_view_rounded,
-            label: context.t('nav.more', null, 'More'),
+            icon: Icons.video_library_outlined,
+            activeIcon: Icons.video_library_rounded,
+            label: context.t('nav.library', null, 'Library'),
             index: 3,
-            colors: colors,
-          ),
-          _buildSidebarNavItem(
-            icon: Icons.playlist_play,
-            activeIcon: Icons.playlist_play_rounded,
-            label: context.t('nav.playlists', null, 'Playlists'),
-            index: 4,
-            colors: colors,
-          ),
-          _buildSidebarNavItem(
-            icon: Icons.history,
-            activeIcon: Icons.history_rounded,
-            label: context.t('history.title', null, 'History'),
-            index: 5,
             colors: colors,
           ),
 

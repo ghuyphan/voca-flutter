@@ -1,4 +1,5 @@
 {
+  "forYou": "맞춤 추천",
   "app": {
     "title": "Voca",
     "subtitle": "YouTube로 즐기는 외국어 학습",
@@ -74,7 +75,8 @@
     "signInToUpgradeDesc": "구독을 연동하고 기기 간에 동기화하려면 Google 계정으로 로그인해 주세요.",
     "freeDiamondsNotice": "가입 즉시 AI 자막 생성에 쓸 수 있는 다이아몬드가 매일 무료로 지급돼요!",
     "guestUser": "게스트",
-    "signInFailedError": "로그인 실패: {error}"
+    "signInFailedError": "로그인 실패: {error}",
+    "alreadyHaveAccount": "이미 계정이 있으신가요?"
   },
   "player": {
     "paste": "붙여넣기",
@@ -916,6 +918,8 @@
     "pactTitle": "헌터의 서약",
     "pactSubtitle": "매일의 습관이 전설을 만듭니다. 학습 속도와 난이도를 맞춰보세요",
     "dailyGoalLabel": "일일 학습 서약",
+    "goalBest": "추천",
+    "goalDay": "매일",
     "goals": {
       "casual": "자유로운 정찰병",
       "casualDesc": "하루 5분 • 짧은 영상 1편",
@@ -967,8 +971,20 @@
     "trialTapHint": "아래 빛나는 단어를 탭하세요",
     "trialMineBtn": "단어장에 채굴하기 (+15 XP)",
     "trialMinedSuccess": "채굴 성공! +15 XP 획득",
-    "starterTitle": "모험가 면허 활성화 완료!",
-    "starterSubtitle": "헌터 길드에서 당신을 위한 초기 보급함을 지급합니다",
+    "starterTitle": "모든 준비가 완료되었습니다!",
+    "starterSubtitle": "학습 계획을 확인하고 원하는 테마를 설정하세요",
+    "planSummary": "학습 계획",
+    "planReady": "준비 완료",
+    "appearance": "화면 테마",
+    "themeSystem": "시스템 설정",
+    "themeLight": "라이트",
+    "themeDark": "다크",
+    "themeSystemDesc": "기기 설정에 맞춤",
+    "themeLightDesc": "밝은 테마",
+    "themeDarkDesc": "어두운 테마",
+    "starterBonus": "시작 보너스 안내",
+    "starterBonusDesc": "첫 학습을 위해 +50 XP, AI 자막 5회 이용권 및 스트릭 보호가 준비되었습니다.",
+    "startLearning": "학습 시작하기",
     "starterLoot": {
       "diamonds": "AI 마나 다이아 완충 (💎)",
       "diamondsDesc": "AI 자막 음성 동기화 한도 완충",
@@ -980,7 +996,7 @@
       "freezeDesc": "연속 학습 스트릭 보호권 기본 탑재"
     },
     "enterRealm": "언어의 대륙으로 입장",
-    "claimStarterPack": "보급품 수령 (+50 XP)",
+    "claimStarterPack": "학습 시작하기",
     "starterPackClaimed": "스타터 팩이 활성화되었습니다! +50 XP 획득 및 1일차 스트릭 점화.",
     "perkKnight": "수호 기사: 연속 학습 스트릭 서리 방패 준비 완료!",
     "perkWizard": "학자 마법사: 문법 및 구문 심층 분석 모드 활성화!",

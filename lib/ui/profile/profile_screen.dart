@@ -7,6 +7,7 @@ import '../../services/gamification_service.dart';
 import '../../services/i18n_service.dart';
 import '../../services/toast_service.dart';
 import '../../state/app_state.dart';
+import '../auth/auth_screen.dart';
 import '../settings/settings_screen.dart';
 import '../widgets/voca_confirm_dialog.dart';
 
@@ -18,18 +19,12 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  bool _isSigningIn = false;
-
-  Future<void> _handleGoogleSignIn() async {
-    setState(() => _isSigningIn = true);
-    try {
-      await AppState.instance.supabaseService.signInWithGoogle();
-    } catch (e) {
-      if (mounted) {
-        ToastService.error(context, 'Sign in failed: $e');
-      }
-    } finally {
-      if (mounted) setState(() => _isSigningIn = false);
+  Future<void> _handleSignIn() async {
+    final res = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => const AuthScreen()),
+    );
+    if (res == true && mounted) {
+      setState(() {});
     }
   }
 
@@ -43,7 +38,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     if (confirmed == true) {
-      await AppState.instance.supabaseService.signOut();
+      await AppState.instance.authService.signOut();
       if (mounted) setState(() {});
     }
   }
@@ -123,9 +118,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildUserCard(VocaColorPalette colors, dynamic currentUser) {
-    final isAuthenticated = currentUser != null;
-    final email = isAuthenticated ? (currentUser.email ?? context.t('profile.learner', null, 'Learner')) : context.t('profile.guestLearner', null, 'Guest Learner');
-    final avatarUrl = isAuthenticated ? (currentUser.userMetadata?['avatar_url'] as String?) : null;
+    final profile = AppState.instance.authService.userProfile.value;
+    final isAuthenticated = profile != null || currentUser != null;
+    final displayName = profile?.name ?? profile?.email ?? (currentUser?.email ?? context.t('profile.guestLearner', null, 'Guest Learner'));
+    final avatarUrl = profile?.avatarUrl ?? (currentUser?.userMetadata?['avatar_url'] as String?);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -140,8 +136,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           CircleAvatar(
             radius: 30,
             backgroundColor: colors.accentPrimarySoft,
-            backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-            child: avatarUrl == null
+            backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
+            child: (avatarUrl == null || avatarUrl.isEmpty)
                 ? Icon(Icons.person_rounded, size: 34, color: colors.accentPrimary)
                 : null,
           ),
@@ -153,7 +149,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  email,
+                  displayName,
                   style: TextStyle(
                     color: colors.textPrimary,
                     fontSize: 16,
@@ -203,14 +199,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             )
           else
             ElevatedButton.icon(
-              onPressed: _isSigningIn ? null : _handleGoogleSignIn,
-              icon: _isSigningIn
-                  ? const SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Icon(Icons.login_rounded, size: 14),
+              onPressed: _handleSignIn,
+              icon: const Icon(Icons.login_rounded, size: 14),
               label: Text(context.t('profile.signIn', null, 'Sign In'), style: const TextStyle(fontSize: 12)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: colors.accentPrimary,

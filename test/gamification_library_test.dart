@@ -10,6 +10,9 @@ import 'package:voca_flutter/services/supabase_service.dart';
 import 'package:voca_flutter/services/voca_api_client.dart';
 import 'package:voca_flutter/state/app_state.dart';
 import 'package:voca_flutter/ui/shell/main_shell.dart';
+import 'package:voca_flutter/ui/library/library_screen.dart';
+import 'package:voca_flutter/ui/study/study_deck_screen.dart';
+import 'package:voca_flutter/ui/vocabulary/vocabulary_screen.dart';
 
 // Simple mock for VocaApiClient
 class FakeVocaApiClient extends VocaApiClient {
@@ -59,18 +62,19 @@ class FakeSupabaseService extends SupabaseService {
 
   @override
   Future<List<Map<String, dynamic>>> getHistory({int limit = 20}) async {
-    return [
-      {
-        'id': 'h1',
-        'video_id': 'test_video_1',
-        'title': 'Test Japanese Lesson',
+    return List.generate(
+      15,
+      (i) => {
+        'id': 'h$i',
+        'video_id': 'test_video_$i',
+        'title': 'Test Japanese Lesson $i',
         'channel': 'Japanese 101',
         'duration': 300,
         'progress': 0.5,
         'language': 'ja',
-        'watched_at': DateTime.now().toIso8601String(),
-      }
-    ];
+        'watched_at': DateTime.now().subtract(Duration(hours: i)).toIso8601String(),
+      },
+    );
   }
 
   @override
@@ -137,8 +141,8 @@ void main() {
       expect(g.xp.value, 0);
       expect(g.level.value, 1);
       expect(g.currentLevelXp.value, 0);
-      expect(g.nextLevelTargetXp.value, 100);
-      expect(g.achievements.value.length, 4);
+      expect(g.nextLevelTargetXp.value, 75);
+      expect(g.achievements.value.length, 41);
     });
 
     test('XP and Level calculation progresses accurately', () {
@@ -147,14 +151,14 @@ void main() {
       expect(g.xp.value, 60);
       expect(g.level.value, 1);
       expect(g.currentLevelXp.value, 60);
-      expect(g.levelProgress.value, closeTo(0.60, 0.001));
+      expect(g.levelProgress.value, closeTo(0.80, 0.001));
 
-      // Level up
+      // Level up (75 XP threshold)
       g.addXp(50);
       expect(g.xp.value, 110);
       expect(g.level.value, 2);
-      expect(g.currentLevelXp.value, 10);
-      expect(g.levelProgress.value, closeTo(0.10, 0.001));
+      expect(g.currentLevelXp.value, 35);
+      expect(g.levelProgress.value, closeTo(35.0 / 225.0, 0.001));
     });
 
     test('Streak activity consecutive recording and freeze protection', () async {
@@ -200,23 +204,23 @@ void main() {
 
     test('Achievements update on video watched and flashcard review', () async {
       final g = AppState.instance.gamificationService;
-      final firstVid = g.achievements.value.firstWhere((a) => a.id == 'first_video');
+      final firstVid = g.achievements.value.firstWhere((a) => a.id == 'watch_1');
       expect(firstVid.isUnlocked, false);
 
       await g.onVideoWatched();
-      final updatedFirstVid = g.achievements.value.firstWhere((a) => a.id == 'first_video');
+      final updatedFirstVid = g.achievements.value.firstWhere((a) => a.id == 'watch_1');
       expect(updatedFirstVid.isUnlocked, true);
       expect(g.xp.value, greaterThan(0));
 
       // 10 words saved
       await g.onWordSaved(10);
-      final wordsAch = g.achievements.value.firstWhere((a) => a.id == 'words_10');
+      final wordsAch = g.achievements.value.firstWhere((a) => a.id == 'vocab_10');
       expect(wordsAch.isUnlocked, true);
 
-      // Vocab Master 50 reviews
+      // 50 reviews
       await g.onCardReviewed(50);
-      final vocabMasterAch = g.achievements.value.firstWhere((a) => a.id == 'vocab_master');
-      expect(vocabMasterAch.isUnlocked, true);
+      final srsAch = g.achievements.value.firstWhere((a) => a.id == 'srs_50');
+      expect(srsAch.isUnlocked, true);
     });
   });
 
@@ -247,7 +251,7 @@ void main() {
   });
 
   group('MainShell Navigation Tests', () {
-    testWidgets('Mobile layout has Watch, Review, +, Vocab, More, and opens sheets', (tester) async {
+    testWidgets('Mobile layout has Watch, Review, Vocab, Library, and opens hubs', (tester) async {
       tester.view.physicalSize = const Size(400, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -264,37 +268,28 @@ void main() {
       expect(find.text('Watch'), findsOneWidget);
       expect(find.text('Review'), findsOneWidget);
       expect(find.text('Vocab'), findsOneWidget);
-      expect(find.text('More'), findsOneWidget);
+      expect(find.text('Library'), findsOneWidget);
 
       // Tapping Review
       await tester.tap(find.text('Review'));
       await tester.pumpAndSettle();
-      expect(find.text('SRS Study Deck'), findsOneWidget);
+      expect(find.byType(StudyDeckScreen), findsOneWidget);
 
       // Tapping Vocab
       await tester.tap(find.text('Vocab'));
       await tester.pumpAndSettle();
-      expect(find.text('Vocabulary Notebook'), findsOneWidget);
+      expect(find.byType(VocabularyScreen), findsOneWidget);
 
-      // Tapping More opens MoreScreen
-      await tester.tap(find.text('More'));
+      // Tapping Library opens LibraryScreen
+      await tester.tap(find.text('Library'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Day Streak'), findsOneWidget);
-      expect(find.text('Level'), findsOneWidget);
-      expect(find.text('AI Credits'), findsOneWidget);
-      expect(find.text('Playlists'), findsOneWidget);
-      expect(find.text('History'), findsOneWidget);
-      expect(find.text('Settings'), findsOneWidget);
-      expect(find.text('Account & Profile'), findsOneWidget);
-
-      // Tapping Playlists from More
-      await tester.tap(find.text('Playlists'));
-      await tester.pumpAndSettle();
-      expect(find.text('Playlists / Saved'), findsOneWidget);
+      expect(find.text('History'), findsWidgets);
+      expect(find.text('Playlists'), findsWidgets);
+      expect(find.byType(LibraryScreen), findsOneWidget);
     });
 
-    testWidgets('Tablet layout (>= 720dp) has sidebar with brand, elevated + New Video, nav items, and bottom stats', (tester) async {
+    testWidgets('Tablet layout (>= 720dp) has sidebar with brand, elevated + New Video, and nav items', (tester) async {
       tester.view.physicalSize = const Size(1024, 768);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -315,22 +310,17 @@ void main() {
       expect(find.text('Watch'), findsOneWidget);
       expect(find.text('Review'), findsOneWidget);
       expect(find.text('Vocab'), findsOneWidget);
-      expect(find.text('Playlists'), findsAtLeastNWidgets(1));
-      expect(find.text('History'), findsOneWidget);
+      expect(find.text('Library'), findsAtLeastNWidgets(1));
 
       // Bottom controls
       expect(find.text('🇯🇵 Japanese'), findsAtLeastNWidgets(1));
       expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
 
-      // Tapping History item in sidebar
-      await tester.tap(find.text('History'));
+      // Tapping Library item in sidebar
+      await tester.tap(find.text('Library').first);
       await tester.pumpAndSettle();
-      expect(find.text('Watch History'), findsOneWidget);
-
-      // Tapping Playlists item in sidebar
-      await tester.tap(find.text('Playlists').first);
-      await tester.pumpAndSettle();
-      expect(find.text('Playlists / Saved'), findsOneWidget);
+      expect(find.text('History'), findsOneWidget);
+      expect(find.text('Playlists'), findsOneWidget);
 
       // Tapping + New Video button in sidebar
       await tester.tap(find.text('+ New Video'));
@@ -390,23 +380,23 @@ void main() {
       await tester.pumpAndSettle();
       expect(vocabScrollable.position.pixels, equals(0.0));
 
-      // 3. Test More (Settings) tab active tab scroll-to-top
-      await tester.tap(find.text('More'));
+      // 3. Test Library tab active tab scroll-to-top
+      await tester.tap(find.text('Library'));
       await tester.pumpAndSettle();
 
-      final settingsScrollFinder = find.byType(SingleChildScrollView).first;
-      final settingsScrollable = tester.state<ScrollableState>(
-        find.descendant(of: settingsScrollFinder, matching: find.byType(Scrollable)).first,
+      final libraryScrollFinder = find.byType(CustomScrollView).first;
+      final libraryScrollable = tester.state<ScrollableState>(
+        find.descendant(of: libraryScrollFinder, matching: find.byType(Scrollable)).first,
       );
 
-      await tester.drag(settingsScrollFinder, const Offset(0, -300));
+      await tester.drag(libraryScrollFinder, const Offset(0, -300));
       await tester.pumpAndSettle();
-      expect(settingsScrollable.position.pixels, greaterThan(0));
+      expect(libraryScrollable.position.pixels, greaterThan(0));
 
-      // Re-tap 'More' in bottom nav
-      await tester.tap(find.text('More'));
+      // Re-tap 'Library' in bottom nav
+      await tester.tap(find.text('Library'));
       await tester.pumpAndSettle();
-      expect(settingsScrollable.position.pixels, equals(0.0));
+      expect(libraryScrollable.position.pixels, equals(0.0));
     });
   });
 }
