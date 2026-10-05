@@ -110,7 +110,7 @@ void main() {
     expect(find.text('Filters'), findsOneWidget);
     expect(find.text('All'), findsAtLeastNWidgets(1));
     expect(find.text('Playlists'), findsOneWidget);
-    expect(find.byIcon(Icons.tune_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.filter_alt_rounded), findsOneWidget);
 
     // Verify Japanese difficulty levels
     expect(find.widgetWithText(FilterChip, 'N5'), findsOneWidget);

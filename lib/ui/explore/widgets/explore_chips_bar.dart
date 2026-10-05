@@ -62,7 +62,7 @@ class ExploreChipsBar extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    hasActiveCategory ? selectedCategory.icon : Icons.tune_rounded,
+                    hasActiveCategory ? selectedCategory.icon : Icons.filter_alt_rounded,
                     size: 14,
                     color: hasActiveFilter ? colors.accentPrimary : colors.textSecondary,
                   ),

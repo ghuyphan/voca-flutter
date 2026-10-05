@@ -10,6 +10,8 @@ import 'package:voca_flutter/state/player_state.dart';
 import 'package:voca_flutter/ui/sheets/playlist_queue_sheet.dart';
 import 'package:voca_flutter/ui/sheets/practice_sheet.dart';
 import 'package:voca_flutter/ui/sheets/subtitle_options_sheet.dart';
+import 'package:voca_flutter/ui/video/subtitle_panel.dart';
+import 'package:voca_flutter/ui/video/video_more_feed.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 class FakeYoutubeController extends Fake implements YoutubePlayerController {
@@ -159,10 +161,26 @@ void main() {
       await tester.pumpAndSettle();
       expect(controller.isLoopingCue.value, isTrue);
 
+      // Verify inline segmented speed chips exist
+      expect(find.text('0.75x'), findsOneWidget);
+      expect(find.text('0.85x'), findsOneWidget);
+      expect(find.text('1.0x'), findsOneWidget);
+      expect(find.text('1.25x'), findsOneWidget);
+
+      // Tap 0.85x speed chip directly
+      await tester.tap(find.text('0.85x'));
+      await tester.pumpAndSettle();
+      expect(controller.playbackRate.value, equals(0.85));
+
       // Switch to Cloze Quiz tab
       await tester.tap(find.text('Cloze Quiz'));
       await tester.pumpAndSettle();
       expect(find.text('Choose the missing word in the sentence above:'), findsOneWidget);
+
+      // When sheet is disposed, playback rate is restored to initial 1.0x
+      await tester.pumpWidget(const MaterialApp(home: Scaffold(body: SizedBox.shrink())));
+      await tester.pumpAndSettle();
+      expect(controller.playbackRate.value, equals(1.0));
     });
   });
 
@@ -201,4 +219,63 @@ void main() {
       expect(selectedTitle, equals('Song 2'));
     });
   });
+
+  group('VideoMoreFeed Tests', () {
+    testWidgets('Renders recommended videos excluding current video and triggers onVideoTap', (tester) async {
+      String? tappedId;
+      String? tappedTitle;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: VideoMoreFeed(
+                currentVideoId: 'v1',
+                language: 'ja',
+                onVideoTap: (vidId, title, channel, level) {
+                  tappedId = vidId;
+                  tappedTitle = title;
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      // Current video 'v1' is filtered out
+      expect(find.text('Song 1'), findsNothing);
+      // 'v2' is displayed
+      expect(find.text('Song 2'), findsOneWidget);
+
+      await tester.tap(find.text('Song 2'));
+      await tester.pumpAndSettle();
+
+      expect(tappedId, equals('v2'));
+      expect(tappedTitle, equals('Song 2'));
+    });
+  });
+
+  group('SubtitlePanel Compact Mode Tests', () {
+    testWidgets('Renders compact 3-line subtitle panel without transcript button', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SubtitlePanel(
+              controller: controller,
+              ytController: ytController,
+              isCompact: true,
+              onSeek: (_) {},
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Verify transcript button [Bản ghi] does NOT exist
+      expect(find.text('Bản ghi'), findsNothing);
+    });
+  });
 }
+

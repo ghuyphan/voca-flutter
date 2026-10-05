@@ -9,6 +9,7 @@ import '../../services/i18n_service.dart';
 import '../../services/toast_service.dart';
 import '../../state/app_state.dart';
 import '../library/library_screen.dart';
+import '../onboarding/onboarding_screen.dart';
 import '../profile/profile_screen.dart';
 import '../sheets/gamification_dialogs.dart';
 import '../widgets/voca_confirm_dialog.dart';
@@ -117,6 +118,25 @@ class SettingsScreen extends StatelessWidget {
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                      );
+                    },
+                  ),
+                  _buildDivider(colors),
+                  _buildActionTile(
+                    context: context,
+                    icon: Icons.explore_rounded,
+                    iconColor: colors.accentPrimary,
+                    title: context.t('onboarding.guildCharter', null, 'Guild Charter & Onboarding'),
+                    subtitle: context.t('onboarding.pactSubtitle', null, 'Replay learning wizard & companion setup'),
+                    colors: colors,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => OnboardingScreen(
+                            isReplay: true,
+                            onFinish: () => Navigator.of(context).pop(),
+                          ),
+                        ),
                       );
                     },
                   ),
@@ -509,8 +529,7 @@ class SettingsScreen extends StatelessWidget {
                   _buildDivider(colors),
 
                   // Auto-Pause on Lookup Switch
-                  SwitchListTile.adaptive(
-                    activeColor: colors.accentPrimary,
+                  SwitchListTile(
                     secondary: Container(
                       width: 36,
                       height: 36,

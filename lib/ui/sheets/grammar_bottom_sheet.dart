@@ -1,6 +1,7 @@
 // lib/ui/sheets/grammar_bottom_sheet.dart
 
 import 'package:flutter/material.dart';
+import 'package:signals_flutter/signals_flutter.dart';
 import '../../config/voca_theme.dart';
 import '../../models/voca_models.dart';
 import '../../services/i18n_service.dart';
@@ -46,6 +47,14 @@ class _GrammarBottomSheetState extends State<GrammarBottomSheet> {
   void initState() {
     super.initState();
     _checkSavedStatus();
+    _loadTranslationIfNeeded();
+  }
+
+  void _loadTranslationIfNeeded() {
+    final uiLang = I18nService.instance.currentLanguage.value;
+    if (uiLang != 'en') {
+      AppState.instance.grammarEngine.loadTranslation(widget.pattern.language, uiLang);
+    }
   }
 
   void _checkSavedStatus() {
@@ -70,7 +79,8 @@ class _GrammarBottomSheetState extends State<GrammarBottomSheet> {
     try {
       final supabase = AppState.instance.supabaseService;
       final userId = supabase.currentUser?.id ?? 'guest';
-      final p = widget.pattern;
+      final uiLang = I18nService.instance.currentLanguage.value;
+      final p = AppState.instance.grammarEngine.getLocalizedPattern(widget.pattern, uiLang);
 
       final id = generateDeterministicRecordId([
         userId,
@@ -130,8 +140,7 @@ class _GrammarBottomSheetState extends State<GrammarBottomSheet> {
     );
   }
 
-  bool get _hasLongDetails {
-    final p = widget.pattern;
+  bool _hasLongDetails(GrammarPattern p) {
     return p.longExplanation.isNotEmpty &&
         p.longExplanation != p.shortExplanation &&
         p.longExplanation.length > p.shortExplanation.length + 30;
@@ -139,10 +148,15 @@ class _GrammarBottomSheetState extends State<GrammarBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.vocaColors;
-    final p = widget.pattern;
+    return Watch((context) {
+      final colors = context.vocaColors;
+      final uiLang = I18nService.instance.currentLanguage.value;
+      // Re-evaluate reactively when translation pack finishes loading
+      AppState.instance.grammarEngine.loadedTranslations.value;
 
-    return Column(
+      final p = AppState.instance.grammarEngine.getLocalizedPattern(widget.pattern, uiLang);
+
+      return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -232,7 +246,7 @@ class _GrammarBottomSheetState extends State<GrammarBottomSheet> {
                 ),
 
                 // Collapsible "More details"
-                if (_hasLongDetails) ...[
+                if (_hasLongDetails(p)) ...[
                   const SizedBox(height: 6),
                   InkWell(
                     onTap: () {
@@ -473,5 +487,6 @@ class _GrammarBottomSheetState extends State<GrammarBottomSheet> {
         ),
       ],
     );
+    });
   }
 }

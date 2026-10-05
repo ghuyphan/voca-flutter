@@ -12,6 +12,7 @@ class ExploreResponsiveFeed extends StatelessWidget {
   final bool isLoadingMore;
   final RefreshCallback? onRefresh;
   final ScrollPhysics? physics;
+  final double bottomPadding;
 
   const ExploreResponsiveFeed({
     super.key,
@@ -20,6 +21,7 @@ class ExploreResponsiveFeed extends StatelessWidget {
     this.isLoadingMore = false,
     this.onRefresh,
     this.physics,
+    this.bottomPadding = 96.0,
   });
 
   /// Factory helper for skeleton shimmer feeds.
@@ -32,7 +34,7 @@ class ExploreResponsiveFeed extends StatelessWidget {
         if (!isTablet) {
           return ListView.separated(
             physics: const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
+            padding: const EdgeInsets.fromLTRB(16, 6, 16, 96),
             itemCount: 4,
             separatorBuilder: (_, __) => const SizedBox(height: 20),
             itemBuilder: (_, __) => const FeedSkeletonCard(),
@@ -48,7 +50,7 @@ class ExploreResponsiveFeed extends StatelessWidget {
 
         return GridView.builder(
           physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
+          padding: const EdgeInsets.fromLTRB(16, 6, 16, 96),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
             mainAxisSpacing: spacing,
@@ -76,7 +78,7 @@ class ExploreResponsiveFeed extends StatelessWidget {
           return ListView.separated(
             physics: physics ?? const AlwaysScrollableScrollPhysics(),
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
+            padding: EdgeInsets.fromLTRB(16, 6, 16, bottomPadding),
             itemCount: totalCount,
             separatorBuilder: (_, __) => const SizedBox(height: 20),
             itemBuilder: (context, index) {
@@ -98,7 +100,7 @@ class ExploreResponsiveFeed extends StatelessWidget {
         return GridView.builder(
           physics: physics ?? const AlwaysScrollableScrollPhysics(),
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
+          padding: EdgeInsets.fromLTRB(16, 6, 16, bottomPadding),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
             mainAxisSpacing: spacing,

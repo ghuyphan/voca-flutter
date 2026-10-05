@@ -4,7 +4,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../config/voca_theme.dart';
 import '../../services/i18n_service.dart';
+import '../../state/app_state.dart';
 import '../shell/main_shell.dart';
+import '../onboarding/onboarding_screen.dart';
 
 /// Authentic VOCA Splash Screen featuring the official Kikyou logo,
 /// signature Obsidian background, and radiant coral accent glow.
@@ -80,11 +82,13 @@ class _SplashScreenState extends State<SplashScreen>
       return;
     }
 
+    final hasCompleted = AppState.instance.userSettings.value.hasCompletedOnboarding;
+    final Widget nextScreen = hasCompleted ? const MainShell() : const OnboardingScreen();
+
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 400),
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            const MainShell(),
+        pageBuilder: (context, animation, secondaryAnimation) => nextScreen,
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
         },

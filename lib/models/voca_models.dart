@@ -250,6 +250,30 @@ class GrammarPattern {
   String get meaning => shortExplanation.isNotEmpty ? shortExplanation : title;
   String get explanation => longExplanation.isNotEmpty ? longExplanation : shortExplanation;
 
+  GrammarPattern copyWith({
+    String? id,
+    String? language,
+    String? pattern,
+    String? title,
+    String? shortExplanation,
+    String? longExplanation,
+    String? formation,
+    String? level,
+    List<GrammarExample>? examples,
+  }) {
+    return GrammarPattern(
+      id: id ?? this.id,
+      language: language ?? this.language,
+      pattern: pattern ?? this.pattern,
+      title: title ?? this.title,
+      shortExplanation: shortExplanation ?? this.shortExplanation,
+      longExplanation: longExplanation ?? this.longExplanation,
+      formation: formation ?? this.formation,
+      level: level ?? this.level,
+      examples: examples ?? this.examples,
+    );
+  }
+
   Map<String, dynamic> toJson() => {
     'id': id,
     'language': language,
@@ -284,11 +308,68 @@ class GrammarExample {
     );
   }
 
+  GrammarExample copyWith({
+    String? sentence,
+    String? romanization,
+    String? translation,
+  }) {
+    return GrammarExample(
+      sentence: sentence ?? this.sentence,
+      romanization: romanization ?? this.romanization,
+      translation: translation ?? this.translation,
+    );
+  }
+
   Map<String, dynamic> toJson() => {
     'sentence': sentence,
     'romanization': romanization,
     'translation': translation,
   };
+}
+
+class GrammarTranslation {
+  final String? title;
+  final String? shortExplanation;
+  final String? longExplanation;
+  final String? formation;
+  final List<GrammarExampleTranslation>? examples;
+
+  GrammarTranslation({
+    this.title,
+    this.shortExplanation,
+    this.longExplanation,
+    this.formation,
+    this.examples,
+  });
+
+  factory GrammarTranslation.fromJson(Map<String, dynamic> json) {
+    return GrammarTranslation(
+      title: json['title'] as String?,
+      shortExplanation: json['shortExplanation'] as String?,
+      longExplanation: json['longExplanation'] as String?,
+      formation: json['formation'] as String?,
+      examples: (json['examples'] as List<dynamic>?)
+          ?.map((e) => GrammarExampleTranslation.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}
+
+class GrammarExampleTranslation {
+  final String? sentence;
+  final String translation;
+
+  GrammarExampleTranslation({
+    this.sentence,
+    required this.translation,
+  });
+
+  factory GrammarExampleTranslation.fromJson(Map<String, dynamic> json) {
+    return GrammarExampleTranslation(
+      sentence: json['sentence'] as String?,
+      translation: json['translation'] as String? ?? '',
+    );
+  }
 }
 
 class GrammarMatch {
@@ -786,6 +867,10 @@ class UserSettings {
   final bool showDualSubtitles;
   final String dualSubtitleTargetLang;
   final bool hasSeenSubtitleCoachmark;
+  final bool hasCompletedOnboarding;
+  final String preferredLevel; // 'beginner' | 'elementary' | 'intermediate' | 'upper_intermediate' | 'advanced'
+  final String companionClass; // 'wizard' | 'knight' | 'shinobi' | 'ranger' | 'miner' | 'alchemist' | 'bard' | 'sovereign'
+  final int dailyGoalMinutes; // 5 | 10 | 15 | 25
 
   UserSettings({
     this.rubyMode = RubyDisplayMode.always,
@@ -799,6 +884,10 @@ class UserSettings {
     this.showDualSubtitles = true,
     this.dualSubtitleTargetLang = 'en',
     this.hasSeenSubtitleCoachmark = false,
+    this.hasCompletedOnboarding = false,
+    this.preferredLevel = 'beginner',
+    this.companionClass = 'wizard',
+    this.dailyGoalMinutes = 10,
   });
 
   UserSettings copyWith({
@@ -813,6 +902,10 @@ class UserSettings {
     bool? showDualSubtitles,
     String? dualSubtitleTargetLang,
     bool? hasSeenSubtitleCoachmark,
+    bool? hasCompletedOnboarding,
+    String? preferredLevel,
+    String? companionClass,
+    int? dailyGoalMinutes,
   }) {
     return UserSettings(
       rubyMode: rubyMode ?? this.rubyMode,
@@ -826,6 +919,10 @@ class UserSettings {
       showDualSubtitles: showDualSubtitles ?? this.showDualSubtitles,
       dualSubtitleTargetLang: dualSubtitleTargetLang ?? this.dualSubtitleTargetLang,
       hasSeenSubtitleCoachmark: hasSeenSubtitleCoachmark ?? this.hasSeenSubtitleCoachmark,
+      hasCompletedOnboarding: hasCompletedOnboarding ?? this.hasCompletedOnboarding,
+      preferredLevel: preferredLevel ?? this.preferredLevel,
+      companionClass: companionClass ?? this.companionClass,
+      dailyGoalMinutes: dailyGoalMinutes ?? this.dailyGoalMinutes,
     );
   }
 
@@ -841,6 +938,10 @@ class UserSettings {
     'showDualSubtitles': showDualSubtitles,
     'dualSubtitleTargetLang': dualSubtitleTargetLang,
     'hasSeenSubtitleCoachmark': hasSeenSubtitleCoachmark,
+    'hasCompletedOnboarding': hasCompletedOnboarding,
+    'preferredLevel': preferredLevel,
+    'companionClass': companionClass,
+    'dailyGoalMinutes': dailyGoalMinutes,
   };
 
   factory UserSettings.fromJson(Map<String, dynamic> json) {
@@ -862,6 +963,10 @@ class UserSettings {
       showDualSubtitles: json['showDualSubtitles'] as bool? ?? true,
       dualSubtitleTargetLang: json['dualSubtitleTargetLang'] as String? ?? 'en',
       hasSeenSubtitleCoachmark: json['hasSeenSubtitleCoachmark'] as bool? ?? false,
+      hasCompletedOnboarding: json['hasCompletedOnboarding'] as bool? ?? false,
+      preferredLevel: json['preferredLevel'] as String? ?? 'beginner',
+      companionClass: json['companionClass'] as String? ?? 'wizard',
+      dailyGoalMinutes: json['dailyGoalMinutes'] as int? ?? 10,
     );
   }
 }

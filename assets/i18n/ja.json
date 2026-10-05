@@ -1508,6 +1508,7 @@
     "switchToLang": "{{lang}}に切り替え",
     "useAITranscription": "AI文字起こしを使用",
     "waitingForPlayback": "動画の再生を待機中...",
+    "moreVideos": "おすすめ動画",
     "toolbar": {
       "loop": "ループ",
       "added": "追加済み",

@@ -24,13 +24,9 @@ class VocaSwitch extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.vocaColors;
 
-    final switchWidget = Switch.adaptive(
+    final switchWidget = Switch(
       value: value,
       onChanged: onChanged,
-      activeColor: colors.accentPrimary,
-      activeTrackColor: colors.accentPrimary.withOpacity(0.35),
-      inactiveThumbColor: colors.textSecondary,
-      inactiveTrackColor: colors.bgSecondary,
     );
 
     if (label == null) {

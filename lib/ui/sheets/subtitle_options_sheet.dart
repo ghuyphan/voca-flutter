@@ -228,7 +228,6 @@ class _SubtitleOptionsSheetState extends State<SubtitleOptionsSheet> {
                       style: TextStyle(color: colors.textMuted, fontSize: 11.5),
                     ),
                     value: showFurigana,
-                    activeColor: colors.accentPrimary,
                     onChanged: (_) => widget.controller.toggleFurigana(),
                   ),
                   Divider(height: 1, color: colors.borderColorLight),
@@ -264,7 +263,6 @@ class _SubtitleOptionsSheetState extends State<SubtitleOptionsSheet> {
                       style: TextStyle(color: colors.textMuted, fontSize: 11.5),
                     ),
                     value: _grammarModeEnabled,
-                    activeColor: colors.colorGrammar,
                     onChanged: (val) {
                       setState(() {
                         _grammarModeEnabled = val;
@@ -304,7 +302,6 @@ class _SubtitleOptionsSheetState extends State<SubtitleOptionsSheet> {
                       style: TextStyle(color: colors.textMuted, fontSize: 11.5),
                     ),
                     value: showTranslation,
-                    activeColor: colors.accentPrimary,
                     onChanged: (_) => widget.controller.toggleTranslation(),
                   ),
                 ],
@@ -361,14 +358,24 @@ class _SubtitleOptionsSheetState extends State<SubtitleOptionsSheet> {
         onTap: onTap,
         borderRadius: BorderRadius.circular(10),
         child: Container(
-          height: 42,
+          height: 38,
+          alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: isSelected ? colors.accentPrimarySoft : colors.bgSurface,
+            color: isSelected ? colors.accentPrimary : colors.bgSurface,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: isSelected ? colors.accentPrimary : colors.borderColor,
-              width: isSelected ? 1.5 : 1.0,
+              width: 1.0,
             ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: colors.accentPrimary.withOpacity(0.3),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -376,16 +383,16 @@ class _SubtitleOptionsSheetState extends State<SubtitleOptionsSheet> {
               Text(
                 sample,
                 style: TextStyle(
-                  color: isSelected ? colors.accentPrimary : colors.textPrimary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
+                  color: isSelected ? Colors.white : colors.textPrimary,
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                 ),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 4),
               Text(
                 label,
                 style: TextStyle(
-                  color: isSelected ? colors.accentPrimary : colors.textSecondary,
+                  color: isSelected ? Colors.white : colors.textSecondary,
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                 ),

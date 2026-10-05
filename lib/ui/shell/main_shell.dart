@@ -32,6 +32,11 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   late int _currentIndex;
 
+  late final List<ScrollController> _scrollControllers = List.generate(
+    _screens.length,
+    (_) => ScrollController(),
+  );
+
   late final List<Widget> _screens = [
     ExploreScreen(
       onOpenPlaylists: () => setState(() => _currentIndex = 4),
@@ -51,16 +56,50 @@ class _MainShellState extends State<MainShell> {
     ),
   ];
 
+  late final List<Widget> _tabScreens = List.generate(
+    _screens.length,
+    (i) => PrimaryScrollController(
+      controller: _scrollControllers[i],
+      child: _screens[i],
+    ),
+  );
+
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
   }
 
+  @override
+  void dispose() {
+    for (final controller in _scrollControllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
   void _onTabTapped(int index) {
+    if (_currentIndex == index) {
+      _scrollToTop(index);
+      return;
+    }
     setState(() {
       _currentIndex = index;
     });
+  }
+
+  void _scrollToTop(int index) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    if (index >= 0 && index < _scrollControllers.length) {
+      final controller = _scrollControllers[index];
+      if (controller.hasClients && controller.offset > 0.0) {
+        controller.animateTo(
+          0.0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutCubic,
+        );
+      }
+    }
   }
 
   @override
@@ -108,8 +147,8 @@ class _MainShellState extends State<MainShell> {
         // Main content screen
         Expanded(
           child: IndexedStack(
-            index: _currentIndex.clamp(0, _screens.length - 1),
-            children: _screens,
+            index: _currentIndex.clamp(0, _tabScreens.length - 1),
+            children: _tabScreens,
           ),
         ),
       ],
@@ -455,8 +494,8 @@ class _MainShellState extends State<MainShell> {
   // ==========================================
   Widget _buildMobileLayout(BuildContext context) {
     return IndexedStack(
-      index: _currentIndex.clamp(0, _screens.length - 1),
-      children: _screens,
+      index: _currentIndex.clamp(0, _tabScreens.length - 1),
+      children: _tabScreens,
     );
   }
 

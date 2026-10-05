@@ -6,6 +6,7 @@ import '../models/voca_models.dart';
 import '../services/voca_api_client.dart';
 import '../services/grammar_engine.dart';
 import '../services/dual_sub_service.dart';
+import '../services/i18n_service.dart';
 import '../utils/language_utils.dart';
 import 'app_state.dart';
 
@@ -45,15 +46,17 @@ class VideoPlayerController {
       return findActiveCue(time, cueList);
     });
 
-    // Automatically detect grammar patterns whenever the active cue or loaded grammar changes
+    // Automatically detect grammar patterns whenever the active cue, loaded grammar, or UI language changes
     activeGrammarMatches = computed(() {
-      // Re-evaluate when grammar patterns finish loading in background
+      // Re-evaluate when grammar patterns or translations finish loading in background
       grammarEngine.loadedLanguages.value;
+      grammarEngine.loadedTranslations.value;
 
       final cue = activeCue.value;
       final lang = activeLanguage.value;
+      final uiLang = I18nService.instance.currentLanguage.value;
       if (cue == null || cue.tokens.isEmpty) return <GrammarMatch>[];
-      return grammarEngine.detectPatterns(cue.tokens, lang);
+      return grammarEngine.detectPatterns(cue.tokens, lang, uiLang: uiLang);
     });
   }
 
@@ -357,6 +360,10 @@ class VideoPlayerController {
     final requestedLang = language ?? AppState.instance.activeLanguage.value;
     loadedLanguage.value = normalizeLanguageCode(requestedLang);
     await grammarEngine.loadLanguage(requestedLang);
+    final uiLang = I18nService.instance.currentLanguage.value;
+    if (uiLang != 'en') {
+      grammarEngine.loadTranslation(requestedLang, uiLang);
+    }
 
     try {
       final res = await apiClient.getTranscript(
@@ -392,8 +399,11 @@ class VideoPlayerController {
         final authenticLang = activeLanguage.value;
         loadedLanguage.value = authenticLang;
 
-        // Preload grammar patterns for authentic language
+        // Preload grammar patterns and translations for authentic language
         grammarEngine.loadLanguage(authenticLang);
+        if (uiLang != 'en') {
+          grammarEngine.loadTranslation(authenticLang, uiLang);
+        }
 
         // Asynchronously batch tokenize cues with authentic language
         _tokenizeCues(videoId, authenticLang, rawCues);

@@ -39,6 +39,7 @@ dependencies:
   intl: ^0.20.2
   shared_preferences: ^2.3.3
   audioplayers: ^6.8.1
+  flutter_svg: ^2.0.17
 
 dev_dependencies:
   flutter_test:
@@ -53,6 +54,10 @@ flutter:
     - assets/grammar/grammar_zh.json
     - assets/grammar/grammar_ko.json
     - assets/grammar/grammar_en.json
+    - assets/grammar/translations/
     - assets/i18n/
     - assets/images/
     - assets/icons/
+    - assets/avatars/
+    - assets/flags/
+    - assets/illustrations/

@@ -22,6 +22,7 @@ import 'playlist/mobile_playlist_bar.dart';
 import 'subtitle_panel.dart';
 import 'video_bottom_bar.dart';
 import 'video_header.dart';
+import 'video_more_feed.dart';
 import 'video_progress_bar.dart';
 import 'fullscreen_subtitle.dart';
 
@@ -80,6 +81,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   DateTime? _lastRightTapTime;
   Timer? _pendingSingleTapTimer;
   double _accumulatedDragDown = 0.0;
+  final ScrollController _bodyScrollController = ScrollController();
+  final GlobalKey<VideoMoreFeedState> _moreFeedKey = GlobalKey<VideoMoreFeedState>();
 
   @override
   void initState() {
@@ -107,6 +110,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           playsInline: true,
           mute: false,
           enableCaption: false,
+          captionLanguage: '',
           origin: 'https://www.youtube-nocookie.com',
           privacyEnhancedMode: true,
           userAgent:
@@ -167,6 +171,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         _playerController.isPlaying.value = true;
         _isBuffering.value = false;
         _isEnded.value = false;
+        PlayerCoordinator.disableNativeCaptions(_ytController);
         _scheduleControlsAutoHide();
       } else if (value.playerState == PlayerState.buffering) {
         _isBuffering.value = true;
@@ -382,6 +387,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     if (_ownsControllers) {
       _ytController.close();
     }
+    _bodyScrollController.dispose();
     super.dispose();
   }
 
@@ -775,6 +781,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       final mediaQuery = MediaQuery.of(context);
       final isTablet = mediaQuery.size.width >= VocaTokens.tabletBreakpoint;
       final isFullscreen = _playerController.isFullscreen.value;
+      final colors = context.vocaColors;
 
       return PopScope(
         canPop: false,
@@ -848,44 +855,102 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                       )
                     : Column(
                         children: [
-                          // 1. 16:9 Youtube Player with Gesture Detector, Center Controls & Bottom Bar
+                          // 1. Pinned 16:9 Youtube Player Area
                           _buildVideoPlayerArea(isFullscreen: false),
 
-                          // 2. VideoHeader (Title, channel, level badge, tracks [cc], share, close [x])
-                          Watch((context) {
-                            return VideoHeader(
-                              title: widget.title.isNotEmpty
-                                  ? widget.title
-                                  : _playerController.videoTitle.value,
-                              channel: widget.channel ?? _ytController.metadata.author,
-                              videoId: widget.videoId,
-                              level: widget.level ?? _playerController.difficultyLevel.value,
-                              controller: _playerController,
-                              ytController: _ytController,
-                              onCloseTap: () => PlayerCoordinator.instance.closeVideo(),
-                              onVerticalDragDown: _handleMinimize,
-                            );
-                          }),
-
-                          // 3. Compact Playlist Bar (If part of a playlist)
-                          Watch((context) {
-                            final coord = PlayerCoordinator.instance;
-                            if (!coord.hasPlaylist) return const SizedBox.shrink();
-                            return MobilePlaylistBar(
-                              title: coord.activePlaylistTitle.value ?? 'Playlist',
-                              currentIndex: coord.activePlaylistIndex.value ?? 0,
-                              totalVideos: coord.playlistTotal,
-                            );
-                          }),
-
-                          // 4. Unified SubtitlePanel (Active Subtitle + Cue List + 4-Pill Toolbar)
+                          // 2. Scrollable Lower Body (Header + Compact Subtitle + More Feed)
                           Expanded(
-                            child: SubtitlePanel(
-                              controller: _playerController,
-                              ytController: _ytController,
-                              onSeek: (seconds) => _ytController.seekTo(
-                                seconds: seconds,
-                                allowSeekAhead: true,
+                            child: NotificationListener<ScrollNotification>(
+                              onNotification: (notification) {
+                                if (notification is ScrollUpdateNotification) {
+                                  if (notification.metrics.extentAfter < 300) {
+                                    _moreFeedKey.currentState?.loadMore();
+                                  }
+                                }
+                                return false;
+                              },
+                              child: SingleChildScrollView(
+                                controller: _bodyScrollController,
+                                physics: const BouncingScrollPhysics(),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    // VideoHeader (Title, channel, level badge, tracks [cc], share, close [x])
+                                    Watch((context) {
+                                      return VideoHeader(
+                                        title: widget.title.isNotEmpty
+                                            ? widget.title
+                                            : _playerController.videoTitle.value,
+                                        channel: widget.channel ?? _ytController.metadata.author,
+                                        videoId: widget.videoId,
+                                        level: widget.level ?? _playerController.difficultyLevel.value,
+                                        controller: _playerController,
+                                        ytController: _ytController,
+                                        onCloseTap: () => PlayerCoordinator.instance.closeVideo(),
+                                        onVerticalDragDown: _handleMinimize,
+                                      );
+                                    }),
+
+                                    // Compact Playlist Bar (If part of a playlist)
+                                    Watch((context) {
+                                      final coord = PlayerCoordinator.instance;
+                                      if (!coord.hasPlaylist) return const SizedBox.shrink();
+                                      return MobilePlaylistBar(
+                                        title: coord.activePlaylistTitle.value ?? 'Playlist',
+                                        currentIndex: coord.activePlaylistIndex.value ?? 0,
+                                        totalVideos: coord.playlistTotal,
+                                      );
+                                    }),
+
+                                    // Compact SubtitlePanel (3-line timeline)
+                                    SubtitlePanel(
+                                      controller: _playerController,
+                                      ytController: _ytController,
+                                      isCompact: true,
+                                      onSeek: (seconds) => _ytController.seekTo(
+                                        seconds: seconds,
+                                        allowSeekAhead: true,
+                                      ),
+                                    ),
+
+                                    // Clean Section Header
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+                                      child: Text(
+                                        context.t('forYou', null, 'For You'),
+                                        style: TextStyle(
+                                          fontSize: 14.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: colors.textPrimary,
+                                          letterSpacing: -0.2,
+                                        ),
+                                      ),
+                                    ),
+
+                                    // Infinite scroll feed with VideoFeedCard cards
+                                    Watch((context) {
+                                      return VideoMoreFeed(
+                                        key: _moreFeedKey,
+                                        currentVideoId: widget.videoId,
+                                        currentTitle: widget.title.isNotEmpty
+                                            ? widget.title
+                                            : _playerController.videoTitle.value,
+                                        currentChannel: widget.channel ?? _ytController.metadata.author,
+                                        language: _playerController.activeLanguage.value,
+                                        tier: widget.level ?? _playerController.difficultyLevel.value,
+                                        onVideoTap: (vidId, title, channel, level) {
+                                          PlayerCoordinator.instance.openVideo(
+                                            context,
+                                            videoId: vidId,
+                                            title: title,
+                                            channel: channel,
+                                            level: level,
+                                          );
+                                        },
+                                      );
+                                    }),
+                                  ],
+                                ),
                               ),
                             ),
                           ),

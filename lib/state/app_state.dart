@@ -55,7 +55,13 @@ class AppState {
 
   void setLanguage(String lang) {
     activeLanguage.value = lang;
-    grammarEngine.loadLanguage(lang);
+    try {
+      grammarEngine.loadLanguage(lang);
+      final uiLang = I18nService.instance.currentLanguage.value;
+      if (uiLang != 'en') {
+        grammarEngine.loadTranslation(lang, uiLang);
+      }
+    } catch (_) {}
   }
 
   Future<void> initSettingsAndGamification() async {
@@ -123,6 +129,52 @@ class AppState {
 
   void markSubtitleCoachmarkSeen() {
     updateUserSettings(userSettings.value.copyWith(hasSeenSubtitleCoachmark: true));
+  }
+
+  Future<void> completeOnboarding({
+    required String learningLanguage,
+    required String companionClass,
+    required String preferredLevel,
+    required String nativeLanguage,
+    required bool showDualSubtitles,
+    int dailyGoalMinutes = 10,
+    bool isReplay = false,
+  }) async {
+    setLanguage(learningLanguage);
+
+    final updated = userSettings.value.copyWith(
+      hasCompletedOnboarding: true,
+      nativeLanguage: nativeLanguage,
+      dualSubtitleTargetLang: nativeLanguage,
+      showDualSubtitles: showDualSubtitles,
+      preferredLevel: preferredLevel,
+      companionClass: companionClass,
+      dailyGoalMinutes: dailyGoalMinutes,
+    );
+    await updateUserSettings(updated);
+
+    if (!isReplay) {
+      try {
+        gamificationService.addXp(50, reason: 'onboarding_starter_pack');
+        await gamificationService.recordActivity();
+        if (gamificationService.streakFreezes.value < 2) {
+          gamificationService.streakFreezes.value = 2;
+        }
+      } catch (_) {}
+    }
+
+    try {
+      final user = supabaseService.client.auth.currentUser;
+      if (user != null) {
+        await supabaseService.client.from('profiles').update({
+          'target_lang': learningLanguage,
+          'companion_class': companionClass,
+          'preferred_level': preferredLevel,
+        }).eq('id', user.id);
+      }
+    } catch (e) {
+      debugPrint('[AppState] Profile sync skipped: $e');
+    }
   }
 
   Future<void> refreshDiamonds() async {

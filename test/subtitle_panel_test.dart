@@ -18,10 +18,19 @@ class _FakeGrammarEngine extends Fake implements GrammarEngine {
   final loadedLanguages = signal<Set<String>>({});
 
   @override
+  final loadedTranslations = signal<Set<String>>({});
+
+  @override
   Future<void> loadLanguage(String language) async {}
 
   @override
-  List<GrammarMatch> detectPatterns(List<Token> tokens, String language) => [];
+  Future<Map<String, GrammarTranslation>> loadTranslation(String learningLang, String uiLang) async => {};
+
+  @override
+  GrammarPattern getLocalizedPattern(GrammarPattern pattern, String uiLang) => pattern;
+
+  @override
+  List<GrammarMatch> detectPatterns(List<Token> tokens, String language, {String? uiLang}) => [];
 }
 
 class FakeYoutubePlayerController extends Fake implements YoutubePlayerController {

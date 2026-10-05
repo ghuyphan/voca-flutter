@@ -527,6 +527,33 @@ class VocaTheme {
         titleMedium: TextStyle(color: VocaColorPalette.dark.textPrimary, fontWeight: FontWeight.w600),
         titleSmall: TextStyle(color: VocaColorPalette.dark.textSecondary, fontWeight: FontWeight.w500),
       ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) {
+            return VocaColorPalette.dark.textTertiary;
+          }
+          if (states.contains(WidgetState.selected)) {
+            return Colors.white;
+          }
+          return VocaColorPalette.dark.textSecondary;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) {
+            return VocaColorPalette.dark.bgTertiary;
+          }
+          if (states.contains(WidgetState.selected)) {
+            return VocaColorPalette.dark.accentPrimary;
+          }
+          return VocaColorPalette.dark.bgSurface;
+        }),
+        trackOutlineColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return Colors.transparent;
+          }
+          return VocaColorPalette.dark.borderColor;
+        }),
+        thumbIcon: const WidgetStatePropertyAll<Icon?>(null),
+      ),
     );
   }
 
@@ -641,6 +668,33 @@ class VocaTheme {
         titleMedium: TextStyle(color: VocaColorPalette.light.textPrimary, fontWeight: FontWeight.w600),
         titleSmall: TextStyle(color: VocaColorPalette.light.textSecondary, fontWeight: FontWeight.w500),
       ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) {
+            return VocaColorPalette.light.textTertiary;
+          }
+          if (states.contains(WidgetState.selected)) {
+            return Colors.white;
+          }
+          return VocaColorPalette.light.textSecondary;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) {
+            return VocaColorPalette.light.bgTertiary;
+          }
+          if (states.contains(WidgetState.selected)) {
+            return VocaColorPalette.light.accentPrimary;
+          }
+          return VocaColorPalette.light.bgHover;
+        }),
+        trackOutlineColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return Colors.transparent;
+          }
+          return VocaColorPalette.light.borderColor;
+        }),
+        thumbIcon: const WidgetStatePropertyAll<Icon?>(null),
+      ),
     );
   }
 }
@@ -648,5 +702,7 @@ class VocaTheme {
 /// Context extensions for easy access to theme colors and state
 extension VocaThemeContextExtension on BuildContext {
   VocaColorPalette get vocaColors => VocaTheme.colors(this);
+  VocaColorPalette get colors => VocaTheme.colors(this);
   bool get isDarkMode => Theme.of(this).brightness == Brightness.dark;
+  bool get isDark => Theme.of(this).brightness == Brightness.dark;
 }

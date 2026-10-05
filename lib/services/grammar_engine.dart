@@ -5,13 +5,21 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:signals_flutter/signals_flutter.dart';
 import '../models/voca_models.dart';
+import 'i18n_service.dart';
 
 class GrammarEngine {
   final Map<String, List<GrammarPattern>> _patternsByLang = {};
   final Map<String, Map<String, List<GrammarPattern>>> _indicesByLang = {};
+  final Map<String, Map<String, GrammarTranslation>> _translationsByKey = {};
 
   /// Reactive signal of loaded languages to trigger UI auto-recompute when pattern lazy loading finishes
   final loadedLanguages = signal<Set<String>>({});
+
+  /// Reactive signal of loaded translations to trigger UI auto-recompute when translation lazy loading finishes
+  final loadedTranslations = signal<Set<String>>({});
+
+  final Map<String, Future<void>> _patternPromises = {};
+  final Map<String, Future<Map<String, GrammarTranslation>>> _translationPromises = {};
 
   static const List<String> _jaEndingPatterns = [
     'ている', 'ていた', 'ています', 'ていました',
@@ -56,17 +64,114 @@ class GrammarEngine {
       return;
     }
 
-    try {
-      final jsonStr = await rootBundle.loadString('assets/grammar/grammar_$lang.json');
-      final list = jsonDecode(jsonStr) as List<dynamic>;
-      final patterns = list.map((p) => GrammarPattern.fromJson(p as Map<String, dynamic>)).toList();
-
-      _patternsByLang[lang] = patterns;
-      _indicesByLang[lang] = _buildIndex(patterns, lang);
-      loadedLanguages.value = {...loadedLanguages.value, lang};
-    } catch (e) {
-      debugPrint('[GrammarEngine] Warning: Could not load assets/grammar/grammar_$lang.json: $e');
+    if (_patternPromises.containsKey(lang)) {
+      return _patternPromises[lang]!;
     }
+
+    final future = () async {
+      try {
+        final jsonStr = await rootBundle.loadString('assets/grammar/grammar_$lang.json');
+        final list = jsonDecode(jsonStr) as List<dynamic>;
+        final patterns = list.map((p) => GrammarPattern.fromJson(p as Map<String, dynamic>)).toList();
+
+        _patternsByLang[lang] = patterns;
+        _indicesByLang[lang] = _buildIndex(patterns, lang);
+        loadedLanguages.value = {...loadedLanguages.value, lang};
+      } catch (e) {
+        debugPrint('[GrammarEngine] Warning: Could not load assets/grammar/grammar_$lang.json: $e');
+      } finally {
+        _patternPromises.remove(lang);
+      }
+    }();
+
+    _patternPromises[lang] = future;
+    return future;
+  }
+
+  /// Lazy-load translation pack for a learning language and UI language
+  Future<Map<String, GrammarTranslation>> loadTranslation(String learningLang, String uiLang) async {
+    if (uiLang == 'en' || learningLang.isEmpty || uiLang.isEmpty) {
+      return {};
+    }
+
+    final key = '${learningLang}_$uiLang';
+    if (_translationsByKey.containsKey(key)) {
+      return _translationsByKey[key]!;
+    }
+
+    if (_translationPromises.containsKey(key)) {
+      return _translationPromises[key]!;
+    }
+
+    final future = () async {
+      try {
+        final jsonStr = await rootBundle.loadString('assets/grammar/translations/${learningLang}_$uiLang.json');
+        final rawMap = jsonDecode(jsonStr) as Map<String, dynamic>;
+        final translations = rawMap.map(
+          (k, v) => MapEntry(k, GrammarTranslation.fromJson(v as Map<String, dynamic>)),
+        );
+        _translationsByKey[key] = translations;
+        loadedTranslations.value = {...loadedTranslations.value, key};
+        return translations;
+      } catch (e) {
+        debugPrint('[GrammarEngine] Warning: Could not load assets/grammar/translations/${learningLang}_$uiLang.json: $e');
+        return <String, GrammarTranslation>{};
+      } finally {
+        _translationPromises.remove(key);
+      }
+    }();
+
+    _translationPromises[key] = future;
+    return future;
+  }
+
+  /// Get already loaded translation pack synchronously
+  Map<String, GrammarTranslation>? getLoadedTranslation(String learningLang, String uiLang) {
+    return _translationsByKey['${learningLang}_$uiLang'];
+  }
+
+  /// Get a localized copy of the grammar pattern for the given UI language
+  GrammarPattern getLocalizedPattern(GrammarPattern pattern, String uiLang) {
+    if (uiLang == 'en' || uiLang.isEmpty) {
+      return pattern;
+    }
+
+    final key = '${pattern.language}_$uiLang';
+    final translations = _translationsByKey[key];
+    if (translations == null) {
+      loadTranslation(pattern.language, uiLang);
+      return pattern;
+    }
+
+    final trans = translations[pattern.id];
+    if (trans == null) {
+      return pattern;
+    }
+
+    return pattern.copyWith(
+      title: (trans.title != null && trans.title!.isNotEmpty) ? trans.title : pattern.title,
+      shortExplanation: (trans.shortExplanation != null && trans.shortExplanation!.isNotEmpty)
+          ? trans.shortExplanation
+          : pattern.shortExplanation,
+      longExplanation: (trans.longExplanation != null && trans.longExplanation!.isNotEmpty)
+          ? trans.longExplanation
+          : pattern.longExplanation,
+      formation: (trans.formation != null && trans.formation!.isNotEmpty)
+          ? trans.formation
+          : pattern.formation,
+      examples: pattern.examples.asMap().entries.map((entry) {
+        final idx = entry.key;
+        final ex = entry.value;
+        final transEx = (trans.examples != null && idx < trans.examples!.length)
+            ? trans.examples![idx]
+            : null;
+        return ex.copyWith(
+          translation: (transEx != null && transEx.translation.isNotEmpty)
+              ? transEx.translation
+              : ex.translation,
+        );
+      }).toList(),
+    );
   }
 
   Map<String, List<GrammarPattern>> _buildIndex(List<GrammarPattern> patterns, String lang) {
@@ -101,12 +206,22 @@ class GrammarEngine {
   }
 
   /// Detect grammar patterns in a sequence of subtitle tokens
-  List<GrammarMatch> detectPatterns(List<Token> tokens, String lang) {
+  List<GrammarMatch> detectPatterns(List<Token> tokens, String lang, {String? uiLang}) {
+    final effectiveUiLang = uiLang ?? (I18nService.instance.isInitialized ? I18nService.instance.currentLanguage.value : 'en');
     final index = _indicesByLang[lang];
     if (index == null) {
       // Proactively load patterns in background matching lingua-tube behavior
       loadLanguage(lang);
+      if (effectiveUiLang != 'en') {
+        loadTranslation(lang, effectiveUiLang);
+      }
       return [];
+    }
+    if (effectiveUiLang != 'en') {
+      final transKey = '${lang}_$effectiveUiLang';
+      if (!_translationsByKey.containsKey(transKey)) {
+        loadTranslation(lang, effectiveUiLang);
+      }
     }
     if (tokens.isEmpty) return [];
 
@@ -234,9 +349,20 @@ class GrammarEngine {
 
     // Deduplicate matches on overlapping spans
     final seen = <String>{};
-    return matches.where((m) {
+    final uniqueMatches = matches.where((m) {
       final key = '${m.pattern.id}_${m.tokenIndices.join(",")}';
       return seen.add(key);
     }).toList();
+
+    if (effectiveUiLang != 'en') {
+      return uniqueMatches.map((m) => GrammarMatch(
+        pattern: getLocalizedPattern(m.pattern, effectiveUiLang),
+        tokenIndices: m.tokenIndices,
+        startIndex: m.startIndex,
+        endIndex: m.endIndex,
+      )).toList();
+    }
+
+    return uniqueMatches;
   }
 }

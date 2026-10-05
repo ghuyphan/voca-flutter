@@ -21,6 +21,28 @@ class FakeVocaApiClient extends VocaApiClient {
       'maxDiamonds': 5,
     };
   }
+
+  @override
+  Future<List<Map<String, dynamic>>> getRecommendedVideos({
+    String lang = 'ja',
+    String? tier,
+    String? query,
+    int limit = 20,
+    int offset = 0,
+    bool refresh = false,
+  }) async {
+    return List.generate(
+      15,
+      (i) => {
+        'videoId': 'vid_$i',
+        'title': 'Video Title $i',
+        'channel': 'Creator $i',
+        'duration': 272,
+        'level': 'JLPT N4',
+        'tier': 'elementary',
+      },
+    );
+  }
 }
 
 // Simple mock for SupabaseService
@@ -70,7 +92,22 @@ class FakeSupabaseService extends SupabaseService {
 
   @override
   Future<List<Flashcard>> getVocabularyCards({String? language}) async {
-    return [];
+    return List.generate(
+      25,
+      (i) => Flashcard(
+        id: 'card_$i',
+        userId: 'test_user',
+        word: 'Word $i',
+        reading: 'reading $i',
+        meaning: 'meaning $i',
+        language: 'ja',
+        level: 'N5',
+        srsInterval: 1,
+        srsRepetition: 1,
+        srsEaseFactor: 2.5,
+        srsNextReviewAt: DateTime.now(),
+      ),
+    );
   }
 }
 
@@ -299,6 +336,77 @@ void main() {
       await tester.tap(find.text('+ New Video'));
       await tester.pumpAndSettle();
       expect(find.text('Learn from Any Video'), findsOneWidget);
+    });
+
+    testWidgets('Tapping the currently active tab in bottom nav scrolls the active view to top', (tester) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: MainShell(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Find the feed ListView in Explore tab (Watch tab is index 0)
+      final feedListFinder = find.byType(ListView).last;
+      expect(feedListFinder, findsOneWidget);
+
+      final scrollableState = tester.state<ScrollableState>(
+        find.descendant(of: feedListFinder, matching: find.byType(Scrollable)).first,
+      );
+
+      // Drag feed up (scrolling down)
+      await tester.drag(feedListFinder, const Offset(0, -400));
+      await tester.pumpAndSettle();
+
+      expect(scrollableState.position.pixels, greaterThan(0));
+
+      // Re-tap 'Watch' in bottom nav (already active tab)
+      await tester.tap(find.text('Watch'));
+      await tester.pumpAndSettle();
+
+      // Verify that the view has smoothly scrolled back to top
+      expect(scrollableState.position.pixels, equals(0.0));
+
+      // 2. Test Vocab tab active tab scroll-to-top
+      await tester.tap(find.text('Vocab'));
+      await tester.pumpAndSettle();
+
+      final vocabListFinder = find.byType(ListView).first;
+      final vocabScrollable = tester.state<ScrollableState>(
+        find.descendant(of: vocabListFinder, matching: find.byType(Scrollable)).first,
+      );
+
+      await tester.drag(vocabListFinder, const Offset(0, -400));
+      await tester.pumpAndSettle();
+      expect(vocabScrollable.position.pixels, greaterThan(0));
+
+      // Re-tap 'Vocab' in bottom nav
+      await tester.tap(find.text('Vocab'));
+      await tester.pumpAndSettle();
+      expect(vocabScrollable.position.pixels, equals(0.0));
+
+      // 3. Test More (Settings) tab active tab scroll-to-top
+      await tester.tap(find.text('More'));
+      await tester.pumpAndSettle();
+
+      final settingsScrollFinder = find.byType(SingleChildScrollView).first;
+      final settingsScrollable = tester.state<ScrollableState>(
+        find.descendant(of: settingsScrollFinder, matching: find.byType(Scrollable)).first,
+      );
+
+      await tester.drag(settingsScrollFinder, const Offset(0, -300));
+      await tester.pumpAndSettle();
+      expect(settingsScrollable.position.pixels, greaterThan(0));
+
+      // Re-tap 'More' in bottom nav
+      await tester.tap(find.text('More'));
+      await tester.pumpAndSettle();
+      expect(settingsScrollable.position.pixels, equals(0.0));
     });
   });
 }

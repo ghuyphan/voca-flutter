@@ -1,11 +1,11 @@
 // lib/ui/sheets/practice_sheet.dart
 
 import 'package:flutter/material.dart';
+import 'package:signals_flutter/signals_flutter.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../../config/voca_theme.dart';
 import '../../models/voca_models.dart';
 import '../../services/i18n_service.dart';
-import '../../services/toast_service.dart';
 import '../../state/app_state.dart';
 import '../../state/player_state.dart';
 
@@ -53,10 +53,30 @@ class _PracticeSheetState extends State<PracticeSheet> {
   Token? _hiddenToken;
   List<String> _quizOptions = [];
 
+  // Track original playback rate and loop state before entering PracticeSheet
+  late final double _initialPlaybackRate;
+  late final bool _initialLoopState;
+
   @override
   void initState() {
     super.initState();
+    _initialPlaybackRate = widget.controller.playbackRate.value;
+    _initialLoopState = widget.controller.isLoopingCue.value;
     _prepareClozeQuiz();
+  }
+
+  @override
+  void dispose() {
+    // Restore original playback rate upon closing the sheet
+    if ((widget.controller.playbackRate.value - _initialPlaybackRate).abs() > 0.01) {
+      widget.controller.playbackRate.value = _initialPlaybackRate;
+      widget.ytController.setPlaybackRate(_initialPlaybackRate);
+    }
+    // Stop sentence loop if it was started inside this practice session
+    if (!_initialLoopState && widget.controller.isLoopingCue.value) {
+      widget.controller.toggleLoopCurrentCue();
+    }
+    super.dispose();
   }
 
   void _prepareClozeQuiz() {
@@ -294,66 +314,117 @@ class _PracticeSheetState extends State<PracticeSheet> {
 
               // Tab 0: Shadowing Controls
               if (_selectedTabIndex == 0) ...[
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          widget.controller.toggleLoopCurrentCue();
-                          setState(() {});
-                          if (activeCue != null) {
-                            widget.ytController.seekTo(seconds: activeCue.start, allowSeekAhead: true);
-                            widget.ytController.playVideo();
-                          }
-                        },
-                        icon: Icon(
-                          widget.controller.isLoopingCue.value
-                              ? Icons.stop_rounded
-                              : Icons.sync_rounded,
-                          size: 18,
-                        ),
-                        label: Text(
-                          widget.controller.isLoopingCue.value
-                              ? context.t('practice.stopLoop', null, 'Stop Loop')
-                              : context.t('practice.loopCue', null, 'Loop Sentence'),
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: widget.controller.isLoopingCue.value
-                              ? colors.error
-                              : colors.accentPrimary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                      ),
+                // 1. Primary Loop / Stop Loop Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      widget.controller.toggleLoopCurrentCue();
+                      setState(() {});
+                      if (activeCue != null) {
+                        widget.ytController.seekTo(seconds: activeCue.start, allowSeekAhead: true);
+                        widget.ytController.playVideo();
+                      }
+                    },
+                    icon: Icon(
+                      widget.controller.isLoopingCue.value
+                          ? Icons.stop_rounded
+                          : Icons.sync_rounded,
+                      size: 20,
                     ),
-                    const SizedBox(width: 10),
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        widget.ytController.setPlaybackRate(0.85);
-                        widget.controller.playbackRate.value = 0.85;
-                        ToastService.info(
-                          context,
-                          context.t('practice.rateSetNotice', null, 'Playback set to 0.85x for Shadowing'),
-                          duration: const Duration(seconds: 1),
-                        );
-                      },
-                      icon: const Icon(Icons.slow_motion_video_rounded, size: 16),
-                      label: const Text('0.85x'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: colors.textPrimary,
-                        side: BorderSide(color: colors.borderColor),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
+                    label: Text(
+                      widget.controller.isLoopingCue.value
+                          ? context.t('practice.stopLoop', null, 'Stop Loop')
+                          : context.t('practice.loopCue', null, 'Loop Sentence'),
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
                     ),
-                  ],
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: widget.controller.isLoopingCue.value
+                          ? colors.error
+                          : colors.accentPrimary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: widget.controller.isLoopingCue.value ? 0 : 2,
+                    ),
+                  ),
                 ),
+                const SizedBox(height: 16),
+
+                // 2. Native Inline Speed Selector Segmented Pills
+                Watch((context) {
+                  final currentRate = widget.controller.playbackRate.value;
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        context.t('player.speed', null, 'Playback Speed').toUpperCase(),
+                        style: TextStyle(
+                          color: colors.textMuted,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [0.75, 0.85, 1.0, 1.25].map((speed) {
+                          final isSelected = (currentRate - speed).abs() < 0.04;
+
+                          return Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 3),
+                              child: InkWell(
+                                onTap: () {
+                                  widget.controller.playbackRate.value = speed;
+                                  widget.ytController.setPlaybackRate(speed);
+                                  setState(() {});
+                                },
+                                borderRadius: BorderRadius.circular(10),
+                                child: Container(
+                                  height: 38,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? colors.accentPrimary
+                                        : colors.bgSurface,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? colors.accentPrimary
+                                          : colors.borderColor,
+                                      width: 1.0,
+                                    ),
+                                    boxShadow: isSelected
+                                        ? [
+                                            BoxShadow(
+                                              color: colors.accentPrimary.withOpacity(0.3),
+                                              blurRadius: 6,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ]
+                                        : null,
+                                  ),
+                                  child: Text(
+                                    '${speed}x',
+                                    style: TextStyle(
+                                      color: isSelected ? Colors.white : colors.textPrimary,
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  );
+                }),
               ],
 
               // Tab 1: Cloze Quiz Options

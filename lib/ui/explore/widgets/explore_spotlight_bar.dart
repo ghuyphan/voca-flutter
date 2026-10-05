@@ -28,14 +28,17 @@ class ExploreSpotlightBar extends StatefulWidget {
   State<ExploreSpotlightBar> createState() => _ExploreSpotlightBarState();
 }
 
-class _ExploreSpotlightBarState extends State<ExploreSpotlightBar> {
+class _ExploreSpotlightBarState extends State<ExploreSpotlightBar>
+    with WidgetsBindingObserver {
   late final FocusNode _focusNode;
   bool _ownsFocusNode = false;
   Timer? _debounceTimer;
+  bool _hasClipboardText = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     if (widget.focusNode == null) {
       _focusNode = FocusNode();
       _ownsFocusNode = true;
@@ -44,10 +47,30 @@ class _ExploreSpotlightBarState extends State<ExploreSpotlightBar> {
     }
     _focusNode.addListener(_onFocusChange);
     widget.controller.addListener(_onTextChange);
+    _checkClipboard();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkClipboard();
+    }
+  }
+
+  Future<void> _checkClipboard() async {
+    try {
+      final hasStrings = await Clipboard.hasStrings();
+      if (mounted && hasStrings != _hasClipboardText) {
+        setState(() {
+          _hasClipboardText = hasStrings;
+        });
+      }
+    } catch (_) {}
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _debounceTimer?.cancel();
     _focusNode.removeListener(_onFocusChange);
     widget.controller.removeListener(_onTextChange);
@@ -87,6 +110,7 @@ class _ExploreSpotlightBarState extends State<ExploreSpotlightBar> {
         widget.controller.text = text;
         _handleSubmit(text);
       }
+      _checkClipboard();
     } catch (_) {}
   }
 
@@ -204,8 +228,8 @@ class _ExploreSpotlightBarState extends State<ExploreSpotlightBar> {
                 ],
               ),
             ),
-          ] else ...[
-            // Paste from clipboard icon button (matches lingua-tube .spotlight__paste-btn & command-palette.component.html)
+          ] else if (_hasClipboardText) ...[
+            // Contextual paste from clipboard button (only shown when clipboard contains text)
             Tooltip(
               message: context.t('commandPalette.paste', null, 'Paste from clipboard'),
               child: Material(

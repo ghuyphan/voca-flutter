@@ -1508,6 +1508,7 @@
     "switchToLang": "{{lang}} 자막으로 전환",
     "useAITranscription": "AI 자막 생성하기",
     "waitingForPlayback": "동영상 재생 대기 중...",
+    "moreVideos": "추천 동영상",
     "toolbar": {
       "loop": "반복",
       "added": "저장한 단어",

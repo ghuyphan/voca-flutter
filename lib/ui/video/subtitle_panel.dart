@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../../config/voca_theme.dart';
@@ -28,12 +30,14 @@ class SubtitlePanel extends StatefulWidget {
   final VideoPlayerController controller;
   final YoutubePlayerController ytController;
   final void Function(double seconds) onSeek;
+  final bool isCompact;
 
   const SubtitlePanel({
     super.key,
     required this.controller,
     required this.ytController,
     required this.onSeek,
+    this.isCompact = false,
   });
 
   @override
@@ -43,10 +47,10 @@ class SubtitlePanel extends StatefulWidget {
 class _SubtitlePanelState extends State<SubtitlePanel>
     with SingleTickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
-  final Map<int, GlobalKey> _cueKeys = {};
   late final EffectCleanup _activeCueCleanup;
   late final AnimationController _dotsAnimController;
   bool _isScrolledAway = false;
+  Timer? _scrollAwayTimer;
 
   @override
   void initState() {
@@ -57,11 +61,7 @@ class _SubtitlePanelState extends State<SubtitlePanel>
       duration: const Duration(milliseconds: 1200),
     )..repeat();
 
-    _scrollController.addListener(_onListScroll);
-
     _activeCueCleanup = effect(() {
-      final _ = widget.controller.cues.value;
-      _cueKeys.clear();
       final active = widget.controller.activeCue.value;
       final autoScroll = widget.controller.autoScrollTranscript.value;
       if (active != null && autoScroll && !_isScrolledAway) {
@@ -85,32 +85,10 @@ class _SubtitlePanelState extends State<SubtitlePanel>
     } catch (_) {}
   }
 
-  void _onListScroll() {
-    if (!_scrollController.hasClients) return;
-    final active = widget.controller.activeCue.value;
-    if (active == null) {
-      if (_isScrolledAway) setState(() => _isScrolledAway = false);
-      return;
-    }
-    final allCues = widget.controller.cues.value;
-    final index = allCues.indexOf(active);
-    if (index == -1) return;
-
-    // Approximate row height ~48px
-    final estimatedTarget = (index * 48.0)
-        .clamp(0.0, _scrollController.position.maxScrollExtent);
-    final diff = (_scrollController.offset - estimatedTarget).abs();
-    final isAway = diff > 140.0;
-    if (isAway != _isScrolledAway) {
-      setState(() {
-        _isScrolledAway = isAway;
-      });
-    }
-  }
-
   void _scrollToActiveCue(SubtitleCue active, {bool force = false}) {
     if (!mounted) return;
     if (force) {
+      _scrollAwayTimer?.cancel();
       setState(() => _isScrolledAway = false);
     }
     if (!force && !widget.controller.autoScrollTranscript.value) return;
@@ -120,17 +98,20 @@ class _SubtitlePanelState extends State<SubtitlePanel>
     final index = allCues.indexOf(active);
     if (index == -1) return;
 
-    final key = _cueKeys[index];
-    if (key != null && key.currentContext != null) {
-      Scrollable.ensureVisible(
-        key.currentContext!,
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeInOutCubic,
-        alignment: 0.35,
-      );
+    final showTranslation = widget.controller.showTranslation.value;
+    final double rowHeight = showTranslation ? 48.0 : 36.0;
+    final maxExtent = _scrollController.position.maxScrollExtent;
+
+    double target;
+    if (widget.isCompact) {
+      // Center active cue as row 2 of the 3 visible rows
+      target = ((index - 1) * rowHeight).clamp(0.0, maxExtent);
     } else {
-      final maxExtent = _scrollController.position.maxScrollExtent;
-      final target = (index * 48.0).clamp(0.0, maxExtent);
+      final viewport = _scrollController.position.viewportDimension;
+      target = ((index * rowHeight) - (viewport / 2) + (rowHeight / 2)).clamp(0.0, maxExtent);
+    }
+
+    if ((_scrollController.offset - target).abs() > 1.5) {
       _scrollController.animateTo(
         target,
         duration: const Duration(milliseconds: 250),
@@ -141,6 +122,7 @@ class _SubtitlePanelState extends State<SubtitlePanel>
 
   @override
   void dispose() {
+    _scrollAwayTimer?.cancel();
     _activeCueCleanup();
     _dotsAnimController.dispose();
     _scrollController.dispose();
@@ -559,6 +541,7 @@ class _SubtitlePanelState extends State<SubtitlePanel>
     required bool showTranslation,
     required VocaColorPalette colors,
     required bool isDark,
+    bool is3LineCompact = false,
   }) {
     if (cues.isEmpty) {
       return Center(
@@ -569,35 +552,55 @@ class _SubtitlePanelState extends State<SubtitlePanel>
       );
     }
 
+    final double rowHeight = showTranslation ? 48.0 : 36.0;
+
     return Stack(
       children: [
-        ListView.builder(
-          controller: _scrollController,
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          itemCount: cues.length,
-          itemBuilder: (context, index) {
-            final cue = cues[index];
-            final isActive = activeCue == cue;
-            final isPast = activeCue != null && cue.start < activeCue.start;
-
-            _cueKeys[index] ??= GlobalKey();
-
-            return _buildCueRow(
-              key: _cueKeys[index]!,
-              cue: cue,
-              isActive: isActive,
-              isPast: isPast,
-              showTranslation: showTranslation,
-              colors: colors,
-              isDark: isDark,
-            );
+        NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            if (notification is UserScrollNotification) {
+              if (notification.direction != ScrollDirection.idle) {
+                if (!_isScrolledAway) {
+                  setState(() => _isScrolledAway = true);
+                }
+                _scrollAwayTimer?.cancel();
+                _scrollAwayTimer = Timer(const Duration(seconds: 6), () {
+                  if (mounted && _isScrolledAway) {
+                    final active = widget.controller.activeCue.value;
+                    if (active != null) _scrollToActiveCue(active, force: true);
+                  }
+                });
+              }
+            }
+            return false;
           },
+          child: ListView.builder(
+            controller: _scrollController,
+            physics: const ClampingScrollPhysics(),
+            padding: EdgeInsets.zero,
+            itemExtent: rowHeight,
+            itemCount: cues.length,
+            itemBuilder: (context, index) {
+              final cue = cues[index];
+              final isActive = activeCue == cue;
+              final isPast = activeCue != null && cue.start < activeCue.start;
+
+              return _buildCueRow(
+                cue: cue,
+                isActive: isActive,
+                isPast: isPast,
+                showTranslation: showTranslation,
+                colors: colors,
+                isDark: isDark,
+              );
+            },
+          ),
         ),
 
         // Floating "Jump to current" pill when user scrolls away
         if (_isScrolledAway && activeCue != null)
           Positioned(
-            bottom: 10,
+            bottom: is3LineCompact ? 4 : 10,
             left: 0,
             right: 0,
             child: Center(
@@ -605,8 +608,8 @@ class _SubtitlePanelState extends State<SubtitlePanel>
                 onTap: () => _scrollToActiveCue(activeCue, force: true),
                 borderRadius: BorderRadius.circular(999),
                 child: Container(
-                  height: 30,
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  height: is3LineCompact ? 26 : 30,
+                  padding: EdgeInsets.symmetric(horizontal: is3LineCompact ? 10 : 14),
                   decoration: BoxDecoration(
                     color: colors.bgSurface,
                     borderRadius: BorderRadius.circular(999),
@@ -614,7 +617,7 @@ class _SubtitlePanelState extends State<SubtitlePanel>
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.12),
-                        blurRadius: 8,
+                        blurRadius: 6,
                         offset: const Offset(0, 2),
                       ),
                     ],
@@ -624,15 +627,15 @@ class _SubtitlePanelState extends State<SubtitlePanel>
                     children: [
                       Icon(
                         Icons.access_time_rounded,
-                        size: 13,
+                        size: is3LineCompact ? 11 : 13,
                         color: colors.accentPrimary,
                       ),
-                      const SizedBox(width: 5),
+                      const SizedBox(width: 4),
                       Text(
                         '${context.t('subtitle.jumpToCurrent', null, 'Jump to current')} (${formatVideoTime(activeCue.start)})',
                         style: TextStyle(
                           color: colors.accentPrimary,
-                          fontSize: 12,
+                          fontSize: is3LineCompact ? 11 : 12,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -647,7 +650,6 @@ class _SubtitlePanelState extends State<SubtitlePanel>
   }
 
   Widget _buildCueRow({
-    required Key key,
     required SubtitleCue cue,
     required bool isActive,
     required bool isPast,
@@ -659,97 +661,102 @@ class _SubtitlePanelState extends State<SubtitlePanel>
         ? colors.accentPrimary.withOpacity(0.12)
         : colors.accentPrimary.withOpacity(0.07);
 
-    return Container(
-      key: key,
-      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: isActive ? activeBg : Colors.transparent,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            widget.onSeek(cue.start);
-            widget.controller.currentTime.value = cue.start;
-          },
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isActive ? activeBg : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Left Indicator Accent Bar (Pic 3: 3px wide, 18px tall rounded bar)
-                if (isActive)
-                  Container(
-                    width: 3,
-                    height: 18,
-                    decoration: BoxDecoration(
-                      color: colors.accentPrimary,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  )
-                else
-                  const SizedBox(width: 3),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              widget.onSeek(cue.start);
+              widget.controller.currentTime.value = cue.start;
+              _scrollToActiveCue(cue, force: true);
+            },
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Left Indicator Accent Bar
+                  if (isActive)
+                    Container(
+                      width: 3,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        color: colors.accentPrimary,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    )
+                  else
+                    const SizedBox(width: 3),
 
-                const SizedBox(width: 8),
+                  const SizedBox(width: 8),
 
-                // Timestamp: 0:18, 0:20, 0:23 (monospace tabular figures)
-                SizedBox(
-                  width: 38,
-                  child: Text(
-                    formatVideoTime(cue.start),
-                    style: TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 12,
-                      fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                      color: isActive
-                          ? colors.accentPrimary
-                          : colors.textMuted.withOpacity(isPast ? 0.55 : 0.85),
-                      fontFeatures: const [FontFeature.tabularFigures()],
+                  // Timestamp: 0:18, 0:20 (monospace tabular figures)
+                  SizedBox(
+                    width: 38,
+                    child: Text(
+                      formatVideoTime(cue.start),
+                      style: TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 11.5,
+                        fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                        color: isActive
+                            ? colors.accentPrimary
+                            : colors.textMuted.withOpacity(isPast ? 0.55 : 0.85),
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
                     ),
                   ),
-                ),
 
-                const SizedBox(width: 10),
+                  const SizedBox(width: 8),
 
-                // Cue Text & Translation Body
-                Expanded(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        cue.text,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 14.5,
-                          fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                          color: isActive
-                              ? colors.textPrimary
-                              : colors.textSecondary.withOpacity(isPast ? 0.45 : 0.9),
-                        ),
-                      ),
-                      if (showTranslation && cue.translation != null && cue.translation!.isNotEmpty) ...[
-                        const SizedBox(height: 2),
+                  // Cue Text & Translation Body
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
                         Text(
-                          cue.translation!,
+                          cue.text,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w400,
+                            fontSize: 13.5,
+                            fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
                             color: isActive
-                                ? colors.textSecondary
-                                : colors.textMuted.withOpacity(isPast ? 0.45 : 0.8),
+                                ? colors.textPrimary
+                                : colors.textSecondary.withOpacity(isPast ? 0.45 : 0.9),
+                            height: 1.25,
                           ),
                         ),
+                        if (showTranslation && cue.translation != null && cue.translation!.isNotEmpty) ...[
+                          const SizedBox(height: 1),
+                          Text(
+                            cue.translation!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w400,
+                              color: isActive
+                                  ? colors.textSecondary
+                                  : colors.textMuted.withOpacity(isPast ? 0.45 : 0.8),
+                              height: 1.2,
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -966,6 +973,7 @@ class _SubtitlePanelState extends State<SubtitlePanel>
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
+          mainAxisSize: widget.isCompact ? MainAxisSize.min : MainAxisSize.max,
           children: [
             // 1. Current Subtitle (Top section)
             _buildCurrentSubtitle(
@@ -979,16 +987,29 @@ class _SubtitlePanelState extends State<SubtitlePanel>
               isDark: isDark,
             ),
 
-            // 2. Subtitle List (Flexible scroll area)
-            Expanded(
-              child: _buildSubtitleList(
-                cues: allCues,
-                activeCue: activeCue,
-                showTranslation: showTranslation,
-                colors: colors,
-                isDark: isDark,
+            // 2. Subtitle Timeline (3 lines in compact mode, expanded in non-compact mode)
+            if (widget.isCompact)
+              SizedBox(
+                height: showTranslation ? 144.0 : 108.0,
+                child: _buildSubtitleList(
+                  cues: allCues,
+                  activeCue: activeCue,
+                  showTranslation: showTranslation,
+                  colors: colors,
+                  isDark: isDark,
+                  is3LineCompact: true,
+                ),
+              )
+            else
+              Expanded(
+                child: _buildSubtitleList(
+                  cues: allCues,
+                  activeCue: activeCue,
+                  showTranslation: showTranslation,
+                  colors: colors,
+                  isDark: isDark,
+                ),
               ),
-            ),
 
             // 3. Subtitle Controls Toolbar (Bottom section)
             _buildSubtitleControlsToolbar(

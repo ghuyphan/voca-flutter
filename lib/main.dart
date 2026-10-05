@@ -13,6 +13,7 @@ import 'services/toast_service.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'state/app_state.dart';
 import 'ui/shell/main_shell.dart';
+import 'ui/splash/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,6 +42,10 @@ Future<void> main() async {
 
   // Pre-load default learning language grammar database
   await appState.grammarEngine.loadLanguage('ja');
+  final uiLang = I18nService.instance.currentLanguage.value;
+  if (uiLang != 'en') {
+    appState.grammarEngine.loadTranslation('ja', uiLang);
+  }
   await appState.refreshDiamonds();
 
   runApp(const VocaApp());
@@ -76,7 +81,10 @@ class VocaApp extends StatelessWidget {
         darkTheme: VocaTheme.darkTheme,
         themeMode: themeMode,
         locale: Locale(lang),
-        home: home ?? const MainShell(),
+        home: home ??
+            (settings.hasCompletedOnboarding
+                ? const MainShell()
+                : const SplashScreen()),
       );
     });
   }

@@ -124,6 +124,7 @@ class PlayerCoordinator {
             playsInline: true,
             mute: false,
             enableCaption: false,
+            captionLanguage: '',
             origin: 'https://www.youtube-nocookie.com',
             privacyEnhancedMode: true,
             userAgent:
@@ -165,6 +166,7 @@ class PlayerCoordinator {
         isPlaying.value = true;
         isEnded.value = false;
         newPlayerController.isPlaying.value = true;
+        disableNativeCaptions(newYtController);
       } else if (value.playerState == PlayerState.paused) {
         isPlaying.value = false;
         newPlayerController.isPlaying.value = false;
@@ -342,5 +344,38 @@ class PlayerCoordinator {
     } catch (_) {}
     ytController = null;
     playerController = null;
+  }
+
+  /// Disables native YouTube iframe closed captions so they never clash with
+  /// Voca's custom interactive furigana/pinyin subtitles.
+  static void disableNativeCaptions(YoutubePlayerController? controller) {
+    if (controller == null) return;
+    try {
+      controller.webViewController.runJavaScript('''
+        (function() {
+          try {
+            if (window.player && typeof window.player.setOption === 'function') {
+              window.player.setOption('captions', 'track', {});
+              window.player.setOption('captions', 'fontSize', 0);
+            }
+          } catch(e) {}
+          try {
+            if (window.player && typeof window.player.unloadModule === 'function') {
+              window.player.unloadModule('captions');
+              window.player.unloadModule('cc');
+            }
+          } catch(e) {}
+          try {
+            var style = document.getElementById('voca-hide-cc');
+            if (!style) {
+              style = document.createElement('style');
+              style.id = 'voca-hide-cc';
+              style.textContent = '.ytp-caption-window-bottom, .ytp-caption-segment, .caption-window { display: none !important; opacity: 0 !important; visibility: hidden !important; }';
+              document.head.appendChild(style);
+            }
+          } catch(e) {}
+        })();
+      ''');
+    } catch (_) {}
   }
 }

@@ -1508,6 +1508,7 @@
     "switchToLang": "切换为 {{lang}}",
     "useAITranscription": "使用 AI 转写",
     "waitingForPlayback": "正在等待视频播放...",
+    "moreVideos": "推荐视频",
     "toolbar": {
       "loop": "单句循环",
       "added": "已添加",

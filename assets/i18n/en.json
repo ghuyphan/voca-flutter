@@ -1508,6 +1508,7 @@
     "switchToLang": "Switch to {{lang}}",
     "useAITranscription": "Use AI Transcription",
     "waitingForPlayback": "Waiting for video playback...",
+    "moreVideos": "For You",
     "toolbar": {
       "loop": "Loop",
       "added": "Added",
