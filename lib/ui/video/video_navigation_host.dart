@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import '../../state/player_coordinator.dart';
-import 'miniplayer_bar.dart';
 import 'video_player_screen.dart';
 
 /// YouTube Mobile-style Stack Navigation Host
@@ -37,8 +36,6 @@ class _VideoNavigationHostState extends State<VideoNavigationHost>
     with SingleTickerProviderStateMixin {
   late final AnimationController _animController;
   late final Animation<Offset> _slideAnimation;
-  late final Animation<double> _miniplayerFade;
-  bool _hasBeenMinimized = false;
   void Function()? _disposer;
 
   @override
@@ -47,7 +44,6 @@ class _VideoNavigationHostState extends State<VideoNavigationHost>
     final coordinator = PlayerCoordinator.instance;
     final hasActive = coordinator.hasActiveVideo;
     final isMini = coordinator.isMiniplayer.value;
-    _hasBeenMinimized = isMini;
 
     _animController = AnimationController(
       vsync: this,
@@ -66,32 +62,15 @@ class _VideoNavigationHostState extends State<VideoNavigationHost>
       end: Offset.zero,
     ).animate(curved);
 
-    _miniplayerFade = Tween<double>(
-      begin: 1.0,
-      end: 0.0,
-    ).animate(curved);
-
-    _animController.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        if (mounted && _hasBeenMinimized) {
-          setState(() {
-            _hasBeenMinimized = false;
-          });
-        }
-      }
-    });
-
     _disposer = effect(() {
       final active = coordinator.hasActiveVideo;
       final mini = coordinator.isMiniplayer.value;
 
       if (!active) {
-        _hasBeenMinimized = false;
         if (_animController.value != 0.0) {
           _animController.value = 0.0;
         }
       } else if (mini) {
-        _hasBeenMinimized = true;
         if (_animController.value > 0.0 && !_animController.isAnimating) {
           _animController.reverse();
         } else if (_animController.status == AnimationStatus.forward) {
@@ -124,43 +103,10 @@ class _VideoNavigationHostState extends State<VideoNavigationHost>
       return Stack(
         fit: StackFit.expand,
         children: [
-          // 1. Base App Content (Tabs, Scaffold with Bottom Nav)
+          // 1. Base App Content (Tabs, Scaffold with Bottom Nav & Miniplayer)
           widget.child,
 
-          // 2. Docked Miniplayer Bar (Fades in/out at bottomNavHeight)
-          if (hasActive && videoId != null)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: widget.bottomNavHeight,
-              child: AnimatedBuilder(
-                animation: _animController,
-                builder: (context, child) {
-                  final mini = coordinator.isMiniplayer.value;
-                  final opacity = (mini || _hasBeenMinimized) ? _miniplayerFade.value : 0.0;
-                  if (opacity <= 0.01) return const SizedBox.shrink();
-                  return IgnorePointer(
-                    ignoring: opacity < 0.5,
-                    child: Opacity(
-                      opacity: opacity,
-                      child: child,
-                    ),
-                  );
-                },
-                child: MiniplayerBar(
-                  videoId: videoId,
-                  title: coordinator.activeTitle.value,
-                  channel: coordinator.activeChannel.value ?? 'YouTube',
-                  thumbnail: coordinator.activeThumbnail.value,
-                  // Omit currentTime & isPlaying: MiniplayerBar subscribes in leaf Watch blocks
-                  onTap: () => coordinator.expand(context),
-                  onPlayPause: () => coordinator.togglePlayPause(),
-                  onClose: () => coordinator.close(),
-                ),
-              ),
-            ),
-
-          // 3. Full-Bleed Video Screen (Hardware-accelerated slide up/down without unmounting)
+          // 2. Full-Bleed Video Screen (Hardware-accelerated slide up/down without unmounting)
           if (hasActive && videoId != null && coordinator.ytController != null)
             Positioned.fill(
               child: AnimatedBuilder(

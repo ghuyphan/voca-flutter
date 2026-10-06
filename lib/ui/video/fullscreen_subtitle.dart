@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:signals_flutter/signals_flutter.dart';
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import '../../config/voca_theme.dart';
 import '../../models/voca_models.dart';
 import '../../state/player_state.dart';
@@ -372,36 +372,48 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
                               ),
                             ),
 
-                          // Secondary Line: Dual Subtitle Translation
-                          if (showTranslation) ...[
-                            const SizedBox(height: 5),
-                            if (isDualSubLoading &&
-                                (cue.translation == null || cue.translation!.isEmpty))
-                              Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 2.0),
-                                child: _buildAnimatedDots(Colors.white.withOpacity(0.7)),
-                              )
-                            else if (cue.translation != null &&
-                                cue.translation!.trim().isNotEmpty &&
-                                cue.translation!.trim() != cue.text.trim())
-                              Text(
-                                cue.translation!,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.85),
-                                  fontSize: translationFontSize,
-                                  fontWeight: FontWeight.w400,
-                                  height: 1.35,
-                                  shadows: const [
-                                    Shadow(
-                                      color: Colors.black,
-                                      blurRadius: 4,
-                                      offset: Offset(0, 1),
+                          // Secondary Line: Dual Subtitle Translation with subtle animation
+                          AnimatedSize(
+                            duration: const Duration(milliseconds: 220),
+                            curve: Curves.easeOutCubic,
+                            child: showTranslation
+                                ? Padding(
+                                    padding: const EdgeInsets.only(top: 5),
+                                    child: AnimatedOpacity(
+                                      duration: const Duration(milliseconds: 180),
+                                      opacity: showTranslation ? 1.0 : 0.0,
+                                      curve: Curves.easeOut,
+                                      child: (isDualSubLoading &&
+                                              (cue.translation == null || cue.translation!.isEmpty))
+                                          ? Padding(
+                                              padding: const EdgeInsets.symmetric(vertical: 2.0),
+                                              child: _buildAnimatedDots(Colors.white.withOpacity(0.7)),
+                                            )
+                                          : (cue.translation != null &&
+                                                  cue.translation!.trim().isNotEmpty &&
+                                                  cue.translation!.trim() != cue.text.trim())
+                                              ? Text(
+                                                  cue.translation!,
+                                                  textAlign: TextAlign.center,
+                                                  style: TextStyle(
+                                                    color: Colors.white.withOpacity(0.85),
+                                                    fontSize: translationFontSize,
+                                                    fontWeight: FontWeight.w400,
+                                                    height: 1.35,
+                                                    shadows: const [
+                                                      Shadow(
+                                                        color: Colors.black,
+                                                        blurRadius: 4,
+                                                        offset: Offset(0, 1),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                )
+                                              : const SizedBox.shrink(),
                                     ),
-                                  ],
-                                ),
-                              ),
-                          ],
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
                         ],
                       ),
                     ),

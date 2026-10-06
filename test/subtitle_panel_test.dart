@@ -7,7 +7,7 @@ import 'package:voca_flutter/services/grammar_engine.dart';
 import 'package:voca_flutter/services/voca_api_client.dart';
 import 'package:voca_flutter/state/player_state.dart';
 import 'package:voca_flutter/ui/video/subtitle_panel.dart';
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
 import 'package:signals_flutter/signals_flutter.dart';
 

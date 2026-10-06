@@ -5,6 +5,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:signals_flutter/signals_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:voca_flutter/config/voca_theme.dart';
 import 'package:voca_flutter/models/voca_models.dart';
@@ -18,7 +19,7 @@ import 'package:voca_flutter/ui/video/miniplayer_bar.dart';
 import 'package:voca_flutter/ui/video/playlist/mobile_playlist_bar.dart';
 import 'package:voca_flutter/ui/video/video_header.dart';
 import 'package:voca_flutter/ui/video/video_navigation_host.dart';
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
 class _FakeVocaApiClient extends VocaApiClient {}
 
@@ -364,11 +365,27 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: VocaTheme.darkTheme,
-          home: const Scaffold(
-            body: VideoNavigationHost(
+          home: Scaffold(
+            body: const VideoNavigationHost(
               bottomNavHeight: 80.0,
               child: Text('Main Screen Content'),
             ),
+            bottomNavigationBar: Watch((context) {
+              final hasActive = coordinator.hasActiveVideo;
+              final isMini = coordinator.isMiniplayer.value;
+              final videoId = coordinator.activeVideoId.value;
+              if (hasActive && isMini && videoId != null) {
+                return MiniplayerBar(
+                  videoId: videoId,
+                  title: coordinator.activeTitle.value,
+                  channel: coordinator.activeChannel.value ?? 'YouTube',
+                  onTap: () => coordinator.expand(context),
+                  onPlayPause: () => coordinator.togglePlayPause(),
+                  onClose: () => coordinator.close(),
+                );
+              }
+              return const SizedBox.shrink();
+            }),
           ),
         ),
       );

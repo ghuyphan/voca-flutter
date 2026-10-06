@@ -5,14 +5,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:voca_flutter/config/voca_theme.dart';
-import 'package:voca_flutter/config/voca_tokens.dart';
 import 'package:voca_flutter/models/voca_models.dart';
+import 'package:voca_flutter/services/grammar_engine.dart';
 import 'package:voca_flutter/services/srs_service.dart';
 import 'package:voca_flutter/services/supabase_service.dart';
 import 'package:voca_flutter/services/voca_api_client.dart';
 import 'package:voca_flutter/state/app_state.dart';
 import 'package:voca_flutter/ui/study/study_session_controller.dart';
 import 'package:voca_flutter/ui/study/widgets/flashcard_face.dart';
+import 'package:voca_flutter/ui/study/widgets/tinder_action_dock.dart';
+import 'package:voca_flutter/ui/study/widgets/tinder_card_stack.dart';
 
 void main() {
   group('SRS SuperMemo-2 Redesign & Mastery Progression Tests', () {
@@ -130,8 +132,11 @@ void main() {
       AppState.instance.apiClient = _FakeApiForStudy();
       AppState.instance.activeLanguage.value = 'ja';
 
+      AppState.instance.grammarEngine = GrammarEngine();
+
       final controller = StudySessionController();
       await controller.loadDeck();
+      controller.startSession();
 
       expect(controller.currentCard?.level, equals('learning'));
       expect(controller.learningCount.value, greaterThan(0));
@@ -180,7 +185,7 @@ void main() {
                 child: FlashcardFace(
                   card: testCard,
                   isBack: false,
-                  flipAnimation: const AlwaysStoppedAnimation(0.0),
+                  isReadingPeeked: true,
                   onMarkAsKnown: () => markedKnown = true,
                 ),
               ),
@@ -197,12 +202,176 @@ void main() {
       expect(find.text('たべる'), findsOneWidget);
 
       // Check Mark as Known button
-      final markKnownBtn = find.byTooltip('Mark as Known');
-      expect(markKnownBtn, findsOneWidget);
+      final markKnownBtn = find.text('Known');
+      expect(markKnownBtn, findsWidgets);
 
-      await tester.tap(markKnownBtn);
+      await tester.tap(markKnownBtn.first);
       await tester.pump();
       expect(markedKnown, isTrue);
+    });
+
+    testWidgets('FlashcardFace back face displays meaning and Mark Known button responds on tap', (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      bool markedKnown = false;
+      final testCard = Flashcard(
+        id: 'fc_back_test',
+        userId: 'u1',
+        word: '飲む',
+        reading: 'のむ',
+        meaning: 'to drink',
+        language: 'ja',
+        level: 'learning',
+        partOfSpeech: 'verb',
+        contextSentence: '水を飲む。',
+        contextTranslation: 'Drink water.',
+        sourceVideoId: 'video_xyz',
+        sourceTimestamp: 42.0,
+        srsNextReviewAt: DateTime.now(),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: VocaTheme.darkTheme,
+          home: Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: 320,
+                height: 480,
+                child: FlashcardFace(
+                  card: testCard,
+                  isBack: true,
+                  onMarkAsKnown: () => markedKnown = true,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Meaning should be visible on back face
+      expect(find.text('to drink'), findsOneWidget);
+      expect(find.text('Scene'), findsOneWidget);
+
+      final markKnownBtn = find.text('Known');
+      expect(markKnownBtn, findsWidgets);
+
+      await tester.tap(markKnownBtn.first);
+      await tester.pump();
+      expect(markedKnown, isTrue);
+    });
+
+    testWidgets('TinderCardStack front and back faces handle Peek, Known, and Flip reliably', (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      bool flipped = false;
+      bool peeked = false;
+      bool markedKnown = false;
+
+      final testCard = Flashcard(
+        id: 'fc_stack_test',
+        userId: 'u1',
+        word: '歩く',
+        reading: 'あるく',
+        meaning: 'to walk',
+        language: 'ja',
+        level: 'learning',
+        srsNextReviewAt: DateTime.now(),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: VocaTheme.darkTheme,
+          home: Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: 320,
+                height: 480,
+                child: TinderCardStack(
+                  currentCard: testCard,
+                  isRevealed: false,
+                  isReadingPeeked: false,
+                  onSwipe: (_) {},
+                  onToggleFlip: () => flipped = true,
+                  onTogglePeekReading: () => peeked = true,
+                  onMarkAsKnown: () => markedKnown = true,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Front face shows word and peek reading button
+      expect(find.text('歩く'), findsOneWidget);
+      final peekBtn = find.text('Xem cách đọc');
+      expect(peekBtn, findsOneWidget);
+
+      await tester.tap(peekBtn);
+      await tester.pump();
+      expect(peeked, isTrue);
+
+      // Tap card body triggers flip
+      await tester.tap(find.text('歩く'));
+      await tester.pump();
+      expect(flipped, isTrue);
+
+      // Tap Mark Known on front face
+      final markKnownBtn = find.text('Known');
+      expect(markKnownBtn, findsWidgets);
+
+      await tester.tap(markKnownBtn.first);
+      await tester.pump();
+      expect(markedKnown, isTrue);
+    });
+
+    testWidgets('TinderActionDock dispatches callbacks on Again, Good, Flip, and Undo', (tester) async {
+      SRSReviewRating? swipedRating;
+      bool flipped = false;
+      bool undid = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: VocaTheme.darkTheme,
+          home: Scaffold(
+            body: TinderActionDock(
+              canUndo: true,
+              isRevealed: true,
+              onUndo: () => undid = true,
+              onAgain: () => swipedRating = SRSReviewRating.again,
+              onHard: () => swipedRating = SRSReviewRating.hard,
+              onFlip: () => flipped = true,
+              onGood: () => swipedRating = SRSReviewRating.good,
+              onEasy: () => swipedRating = SRSReviewRating.easy,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Tap Undo
+      await tester.tap(find.text('Undo'));
+      await tester.pump();
+      expect(undid, isTrue);
+
+      // Tap Flip
+      await tester.tap(find.text('Flip'));
+      await tester.pump();
+      expect(flipped, isTrue);
+
+      // Tap Good
+      await tester.tap(find.text('3d'));
+      await tester.pump();
+      expect(swipedRating, equals(SRSReviewRating.good));
     });
   });
 }

@@ -1,6 +1,5 @@
-// lib/services/i18n_service.dart
-
 import 'dart:convert';
+import 'dart:ui' show PlatformDispatcher;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -63,6 +62,11 @@ class I18nService {
       final saved = prefs.getString(storageKey);
       if (saved != null && supportedLanguageCodes.contains(saved)) {
         currentLanguage.value = saved;
+      } else {
+        final sysCode = PlatformDispatcher.instance.locale.languageCode;
+        if (supportedLanguageCodes.contains(sysCode)) {
+          currentLanguage.value = sysCode;
+        }
       }
     } catch (e) {
       debugPrint('[I18nService] Error loading saved UI language: $e');
@@ -124,20 +128,18 @@ class I18nService {
     final activeLang = currentLanguage.value;
     String? val = resolve(_translations[activeLang]) ?? resolve(_translations['en']);
 
-    if (val == null) {
-      return fallback ?? key;
-    }
+    String result = val ?? fallback ?? key;
 
     if (params != null && params.isNotEmpty) {
       params.forEach((paramKey, paramVal) {
         final replacement = paramVal?.toString() ?? '';
         // Replaces both {{key}} and {key}
-        val = val!.replaceAll('{{$paramKey}}', replacement);
-        val = val!.replaceAll('{$paramKey}', replacement);
+        result = result.replaceAll('{{$paramKey}}', replacement);
+        result = result.replaceAll('{$paramKey}', replacement);
       });
     }
 
-    return val ?? fallback ?? key;
+    return result;
   }
 
   /// Switch the active UI language and persist preference

@@ -9,7 +9,7 @@ import 'package:voca_flutter/services/voca_api_client.dart';
 import 'package:voca_flutter/state/app_state.dart';
 import 'package:voca_flutter/state/player_state.dart';
 import 'package:voca_flutter/ui/video/fullscreen_subtitle.dart';
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
 class _FakeApiClient extends Fake implements VocaApiClient {}
 

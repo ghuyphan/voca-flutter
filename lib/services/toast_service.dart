@@ -1,5 +1,3 @@
-// lib/services/toast_service.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../config/voca_theme.dart';
@@ -72,79 +70,31 @@ class ToastService {
       }
     }
 
-    Color iconColor;
-    IconData iconData;
-    Color borderColor;
-
-    switch (type) {
-      case ToastType.success:
-        iconColor = palette.success;
-        iconData = Icons.check_circle_rounded;
-        borderColor = palette.success.withOpacity(0.35);
-        break;
-      case ToastType.error:
-        iconColor = palette.error;
-        iconData = Icons.error_rounded;
-        borderColor = palette.error.withOpacity(0.35);
-        break;
-      case ToastType.warning:
-        iconColor = palette.warning;
-        iconData = Icons.warning_rounded;
-        borderColor = palette.warning.withOpacity(0.35);
-        break;
-      case ToastType.info:
-        iconColor = palette.accentPrimary;
-        iconData = Icons.info_outline_rounded;
-        borderColor = palette.borderColor;
-        break;
-    }
-
     messenger.showSnackBar(
       SnackBar(
-        elevation: 4,
         behavior: SnackBarBehavior.floating,
         backgroundColor: palette.bgCard,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        duration: duration,
+        elevation: 2,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: BorderSide(color: borderColor, width: 1.2),
+          borderRadius: BorderRadius.circular(10),
+          side: BorderSide(color: palette.borderColor, width: 0.8),
         ),
-        content: Row(
-          children: [
-            Icon(iconData, color: iconColor, size: 22),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                message,
-                style: TextStyle(
-                  color: palette.textPrimary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            if (actionLabel != null && onAction != null) ...[
-              const SizedBox(width: 8),
-              TextButton(
-                onPressed: () {
-                  messenger?.hideCurrentSnackBar();
-                  onAction();
-                },
-                style: TextButton.styleFrom(
-                  foregroundColor: palette.accentPrimary,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  visualDensity: VisualDensity.compact,
-                ),
-                child: Text(
-                  actionLabel,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ],
+        content: Text(
+          message,
+          style: TextStyle(
+            color: palette.textPrimary,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
         ),
+        action: (actionLabel != null && onAction != null)
+            ? SnackBarAction(
+                label: actionLabel,
+                textColor: palette.accentPrimary,
+                onPressed: onAction,
+              )
+            : null,
+        duration: duration,
       ),
     );
   }

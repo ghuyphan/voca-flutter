@@ -86,8 +86,8 @@ class VideoLevelService {
 
     // 3. Intermediate
     if (RegExp(r'\b(?:JLPT\s*)?N3\b', caseSensitive: false).hasMatch(clean) ||
-        RegExp(r'\bHSK\s*[34]\b', caseSensitive: false).hasMatch(clean) ||
-        RegExp(r'\bTOPIK\s*[34]\b', caseSensitive: false).hasMatch(clean) ||
+        RegExp(r'\bHSK\s*(?:[34]|3-4|3\s*-\s*4)\b', caseSensitive: false).hasMatch(clean) ||
+        RegExp(r'\bTOPIK\s*(?:[34]|3-4|3\s*-\s*4)\b', caseSensitive: false).hasMatch(clean) ||
         RegExp(r'\bCEFR\s*B1\b', caseSensitive: false).hasMatch(clean) ||
         RegExp(r'\bB1\b', caseSensitive: false).hasMatch(clean) ||
         upper.contains('INTERMEDIATE') ||
@@ -111,8 +111,8 @@ class VideoLevelService {
     if (RegExp(r'\b(?:JLPT\s*)?N1\b', caseSensitive: false).hasMatch(clean) ||
         RegExp(r'\bHSK\s*6\b', caseSensitive: false).hasMatch(clean) ||
         RegExp(r'\bTOPIK\s*6\b', caseSensitive: false).hasMatch(clean) ||
-        RegExp(r'\bCEFR\s*C[12]\b', caseSensitive: false).hasMatch(clean) ||
-        RegExp(r'\bC[12]\b', caseSensitive: false).hasMatch(clean) ||
+        RegExp(r'\bCEFR\s*(?:C[12]|C1-C2|C1\s*-\s*C2)\b', caseSensitive: false).hasMatch(clean) ||
+        RegExp(r'\b(?:C[12]|C1-C2|C1\s*-\s*C2)\b', caseSensitive: false).hasMatch(clean) ||
         upper.contains('ADVANCED') ||
         upper.contains('CAO CẤP') ||
         RegExp(r'上級|고급').hasMatch(clean)) {
@@ -135,14 +135,14 @@ class VideoLevelService {
       'zh': {
         ProficiencyLevelTier.beginner: 'HSK 1',
         ProficiencyLevelTier.elementary: 'HSK 2',
-        ProficiencyLevelTier.intermediate: 'HSK 3',
+        ProficiencyLevelTier.intermediate: 'HSK 3-4',
         ProficiencyLevelTier.upperIntermediate: 'HSK 5',
         ProficiencyLevelTier.advanced: 'HSK 6',
       },
       'ko': {
         ProficiencyLevelTier.beginner: 'TOPIK 1',
         ProficiencyLevelTier.elementary: 'TOPIK 2',
-        ProficiencyLevelTier.intermediate: 'TOPIK 3',
+        ProficiencyLevelTier.intermediate: 'TOPIK 3-4',
         ProficiencyLevelTier.upperIntermediate: 'TOPIK 5',
         ProficiencyLevelTier.advanced: 'TOPIK 6',
       },
@@ -151,7 +151,7 @@ class VideoLevelService {
         ProficiencyLevelTier.elementary: 'CEFR A2',
         ProficiencyLevelTier.intermediate: 'CEFR B1',
         ProficiencyLevelTier.upperIntermediate: 'CEFR B2',
-        ProficiencyLevelTier.advanced: 'CEFR C1',
+        ProficiencyLevelTier.advanced: 'CEFR C1-C2',
       },
     };
 
@@ -170,7 +170,7 @@ class VideoLevelService {
       case 'en':
         return const ['All', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
       default:
-        return const ['All', 'Beginner', 'Elementary', 'Intermediate', 'Advanced'];
+        return const ['All', 'Beginner', 'Elementary', 'Intermediate', 'Upper', 'Advanced'];
     }
   }
 

@@ -1,11 +1,11 @@
-// lib/ui/onboarding/widgets/onboarding_header.dart
-
 import 'package:flutter/material.dart';
 import '../../../config/voca_theme.dart';
 import '../../../services/i18n_service.dart';
-import 'pressable_scale.dart';
+import '../../widgets/voca_back_button.dart';
+import '../models/onboarding_models.dart';
+import 'onboarding_primitives.dart';
 
-/// Top bar: back button · segmented progress · skip.
+/// Top bar: back button · segmented progress · skip · optional locale selector.
 /// [progress] is 1-based; pass 0 to hide the progress bar (Welcome step).
 class OnboardingHeader extends StatelessWidget {
   final int progress;
@@ -14,6 +14,8 @@ class OnboardingHeader extends StatelessWidget {
   final bool showSkip;
   final VoidCallback onBack;
   final VoidCallback onSkip;
+  final String? currentLanguage;
+  final ValueChanged<String>? onLanguageChanged;
 
   const OnboardingHeader({
     super.key,
@@ -23,6 +25,8 @@ class OnboardingHeader extends StatelessWidget {
     required this.showSkip,
     required this.onBack,
     required this.onSkip,
+    this.currentLanguage,
+    this.onLanguageChanged,
   });
 
   @override
@@ -32,40 +36,23 @@ class OnboardingHeader extends StatelessWidget {
     return SizedBox(
       height: 56,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Row(
           children: [
             // Back
             SizedBox(
-              width: 48,
-              height: 48,
+              width: 40,
+              height: 40,
               child: AnimatedOpacity(
                 opacity: showBack ? 1 : 0,
                 duration: const Duration(milliseconds: 180),
                 child: IgnorePointer(
                   ignoring: !showBack,
-                  child: Semantics(
-                    button: true,
-                    label: context.t('onboarding.back', null, 'Back'),
-                    child: PressableScale(
-                      onTap: onBack,
-                      pressedScale: 0.9,
-                      child: Center(
-                        child: Container(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: colors.bgSurface,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: colors.borderColor),
-                          ),
-                          child: Icon(
-                            Icons.arrow_back_rounded,
-                            size: 20,
-                            color: colors.textPrimary,
-                          ),
-                        ),
-                      ),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: VocaBackButton(
+                      onPressed: onBack,
+                      tooltip: context.t('onboarding.back', null, 'Back'),
                     ),
                   ),
                 ),
@@ -120,6 +107,16 @@ class OnboardingHeader extends StatelessWidget {
               ),
             ),
 
+            // Locale Switcher (Step 0)
+            if (progress == 0 && onLanguageChanged != null) ...[
+              _LanguagePickerPill(
+                currentCode: currentLanguage ?? I18nService.instance.currentLanguage.value,
+                onSelect: onLanguageChanged!,
+                colors: colors,
+              ),
+              const SizedBox(width: 8),
+            ],
+
             // Skip
             SizedBox(
               width: 64,
@@ -146,6 +143,153 @@ class OnboardingHeader extends StatelessWidget {
                   ),
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LanguagePickerPill extends StatelessWidget {
+  final String currentCode;
+  final ValueChanged<String> onSelect;
+  final VocaColorPalette colors;
+
+  const _LanguagePickerPill({
+    required this.currentCode,
+    required this.onSelect,
+    required this.colors,
+  });
+
+  void _showLanguageSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: colors.bgCard,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: colors.borderColor,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  child: Text(
+                    context.t('settings.language', null, 'App Language'),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                for (final opt in NativeLanguageOption.all)
+                  InkWell(
+                    onTap: () {
+                      onSelect(opt.code);
+                      Navigator.of(ctx).pop();
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: currentCode == opt.code
+                            ? colors.accentPrimary.withValues(alpha: colors.isDark ? 0.14 : 0.08)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          RoundFlag(asset: opt.flagAsset, size: 24),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  opt.nativeName,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: currentCode == opt.code ? FontWeight.w700 : FontWeight.w500,
+                                    color: currentCode == opt.code ? colors.accentPrimary : colors.textPrimary,
+                                  ),
+                                ),
+                                Text(
+                                  opt.englishName,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: colors.textMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (currentCode == opt.code)
+                            Icon(Icons.check_rounded, color: colors.accentPrimary, size: 20),
+                        ],
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final opt = NativeLanguageOption.byCode(currentCode);
+
+    return InkWell(
+      onTap: () => _showLanguageSheet(context),
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        height: 32,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: colors.bgSurface,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: colors.borderColorLight, width: 1.2),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RoundFlag(asset: opt.flagAsset, size: 16),
+            const SizedBox(width: 6),
+            Text(
+              opt.code.toUpperCase(),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: colors.textPrimary,
+                letterSpacing: 0.2,
+              ),
+            ),
+            const SizedBox(width: 2),
+            Icon(
+              Icons.keyboard_arrow_down_rounded,
+              size: 16,
+              color: colors.textMuted,
             ),
           ],
         ),

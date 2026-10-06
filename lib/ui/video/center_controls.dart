@@ -272,51 +272,53 @@ class _CenterControlsState extends State<CenterControls>
           const SizedBox(width: 24),
         ],
 
-        // Unified Big Play / Pause / Buffering button
-        Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: widget.onPlayPause,
-            customBorder: const CircleBorder(),
-            child: Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: const Color.fromRGBO(0, 0, 0, 0.6),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.4),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Center(
-                child: isBufferingAndPlaying
-                    ? const SizedBox(
-                        width: 36,
-                        height: 36,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 3.5,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : widget.isPlaying
-                        ? const Icon(
-                            Icons.pause_rounded,
-                            size: 44,
-                            color: Colors.white,
-                          )
-                        : const Padding(
-                            padding: EdgeInsets.only(left: 3.0),
-                            child: Icon(
-                              Icons.play_arrow_rounded,
+        // Unified Big Play / Pause / Buffering button with tactile spring press & AnimatedSwitcher icon
+        _AnimatedPressButton(
+          onTap: widget.onPlayPause,
+          child: Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: const Color.fromRGBO(0, 0, 0, 0.6),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.4),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Center(
+              child: isBufferingAndPlaying
+                  ? const SizedBox(
+                      width: 36,
+                      height: 36,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 3.5,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 180),
+                      transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+                      child: widget.isPlaying
+                          ? const Icon(
+                              Icons.pause_rounded,
+                              key: ValueKey('pause_icon'),
                               size: 44,
                               color: Colors.white,
+                            )
+                          : const Padding(
+                              key: ValueKey('play_icon'),
+                              padding: EdgeInsets.only(left: 3.0),
+                              child: Icon(
+                                Icons.play_arrow_rounded,
+                                size: 44,
+                                color: Colors.white,
+                              ),
                             ),
-                          ),
-              ),
+                    ),
             ),
           ),
         ),
@@ -351,32 +353,28 @@ class _CenterControlsState extends State<CenterControls>
           const SizedBox(width: 24),
         ],
 
-        // Replay Button
-        Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: widget.onReplay ?? widget.onPlayPause,
-            customBorder: const CircleBorder(),
-            child: Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: const Color.fromRGBO(0, 0, 0, 0.75),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.6),
-                    blurRadius: 24,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.replay_rounded,
-                  size: 42,
-                  color: Colors.white,
+        // Replay Button with tactile press
+        _AnimatedPressButton(
+          onTap: widget.onReplay ?? widget.onPlayPause,
+          child: Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: const Color.fromRGBO(0, 0, 0, 0.75),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.6),
+                  blurRadius: 24,
+                  offset: const Offset(0, 4),
                 ),
+              ],
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.replay_rounded,
+                size: 42,
+                color: Colors.white,
               ),
             ),
           ),
@@ -403,39 +401,75 @@ class _CenterControlsState extends State<CenterControls>
   }) {
     return Tooltip(
       message: tooltip,
+      child: _AnimatedPressButton(
+        onTap: isEnabled ? onTap : null,
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: isEnabled
+                ? const Color.fromRGBO(0, 0, 0, 0.6)
+                : const Color.fromRGBO(0, 0, 0, 0.45),
+            shape: BoxShape.circle,
+            boxShadow: isEnabled
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.4),
+                      blurRadius: 12,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Center(
+            child: Icon(
+              icon,
+              size: 24,
+              color: isEnabled
+                  ? Colors.white
+                  : Colors.white.withOpacity(0.35),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Springy tactile press scale micro-interaction wrapper
+class _AnimatedPressButton extends StatefulWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+
+  const _AnimatedPressButton({
+    required this.child,
+    this.onTap,
+  });
+
+  @override
+  State<_AnimatedPressButton> createState() => _AnimatedPressButtonState();
+}
+
+class _AnimatedPressButtonState extends State<_AnimatedPressButton> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedScale(
+      scale: _isPressed ? 0.92 : 1.0,
+      duration: const Duration(milliseconds: 110),
+      curve: Curves.easeOutCubic,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: isEnabled ? onTap : null,
+          onTap: widget.onTap,
+          onHighlightChanged: (highlighted) {
+            if (_isPressed != highlighted) {
+              setState(() => _isPressed = highlighted);
+            }
+          },
           customBorder: const CircleBorder(),
-          child: Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: isEnabled
-                  ? const Color.fromRGBO(0, 0, 0, 0.6)
-                  : const Color.fromRGBO(0, 0, 0, 0.45),
-              shape: BoxShape.circle,
-              boxShadow: isEnabled
-                  ? [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.4),
-                        blurRadius: 12,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Center(
-              child: Icon(
-                icon,
-                size: 24,
-                color: isEnabled
-                    ? Colors.white
-                    : Colors.white.withOpacity(0.35),
-              ),
-            ),
-          ),
+          child: widget.child,
         ),
       ),
     );

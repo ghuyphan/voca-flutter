@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:signals_flutter/signals_flutter.dart';
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import '../../config/voca_theme.dart';
 import '../../services/i18n_service.dart';
 import '../../state/player_state.dart';

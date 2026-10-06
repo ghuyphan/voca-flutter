@@ -457,7 +457,7 @@ class VocaTheme {
       ),
       navigationBarTheme: NavigationBarThemeData(
         height: 80.0,
-        backgroundColor: VocaColorPalette.dark.bgSurface,
+        backgroundColor: VocaColorPalette.dark.bgSecondary,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         indicatorColor: VocaColorPalette.dark.accentPrimarySoft,
@@ -491,6 +491,21 @@ class VocaTheme {
             color: VocaColorPalette.dark.textSecondary,
           );
         }),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: VocaColorPalette.dark.bgCard,
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: BorderSide(color: VocaColorPalette.dark.borderColor, width: 0.8),
+        ),
+        contentTextStyle: TextStyle(
+          color: VocaColorPalette.dark.textPrimary,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+        actionTextColor: VocaColorPalette.dark.accentPrimary,
       ),
       cardTheme: CardThemeData(
         color: VocaColorPalette.dark.bgCard,
@@ -598,7 +613,7 @@ class VocaTheme {
       ),
       navigationBarTheme: NavigationBarThemeData(
         height: 80.0,
-        backgroundColor: VocaColorPalette.light.bgSurface,
+        backgroundColor: VocaColorPalette.light.bgSecondary,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         indicatorColor: VocaColorPalette.light.accentPrimarySoft,
@@ -632,6 +647,21 @@ class VocaTheme {
             color: VocaColorPalette.light.textSecondary,
           );
         }),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: VocaColorPalette.light.bgCard,
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: BorderSide(color: VocaColorPalette.light.borderColor, width: 0.8),
+        ),
+        contentTextStyle: TextStyle(
+          color: VocaColorPalette.light.textPrimary,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+        actionTextColor: VocaColorPalette.light.accentPrimary,
       ),
       cardTheme: CardThemeData(
         color: VocaColorPalette.light.bgCard,

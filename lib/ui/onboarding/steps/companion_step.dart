@@ -221,33 +221,33 @@ class _CompanionStepState extends State<CompanionStep> {
 
         // 4. Appearance & Theme Selection
         SectionLabel(
-          context.t('onboarding.appearance', null, 'Giao diện hiển thị'),
+          context.t('onboarding.appearance', null, 'Appearance'),
         ),
         Row(
           children: [
             _ThemeOptionTile(
               icon: Icons.brightness_auto_outlined,
-              label: context.t('onboarding.themeSystem', null, 'Hệ thống'),
+              label: context.t('onboarding.themeSystem', null, 'System'),
               subtitle:
-                  context.t('onboarding.themeSystemDesc', null, 'Tự động'),
+                  context.t('onboarding.themeSystemDesc', null, 'Auto'),
               isSelected: effectiveTheme == 'system',
               onTap: () => widget.onThemeChanged?.call('system'),
             ),
             const SizedBox(width: 8),
             _ThemeOptionTile(
               icon: Icons.light_mode_outlined,
-              label: context.t('onboarding.themeLight', null, 'Sáng'),
+              label: context.t('onboarding.themeLight', null, 'Light'),
               subtitle:
-                  context.t('onboarding.themeLightDesc', null, 'Giao diện sáng'),
+                  context.t('onboarding.themeLightDesc', null, 'Light theme'),
               isSelected: effectiveTheme == 'light',
               onTap: () => widget.onThemeChanged?.call('light'),
             ),
             const SizedBox(width: 8),
             _ThemeOptionTile(
               icon: Icons.dark_mode_outlined,
-              label: context.t('onboarding.themeDark', null, 'Tối'),
+              label: context.t('onboarding.themeDark', null, 'Dark'),
               subtitle:
-                  context.t('onboarding.themeDarkDesc', null, 'Giao diện tối'),
+                  context.t('onboarding.themeDarkDesc', null, 'Dark theme'),
               isSelected: effectiveTheme == 'dark',
               onTap: () => widget.onThemeChanged?.call('dark'),
             ),

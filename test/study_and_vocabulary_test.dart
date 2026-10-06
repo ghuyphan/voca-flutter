@@ -12,6 +12,7 @@ import 'package:voca_flutter/services/supabase_service.dart';
 import 'package:voca_flutter/services/voca_api_client.dart';
 import 'package:voca_flutter/state/app_state.dart';
 import 'package:voca_flutter/ui/study/study_deck_screen.dart';
+import 'package:voca_flutter/ui/study/widgets/deck_overview.dart';
 import 'package:voca_flutter/ui/vocabulary/vocabulary_screen.dart';
 import 'package:voca_flutter/ui/vocabulary/word_detail_sheet.dart';
 
@@ -334,7 +335,7 @@ void main() {
   });
 
   group('StudyDeckScreen Widget & Responsive Layout Tests', () {
-    testWidgets('StudyDeckScreen renders on mobile and handles card flip to reveal SM-2 buttons', (tester) async {
+    testWidgets('StudyDeckScreen renders DeckOverview and transitions to Tinder swipe stack', (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -348,32 +349,34 @@ void main() {
 
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
-
-      // Sliding Segmented Mode Selector (Flashcard, Cloze, Quiz)
-      expect(find.text('Flashcard'), findsOneWidget);
-      expect(find.text('Cloze'), findsOneWidget);
-      expect(find.text('Quiz'), findsOneWidget);
-
       await tester.pumpAndSettle();
 
-      // Verify Show Answer button is initially visible
-      expect(find.text('Show Answer'), findsOneWidget);
+      // Verify DeckOverview is rendered initially with tri-color cards & Start button
+      expect(find.byType(DeckOverview), findsOneWidget);
+      expect(find.textContaining('Start Review'), findsOneWidget);
 
-      // Tap Show Answer to reveal back
-      await tester.tap(find.text('Show Answer'));
+      // Tap Start Review button to enter active Tinder study session
+      await tester.tap(find.textContaining('Start Review'));
+      await tester.pump();
       await tester.pumpAndSettle();
 
-      // SM-2 rating buttons should appear: Again, Hard, Good, Easy
-      expect(find.text('Again'), findsOneWidget);
-      expect(find.text('Hard'), findsOneWidget);
-      expect(find.text('Good'), findsOneWidget);
-      expect(find.text('Easy'), findsOneWidget);
+      // Current headword rendered on front face of top card
+      expect(find.text('食べる'), findsAtLeastNWidgets(1));
 
-      // Verify interval badge <10m
-      expect(find.text('<10m'), findsOneWidget);
+      // Tinder Action Dock buttons and intervals
+      expect(find.text('<10m'), findsOneWidget); // Again interval
+      expect(find.text('Undo'), findsOneWidget);
+      expect(find.text('Flip'), findsOneWidget);
+
+      // Tap Flip button in Tinder dock
+      await tester.tap(find.text('Flip'));
+      await tester.pumpAndSettle();
+
+      // Back of card reveals meaning
+      expect(find.text('to eat'), findsAtLeastNWidgets(1));
     });
 
-    testWidgets('StudyDeckScreen on tablet (width >= 720) centers content with max width 600', (tester) async {
+    testWidgets('StudyDeckScreen on tablet (width >= 720) centers content with max width constraint', (tester) async {
       tester.view.physicalSize = const Size(900, 1200);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -390,11 +393,11 @@ void main() {
 
       // Find ConstrainedBox in body
       final constrainedBoxes = tester.widgetList<ConstrainedBox>(find.byType(ConstrainedBox));
-      final has600MaxWidth = constrainedBoxes.any((box) => box.constraints.maxWidth == 600.0);
-      expect(has600MaxWidth, isTrue);
+      final hasCenteredConstraint = constrainedBoxes.any((box) => box.constraints.maxWidth == 560.0);
+      expect(hasCenteredConstraint, isTrue);
     });
 
-    testWidgets('StudyDeckScreen switches to Cloze mode and Quiz mode', (tester) async {
+    testWidgets('StudyDeckScreen opens DeckSettingsSheet when tune button is tapped', (tester) async {
       tester.view.physicalSize = const Size(400, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -408,23 +411,21 @@ void main() {
 
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
-
       await tester.pumpAndSettle();
 
-      // Tap Cloze mode pill
-      await tester.tap(find.text('Cloze'));
+      // Tap Start Review to enter session
+      await tester.tap(find.textContaining('Start Review'));
+      await tester.pumpAndSettle();
+
+      // Tap deck settings icon in HUD
+      await tester.tap(find.byIcon(Icons.tune_rounded));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text('CLOZE TEST'), findsAtLeastNWidgets(1));
-      expect(find.text('Reveal Word & Context'), findsOneWidget);
-
-      // Tap Quiz mode pill
-      await tester.tap(find.text('Quiz'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 200));
-
-      expect(find.text('Choose the correct definition:'), findsOneWidget);
+      // Verify Deck Configuration sheet appears
+      expect(find.text('Deck Configuration'), findsOneWidget);
+      expect(find.text('CONTENT TYPE'), findsOneWidget);
+      expect(find.text('BATCH SIZE'), findsOneWidget);
     });
   });
 

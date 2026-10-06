@@ -12,6 +12,7 @@ import '../../services/i18n_service.dart';
 import '../../services/toast_service.dart';
 import '../../state/app_state.dart';
 import '../widgets/kikyou_logo.dart';
+import '../widgets/voca_back_button.dart';
 
 const String _googleSvg = '''
 <svg viewBox="0 0 24 24" width="20" height="20">
@@ -508,10 +509,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: IconButton(
-                  icon: Icon(Icons.arrow_back_rounded, color: colors.textSecondary, size: 24),
-                  tooltip: context.t('common.back', null, 'Back'),
-                  splashRadius: 22,
+                child: VocaBackButton(
                   onPressed: () => Navigator.of(context).pop(false),
                 ),
               ),
@@ -1159,20 +1157,8 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   // ===========================================================================
 
   Widget _buildSheetBackButton(VocaColorPalette colors) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: colors.bgSurface,
-        shape: BoxShape.circle,
-        border: Border.all(color: colors.borderColor, width: 1.0),
-      ),
-      child: IconButton(
-        icon: Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: colors.textPrimary),
-        splashRadius: 20,
-        tooltip: context.t('common.back', null, 'Back'),
-        onPressed: _goBackInFlow,
-      ),
+    return VocaBackButton(
+      onPressed: _goBackInFlow,
     );
   }
 

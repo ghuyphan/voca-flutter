@@ -11,9 +11,11 @@ import '../../services/i18n_service.dart';
 import '../../services/toast_service.dart';
 import '../../state/app_state.dart';
 import '../auth/auth_screen.dart';
+import '../onboarding/onboarding_screen.dart';
 import '../profile/edit_profile_screen.dart';
 import '../sheets/voca_bottom_sheet.dart';
 import '../widgets/kikyou_logo.dart';
+import '../widgets/voca_back_button.dart';
 import '../widgets/voca_confirm_dialog.dart';
 import '../widgets/voca_option_picker.dart';
 
@@ -58,13 +60,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
         elevation: 0,
         scrolledUnderElevation: 2,
         centerTitle: false,
+        leadingWidth: 68,
         leading: canPop
-            ? IconButton(
-                icon: Icon(Icons.arrow_back_rounded, color: colors.textPrimary),
-                tooltip: context.t('common.back', null, 'Back'),
-                onPressed: () => Navigator.of(context).pop(),
+            ? Padding(
+                padding: const EdgeInsets.only(left: 16),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: VocaBackButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ),
               )
             : null,
+        titleSpacing: 8,
         title: Text(
           context.t('settings.title', null, 'Settings'),
           style: TextStyle(
@@ -475,7 +483,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
           colors: colors,
           onTap: () => _pickRubyMode(context, settings.rubyMode, readingGuideTitle),
         ),
+
+        _buildDivider(colors),
+
+        // 4. Onboarding & Setup (allows checking/replaying onboarding without clearing app state)
+        _buildSettingTile(
+          context: context,
+          leading: _buildIconBox(Icons.explore_outlined, colors),
+          title: context.t('settings.replayOnboarding', null, 'Replay Onboarding'),
+          valueText: context.t('settings.replayOnboardingDesc', null, 'Tour & Setup'),
+          colors: colors,
+          onTap: () => _openOnboarding(context),
+        ),
       ],
+    );
+  }
+
+  void _openOnboarding(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => OnboardingScreen(
+          onFinish: () => Navigator.of(context).pop(),
+          isReplay: false,
+        ),
+      ),
     );
   }
 

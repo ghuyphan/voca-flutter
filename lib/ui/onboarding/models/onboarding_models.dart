@@ -45,6 +45,21 @@ class LearningLanguageOption {
   String get vibeKey => 'onboarding.realmVibes.$code';
   String get featuresKey => 'onboarding.langFeatures.$code';
 
+  String get examFramework {
+    switch (code) {
+      case 'ja':
+        return 'JLPT N5–N1';
+      case 'ko':
+        return 'TOPIK 1–6';
+      case 'zh':
+        return 'HSK 1–6';
+      case 'en':
+        return 'CEFR A1–C2';
+      default:
+        return 'All Levels';
+    }
+  }
+
   static const List<LearningLanguageOption> all = [
     LearningLanguageOption(
       code: 'ja',

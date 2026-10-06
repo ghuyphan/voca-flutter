@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:signals_flutter/signals_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../config/voca_theme.dart';
 import '../../services/i18n_service.dart';
 import '../../services/toast_service.dart';
@@ -12,7 +13,6 @@ import '../shell/main_shell.dart';
 import 'onboarding_controller.dart';
 import 'steps/welcome_step.dart';
 import 'steps/learning_language_step.dart';
-import 'steps/native_language_step.dart';
 import 'steps/level_goal_step.dart';
 import 'steps/companion_step.dart';
 import 'widgets/onboarding_header.dart';
@@ -78,6 +78,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         duration: const Duration(milliseconds: 360),
         curve: const Cubic(0.16, 1.0, 0.3, 1.0),
       );
+    } else if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
     }
   }
 
@@ -153,9 +155,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
+  Future<void> _openLegalUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
   String _getBottomBarLabel(int currentStep) {
     if (currentStep == OnboardingController.welcomeStep) {
-      return context.t('onboarding.getStarted', null, 'Get Started');
+      return context.t('onboarding.continue', null, 'Continue');
     } else if (currentStep == OnboardingController.lastStep) {
       if (widget.isReplay) {
         return context.t('onboarding.saveCalibration', null, 'Save Changes');
@@ -170,7 +179,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
-  IconData _getBottomBarIcon(int currentStep) {
+  IconData? _getBottomBarIcon(int currentStep) {
+    if (currentStep == OnboardingController.welcomeStep) {
+      return null;
+    }
     if (currentStep == OnboardingController.lastStep && widget.isReplay) {
       return Icons.check_rounded;
     }
@@ -206,14 +218,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             bottom: false,
             child: Column(
               children: [
-                // Top Header with Back, Segmented Bar & Skip
+                // Top Header with Back, Segmented Bar, Locale Picker & Skip
                 OnboardingHeader(
                   progress: currentStep,
                   totalSegments: OnboardingController.progressSteps,
-                  showBack: canGoBack,
+                  showBack: canGoBack || Navigator.of(context).canPop(),
                   showSkip: currentStep < OnboardingController.lastStep,
                   onBack: _prevStep,
                   onSkip: _skipOnboarding,
+                  currentLanguage: nativeLang,
+                  onLanguageChanged: _controller.selectNativeLanguage,
                 ),
 
                 // Page Content
@@ -228,23 +242,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       // Step 0: Welcome & Core Values
                       WelcomeStep(demoLanguage: learningLang),
 
-                      // Step 1: Target Learning Language
+                      // Step 1: Target Learning Language & Native Language Card
                       LearningLanguageStep(
                         selectedLanguage: learningLang,
                         onSelect: _controller.selectLearningLanguage,
-                      ),
-
-                      // Step 2: Native App Language & Dual Subtitle Configuration
-                      NativeLanguageStep(
-                        selectedLanguage: nativeLang,
-                        onSelect: _controller.selectNativeLanguage,
+                        nativeLanguage: nativeLang,
+                        onSelectNativeLanguage: _controller.selectNativeLanguage,
                         showDualSubtitles: showDualSubtitles,
                         onToggleDualSubtitles: (val) {
                           _controller.showDualSubtitles.value = val;
                         },
                       ),
 
-                      // Step 3: Difficulty Ladder & Habit Pact
+                      // Step 2: Difficulty Ladder & Habit Pact
                       LevelGoalStep(
                         learningLanguage: learningLang,
                         selectedLevel: selectedLevel,
@@ -257,7 +267,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         },
                       ),
 
-                      // Step 4: Companion Guide & Appearance Theme
+                      // Step 3: Companion Guide & Appearance Theme
                       CompanionStep(
                         selectedCompanion: selectedCompanion,
                         onCompanionChanged: (comp) {
@@ -270,12 +280,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                 ),
 
-                // Sticky Bottom Action Bar with Optional Secondary Link on Step 0
+                // Sticky Bottom Action Bar with Optional Consent & Secondary Link on Step 0
                 OnboardingBottomBar(
                   label: _getBottomBarLabel(currentStep),
                   icon: _getBottomBarIcon(currentStep),
                   onPressed: _nextStep,
                   isLoading: isCompleting,
+                  showConsent: currentStep == OnboardingController.welcomeStep,
+                  onTermsTap: () => _openLegalUrl('https://voca.study/terms'),
+                  onPrivacyTap: () => _openLegalUrl('https://voca.study/privacy'),
                   secondaryLabel: currentStep == OnboardingController.welcomeStep
                       ? context.t('auth.alreadyHaveAccount', null, 'I already have an account')
                       : null,

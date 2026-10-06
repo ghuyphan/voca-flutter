@@ -15,6 +15,7 @@ import '../widgets/kikyou_logo.dart';
 import '../sheets/new_video_sheet.dart';
 import '../sheets/gamification_dialogs.dart';
 import '../video/video_navigation_host.dart';
+import '../video/miniplayer_bar.dart';
 import '../widgets/voca_bottom_nav_bar.dart';
 
 class MainShell extends StatefulWidget {
@@ -106,11 +107,8 @@ class _MainShellState extends State<MainShell> {
     return Watch((context) {
       final coordinator = PlayerCoordinator.instance;
       final isTrueFullscreen = coordinator.playerController?.isFullscreen.value ?? false;
-      final bottomInset = MediaQuery.of(context).padding.bottom;
-      final navHeight = (isTablet || isTrueFullscreen) ? 0.0 : (62.0 + bottomInset);
 
       return VideoNavigationHost(
-        bottomNavHeight: navHeight,
         child: Scaffold(
           backgroundColor: colors.bgPrimary,
           body: isTablet ? _buildTabletLayout(context) : _buildMobileLayout(context),
@@ -484,9 +482,35 @@ class _MainShellState extends State<MainShell> {
 
   Widget _buildMobileBottomNav(BuildContext context) {
     final activeTab = _currentIndex >= 3 ? 3 : _currentIndex;
-    return VocaBottomNavBar(
-      currentIndex: activeTab,
-      onTabSelected: _onTabTapped,
+    final coordinator = PlayerCoordinator.instance;
+    final hasActive = coordinator.hasActiveVideo;
+    final isMini = coordinator.isMiniplayer.value;
+    final videoId = coordinator.activeVideoId.value;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AnimatedSize(
+          duration: const Duration(milliseconds: 240),
+          curve: Curves.easeOutCubic,
+          child: (hasActive && isMini && videoId != null)
+              ? MiniplayerBar(
+                  key: ValueKey('miniplayer_$videoId'),
+                  videoId: videoId,
+                  title: coordinator.activeTitle.value,
+                  channel: coordinator.activeChannel.value ?? 'YouTube',
+                  thumbnail: coordinator.activeThumbnail.value,
+                  onTap: () => coordinator.expand(context),
+                  onPlayPause: () => coordinator.togglePlayPause(),
+                  onClose: () => coordinator.close(),
+                )
+              : const SizedBox.shrink(),
+        ),
+        VocaBottomNavBar(
+          currentIndex: activeTab,
+          onTabSelected: _onTabTapped,
+        ),
+      ],
     );
   }
 }

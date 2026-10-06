@@ -9,16 +9,17 @@ import '../../models/voca_models.dart';
 import '../../services/srs_service.dart';
 import '../../state/app_state.dart';
 
-enum StudyMode {
-  flashcard,
-  cloze,
-  quiz;
-}
-
 class StudySessionController {
   final isLoading = signal<bool>(true);
-  final isSessionActive = signal<bool>(true);
-  final currentMode = signal<StudyMode>(StudyMode.flashcard);
+  final isSessionActive = signal<bool>(false); // Lands on Deck Hub by default
+
+  // Deck filters & configurations
+  final subDeck = signal<String>('all'); // 'all' | 'words' | 'grammar'
+  final sessionSize = signal<int?>(10); // 5, 10, 20, or null (all)
+  final dueOnly = signal<bool>(false);
+  final includeNew = signal<bool>(true);
+  final includeLearning = signal<bool>(true);
+  final includeKnown = signal<bool>(false);
 
   // Cards & Queues
   final allCards = signal<List<Flashcard>>([]);
@@ -27,11 +28,11 @@ class StudySessionController {
 
   // Card interaction state
   final isCardRevealed = signal<bool>(false);
+  final isReadingPeeked = signal<bool>(false);
 
-  // Quiz state
-  final quizOptions = signal<List<String>>([]);
-  final selectedQuizOption = signal<int?>(null);
-  final isQuizAnswered = signal<bool>(false);
+  // Gamification & Combos
+  final currentCombo = signal<int>(0);
+  final maxCombo = signal<int>(0);
 
   // Stats & History
   final sessionStats = signal<SessionStats>(const SessionStats());
@@ -44,6 +45,8 @@ class StudySessionController {
   final newCount = signal<int>(0);
   final learningCount = signal<int>(0);
   final knownCount = signal<int>(0);
+  final wordsCount = signal<int>(0);
+  final grammarCount = signal<int>(0);
 
   bool _rewardClaimed = false;
 
@@ -65,6 +68,18 @@ class StudySessionController {
     return null;
   }
 
+  Flashcard? get cardAfterNext {
+    final list = sessionCards.value;
+    final idx = currentIndex.value + 2;
+    if (idx < list.length) {
+      return list[idx];
+    }
+    return null;
+  }
+
+  int get remainingInSession =>
+      (sessionCards.value.length - currentIndex.value).clamp(0, sessionCards.value.length);
+
   bool get isFinished =>
       !isLoading.value &&
       sessionCards.value.isNotEmpty &&
@@ -72,72 +87,169 @@ class StudySessionController {
 
   bool get canUndo => undoStack.value.isNotEmpty;
 
-  Future<void> loadDeck({bool practiceAnyway = false}) async {
+  final Map<String, bool> _grammarCache = {};
+
+  bool isGrammarCard(Flashcard card) {
+    if (card.partOfSpeech != null && card.partOfSpeech!.toLowerCase().contains('grammar')) {
+      return true;
+    }
+    final key = '${card.language}:${card.word}';
+    return _grammarCache.putIfAbsent(key, () {
+      try {
+        return AppState.instance.grammarEngine.isGrammar(card.word, card.language);
+      } catch (_) {
+        return false;
+      }
+    });
+  }
+
+  // Memoized candidate list according to current subDeck, dueOnly, and status toggles
+  late final Computed<List<Flashcard>> _computedFilteredCandidates = computed(() {
+    final now = DateTime.now();
+    final deck = subDeck.value;
+    final onlyDue = dueOnly.value;
+    final incNew = includeNew.value;
+    final incLearning = includeLearning.value;
+    final incKnown = includeKnown.value;
+    final cards = allCards.value;
+
+    return cards.where((card) {
+      final isGrammar = isGrammarCard(card);
+      if (deck == 'words' && isGrammar) return false;
+      if (deck == 'grammar' && !isGrammar) return false;
+
+      final norm = WordLevels.normalize(card.level);
+      if (norm == WordLevels.isNew && !incNew) return false;
+      if (norm == WordLevels.learning && !incLearning) return false;
+      if ((norm == WordLevels.known || norm == 'mastered') && !incKnown) return false;
+
+      if (onlyDue) {
+        if (norm == WordLevels.isNew) return false;
+        if (card.srsNextReviewAt.isAfter(now)) return false;
+      }
+      return true;
+    }).toList();
+  });
+
+  List<Flashcard> get filteredCandidates => _computedFilteredCandidates.value;
+
+  int get availableCandidateCount => _computedFilteredCandidates.value.length;
+
+  late final Computed<int> _computedSessionCardsCount = computed(() {
+    final candidates = _computedFilteredCandidates.value;
+    final size = sessionSize.value;
+    if (size == null) return candidates.length;
+    return candidates.length.clamp(0, size);
+  });
+
+  int get sessionCardsCount => _computedSessionCardsCount.value;
+
+  late final Computed<int> _computedEstimatedMinutes = computed(() {
+    final count = _computedSessionCardsCount.value;
+    return (count * 0.35).ceil().clamp(1, 60);
+  });
+
+  int get estimatedMinutes => _computedEstimatedMinutes.value;
+
+  void setSubDeck(String deck) {
+    subDeck.value = deck;
+    _recalculateMetrics();
+  }
+
+  void setSessionSize(int? size) {
+    sessionSize.value = size;
+  }
+
+  void toggleDueOnly() {
+    dueOnly.value = !dueOnly.value;
+  }
+
+  void toggleDeckInclusion(String stage) {
+    if (stage == 'new') {
+      includeNew.value = !includeNew.value;
+    } else if (stage == 'learning') {
+      includeLearning.value = !includeLearning.value;
+    } else if (stage == 'known') {
+      includeKnown.value = !includeKnown.value;
+    }
+    // Prevent deselecting all three
+    if (!includeNew.value && !includeLearning.value && !includeKnown.value) {
+      if (stage == 'new') includeNew.value = true;
+      if (stage == 'learning') includeLearning.value = true;
+      if (stage == 'known') includeKnown.value = true;
+    }
+  }
+
+  void _recalculateMetrics() {
+    final now = DateTime.now();
+    final deck = subDeck.value;
+
+    int due = 0;
+    int fresh = 0;
+    int learning = 0;
+    int known = 0;
+    int words = 0;
+    int grammar = 0;
+
+    for (final card in allCards.value) {
+      final isGrammar = isGrammarCard(card);
+      if (isGrammar) {
+        grammar++;
+      } else {
+        words++;
+      }
+
+      if (deck == 'words' && isGrammar) continue;
+      if (deck == 'grammar' && !isGrammar) continue;
+
+      final norm = WordLevels.normalize(card.level);
+      if (norm == WordLevels.isNew) {
+        fresh++;
+      } else if (norm == WordLevels.learning) {
+        learning++;
+        if (card.srsNextReviewAt.isBefore(now) || card.srsNextReviewAt.isAtSameMomentAs(now)) {
+          due++;
+        }
+      } else if (norm == WordLevels.known || norm == 'mastered') {
+        known++;
+        if (card.srsNextReviewAt.isBefore(now) || card.srsNextReviewAt.isAtSameMomentAs(now)) {
+          due++;
+        }
+      }
+    }
+
+    dueCount.value = due;
+    newCount.value = fresh;
+    learningCount.value = learning;
+    knownCount.value = known;
+    wordsCount.value = words;
+    grammarCount.value = grammar;
+  }
+
+  Future<void> loadDeck({bool autoStart = true, bool practiceAnyway = false}) async {
     isLoading.value = true;
     final supabase = AppState.instance.supabaseService;
     final lang = AppState.instance.activeLanguage.value;
 
     try {
       final cards = await supabase.getVocabularyCards(language: lang);
-      final now = DateTime.now();
-
-      int due = 0;
-      int fresh = 0;
-      int learning = 0;
-      int known = 0;
-
-      final dueCardsList = <Flashcard>[];
-      final newCardsList = <Flashcard>[];
-      final otherCardsList = <Flashcard>[];
-
-      for (final card in cards) {
-        final norm = WordLevels.normalize(card.level);
-        if (norm == WordLevels.isNew) {
-          fresh++;
-          newCardsList.add(card);
-        } else if (norm == WordLevels.learning) {
-          learning++;
-          if (card.srsNextReviewAt.isBefore(now) || card.srsNextReviewAt.isAtSameMomentAs(now)) {
-            due++;
-            dueCardsList.add(card);
-          } else {
-            otherCardsList.add(card);
-          }
-        } else if (norm == WordLevels.known || norm == 'mastered') {
-          known++;
-          if (card.srsNextReviewAt.isBefore(now) || card.srsNextReviewAt.isAtSameMomentAs(now)) {
-            due++;
-            dueCardsList.add(card);
-          } else {
-            otherCardsList.add(card);
-          }
-        }
-      }
-
-      dueCount.value = due;
-      newCount.value = fresh;
-      learningCount.value = learning;
-      knownCount.value = known;
+      _grammarCache.clear();
       allCards.value = cards;
+      _recalculateMetrics();
 
-      // Build structured session queue
-      final cappedNew = newCardsList.take(SrsConfig.defaultDailyNewLimit).toList();
-      List<Flashcard> queue;
-
-      if (practiceAnyway || (dueCardsList.isEmpty && cappedNew.isEmpty)) {
-        // If learner requests practice or deck has no due cards, practice all available cards up to session cap
-        queue = [...dueCardsList, ...cappedNew, ...otherCardsList].take(SrsConfig.defaultSessionCap).toList();
-      } else {
-        // Standard SRS queue: Due reviews first, followed by capped new cards
-        queue = [...dueCardsList, ...cappedNew].take(SrsConfig.defaultSessionCap).toList();
-      }
-
-      sessionCards.value = queue;
       currentIndex.value = 0;
       undoStack.value = [];
       sessionStats.value = const SessionStats();
+      currentCombo.value = 0;
+      maxCombo.value = 0;
       _rewardClaimed = false;
       resetCardState();
+
+      if (autoStart && cards.isNotEmpty) {
+        startSession(practiceAnyway: practiceAnyway);
+      } else {
+        isSessionActive.value = false;
+      }
       isLoading.value = false;
     } catch (e) {
       debugPrint('[StudySessionController] Failed to load deck: $e');
@@ -145,21 +257,81 @@ class StudySessionController {
     }
   }
 
-  void startSession() {
+  void startNextBatch() {
+    startSession(practiceAnyway: true);
+  }
+
+  void startSession({bool dueOnlyMode = false, bool practiceAnyway = false}) {
+    if (dueOnlyMode) {
+      dueOnly.value = true;
+      includeKnown.value = true;
+      includeLearning.value = true;
+      includeNew.value = false;
+    }
+
+    final candidates = filteredCandidates;
+    List<Flashcard> queue;
+
+    if (practiceAnyway || candidates.isNotEmpty) {
+      // Prioritize Due/Learning cards first, then New cards
+      final now = DateTime.now();
+      final dueCards = <Flashcard>[];
+      final newCards = <Flashcard>[];
+      final otherCards = <Flashcard>[];
+
+      for (final card in (candidates.isNotEmpty ? candidates : allCards.value)) {
+        final norm = WordLevels.normalize(card.level);
+        if (norm == WordLevels.isNew) {
+          newCards.add(card);
+        } else if (card.srsNextReviewAt.isBefore(now) || card.srsNextReviewAt.isAtSameMomentAs(now)) {
+          dueCards.add(card);
+        } else {
+          otherCards.add(card);
+        }
+      }
+
+      final combined = [...dueCards, ...newCards, ...otherCards];
+      final size = sessionSize.value;
+      queue = size != null ? combined.take(size).toList() : combined;
+    } else {
+      queue = [];
+    }
+
+    sessionCards.value = queue;
+    currentIndex.value = 0;
+    undoStack.value = [];
+    sessionStats.value = const SessionStats();
+    currentCombo.value = 0;
+    maxCombo.value = 0;
+    _rewardClaimed = false;
     isSessionActive.value = true;
     resetCardState();
+  }
+
+  void restartFailedCards() {
+    final missed = undoStack.value
+        .where((e) => e.rating == SRSReviewRating.again || e.rating == SRSReviewRating.hard)
+        .map((e) => e.previousCard)
+        .toSet()
+        .toList();
+
+    if (missed.isNotEmpty) {
+      sessionCards.value = missed;
+      currentIndex.value = 0;
+      undoStack.value = [];
+      sessionStats.value = const SessionStats();
+      currentCombo.value = 0;
+      maxCombo.value = 0;
+      _rewardClaimed = false;
+      isSessionActive.value = true;
+      resetCardState();
+    }
   }
 
   void exitToOverview() {
     isSessionActive.value = false;
     resetCardState();
-  }
-
-  void setMode(StudyMode mode) {
-    if (currentMode.value != mode) {
-      currentMode.value = mode;
-      resetCardState();
-    }
+    _recalculateMetrics();
   }
 
   void toggleReveal() {
@@ -170,55 +342,13 @@ class StudySessionController {
     isCardRevealed.value = true;
   }
 
+  void toggleReadingPeek() {
+    isReadingPeeked.value = !isReadingPeeked.value;
+  }
+
   void resetCardState() {
     isCardRevealed.value = false;
-    selectedQuizOption.value = null;
-    isQuizAnswered.value = false;
-    _generateQuizOptions();
-  }
-
-  void selectQuizOption(int index) {
-    if (isQuizAnswered.value) return;
-    selectedQuizOption.value = index;
-    isQuizAnswered.value = true;
-    isCardRevealed.value = true;
-  }
-
-  void _generateQuizOptions() {
-    final card = currentCard;
-    if (card == null) {
-      quizOptions.value = [];
-      return;
-    }
-
-    final targetMeaning = card.meaning.trim();
-    final candidates = <String>{};
-
-    for (final other in allCards.value) {
-      final m = other.meaning.trim();
-      if (m.isNotEmpty && m != targetMeaning) {
-        candidates.add(m);
-      }
-    }
-
-    // Dynamic clean distractors if user has few cards
-    if (candidates.length < 3) {
-      final sampleDistractors = [
-        'observe carefully and evaluate',
-        'explain clearly with examples',
-        'important appointment or promise',
-        'calm, peaceful atmosphere',
-        'prepare thoroughly in advance',
-        'challenging endeavor requiring persistence',
-      ];
-      for (final d in sampleDistractors) {
-        if (d != targetMeaning) candidates.add(d);
-      }
-    }
-
-    final shuffledCandidates = candidates.toList()..shuffle();
-    final options = <String>[targetMeaning, ...shuffledCandidates.take(3)]..shuffle();
-    quizOptions.value = options;
+    isReadingPeeked.value = false;
   }
 
   Future<void> rateCurrentCard(SRSReviewRating rating) async {
@@ -260,6 +390,16 @@ class StudySessionController {
         (updatedCard.level == 'learning');
     sessionStats.value = sessionStats.value.copyWithReview(rating, isLapse);
 
+    // Update combo streak
+    if (rating == SRSReviewRating.again) {
+      currentCombo.value = 0;
+    } else {
+      currentCombo.value += 1;
+      if (currentCombo.value > maxCombo.value) {
+        maxCombo.value = currentCombo.value;
+      }
+    }
+
     // Provide transient visual feedback pill
     _feedbackTimer?.cancel();
     lastRatingFeedback.value = (
@@ -272,7 +412,7 @@ class StudySessionController {
       lastRatingFeedback.value = null;
     });
 
-    // Relearn queue: if Again, reinsert 3 positions ahead so learner practices it again
+    // Relearn queue: if Again, reinsert 3 positions ahead
     final queue = List<Flashcard>.from(sessionCards.value);
     if (rating == SRSReviewRating.again) {
       final insertIndex = (currentIndex.value + SrsConfig.relearnStepGap + 1).clamp(0, queue.length);
@@ -282,6 +422,9 @@ class StudySessionController {
 
     // Optimistic persistence to Supabase
     unawaited(AppState.instance.supabaseService.upsertVocabularyCard(updatedCard));
+    try {
+      unawaited(AppState.instance.gamificationService.onCardReviewed(allCards.value.length));
+    } catch (_) {}
 
     // Advance queue
     currentIndex.value += 1;
@@ -322,7 +465,7 @@ class StudySessionController {
     _feedbackTimer?.cancel();
     lastRatingFeedback.value = (
       rating: SRSReviewRating.easy,
-      label: 'ĐÃ THUỘC',
+      label: 'KNOWN',
       newLevel: 'KNOWN',
       interval: '${seed.interval}d',
     );
@@ -337,7 +480,15 @@ class StudySessionController {
       newCount.value -= 1;
     }
 
+    currentCombo.value += 1;
+    if (currentCombo.value > maxCombo.value) {
+      maxCombo.value = currentCombo.value;
+    }
+
     unawaited(AppState.instance.supabaseService.upsertVocabularyCard(updatedCard));
+    try {
+      unawaited(AppState.instance.gamificationService.onCardReviewed(allCards.value.length));
+    } catch (_) {}
 
     currentIndex.value += 1;
     resetCardState();
@@ -357,7 +508,6 @@ class StudySessionController {
     // Restore previous card
     final queue = List<Flashcard>.from(sessionCards.value);
     if (lastEvent.wasRelearning) {
-      // Remove the reinserted card from later in the queue
       final reinsertedIndex = (lastEvent.previousQueueIndex + SrsConfig.relearnStepGap + 1).clamp(0, queue.length - 1);
       if (reinsertedIndex < queue.length && queue[reinsertedIndex].id == lastEvent.updatedCard.id) {
         queue.removeAt(reinsertedIndex);
@@ -386,6 +536,9 @@ class StudySessionController {
       if (currentDiamonds < maxD) {
         AppState.instance.diamonds.value = currentDiamonds + 1;
       }
+
+      // Record daily practice activity in local GamificationService
+      await AppState.instance.gamificationService.recordActivity();
     } catch (_) {}
   }
 

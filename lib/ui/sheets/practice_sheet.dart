@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:signals_flutter/signals_flutter.dart';
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import '../../config/voca_theme.dart';
 import '../../models/voca_models.dart';
 import '../../services/i18n_service.dart';
@@ -475,7 +475,7 @@ class _PracticeSheetState extends State<PracticeSheet> {
                                 _isCorrect = isCorrectAnswer;
                               });
                               if (isCorrectAnswer) {
-                                AppState.instance.gamificationService.addXp(15, reason: 'Sentence Cloze Quiz');
+                                AppState.instance.gamificationService.onQuizCompleted();
                               }
                             },
                       borderRadius: BorderRadius.circular(10),

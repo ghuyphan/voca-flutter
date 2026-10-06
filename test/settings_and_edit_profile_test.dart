@@ -12,6 +12,7 @@ import 'package:voca_flutter/services/i18n_service.dart';
 import 'package:voca_flutter/services/supabase_service.dart';
 import 'package:voca_flutter/state/app_state.dart';
 import 'package:voca_flutter/ui/auth/auth_screen.dart';
+import 'package:voca_flutter/ui/onboarding/onboarding_screen.dart';
 import 'package:voca_flutter/ui/profile/edit_profile_screen.dart';
 import 'package:voca_flutter/ui/settings/settings_screen.dart';
 
@@ -167,6 +168,29 @@ void main() {
       await tester.tap(find.text('Done'));
       await tester.pumpAndSettle();
       expect(find.text('Done'), findsNothing);
+    });
+
+    testWidgets('tapping Replay Onboarding opens OnboardingScreen without clearing app state', (tester) async {
+      await tester.pumpWidget(buildTestableWidget(const SettingsScreen()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Replay Onboarding'), findsOneWidget);
+      await tester.tap(find.text('Replay Onboarding'));
+      await tester.pumpAndSettle();
+
+      // OnboardingScreen is opened at Welcome step (step 0)
+      expect(find.byType(OnboardingScreen), findsOneWidget);
+      expect(find.text('Welcome to'), findsOneWidget);
+      expect(find.text('Voca'), findsOneWidget);
+
+      // Back button is visible and pops back to SettingsScreen
+      final backButton = find.byIcon(Icons.arrow_back_rounded);
+      expect(backButton, findsOneWidget);
+      await tester.tap(backButton);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(OnboardingScreen), findsNothing);
+      expect(find.byType(SettingsScreen), findsOneWidget);
     });
   });
 

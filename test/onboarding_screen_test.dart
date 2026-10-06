@@ -231,51 +231,45 @@ void main() {
       await tester.pumpAndSettle();
 
       // Step 0: Welcome Step
-      expect(find.text('Welcome to Voca'), findsOneWidget);
-      expect(find.text('Get Started'), findsOneWidget);
+      expect(find.text('Welcome to'), findsOneWidget);
+      expect(find.text('Voca'), findsOneWidget);
+      expect(find.text('Continue'), findsOneWidget);
 
-      // Tap "Get Started" -> Step 1
-      await tester.tap(find.text('Get Started'));
+      // Tap "Continue" -> Step 1
+      await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
 
-      // Step 1: Learning Language Realm
+      // Step 1: Learning Language Realm & My Language
       expect(find.text('Choose Your Language Realm'), findsOneWidget);
       expect(find.text('Japanese'), findsWidgets);
       expect(find.text('Korean'), findsOneWidget);
+      expect(find.text('My Language'), findsOneWidget);
+      expect(find.text('Translate subtitles'), findsWidgets);
 
       // Select Korean
       await tester.tap(find.text('Korean'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Tap "Continue" -> Step 2
+      // Tap "Continue" -> Step 2: Difficulty Ladder & Habit Pact
       await tester.tap(find.text('Continue'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Step 2: Native Language Step
-      expect(find.text('My Language'), findsOneWidget);
-      expect(find.text('Translate subtitles'), findsWidgets);
-
-      // Tap "Continue" -> Step 3
-      await tester.tap(find.text('Continue'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Step 3: Difficulty Ladder & Habit Pact
+      // Step 2: Difficulty Ladder & Habit Pact
       expect(find.text('Calibrate Your Rank'), findsOneWidget);
       expect(find.text('DAILY HABIT PACT'), findsOneWidget);
 
-      // Tap "Continue" -> Step 4
+      // Tap "Continue" -> Step 3: Companion Guide & Appearance (Theme) Selection
       await tester.tap(find.text('Continue'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Step 4: Companion Guide & Appearance (Theme) Selection
+      // Step 3: Companion Guide & Appearance (Theme) Selection
       expect(find.text('Choose Your Companion'), findsOneWidget);
       expect(find.text('Start Learning'), findsOneWidget);
 
-      // Verify Theme Selection cards exist directly on Step 4
+      // Verify Theme Selection cards exist directly on Step 3
       expect(find.text('System'), findsOneWidget);
       expect(find.text('Light'), findsOneWidget);
       expect(find.text('Dark'), findsOneWidget);
@@ -286,7 +280,7 @@ void main() {
       await tester.tap(find.text('Light'));
       await tester.pumpAndSettle();
 
-      // Tap "Start Learning" to finish onboarding directly on Step 4
+      // Tap "Start Learning" to finish onboarding directly on Step 3
       await tester.tap(find.text('Start Learning'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));

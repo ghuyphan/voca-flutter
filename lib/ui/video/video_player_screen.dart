@@ -58,7 +58,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   late final YoutubePlayerController _ytController;
   late final VideoPlayerController _playerController;
   final _ytPlayerGlobalKey = GlobalKey();
-  final bool _ownsControllers = false;
+  bool _ownsControllers = false;
   YoutubeError? _playerError;
   DateTime _lastHistorySave = DateTime.now();
 
@@ -91,7 +91,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     if (widget.sharedPlayerController != null && widget.sharedYtController != null) {
       _playerController = widget.sharedPlayerController!;
       _ytController = widget.sharedYtController!;
+      _ownsControllers = false;
     } else {
+      _ownsControllers = true;
       _playerController = VideoPlayerController(
         apiClient: AppState.instance.apiClient,
         grammarEngine: AppState.instance.grammarEngine,
@@ -194,6 +196,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
       final newError = value.error == YoutubeError.none ? null : value.error;
       if (newError != _playerError) {
+        debugPrint('[VideoPlayerScreen] YouTube Player Error: $newError (${value.error})');
         setState(() {
           _playerError = newError;
         });
@@ -225,45 +228,49 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   void _handleSpatialTap(TapUpDetails details, double boxWidth) {
     final x = details.localPosition.dx;
     final now = DateTime.now();
-    final isLeft = x < boxWidth * 0.40;
-    final isRight = x > boxWidth * 0.60;
+    final isLeft = x < boxWidth * 0.38;
+    final isRight = x > boxWidth * 0.62;
 
-    _pendingSingleTapTimer?.cancel();
-    _pendingSingleTapTimer = null;
+    if (isLeft || isRight) {
+      _handleSideTap(isLeft: isLeft, now: now);
+    } else {
+      // Center zone (38% to 62%): cancel any pending side single-tap and toggle controls immediately
+      _pendingSingleTapTimer?.cancel();
+      _pendingSingleTapTimer = null;
+      _toggleControls();
+    }
+  }
+
+  void _handleSideTap({required bool isLeft, required DateTime now}) {
+    final lastTime = isLeft ? _lastLeftTapTime : _lastRightTapTime;
+    final isFeedbackActive = isLeft ? _leftSeekFeedback.value : _rightSeekFeedback.value;
+    final isConsecutive = isFeedbackActive ||
+        (lastTime != null && now.difference(lastTime).inMilliseconds < 350);
 
     if (isLeft) {
-      if (_leftSeekFeedback.value ||
-          (_lastLeftTapTime != null && now.difference(_lastLeftTapTime!).inMilliseconds < 350)) {
-        // Second or consecutive tap -> Seek & show ripple immediately
-        _lastLeftTapTime = now;
-        _seekRelative(-10);
-        _triggerSeekFeedback(isLeft: true);
-        if (_areControlsVisible.value) {
-          _areControlsVisible.value = false;
-        }
-      } else {
-        // First tap: record timestamp and toggle controls instantly without delay!
-        _lastLeftTapTime = now;
-        _toggleControls();
-      }
-    } else if (isRight) {
-      if (_rightSeekFeedback.value ||
-          (_lastRightTapTime != null && now.difference(_lastRightTapTime!).inMilliseconds < 350)) {
-        // Second or consecutive tap -> Seek & show ripple immediately
-        _lastRightTapTime = now;
-        _seekRelative(10);
-        _triggerSeekFeedback(isLeft: false);
-        if (_areControlsVisible.value) {
-          _areControlsVisible.value = false;
-        }
-      } else {
-        // First tap: record timestamp and toggle controls instantly without delay!
-        _lastRightTapTime = now;
-        _toggleControls();
+      _lastLeftTapTime = now;
+    } else {
+      _lastRightTapTime = now;
+    }
+
+    if (isConsecutive) {
+      // Consecutive tap of double-tap: cancel pending single-tap so controls NEVER flicker!
+      _pendingSingleTapTimer?.cancel();
+      _pendingSingleTapTimer = null;
+      _seekRelative(isLeft ? -10 : 10);
+      _triggerSeekFeedback(isLeft: isLeft);
+      if (_areControlsVisible.value) {
+        _areControlsVisible.value = false;
       }
     } else {
-      // Center zone (40% to 60%): toggle controls instantly
-      _toggleControls();
+      // First tap: DO NOT toggle controls immediately. Wait 260ms to confirm if a 2nd tap follows.
+      _pendingSingleTapTimer?.cancel();
+      _pendingSingleTapTimer = Timer(const Duration(milliseconds: 260), () {
+        if (mounted) {
+          _pendingSingleTapTimer = null;
+          _toggleControls();
+        }
+      });
     }
   }
 
@@ -386,6 +393,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     if (_ownsControllers) {
       _ytController.close();
+      _playerController.dispose();
     }
     _bodyScrollController.dispose();
     super.dispose();
@@ -397,16 +405,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
     return Watch((context) {
       final isPlaying = _playerController.isPlaying.value;
-      final curTime = _playerController.currentTime.value;
-      final showDual = _playerController.showTranslation.value;
-      final subsVisible = _playerController.showFurigana.value || showDual;
       final areVisible = _areControlsVisible.value;
       final isEnded = _isEnded.value;
       final isBuffering = _isBuffering.value;
       final leftFeedback = _leftSeekFeedback.value;
       final rightFeedback = _rightSeekFeedback.value;
       final seekAcc = _seekAccumulator.value;
-      final bufferedFrac = _bufferedFraction.value;
 
       return Stack(
         fit: StackFit.expand,
@@ -422,8 +426,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
             },
             onVerticalDragEnd: (details) {
               final velocity = details.primaryVelocity ?? 0.0;
-              if ((velocity > 250 || _accumulatedDragDown > 50) && !isFullscreen) {
-                _handleMinimize();
+              if (velocity > 180 || _accumulatedDragDown > 35) {
+                if (isFullscreen) {
+                  _toggleFullscreen();
+                } else {
+                  _handleMinimize();
+                }
               }
               _accumulatedDragDown = 0.0;
             },
@@ -467,6 +475,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
             child: AnimatedOpacity(
               opacity: areVisible ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 220),
+              curve: Curves.easeInOut,
               child: GestureDetector(
                 behavior: HitTestBehavior.translucent,
                 onTapUp: (details) => _handleSpatialTap(details, effectiveWidth),
@@ -477,8 +486,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                 },
                 onVerticalDragEnd: (details) {
                   final velocity = details.primaryVelocity ?? 0.0;
-                  if ((velocity > 250 || _accumulatedDragDown > 50) && !isFullscreen) {
-                    _handleMinimize();
+                  if (velocity > 180 || _accumulatedDragDown > 35) {
+                    if (isFullscreen) {
+                      _toggleFullscreen();
+                    } else {
+                      _handleMinimize();
+                    }
                   }
                   _accumulatedDragDown = 0.0;
                 },
@@ -607,59 +620,66 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                         },
                       ),
 
-                      // Bottom Controls: Scrub bar + VideoBottomBar
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          VideoProgressBar(
-                            currentTime: curTime,
-                            duration: totalDuration,
-                            bufferedFraction: bufferedFrac,
-                            onSeekStarted: () {
-                              _controlsAutoHideTimer?.cancel();
-                            },
-                            onSeekEnded: (newSeconds) {
-                              _ytController.seekTo(seconds: newSeconds, allowSeekAhead: true);
-                              _playerController.currentTime.value = newSeconds;
-                              _scheduleControlsAutoHide();
-                            },
-                          ),
-                          VideoBottomBar(
-                            isPlaying: isPlaying,
-                            isEnded: isEnded,
-                            currentTime: curTime,
-                            duration: totalDuration,
-                            showPlayPause: false,
-                            subtitlesVisible: subsVisible,
-                            showDualSubtitles: showDual,
-                            isCJKLanguage: true,
-                            isFullscreen: isFullscreen,
-                            showSubtitlesToggle: isFullscreen,
-                            onPlayPause: () {
-                              if (isPlaying) {
-                                _ytController.pauseVideo();
-                              } else {
-                                _ytController.playVideo();
-                              }
-                            },
-                            onToggleSubtitles: () {
-                              _playerController.toggleFurigana();
-                            },
-                            onToggleDualSubtitles: () {
-                              _playerController.toggleTranslation();
-                            },
-                            onOpenSettings: () {
-                              VideoSettingsSheet.show(
-                                context,
-                                controller: _playerController,
-                                ytController: _ytController,
-                              );
-                            },
-                            onToggleMiniplayer: _handleMinimize,
-                            onToggleFullscreen: _toggleFullscreen,
-                          ),
-                        ],
-                      ),
+                      // Bottom Controls: Scrub bar + VideoBottomBar (isolated Watch for playback time ticks)
+                      Watch((context) {
+                        final curTime = _playerController.currentTime.value;
+                        final bufferedFrac = _bufferedFraction.value;
+                        final showDual = _playerController.showTranslation.value;
+                        final subsVisible = _playerController.showFurigana.value || showDual;
+
+                        return Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            VideoProgressBar(
+                              currentTime: curTime,
+                              duration: totalDuration,
+                              bufferedFraction: bufferedFrac,
+                              onSeekStarted: () {
+                                _controlsAutoHideTimer?.cancel();
+                              },
+                              onSeekEnded: (newSeconds) {
+                                _ytController.seekTo(seconds: newSeconds, allowSeekAhead: true);
+                                _playerController.currentTime.value = newSeconds;
+                                _scheduleControlsAutoHide();
+                              },
+                            ),
+                            VideoBottomBar(
+                              isPlaying: isPlaying,
+                              isEnded: isEnded,
+                              currentTime: curTime,
+                              duration: totalDuration,
+                              showPlayPause: false,
+                              subtitlesVisible: subsVisible,
+                              showDualSubtitles: showDual,
+                              isCJKLanguage: true,
+                              isFullscreen: isFullscreen,
+                              showSubtitlesToggle: isFullscreen,
+                              onPlayPause: () {
+                                if (isPlaying) {
+                                  _ytController.pauseVideo();
+                                } else {
+                                  _ytController.playVideo();
+                                }
+                              },
+                              onToggleSubtitles: () {
+                                _playerController.toggleFurigana();
+                              },
+                              onToggleDualSubtitles: () {
+                                _playerController.toggleTranslation();
+                              },
+                              onOpenSettings: () {
+                                VideoSettingsSheet.show(
+                                  context,
+                                  controller: _playerController,
+                                  ytController: _ytController,
+                                );
+                              },
+                              onToggleMiniplayer: _handleMinimize,
+                              onToggleFullscreen: _toggleFullscreen,
+                            ),
+                          ],
+                        );
+                      }),
                     ],
                   ),
                 ),
@@ -684,7 +704,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     if (_playerError != null && _playerError != YoutubeError.none) {
       final isRestricted = _playerError == YoutubeError.notEmbeddable ||
           _playerError == YoutubeError.sameAsNotEmbeddable ||
-          _playerError == YoutubeError.sameAsNotEmbeddable2;
+          _playerError == YoutubeError.sameAsNotEmbeddable2 ||
+          _playerError == YoutubeError.html5Error;
       final isUnavailable = _playerError == YoutubeError.videoNotFound ||
           _playerError == YoutubeError.cannotFindVideo;
 
@@ -716,121 +737,162 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           ? Icons.lock_outline_rounded
           : (isUnavailable ? Icons.videocam_off_outlined : Icons.wifi_off_rounded);
 
-      final errorWidget = Container(
-        color: colors.bgCard,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+      final errorWidget = GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onVerticalDragUpdate: (details) {
+          if (details.delta.dy > 0) {
+            _accumulatedDragDown += details.delta.dy;
+          }
+        },
+        onVerticalDragEnd: (details) {
+          final velocity = details.primaryVelocity ?? 0.0;
+          if (velocity > 180 || _accumulatedDragDown > 35) {
+            if (isFullscreen) {
+              _toggleFullscreen();
+            } else {
+              _handleMinimize();
+            }
+          }
+          _accumulatedDragDown = 0.0;
+        },
+        onVerticalDragCancel: () => _accumulatedDragDown = 0.0,
+        child: Container(
+          color: colors.bgCard,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Stack(
             children: [
-              Icon(
-                icon,
-                color: colors.accentTertiary,
-                size: 32,
-              ),
-              const SizedBox(height: 6),
-              Text(
-                title,
-                style: TextStyle(
-                  color: colors.textPrimary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13.5,
+              Positioned(
+                top: 0,
+                left: 0,
+                child: IconButton(
+                  icon: Icon(
+                    isFullscreen ? Icons.arrow_back_rounded : Icons.keyboard_arrow_down_rounded,
+                    color: colors.textPrimary,
+                    size: isFullscreen ? 24 : 28,
+                  ),
+                  tooltip: isFullscreen
+                      ? 'Exit Fullscreen'
+                      : context.t('player.minimize', null, 'Minimize'),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: isFullscreen ? _toggleFullscreen : _handleMinimize,
                 ),
-                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 4),
-              Text(
-                description,
-                style: TextStyle(
-                  color: colors.textSecondary,
-                  fontSize: 11,
-                  height: 1.3,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8,
-                runSpacing: 6,
-                alignment: WrapAlignment.center,
-                children: [
-                  if (!isRestricted && !isUnavailable)
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          setState(() {
-                            _playerError = null;
-                          });
-                          _ytController.loadVideoById(videoId: widget.videoId);
-                        },
-                        borderRadius: VocaRadius.roundedSm,
-                        child: Ink(
-                          height: 32,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: colors.accentPrimary,
-                            borderRadius: VocaRadius.roundedSm,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.refresh_rounded, size: 14, color: Colors.white),
-                              const SizedBox(width: 5),
-                              Text(
-                                context.t('player.retry', null, 'Retry'),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      icon,
+                      color: colors.accentTertiary,
+                      size: 32,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: colors.textPrimary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13.5,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      description,
+                      style: TextStyle(
+                        color: colors.textSecondary,
+                        fontSize: 11,
+                        height: 1.3,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      alignment: WrapAlignment.center,
+                      children: [
+                        if (!isRestricted && !isUnavailable)
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () {
+                                setState(() {
+                                  _playerError = null;
+                                });
+                                _ytController.loadVideoById(videoId: widget.videoId);
+                              },
+                              borderRadius: VocaRadius.roundedSm,
+                              child: Ink(
+                                height: 32,
+                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                decoration: BoxDecoration(
+                                  color: colors.accentPrimary,
+                                  borderRadius: VocaRadius.roundedSm,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.refresh_rounded, size: 14, color: Colors.white),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      context.t('player.retry', null, 'Retry'),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => launchUrl(
-                        Uri.parse('https://www.youtube.com/watch?v=${widget.videoId}'),
-                        mode: LaunchMode.externalApplication,
-                      ),
-                      borderRadius: VocaRadius.roundedSm,
-                      child: Ink(
-                        height: 32,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: isRestricted ? colors.accentPrimary : colors.bgHover,
-                          borderRadius: VocaRadius.roundedSm,
-                          border: isRestricted ? null : Border.all(color: colors.borderColor),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.open_in_new_rounded,
-                              size: 13,
-                              color: isRestricted ? Colors.white : colors.textPrimary,
                             ),
-                            const SizedBox(width: 5),
-                            Text(
-                              context.t('player.watchOnYouTube', null, 'Watch on YouTube'),
-                              style: TextStyle(
-                                color: isRestricted ? Colors.white : colors.textPrimary,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
+                          ),
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => launchUrl(
+                              Uri.parse('https://www.youtube.com/watch?v=${widget.videoId}'),
+                              mode: LaunchMode.externalApplication,
+                            ),
+                            borderRadius: VocaRadius.roundedSm,
+                            child: Ink(
+                              height: 32,
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              decoration: BoxDecoration(
+                                color: isRestricted ? colors.accentPrimary : colors.bgHover,
+                                borderRadius: VocaRadius.roundedSm,
+                                border: isRestricted ? null : Border.all(color: colors.borderColor),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.open_in_new_rounded,
+                                    size: 13,
+                                    color: isRestricted ? Colors.white : colors.textPrimary,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    context.t('player.watchOnYouTube', null, 'Watch on YouTube'),
+                                    style: TextStyle(
+                                      color: isRestricted ? Colors.white : colors.textPrimary,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
@@ -839,10 +901,26 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
       if (isFullscreen) {
         return SizedBox.expand(
-          child: Center(
-            child: AspectRatio(
-              aspectRatio: 16 / 9,
-              child: errorWidget,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onVerticalDragUpdate: (details) {
+              if (details.delta.dy > 0) {
+                _accumulatedDragDown += details.delta.dy;
+              }
+            },
+            onVerticalDragEnd: (details) {
+              final velocity = details.primaryVelocity ?? 0.0;
+              if (velocity > 180 || _accumulatedDragDown > 35) {
+                _toggleFullscreen();
+              }
+              _accumulatedDragDown = 0.0;
+            },
+            onVerticalDragCancel: () => _accumulatedDragDown = 0.0,
+            child: Center(
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: errorWidget,
+              ),
             ),
           ),
         );
@@ -860,25 +938,17 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
         final playerWidget = AspectRatio(
           aspectRatio: 16 / 9,
-          child: GestureDetector(
-            onVerticalDragEnd: (details) {
-              // YouTube-style swipe down to minimize gesture
-              if (details.primaryVelocity != null && details.primaryVelocity! > 300) {
-                _handleMinimize();
-              }
+          child: YoutubePlayer(
+            key: _ytPlayerGlobalKey,
+            controller: _ytController,
+            aspectRatio: 16 / 9,
+            backgroundColor: Colors.black,
+            enableFullScreenOnVerticalDrag: false,
+            autoFullScreen: false,
+            gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
+            controlsBuilder: (context, isFs) {
+              return _buildCustomControlsOverlay(context, isFs || isFullscreen, boxWidth);
             },
-            child: YoutubePlayer(
-              key: _ytPlayerGlobalKey,
-              controller: _ytController,
-              aspectRatio: 16 / 9,
-              backgroundColor: Colors.black,
-              enableFullScreenOnVerticalDrag: false,
-              autoFullScreen: false,
-              gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
-              controlsBuilder: (context, isFs) {
-                return _buildCustomControlsOverlay(context, isFs || isFullscreen, boxWidth);
-              },
-            ),
           ),
         );
 

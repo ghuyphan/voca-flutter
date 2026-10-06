@@ -8,6 +8,7 @@ import '../../config/voca_theme.dart';
 import '../../services/i18n_service.dart';
 import '../../services/toast_service.dart';
 import '../../state/app_state.dart';
+import '../widgets/voca_back_button.dart';
 import 'widgets/rpg_shield_crest.dart';
 
 /// Dedicated Full-Screen Experience for AI Credits, Usage, Pro & Founder Upgrades, and VietQR Checkout.
@@ -71,9 +72,13 @@ class _AiCreditsScreenState extends State<AiCreditsScreen> {
         backgroundColor: colors.bgPrimary,
         elevation: 0,
         scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: colors.textPrimary, size: 20),
-          onPressed: () => Navigator.of(context).pop(),
+        leadingWidth: 68,
+        leading: const Padding(
+          padding: EdgeInsets.only(left: 16),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: VocaBackButton(),
+          ),
         ),
         centerTitle: true,
         title: Text(

@@ -4,7 +4,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:signals_flutter/signals_flutter.dart';
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import '../models/voca_models.dart';
 import '../utils/cyrb53_hasher.dart';
 import 'app_state.dart';
@@ -93,6 +93,7 @@ class PlayerCoordinator {
     int? playlistIndex,
     int? playlistTotal,
     List<PlaylistVideo>? playlist,
+    double? startSeconds,
   }) {
     _autoAdvanceTimer?.cancel();
     _hasAwardedVideoCompletion = false;
@@ -113,6 +114,10 @@ class PlayerCoordinator {
     }
 
     if (activeVideoId.value == videoId && ytController != null) {
+      if (startSeconds != null && startSeconds > 0) {
+        ytController?.seekTo(seconds: startSeconds, allowSeekAhead: true);
+        playerController?.updatePlaybackTime(startSeconds);
+      }
       // Same video already active: just expand to full screen
       expand(context);
       return;
@@ -163,16 +168,20 @@ class PlayerCoordinator {
       activePlaylistTitle.value = playlistTitle;
     }
     isMiniplayer.value = false;
-    currentTime.value = 0.0;
+    currentTime.value = startSeconds ?? 0.0;
     duration.value = 0.0;
     activeVideoId.value = videoId;
 
     // Load video immediately
-    newYtController.loadVideoById(videoId: videoId);
+    newYtController.loadVideoById(videoId: videoId, startSeconds: startSeconds);
     newPlayerController.loadVideo(videoId);
 
-    // Asynchronously seek to previous watch progress if available
-    _resumeFromHistoryIfAvailable(videoId, newYtController, newPlayerController);
+    if (startSeconds != null && startSeconds > 0) {
+      newPlayerController.updatePlaybackTime(startSeconds);
+    } else {
+      // Asynchronously seek to previous watch progress if available
+      _resumeFromHistoryIfAvailable(videoId, newYtController, newPlayerController);
+    }
 
     // Sync duration from cues if available before or alongside video metadata
     _cuesDisposer = newPlayerController.cues.subscribe((cList) {

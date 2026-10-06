@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:signals_flutter/signals_flutter.dart';
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import '../../config/voca_theme.dart';
 import '../../models/voca_models.dart';
 import '../../services/i18n_service.dart';
@@ -209,7 +209,7 @@ class _SubtitleOptionsSheetState extends State<SubtitleOptionsSheet> {
                       child: Text(
                         _getReadingIcon(currentLang),
                         style: TextStyle(
-                          color: colors.accentPrimary,
+                          color: colors.textSecondary,
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
@@ -246,7 +246,7 @@ class _SubtitleOptionsSheetState extends State<SubtitleOptionsSheet> {
                       ),
                       child: Icon(
                         Icons.auto_awesome_rounded,
-                        color: colors.colorGrammar,
+                        color: colors.textSecondary,
                         size: 17,
                       ),
                     ),
@@ -285,7 +285,7 @@ class _SubtitleOptionsSheetState extends State<SubtitleOptionsSheet> {
                       ),
                       child: Icon(
                         Icons.translate_rounded,
-                        color: colors.accentSecondary,
+                        color: colors.textSecondary,
                         size: 17,
                       ),
                     ),

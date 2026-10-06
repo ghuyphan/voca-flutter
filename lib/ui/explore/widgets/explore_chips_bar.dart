@@ -7,36 +7,43 @@ import '../models/explore_category.dart';
 
 enum ExploreTab { videos, playlists }
 
-/// Horizontal chips bar matching lingua-tube's chips carousel & AGENTS.md.
+/// Clean, topic-first horizontal chips bar with smooth animated transitions.
 class ExploreChipsBar extends StatelessWidget {
   final ExploreCategory selectedCategory;
   final String selectedLevel;
   final ExploreTab currentTab;
-  final List<String> levels;
-  final VoidCallback onFilterPressed;
+  final VoidCallback onLevelFilterPressed;
   final VoidCallback onAllPressed;
   final VoidCallback onPlaylistsPressed;
-  final ValueChanged<String> onLevelSelected;
+  final ValueChanged<ExploreCategory> onCategorySelected;
 
   const ExploreChipsBar({
     super.key,
     required this.selectedCategory,
     required this.selectedLevel,
     required this.currentTab,
-    required this.levels,
-    required this.onFilterPressed,
+    required this.onLevelFilterPressed,
     required this.onAllPressed,
     required this.onPlaylistsPressed,
-    required this.onLevelSelected,
+    required this.onCategorySelected,
   });
 
   @override
   Widget build(BuildContext context) {
     final colors = context.vocaColors;
-    final hasActiveCategory = selectedCategory != ExploreCategory.all;
-    final hasActiveFilter = hasActiveCategory || (selectedLevel != 'All' && currentTab == ExploreTab.videos);
-    final isAllSelected = currentTab == ExploreTab.videos && selectedLevel == 'All' && !hasActiveCategory;
+    final hasActiveLevel = selectedLevel != 'All';
+    final levelInfo = LevelColorInfo.forLevel(selectedLevel, isDark: colors.isDark);
+    final isAllSelected = currentTab == ExploreTab.videos && selectedCategory == ExploreCategory.all;
     final isPlaylistsSelected = currentTab == ExploreTab.playlists;
+
+    const topicCategories = [
+      ExploreCategory.trending,
+      ExploreCategory.animeDrama,
+      ExploreCategory.music,
+      ExploreCategory.news,
+      ExploreCategory.vlog,
+      ExploreCategory.conversation,
+    ];
 
     return SizedBox(
       height: 38,
@@ -44,44 +51,56 @@ class ExploreChipsBar extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
-          // 1. (☷ Filter ⌄) Pill Chip
+          // 1. Level Refinement Chip (e.g. "Filters ⌄" or "🟢 N4 ⌄")
           InkWell(
-            onTap: onFilterPressed,
+            onTap: onLevelFilterPressed,
             borderRadius: BorderRadius.circular(20),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
               decoration: BoxDecoration(
-                color: hasActiveFilter ? colors.accentPrimarySoft : colors.bgCard,
+                color: hasActiveLevel ? levelInfo.bg : colors.bgCard,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: hasActiveFilter ? colors.accentPrimary : colors.borderColor,
-                  width: hasActiveFilter ? 1.5 : 1.0,
+                  color: hasActiveLevel ? levelInfo.border : colors.borderColor,
+                  width: hasActiveLevel ? 1.5 : 1.0,
                 ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    hasActiveCategory ? selectedCategory.icon : Icons.filter_alt_rounded,
-                    size: 14,
-                    color: hasActiveFilter ? colors.accentPrimary : colors.textSecondary,
-                  ),
-                  const SizedBox(width: 6),
+                  if (hasActiveLevel)
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 6,
+                      height: 6,
+                      margin: const EdgeInsets.only(right: 6),
+                      decoration: BoxDecoration(
+                        color: levelInfo.text,
+                        shape: BoxShape.circle,
+                      ),
+                    )
+                  else
+                    Icon(
+                      Icons.filter_alt_rounded,
+                      size: 14,
+                      color: colors.textSecondary,
+                    ),
+                  const SizedBox(width: 4),
                   Text(
-                    hasActiveCategory
-                        ? selectedCategory.getLabel(context)
-                        : context.t('explore.filter', null, 'Filters'),
+                    hasActiveLevel ? selectedLevel : context.t('explore.filter', null, 'Filters'),
                     style: TextStyle(
-                      color: hasActiveFilter ? colors.accentPrimary : colors.textSecondary,
+                      color: hasActiveLevel ? levelInfo.text : colors.textSecondary,
                       fontSize: 12.5,
-                      fontWeight: hasActiveFilter ? FontWeight.w700 : FontWeight.w500,
+                      fontWeight: hasActiveLevel ? FontWeight.w700 : FontWeight.w500,
                     ),
                   ),
                   const SizedBox(width: 3),
                   Icon(
                     Icons.keyboard_arrow_down_rounded,
                     size: 16,
-                    color: hasActiveFilter ? colors.accentPrimary : colors.textSecondary,
+                    color: hasActiveLevel ? levelInfo.text : colors.textSecondary,
                   ),
                 ],
               ),
@@ -94,7 +113,9 @@ class ExploreChipsBar extends StatelessWidget {
           InkWell(
             onTap: onAllPressed,
             borderRadius: BorderRadius.circular(20),
-            child: Container(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
               decoration: BoxDecoration(
                 color: isAllSelected ? colors.textPrimary : colors.bgCard,
@@ -131,7 +152,9 @@ class ExploreChipsBar extends StatelessWidget {
           InkWell(
             onTap: onPlaylistsPressed,
             borderRadius: BorderRadius.circular(20),
-            child: Container(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
               padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
               decoration: BoxDecoration(
                 color: isPlaylistsSelected ? colors.textPrimary : colors.bgCard,
@@ -162,30 +185,44 @@ class ExploreChipsBar extends StatelessWidget {
             ),
           ),
 
-          // 4. Proficiency Level Chips (e.g. N5, N4, N3, etc.)
-          ...levels.where((l) => l != 'All').map((lvl) {
-            final isSelected = selectedLevel == lvl && currentTab == ExploreTab.videos;
-            final info = LevelColorInfo.forLevel(lvl, isDark: colors.isDark);
+          // 4. Topic Category Chips (Trending, Anime, Music, News, Vlog, Conversation)
+          ...topicCategories.map((cat) {
+            final isCatSelected = currentTab == ExploreTab.videos && selectedCategory == cat;
             return Padding(
               padding: const EdgeInsets.only(left: 8),
-              child: FilterChip(
-                selected: isSelected,
-                label: Text(lvl),
-                onSelected: (_) => onLevelSelected(lvl),
-                backgroundColor: colors.bgCard,
-                selectedColor: info.bg,
-                labelStyle: TextStyle(
-                  color: isSelected ? info.text : colors.textSecondary,
-                  fontSize: 12.5,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                ),
-                showCheckmark: false,
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(
-                    color: isSelected ? info.border : colors.borderColor,
-                    width: isSelected ? 1.5 : 1.0,
+              child: InkWell(
+                onTap: () => onCategorySelected(cat),
+                borderRadius: BorderRadius.circular(20),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOutCubic,
+                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: isCatSelected ? colors.accentPrimarySoft : colors.bgCard,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isCatSelected ? colors.accentPrimary : colors.borderColor,
+                      width: isCatSelected ? 1.5 : 1.0,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        cat.icon,
+                        size: 14,
+                        color: isCatSelected ? colors.accentPrimary : colors.textSecondary,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        cat.getLabel(context),
+                        style: TextStyle(
+                          color: isCatSelected ? colors.accentPrimary : colors.textSecondary,
+                          fontSize: 12.5,
+                          fontWeight: isCatSelected ? FontWeight.w700 : FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

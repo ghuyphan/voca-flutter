@@ -112,28 +112,28 @@ void main() {
     expect(find.text('Playlists'), findsOneWidget);
     expect(find.byIcon(Icons.filter_alt_rounded), findsOneWidget);
 
-    // Verify Japanese difficulty levels
-    expect(find.widgetWithText(FilterChip, 'N5'), findsOneWidget);
-    expect(find.widgetWithText(FilterChip, 'N4'), findsOneWidget);
-    expect(find.widgetWithText(FilterChip, 'N3'), findsOneWidget);
-    expect(find.widgetWithText(FilterChip, 'N2'), findsOneWidget);
-    expect(find.widgetWithText(FilterChip, 'N1'), findsOneWidget);
-
-    // Verify video card rendered
-    expect(find.text('Lemon / Kenshi Yonezu'), findsOneWidget);
-    expect(find.text('kobasolo'), findsOneWidget);
-    expect(find.text('JLPT N4'), findsWidgets);
-
-    // Open Filter sheet via Filters chip to verify categories
-    await tester.tap(find.text('Filters'));
-    await tester.pumpAndSettle();
-
+    // Verify direct Category topic chips rendered on the Explore bar
     expect(find.text('Trending'), findsOneWidget);
     expect(find.text('Anime & Drama'), findsOneWidget);
     expect(find.text('Music'), findsOneWidget);
     expect(find.text('News'), findsOneWidget);
     expect(find.text('Vlog'), findsOneWidget);
     expect(find.text('Conversation'), findsOneWidget);
+
+    // Verify video card rendered
+    expect(find.text('Lemon / Kenshi Yonezu'), findsOneWidget);
+    expect(find.text('kobasolo'), findsOneWidget);
+    expect(find.text('JLPT N4'), findsWidgets);
+
+    // Open Filter sheet via Filters chip to verify JLPT difficulty levels
+    await tester.tap(find.text('Filters'));
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(FilterChip, 'N5'), findsOneWidget);
+    expect(find.widgetWithText(FilterChip, 'N4'), findsOneWidget);
+    expect(find.widgetWithText(FilterChip, 'N3'), findsOneWidget);
+    expect(find.widgetWithText(FilterChip, 'N2'), findsOneWidget);
+    expect(find.widgetWithText(FilterChip, 'N1'), findsOneWidget);
   });
 
   testWidgets('ExploreScreen dynamically updates difficulty level filters for Chinese, Korean, and English', (tester) async {
@@ -150,12 +150,19 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    await tester.tap(find.text('Filters'));
+    await tester.pumpAndSettle();
+
     expect(find.widgetWithText(FilterChip, 'HSK 1'), findsOneWidget);
     expect(find.widgetWithText(FilterChip, 'HSK 2'), findsOneWidget);
     expect(find.widgetWithText(FilterChip, 'HSK 3'), findsOneWidget);
     expect(find.widgetWithText(FilterChip, 'HSK 4'), findsOneWidget);
     expect(find.widgetWithText(FilterChip, 'HSK 5'), findsOneWidget);
     expect(find.widgetWithText(FilterChip, 'HSK 6'), findsOneWidget);
+
+    // Close sheet via Apply Filters
+    await tester.tap(find.text('Apply Filters'));
+    await tester.pumpAndSettle();
 
     // Korean
     AppState.instance.activeLanguage.value = 'ko';
@@ -166,12 +173,19 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    await tester.tap(find.text('Filters'));
+    await tester.pumpAndSettle();
+
     expect(find.widgetWithText(FilterChip, 'TOPIK 1'), findsOneWidget);
     expect(find.widgetWithText(FilterChip, 'TOPIK 2'), findsOneWidget);
     expect(find.widgetWithText(FilterChip, 'TOPIK 3'), findsOneWidget);
     expect(find.widgetWithText(FilterChip, 'TOPIK 4'), findsOneWidget);
     expect(find.widgetWithText(FilterChip, 'TOPIK 5'), findsOneWidget);
     expect(find.widgetWithText(FilterChip, 'TOPIK 6'), findsOneWidget);
+
+    // Close sheet via Apply Filters
+    await tester.tap(find.text('Apply Filters'));
+    await tester.pumpAndSettle();
 
     // English
     AppState.instance.activeLanguage.value = 'en';
@@ -180,6 +194,9 @@ void main() {
         home: ExploreScreen(),
       ),
     );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Filters'));
     await tester.pumpAndSettle();
 
     expect(find.widgetWithText(FilterChip, 'A1'), findsOneWidget);
@@ -293,16 +310,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Open filter sheet via Filters chip
-    await tester.tap(find.text('Filters'));
-    await tester.pumpAndSettle();
-
-    // Tap Music category pill in sheet
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Music'));
-    await tester.pumpAndSettle();
-
-    // Tap Apply Filters
-    await tester.tap(find.text('Apply Filters'));
+    // Tap Music category pill directly on chips bar (1-tap category selection)
+    expect(find.text('Music'), findsOneWidget);
+    await tester.tap(find.text('Music'));
     await tester.pumpAndSettle();
 
     // Active filter tag should be visible on Explore screen

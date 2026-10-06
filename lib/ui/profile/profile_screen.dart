@@ -9,6 +9,7 @@ import '../../services/toast_service.dart';
 import '../../state/app_state.dart';
 import '../auth/auth_screen.dart';
 import '../settings/settings_screen.dart';
+import '../widgets/voca_back_button.dart';
 import '../widgets/voca_confirm_dialog.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -55,7 +56,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
       appBar: AppBar(
         backgroundColor: colors.bgPrimary,
         elevation: 0,
-        leading: BackButton(color: colors.textPrimary),
+        leadingWidth: 68,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 16),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: VocaBackButton(
+              onPressed: () => Navigator.of(context).maybePop(),
+            ),
+          ),
+        ),
+        titleSpacing: 8,
         title: Text(
           context.t('profile.title', null, 'Learner Profile'),
           style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold),

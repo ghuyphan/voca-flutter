@@ -11,8 +11,9 @@ import 'package:voca_flutter/ui/sheets/playlist_queue_sheet.dart';
 import 'package:voca_flutter/ui/sheets/practice_sheet.dart';
 import 'package:voca_flutter/ui/sheets/subtitle_options_sheet.dart';
 import 'package:voca_flutter/ui/video/subtitle_panel.dart';
+import 'package:voca_flutter/ui/video/video_header.dart';
 import 'package:voca_flutter/ui/video/video_more_feed.dart';
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
 class FakeYoutubeController extends Fake implements YoutubePlayerController {
   double? lastSeek;
@@ -275,6 +276,59 @@ void main() {
 
       // Verify transcript button [Bản ghi] does NOT exist
       expect(find.text('Bản ghi'), findsNothing);
+    });
+  });
+
+  group('VideoHeader Swipe Down Tests', () {
+    testWidgets('Triggers onVerticalDragDown when dragged down in loaded state', (tester) async {
+      bool draggedDown = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: VideoHeader(
+              title: 'Test Song',
+              channel: 'Test Artist',
+              videoId: 'test_123',
+              onVerticalDragDown: () {
+                draggedDown = true;
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Test Song'), findsOneWidget);
+      await tester.drag(find.text('Test Song'), const Offset(0, 100));
+      await tester.pumpAndSettle();
+
+      expect(draggedDown, isTrue);
+    });
+
+    testWidgets('Triggers onVerticalDragDown when dragged down in skeleton state', (tester) async {
+      bool draggedDown = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: VideoHeader(
+              title: '',
+              channel: '',
+              videoId: 'test_123',
+              onVerticalDragDown: () {
+                draggedDown = true;
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(find.byKey(const ValueKey('skeleton_header')), findsOneWidget);
+      await tester.drag(find.byKey(const ValueKey('skeleton_header')), const Offset(0, 100), warnIfMissed: false);
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(draggedDown, isTrue);
     });
   });
 }

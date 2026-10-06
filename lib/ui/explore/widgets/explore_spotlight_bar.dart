@@ -136,11 +136,16 @@ class _ExploreSpotlightBarState extends State<ExploreSpotlightBar>
       ),
       child: Row(
         children: [
-          // Left Icon: Link icon if video detected, otherwise Search (subtle, no focus highlight)
-          Icon(
-            directVideoId != null ? Icons.link_rounded : Icons.search_rounded,
-            color: directVideoId != null ? colors.accentPrimary : colors.textMuted,
-            size: 19,
+          // Left Icon with subtle animated transition
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+            child: Icon(
+              directVideoId != null ? Icons.link_rounded : Icons.search_rounded,
+              key: ValueKey(directVideoId != null),
+              color: directVideoId != null ? colors.accentPrimary : colors.textMuted,
+              size: 19,
+            ),
           ),
           const SizedBox(width: 10),
 
@@ -171,9 +176,8 @@ class _ExploreSpotlightBarState extends State<ExploreSpotlightBar>
             ),
           ),
 
-          // Right Actions: Clear when non-empty, otherwise Paste
-          if (hasText) ...[
-            // Clear button
+          // Right Actions with smooth AnimatedSwitcher
+          if (hasText)
             Tooltip(
               message: context.t('common.clear', null, 'Clear'),
               child: InkWell(
@@ -189,9 +193,8 @@ class _ExploreSpotlightBarState extends State<ExploreSpotlightBar>
                   child: Icon(Icons.close_rounded, size: 14, color: colors.textMuted),
                 ),
               ),
-            ),
-          ] else if (_hasClipboardText) ...[
-            // Contextual paste from clipboard button
+            )
+          else if (_hasClipboardText)
             Tooltip(
               message: context.t('commandPalette.paste', null, 'Paste from clipboard'),
               child: Material(
@@ -215,7 +218,6 @@ class _ExploreSpotlightBarState extends State<ExploreSpotlightBar>
                 ),
               ),
             ),
-          ],
         ],
       ),
     );

@@ -6,8 +6,8 @@ import '../../../services/video_level_service.dart';
 import '../../../utils/video_format_utils.dart';
 import '../../widgets/voca_level_badge.dart';
 
-/// 1:1 Video Card matching lingua-tube's yt-video-card & AGENTS.md.
-class VideoFeedCard extends StatelessWidget {
+/// Clean, high-performance Video Card with subtle micro-interactions & image fade-in.
+class VideoFeedCard extends StatefulWidget {
   final Map<String, dynamic> video;
   final String currentLang;
   final VoidCallback onTap;
@@ -36,174 +36,223 @@ class VideoFeedCard extends StatelessWidget {
       return VideoLevelService.instance.tierToLabel(tier, lang);
     }
 
+    // Heuristics: detect from title / channel metadata
+    final videoId = item['videoId'] as String?;
+    final title = item['title'] as String? ?? '';
+    final channel = item['channel'] as String? ?? '';
+    if (title.isNotEmpty || channel.isNotEmpty) {
+      final detected = VideoLevelService.instance.resolveLevel(
+        videoId: videoId,
+        lang: lang,
+        title: title,
+        channel: channel,
+      );
+      if (detected != null && detected.level.isNotEmpty) {
+        return detected.level;
+      }
+    }
+
     return '';
   }
 
   @override
+  State<VideoFeedCard> createState() => _VideoFeedCardState();
+}
+
+class _VideoFeedCardState extends State<VideoFeedCard> {
+  bool _isPressed = false;
+
+  @override
   Widget build(BuildContext context) {
     final colors = context.vocaColors;
-    final videoId = video['videoId'] as String? ?? '';
-    final title = video['title'] as String? ?? 'YouTube Video';
-    final channel = video['channel'] as String? ?? 'YouTube Creator';
-    final channelAvatar = video['channelAvatar'] as String?;
-    final duration = video['duration'] as int? ?? 0;
+    final videoId = widget.video['videoId'] as String? ?? '';
+    final title = widget.video['title'] as String? ?? 'YouTube Video';
+    final channel = widget.video['channel'] as String? ?? 'YouTube Creator';
+    final channelAvatar = widget.video['channelAvatar'] as String?;
+    final duration = widget.video['duration'] as int? ?? 0;
     final durationStr = duration > 0 ? formatVideoTime(duration) : '';
-    final levelTag = resolveVideoLevel(video, currentLang);
-    final double? resumeProgress = (video['resumeProgress'] as num?)?.toDouble() ??
-        (video['progress'] as num?)?.toDouble();
+    final levelTag = VideoFeedCard.resolveVideoLevel(widget.video, widget.currentLang);
+    final double? resumeProgress = (widget.video['resumeProgress'] as num?)?.toDouble() ??
+        (widget.video['progress'] as num?)?.toDouble();
 
-    final thumbnailUrl = (video['thumbnail'] as String?)?.isNotEmpty == true
-        ? video['thumbnail'] as String
+    final thumbnailUrl = (widget.video['thumbnail'] as String?)?.isNotEmpty == true
+        ? widget.video['thumbnail'] as String
         : 'https://i.ytimg.com/vi/$videoId/hqdefault.jpg';
 
-    return Container(
-      color: Colors.transparent,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: onTap,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // 16:9 Thumbnail with Duration & Resume Bar
-              ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: Stack(
-                  children: [
-                    AspectRatio(
-                      aspectRatio: 16 / 9,
-                      child: Image.network(
-                        thumbnailUrl,
-                        fit: BoxFit.cover,
-                        cacheWidth: 480,
-                        cacheHeight: 270,
-                        errorBuilder: (_, __, ___) => Container(
-                          color: colors.bgSecondary,
-                          child: Center(
-                            child: Icon(
-                              Icons.play_circle_outline_rounded,
-                              color: colors.textTertiary,
-                              size: 48,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    // Duration Badge (Bottom-Right)
-                    if (durationStr.isNotEmpty)
-                      Positioned(
-                        bottom: 8,
-                        right: 8,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: const Color(0xCC000000),
-                            borderRadius: BorderRadius.circular(5),
-                          ),
-                          child: Text(
-                            durationStr,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.2,
-                              fontFeatures: [FontFeature.tabularFigures()],
-                            ),
-                          ),
-                        ),
-                      ),
-
-                    // Resume progress bar at bottom of thumbnail
-                    if (resumeProgress != null && resumeProgress > 0)
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        child: LinearProgressIndicator(
-                          value: resumeProgress.clamp(0.0, 1.0),
-                          backgroundColor: Colors.black38,
-                          valueColor: AlwaysStoppedAnimation<Color>(colors.accentPrimary),
-                          minHeight: 3.5,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-
-              // Title, Channel, and Level Info
-              Padding(
-                padding: const EdgeInsets.only(top: 10, left: 2, right: 2, bottom: 4),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (channelAvatar != null && channelAvatar.isNotEmpty)
-                      ClipOval(
+    return RepaintBoundary(
+      child: AnimatedScale(
+        scale: _isPressed ? 0.985 : 1.0,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOutCubic,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onHighlightChanged: (highlighted) {
+              if (_isPressed != highlighted) {
+                setState(() => _isPressed = highlighted);
+              }
+            },
+            onTap: widget.onTap,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 16:9 Thumbnail with Duration & Resume Bar
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Stack(
+                    children: [
+                      AspectRatio(
+                        aspectRatio: 16 / 9,
                         child: Image.network(
-                          channelAvatar,
-                          width: 36,
-                          height: 36,
-                          cacheWidth: 72,
-                          cacheHeight: 72,
+                          thumbnailUrl,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => CircleAvatar(
-                            radius: 18,
-                            backgroundColor: colors.bgSurface,
-                            child: Icon(Icons.person, size: 18, color: colors.textSecondary),
+                          cacheWidth: 480,
+                          cacheHeight: 270,
+                          frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                            if (wasSynchronouslyLoaded) return child;
+                            return AnimatedOpacity(
+                              opacity: frame == null ? 0.0 : 1.0,
+                              duration: const Duration(milliseconds: 260),
+                              curve: Curves.easeOut,
+                              child: child,
+                            );
+                          },
+                          errorBuilder: (_, __, ___) => Container(
+                            color: colors.bgSecondary,
+                            child: Center(
+                              child: Icon(
+                                Icons.play_circle_outline_rounded,
+                                color: colors.textTertiary,
+                                size: 48,
+                              ),
+                            ),
                           ),
                         ),
-                      )
-                    else
-                      CircleAvatar(
-                        radius: 18,
-                        backgroundColor: colors.bgSurface,
-                        child: Icon(Icons.smart_display_rounded, size: 18, color: colors.textSecondary),
                       ),
-                    const SizedBox(width: 12),
 
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: colors.textPrimary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              height: 1.3,
+                      // Duration Badge (Bottom-Right)
+                      if (durationStr.isNotEmpty)
+                        Positioned(
+                          bottom: 8,
+                          right: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xCC000000),
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: Text(
+                              durationStr,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.2,
+                                fontFeatures: [FontFeature.tabularFigures()],
+                              ),
                             ),
                           ),
-                          const SizedBox(height: 3),
-                          Text(
-                            channel,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: colors.textSecondary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w400,
-                            ),
+                        ),
+
+                      // Resume progress bar at bottom of thumbnail
+                      if (resumeProgress != null && resumeProgress > 0)
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          child: LinearProgressIndicator(
+                            value: resumeProgress.clamp(0.0, 1.0),
+                            backgroundColor: Colors.black38,
+                            valueColor: AlwaysStoppedAnimation<Color>(colors.accentPrimary),
+                            minHeight: 3.5,
                           ),
-                          if (levelTag.isNotEmpty) ...[
-                            const SizedBox(height: 6),
-                            VocaLevelBadge(
-                              level: levelTag,
-                              size: LevelBadgeSize.small,
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+
+                // Title, Channel, and Level Info
+                Padding(
+                  padding: const EdgeInsets.only(top: 10, left: 2, right: 2, bottom: 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (channelAvatar != null && channelAvatar.isNotEmpty)
+                        ClipOval(
+                          child: Image.network(
+                            channelAvatar,
+                            width: 36,
+                            height: 36,
+                            cacheWidth: 72,
+                            cacheHeight: 72,
+                            fit: BoxFit.cover,
+                            frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                              if (wasSynchronouslyLoaded) return child;
+                              return AnimatedOpacity(
+                                opacity: frame == null ? 0.0 : 1.0,
+                                duration: const Duration(milliseconds: 200),
+                                child: child,
+                              );
+                            },
+                            errorBuilder: (_, __, ___) => CircleAvatar(
+                              radius: 18,
+                              backgroundColor: colors.bgSurface,
+                              child: Icon(Icons.person, size: 18, color: colors.textSecondary),
+                            ),
+                          ),
+                        )
+                      else
+                        CircleAvatar(
+                          radius: 18,
+                          backgroundColor: colors.bgSurface,
+                          child: Icon(Icons.smart_display_rounded, size: 18, color: colors.textSecondary),
+                        ),
+                      const SizedBox(width: 12),
+
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: colors.textPrimary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                height: 1.3,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              channel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: colors.textSecondary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                            if (levelTag.isNotEmpty) ...[
+                              const SizedBox(height: 6),
+                              VocaLevelBadge(
+                                level: levelTag,
+                                size: LevelBadgeSize.small,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

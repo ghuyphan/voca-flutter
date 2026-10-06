@@ -900,6 +900,8 @@ enum ProficiencyLevelTier {
   upperIntermediate,
   advanced;
 
+  String get apiTier => this == ProficiencyLevelTier.upperIntermediate ? 'upper_intermediate' : name;
+
   static ProficiencyLevelTier fromString(String? val) {
     if (val == null) return ProficiencyLevelTier.intermediate;
     final lower = val.toLowerCase().replaceAll('-', '_').replaceAll(' ', '_');

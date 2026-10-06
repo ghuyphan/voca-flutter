@@ -13,7 +13,9 @@ import 'package:voca_flutter/services/voca_api_client.dart';
 import 'package:voca_flutter/state/app_state.dart';
 import 'package:voca_flutter/ui/library/library_screen.dart';
 import 'package:voca_flutter/ui/shell/main_shell.dart';
-import 'package:voca_flutter/ui/gamification/gamification_screens.dart';
+import 'package:voca_flutter/ui/gamification/streak_screen.dart';
+import 'package:voca_flutter/ui/gamification/achievements_hub_screen.dart';
+import 'package:voca_flutter/ui/gamification/ai_credits_screen.dart';
 
 class _FakeGoTrueClient extends GoTrueClient {
   _FakeGoTrueClient() : super(autoRefreshToken: false);
@@ -200,10 +202,11 @@ void main() {
           home: const StreakScreen(),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Daily Streak'), findsWidgets);
-      expect(find.text('Last 7 Days'), findsOneWidget);
+      expect(find.text('Days'), findsOneWidget);
     });
 
     testWidgets('AchievementsHubScreen renders with shield crest and level progress', (tester) async {
@@ -213,10 +216,11 @@ void main() {
           home: const AchievementsHubScreen(),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text('Level & Achievements'), findsOneWidget);
-      expect(find.text('Level Progress'), findsOneWidget);
+      expect(find.text("Adventurer's Hall"), findsOneWidget);
+      expect(find.text('Missions'), findsOneWidget);
     });
 
     testWidgets('AiCreditsScreen renders with diamond crest and refresh button', (tester) async {
@@ -226,10 +230,11 @@ void main() {
           home: const AiCreditsScreen(),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text('AI Credits'), findsWidgets);
-      expect(find.text('Refresh Credits'), findsOneWidget);
+      expect(find.text('AI Credits & Upgrades'), findsOneWidget);
+      expect(find.text('How Credits Work'), findsOneWidget);
     });
   });
 }

@@ -6,6 +6,7 @@ import '../../config/voca_theme.dart';
 import '../../services/i18n_service.dart';
 import '../../services/toast_service.dart';
 import '../../state/app_state.dart';
+import '../widgets/voca_back_button.dart';
 import '../widgets/voca_option_picker.dart';
 
 /// Preset avatar representation
@@ -342,7 +343,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       appBar: AppBar(
         backgroundColor: colors.bgPrimary,
         elevation: 0,
-        leading: BackButton(color: colors.textPrimary),
+        leadingWidth: 68,
+        leading: const Padding(
+          padding: EdgeInsets.only(left: 16),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: VocaBackButton(),
+          ),
+        ),
         title: Text(
           context.t('settings.editProfile', null, 'Edit Profile'),
           style: TextStyle(

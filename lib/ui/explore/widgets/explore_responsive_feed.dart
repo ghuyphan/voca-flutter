@@ -21,7 +21,7 @@ class ExploreResponsiveFeed extends StatelessWidget {
     this.isLoadingMore = false,
     this.onRefresh,
     this.physics,
-    this.bottomPadding = 96.0,
+    this.bottomPadding = 20.0,
   });
 
   /// Factory helper for skeleton shimmer feeds.
@@ -34,7 +34,7 @@ class ExploreResponsiveFeed extends StatelessWidget {
         if (!isTablet) {
           return ListView.separated(
             physics: const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(16, 6, 16, 96),
+            padding: const EdgeInsets.fromLTRB(16, 6, 16, 20),
             itemCount: 4,
             separatorBuilder: (_, __) => const SizedBox(height: 20),
             itemBuilder: (_, __) => const FeedSkeletonCard(),
@@ -50,7 +50,7 @@ class ExploreResponsiveFeed extends StatelessWidget {
 
         return GridView.builder(
           physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 6, 16, 96),
+          padding: const EdgeInsets.fromLTRB(16, 6, 16, 20),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
             mainAxisSpacing: spacing,

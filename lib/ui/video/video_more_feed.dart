@@ -55,12 +55,14 @@ class VideoMoreFeedState extends State<VideoMoreFeed> {
   @override
   void didUpdateWidget(covariant VideoMoreFeed oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // Only refresh if the video ID or target language actually changed.
+    // If only title or tier resolved later for the current video, preserve loaded feed.
     if (oldWidget.currentVideoId != widget.currentVideoId ||
-        oldWidget.currentTitle != widget.currentTitle ||
-        oldWidget.currentChannel != widget.currentChannel ||
-        oldWidget.language != widget.language ||
-        oldWidget.tier != widget.tier) {
+        oldWidget.language != widget.language) {
       _loadVideos(refresh: true);
+    } else if (_videos.value.isEmpty && !_isLoading.value &&
+        (oldWidget.currentTitle != widget.currentTitle || oldWidget.tier != widget.tier)) {
+      _loadVideos(refresh: false);
     }
   }
 
@@ -308,8 +310,11 @@ class VideoMoreFeedState extends State<VideoMoreFeed> {
       final errorMessage = _errorMessage.value;
       final videos = _videos.value;
 
+      Widget content;
+
       if (isLoading) {
-        return Padding(
+        content = Padding(
+          key: const ValueKey('more_skeleton'),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           child: Column(
             children: List.generate(
@@ -321,10 +326,9 @@ class VideoMoreFeedState extends State<VideoMoreFeed> {
             ),
           ),
         );
-      }
-
-      if (errorMessage != null) {
-        return Padding(
+      } else if (errorMessage != null) {
+        content = Padding(
+          key: const ValueKey('more_error'),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
           child: Center(
             child: Column(
@@ -346,10 +350,9 @@ class VideoMoreFeedState extends State<VideoMoreFeed> {
             ),
           ),
         );
-      }
-
-      if (videos.isEmpty) {
-        return Padding(
+      } else if (videos.isEmpty) {
+        content = Padding(
+          key: const ValueKey('more_empty'),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
           child: Center(
             child: Text(
@@ -358,43 +361,51 @@ class VideoMoreFeedState extends State<VideoMoreFeed> {
             ),
           ),
         );
-      }
-
-      return ListView.separated(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(14, 6, 14, 32),
-        itemCount: videos.length + (isLoadingMore ? 1 : 0),
-        separatorBuilder: (_, __) => const SizedBox(height: 18),
-        itemBuilder: (context, index) {
-          if (index >= videos.length) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: colors.accentPrimary,
+      } else {
+        content = ListView.separated(
+          key: const ValueKey('more_list'),
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(14, 6, 14, 32),
+          itemCount: videos.length + (isLoadingMore ? 1 : 0),
+          separatorBuilder: (_, __) => const SizedBox(height: 18),
+          itemBuilder: (context, index) {
+            if (index >= videos.length) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: colors.accentPrimary,
+                    ),
                   ),
                 ),
+              );
+            }
+
+            final item = videos[index];
+            final vidId = item['videoId'] as String? ?? '';
+            final title = item['title'] as String? ?? 'YouTube Video';
+            final channel = item['channel'] as String? ?? 'YouTube Creator';
+            final levelTag = VideoFeedCard.resolveVideoLevel(item, widget.language);
+
+            return RepaintBoundary(
+              child: VideoFeedCard(
+                video: item,
+                currentLang: widget.language,
+                onTap: () => widget.onVideoTap(vidId, title, channel, levelTag),
               ),
             );
-          }
+          },
+        );
+      }
 
-          final item = videos[index];
-          final vidId = item['videoId'] as String? ?? '';
-          final title = item['title'] as String? ?? 'YouTube Video';
-          final channel = item['channel'] as String? ?? 'YouTube Creator';
-          final levelTag = VideoFeedCard.resolveVideoLevel(item, widget.language);
-
-          return VideoFeedCard(
-            video: item,
-            currentLang: widget.language,
-            onTap: () => widget.onVideoTap(vidId, title, channel, levelTag),
-          );
-        },
+      return AnimatedSwitcher(
+        duration: const Duration(milliseconds: 220),
+        child: content,
       );
     });
   }

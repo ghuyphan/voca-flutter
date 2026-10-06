@@ -10,7 +10,7 @@ import '../../services/video_level_service.dart';
 import '../../state/app_state.dart';
 import '../../state/player_coordinator.dart';
 import '../../utils/youtube_url_parser.dart';
-import '../sheets/category_filter_sheet.dart';
+import '../sheets/level_filter_sheet.dart';
 import '../widgets/voca_empty_state.dart';
 import 'models/explore_category.dart';
 import 'widgets/explore_chips_bar.dart';
@@ -19,7 +19,7 @@ import 'widgets/explore_spotlight_bar.dart';
 import 'widgets/playlist_feed_card.dart';
 import 'widgets/video_feed_card.dart';
 
-/// Clean, high-performance, signal-driven Explore Screen matching lingua-tube.
+/// Clean, high-performance, signal-driven Explore Screen with scoped reactivity & fluid transitions.
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
 
@@ -73,19 +73,18 @@ class _ExploreScreenState extends State<ExploreScreen>
     _searchBarSlideAnimation = Tween<Offset>(
       begin: const Offset(0, -0.35),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _searchBarAnimController,
-      curve: Curves.fastOutSlowIn,
-      reverseCurve: Curves.fastOutSlowIn,
-    ));
+    ).animate(_searchBarAnimation);
 
     _searchController.addListener(_onSearchInputChanged);
 
     // React to global activeLanguage changes
     _langEffectDispose = effect(() {
       final _ = AppState.instance.activeLanguage.value;
-      _selectedLevel.value = 'All';
-      _loadFeed(refresh: true);
+      untracked(() {
+        _selectedLevel.value = 'All';
+        _selectedCategory.value = ExploreCategory.all;
+        _loadFeed(refresh: true);
+      });
     });
   }
 
@@ -134,13 +133,11 @@ class _ExploreScreenState extends State<ExploreScreen>
         return false;
       }
 
-      if (delta > 0) {
-        if (_accumulatedDelta < 0) _accumulatedDelta = 0;
-        _accumulatedDelta += delta;
-      } else if (delta < 0) {
-        if (_accumulatedDelta > 0) _accumulatedDelta = 0;
-        _accumulatedDelta += delta;
+      // Reset opposite direction momentum before accumulating
+      if ((delta > 0 && _accumulatedDelta < 0) || (delta < 0 && _accumulatedDelta > 0)) {
+        _accumulatedDelta = 0;
       }
+      _accumulatedDelta += delta;
 
       if (_accumulatedDelta > 15 && notification.metrics.pixels > 30) {
         if (_isSearchBarVisible) {
@@ -161,16 +158,9 @@ class _ExploreScreenState extends State<ExploreScreen>
     return false;
   }
 
-  List<String> _getLevelsForLanguage(String lang) {
-    return VideoLevelService.getAvailableLevelFilters(lang);
-  }
-
-  String? _mapLevelToTier(String lang, String level) {
+  String? _mapLevelToTier(String level) {
     if (level == 'All') return null;
-    final tier = VideoLevelService.deriveLevelTier(level);
-    return tier == ProficiencyLevelTier.upperIntermediate
-        ? 'upper_intermediate'
-        : tier.name;
+    return VideoLevelService.deriveLevelTier(level).apiTier;
   }
 
   Future<void> _loadFeed({bool refresh = false}) async {
@@ -190,11 +180,7 @@ class _ExploreScreenState extends State<ExploreScreen>
         List<PlaylistItem> result = allPlaylists;
 
         if (_selectedLevel.value != 'All') {
-          final normalizedLevel = _selectedLevel.value.replaceAll(' ', '').toUpperCase();
-          result = result.where((p) {
-            final lvl = (p.level ?? '').replaceAll(' ', '').toUpperCase();
-            return lvl.contains(normalizedLevel);
-          }).toList();
+          result = _filterPlaylistsByLevel(result, _selectedLevel.value);
         }
 
         if (_searchQuery.value.isNotEmpty) {
@@ -218,7 +204,7 @@ class _ExploreScreenState extends State<ExploreScreen>
     }
 
     // Videos tab
-    final tier = _mapLevelToTier(lang, _selectedLevel.value);
+    final tier = _mapLevelToTier(_selectedLevel.value);
 
     String? query;
     if (_searchQuery.value.isNotEmpty) {
@@ -240,17 +226,7 @@ class _ExploreScreenState extends State<ExploreScreen>
 
       if (currentSeq != _requestSequenceId) return;
 
-      List<Map<String, dynamic>> resultList = list;
-      if (_selectedLevel.value != 'All') {
-        final normalizedLevel = _selectedLevel.value.replaceAll(' ', '').toUpperCase();
-        resultList = list.where((item) {
-          final itemLevel = VideoFeedCard.resolveVideoLevel(item, lang).replaceAll(' ', '').toUpperCase();
-          final itemTier = (item['tier'] as String? ?? '').toLowerCase();
-          return itemLevel.contains(normalizedLevel) || (tier != null && itemTier == tier);
-        }).toList();
-      }
-
-      _videos.value = resultList;
+      _videos.value = _filterVideosByTier(list, tier, lang);
       _hasMore.value = list.length >= _pageSize;
       _isLoading.value = false;
     } catch (e) {
@@ -258,6 +234,53 @@ class _ExploreScreenState extends State<ExploreScreen>
       _errorMessage.value = e.toString();
       _isLoading.value = false;
     }
+  }
+
+  List<PlaylistItem> _filterPlaylistsByLevel(
+    List<PlaylistItem> playlists,
+    String selectedLevel,
+  ) {
+    if (selectedLevel == 'All') return playlists;
+    final targetTier = VideoLevelService.deriveLevelTier(selectedLevel);
+    final normalizedTarget = selectedLevel.replaceAll(' ', '').toUpperCase();
+    return playlists.where((p) {
+      if (p.level != null && p.level!.isNotEmpty) {
+        final pTier = VideoLevelService.deriveLevelTier(p.level!);
+        if (pTier == targetTier) return true;
+        final pNorm = p.level!.replaceAll(' ', '').toUpperCase();
+        if (pNorm.contains(normalizedTarget)) return true;
+      }
+      final combined = '${p.title} ${p.description ?? ''}';
+      if (combined.trim().isNotEmpty) {
+        final metaTier = VideoLevelService.deriveLevelTier(combined);
+        if (metaTier == targetTier) return true;
+      }
+      for (final tag in p.tags) {
+        if (tag.isNotEmpty && VideoLevelService.deriveLevelTier(tag) == targetTier) {
+          return true;
+        }
+      }
+      return false;
+    }).toList();
+  }
+
+  List<Map<String, dynamic>> _filterVideosByTier(
+    List<Map<String, dynamic>> videos,
+    String? tier,
+    String lang,
+  ) {
+    if (_selectedLevel.value == 'All' || tier == null) return videos;
+    return videos.where((item) {
+      final itemTier = (item['tier'] as String? ?? '').toLowerCase().trim();
+      if (itemTier.isNotEmpty && itemTier == tier) return true;
+
+      final itemLevel = VideoFeedCard.resolveVideoLevel(item, lang);
+      if (itemLevel.isNotEmpty) {
+        final derived = VideoLevelService.deriveLevelTier(itemLevel);
+        if (derived.apiTier == tier) return true;
+      }
+      return false;
+    }).toList();
   }
 
   Future<void> _loadMore() async {
@@ -269,7 +292,7 @@ class _ExploreScreenState extends State<ExploreScreen>
     _currentOffset += _pageSize;
 
     final lang = AppState.instance.activeLanguage.value;
-    final tier = _mapLevelToTier(lang, _selectedLevel.value);
+    final tier = _mapLevelToTier(_selectedLevel.value);
 
     String? query;
     if (_searchQuery.value.isNotEmpty) {
@@ -294,16 +317,7 @@ class _ExploreScreenState extends State<ExploreScreen>
       if (list.isEmpty) {
         _hasMore.value = false;
       } else {
-        List<Map<String, dynamic>> newItems = list;
-        if (_selectedLevel.value != 'All') {
-          final normalizedLevel = _selectedLevel.value.replaceAll(' ', '').toUpperCase();
-          newItems = list.where((item) {
-            final itemLevel = VideoFeedCard.resolveVideoLevel(item, lang).replaceAll(' ', '').toUpperCase();
-            final itemTier = (item['tier'] as String? ?? '').toLowerCase();
-            return itemLevel.contains(normalizedLevel) || (tier != null && itemTier == tier);
-          }).toList();
-        }
-
+        final newItems = _filterVideosByTier(list, tier, lang);
         final existingIds = _videos.value.map((v) => v['videoId']).toSet();
         final filtered = newItems.where((v) => !existingIds.contains(v['videoId'])).toList();
         _videos.value = [..._videos.value, ...filtered];
@@ -370,17 +384,14 @@ class _ExploreScreenState extends State<ExploreScreen>
 
   void _openFilterSheet() {
     final currentLang = AppState.instance.activeLanguage.value;
-    final levels = _getLevelsForLanguage(currentLang);
+    final levels = VideoLevelService.getAvailableLevelFilters(currentLang);
 
-    CategoryFilterSheet.show(
+    LevelFilterSheet.show(
       context,
-      selectedCategory: _selectedCategory.value.id,
       selectedLevel: _selectedLevel.value,
       availableLevels: levels,
-      onApply: (category, level) {
-        _selectedCategory.value = ExploreCategory.fromId(category);
+      onApply: (level) {
         _selectedLevel.value = level;
-        _currentTab.value = ExploreTab.videos;
         _loadFeed();
       },
     );
@@ -428,156 +439,192 @@ class _ExploreScreenState extends State<ExploreScreen>
     );
   }
 
+  /// Reusable scrollable empty state wrapper to eliminate layout duplication
+  Widget _buildEmptyFeedContainer({
+    required VocaColorPalette colors,
+    required Widget child,
+  }) {
+    return RefreshIndicator(
+      onRefresh: () => _loadFeed(refresh: true),
+      color: colors.accentPrimary,
+      backgroundColor: colors.bgCard,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                  child: child,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.vocaColors;
 
-    return Watch((context) {
-      final currentLang = AppState.instance.activeLanguage.value;
-      final levels = _getLevelsForLanguage(currentLang);
-      final currentTab = _currentTab.value;
-      final selectedCategory = _selectedCategory.value;
-      final selectedLevel = _selectedLevel.value;
-      final searchQuery = _searchQuery.value;
-      final directVideoId = _directDetectedVideoId.value;
-      final isLoading = _isLoading.value;
-      final isLoadingMore = _isLoadingMore.value;
-      final errorMessage = _errorMessage.value;
-      final videos = _videos.value;
-      final playlists = _playlists.value;
-
-      return Scaffold(
-        backgroundColor: colors.bgPrimary,
-        body: SafeArea(
-          child: Column(
-            children: [
-              // 1. Collapsing Spotlight Search Bar
-              SizeTransition(
-                sizeFactor: _searchBarAnimation,
-                axisAlignment: -1.0,
-                child: FadeTransition(
-                  opacity: _searchBarAnimation,
-                  child: SlideTransition(
-                    position: _searchBarSlideAnimation,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ExploreSpotlightBar(
-                          controller: _searchController,
-                          focusNode: _searchFocusNode,
-                          onSearchSubmitted: _handleSearchSubmitted,
-                          onClear: _clearSearch,
-                          onDirectVideoDetected: _onDirectVideoDetected,
-                        ),
-                        if (directVideoId != null)
-                          _buildDirectVideoBanner(directVideoId, colors),
-                      ],
-                    ),
+    return Scaffold(
+      backgroundColor: colors.bgPrimary,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // 1. Collapsing Spotlight Search Bar with animated direct video detection banner
+            SizeTransition(
+              sizeFactor: _searchBarAnimation,
+              axisAlignment: -1.0,
+              child: FadeTransition(
+                opacity: _searchBarAnimation,
+                child: SlideTransition(
+                  position: _searchBarSlideAnimation,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ExploreSpotlightBar(
+                        controller: _searchController,
+                        focusNode: _searchFocusNode,
+                        onSearchSubmitted: _handleSearchSubmitted,
+                        onClear: _clearSearch,
+                        onDirectVideoDetected: _onDirectVideoDetected,
+                      ),
+                      // Scoped Watch: Only direct video banner reacts to detected ID changes
+                      Watch((context) {
+                        final directId = _directDetectedVideoId.value;
+                        return AnimatedSize(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeOutCubic,
+                          child: directId != null
+                              ? _buildDirectVideoBanner(directId, colors)
+                              : const SizedBox.shrink(),
+                        );
+                      }),
+                    ],
                   ),
                 ),
               ),
+            ),
 
-              // 2. Chips Bar: Filter button, All, Playlists, Level chips
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: ExploreChipsBar(
+            // 2. Chips Bar: Scoped Watch reading only filter selections
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Watch((context) {
+                final currentTab = _currentTab.value;
+                final selectedCategory = _selectedCategory.value;
+                final selectedLevel = _selectedLevel.value;
+
+                return ExploreChipsBar(
                   selectedCategory: selectedCategory,
                   selectedLevel: selectedLevel,
                   currentTab: currentTab,
-                  levels: levels,
-                  onFilterPressed: _openFilterSheet,
+                  onLevelFilterPressed: _openFilterSheet,
                   onAllPressed: () {
-                    _currentTab.value = ExploreTab.videos;
-                    _selectedLevel.value = 'All';
-                    _selectedCategory.value = ExploreCategory.all;
-                    _loadFeed();
+                    if (_currentTab.value == ExploreTab.videos &&
+                        _selectedCategory.value == ExploreCategory.all) {
+                      _loadFeed(refresh: true);
+                    } else {
+                      _currentTab.value = ExploreTab.videos;
+                      _selectedCategory.value = ExploreCategory.all;
+                      _loadFeed();
+                    }
                   },
                   onPlaylistsPressed: () {
-                    _currentTab.value = currentTab == ExploreTab.playlists
-                        ? ExploreTab.videos
-                        : ExploreTab.playlists;
-                    _loadFeed();
+                    if (_currentTab.value == ExploreTab.playlists) {
+                      _loadFeed(refresh: true);
+                    } else {
+                      _currentTab.value = ExploreTab.playlists;
+                      _loadFeed();
+                    }
                   },
-                  onLevelSelected: (lvl) {
-                    _selectedLevel.value = selectedLevel == lvl ? 'All' : lvl;
-                    _loadFeed();
+                  onCategorySelected: (cat) {
+                    if (_currentTab.value == ExploreTab.videos &&
+                        _selectedCategory.value == cat) {
+                      _selectedCategory.value = ExploreCategory.all;
+                      _loadFeed();
+                    } else {
+                      _currentTab.value = ExploreTab.videos;
+                      _selectedCategory.value = cat;
+                      _loadFeed();
+                    }
                   },
-                ),
-              ),
+                );
+              }),
+            ),
 
-              // 4. Virtualized Main Feed (Scroll-notified for search bar collapse & infinite scroll)
-              Expanded(
-                child: NotificationListener<ScrollNotification>(
-                  onNotification: _onScrollNotification,
-                  child: Builder(
-                    builder: (context) {
-                      if (isLoading) {
-                        return ExploreResponsiveFeed.buildSkeletonFeed(context);
-                      }
+            // 3. Virtualized Main Feed: Scoped Watch for feed content
+            Expanded(
+              child: NotificationListener<ScrollNotification>(
+                onNotification: _onScrollNotification,
+                child: Watch((context) {
+                  final currentLang = AppState.instance.activeLanguage.value;
+                  final currentTab = _currentTab.value;
+                  final searchQuery = _searchQuery.value;
+                  final isLoading = _isLoading.value;
+                  final isLoadingMore = _isLoadingMore.value;
+                  final errorMessage = _errorMessage.value;
+                  final videos = _videos.value;
+                  final playlists = _playlists.value;
 
-                      if (errorMessage != null) {
-                        return RefreshIndicator(
-                          onRefresh: () => _loadFeed(refresh: true),
-                          color: colors.accentPrimary,
-                          backgroundColor: colors.bgCard,
-                          child: SingleChildScrollView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 48),
-                              child: VocaEmptyState(
-                                icon: Icons.cloud_off_rounded,
-                                variant: EmptyStateIconVariant.error,
-                                title: context.t('explore.networkError', null, 'Could not load videos'),
-                                description: errorMessage,
-                                actionLabel: context.t('common.retry', null, 'Retry'),
-                                onAction: () => _loadFeed(refresh: true),
-                              ),
+                  const feedBottomPadding = 20.0;
+
+                  Widget feedContent;
+
+                  if (isLoading) {
+                    feedContent = KeyedSubtree(
+                      key: const ValueKey('feed_skeleton'),
+                      child: ExploreResponsiveFeed.buildSkeletonFeed(context),
+                    );
+                  } else if (errorMessage != null) {
+                    feedContent = KeyedSubtree(
+                      key: const ValueKey('feed_error'),
+                      child: RefreshIndicator(
+                        onRefresh: () => _loadFeed(refresh: true),
+                        color: colors.accentPrimary,
+                        backgroundColor: colors.bgCard,
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 48),
+                            child: VocaEmptyState(
+                              icon: Icons.cloud_off_rounded,
+                              variant: EmptyStateIconVariant.error,
+                              title: context.t('explore.networkError', null, 'Could not load videos'),
+                              description: errorMessage,
+                              actionLabel: context.t('common.retry', null, 'Retry'),
+                              onAction: () => _loadFeed(refresh: true),
                             ),
                           ),
-                        );
-                      }
-
-                      final coord = PlayerCoordinator.instance;
-                      final isMiniActive = coord.hasActiveVideo && coord.isMiniplayer.value;
-                      final feedBottomPadding = isMiniActive ? 168.0 : 96.0;
-
-                      if (currentTab == ExploreTab.playlists) {
-                        if (playlists.isEmpty) {
-                          return RefreshIndicator(
-                            onRefresh: () => _loadFeed(refresh: true),
-                            color: colors.accentPrimary,
-                            backgroundColor: colors.bgCard,
-                            child: LayoutBuilder(
-                              builder: (context, constraints) {
-                                return SingleChildScrollView(
-                                  physics: const AlwaysScrollableScrollPhysics(),
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      minHeight: constraints.maxHeight,
-                                    ),
-                                    child: Center(
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-                                        child: VocaEmptyState(
-                                          icon: Icons.search_off_rounded,
-                                          variant: EmptyStateIconVariant.neutral,
-                                          title: context.t('playlist.empty.title', null, 'No playlists found'),
-                                          description: searchQuery.isNotEmpty
-                                              ? 'No playlists match "$searchQuery". Try different keywords or reset filters.'
-                                              : 'No playlists available for the selected level.',
-                                          actionLabel: context.t('explore.resetFilters', null, 'Reset All Filters'),
-                                          onAction: _resetFilters,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          );
-                        }
-
-                        return ExploreResponsiveFeed(
+                        ),
+                      ),
+                    );
+                  } else if (currentTab == ExploreTab.playlists) {
+                    if (playlists.isEmpty) {
+                      feedContent = KeyedSubtree(
+                        key: const ValueKey('playlists_empty'),
+                        child: _buildEmptyFeedContainer(
+                          colors: colors,
+                          child: VocaEmptyState(
+                            icon: Icons.search_off_rounded,
+                            variant: EmptyStateIconVariant.neutral,
+                            title: context.t('playlist.empty.title', null, 'No playlists found'),
+                            description: searchQuery.isNotEmpty
+                                ? 'No playlists match "$searchQuery". Try different keywords or reset filters.'
+                                : 'No playlists available for the selected level.',
+                            actionLabel: context.t('explore.resetFilters', null, 'Reset All Filters'),
+                            onAction: _resetFilters,
+                          ),
+                        ),
+                      );
+                    } else {
+                      feedContent = KeyedSubtree(
+                        key: const ValueKey('playlists_list'),
+                        child: ExploreResponsiveFeed(
                           itemCount: playlists.length,
                           bottomPadding: feedBottomPadding,
                           onRefresh: () => _loadFeed(refresh: true),
@@ -614,131 +661,124 @@ class _ExploreScreenState extends State<ExploreScreen>
                               },
                             );
                           },
-                        );
-                      }
-
-                      // Videos tab
-                      if (videos.isEmpty) {
-                        return RefreshIndicator(
-                          onRefresh: () => _loadFeed(refresh: true),
-                          color: colors.accentPrimary,
-                          backgroundColor: colors.bgCard,
-                          child: LayoutBuilder(
-                            builder: (context, constraints) {
-                              return SingleChildScrollView(
-                                physics: const AlwaysScrollableScrollPhysics(),
-                                child: ConstrainedBox(
-                                  constraints: BoxConstraints(
-                                    minHeight: constraints.maxHeight,
+                        ),
+                      );
+                    }
+                  } else {
+                    // Videos tab
+                    if (videos.isEmpty) {
+                      feedContent = KeyedSubtree(
+                        key: const ValueKey('videos_empty'),
+                        child: _buildEmptyFeedContainer(
+                          colors: colors,
+                          child: searchQuery.isNotEmpty
+                              ? VocaEmptyState(
+                                  icon: Icons.search_off_rounded,
+                                  variant: EmptyStateIconVariant.neutral,
+                                  title: context.t('playlist.empty.searchTitle', null, 'No matching videos found'),
+                                  description: context.t('playlist.empty.searchHint', null, 'Try different keywords or paste a YouTube link.'),
+                                  actions: Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    alignment: WrapAlignment.center,
+                                    children: [
+                                      OutlinedButton.icon(
+                                        onPressed: _clearSearch,
+                                        icon: Icon(Icons.close_rounded, size: 14, color: colors.textSecondary),
+                                        label: Text(context.t('common.clear', null, 'Clear search')),
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: colors.textPrimary,
+                                          side: BorderSide(color: colors.borderColor),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                        ),
+                                      ),
+                                      ElevatedButton.icon(
+                                        onPressed: () async {
+                                          final uri = Uri.parse(
+                                            'https://www.youtube.com/results?search_query=${Uri.encodeComponent(searchQuery)}',
+                                          );
+                                          await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                        },
+                                        icon: const Icon(Icons.open_in_new_rounded, size: 14, color: Colors.white),
+                                        label: Text(context.t('explore.searchOnYouTube', null, 'Search on YouTube')),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: colors.accentPrimary,
+                                          foregroundColor: Colors.white,
+                                          elevation: 0,
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  child: Center(
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-                                      child: searchQuery.isNotEmpty
-                                          ? VocaEmptyState(
-                                              icon: Icons.search_off_rounded,
-                                              variant: EmptyStateIconVariant.neutral,
-                                              title: context.t('playlist.empty.searchTitle', null, 'No matching videos found'),
-                                              description: context.t('playlist.empty.searchHint', null, 'Try different keywords or paste a YouTube link.'),
-                                              actions: Wrap(
-                                                spacing: 8,
-                                                runSpacing: 8,
-                                                alignment: WrapAlignment.center,
-                                                children: [
-                                                  OutlinedButton.icon(
-                                                    onPressed: _clearSearch,
-                                                    icon: Icon(Icons.close_rounded, size: 14, color: colors.textSecondary),
-                                                    label: Text(context.t('common.clear', null, 'Clear search')),
-                                                    style: OutlinedButton.styleFrom(
-                                                      foregroundColor: colors.textPrimary,
-                                                      side: BorderSide(color: colors.borderColor),
-                                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-                                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                                    ),
-                                                  ),
-                                                  ElevatedButton.icon(
-                                                    onPressed: () async {
-                                                      final uri = Uri.parse(
-                                                        'https://www.youtube.com/results?search_query=${Uri.encodeComponent(searchQuery)}',
-                                                      );
-                                                      await launchUrl(uri, mode: LaunchMode.externalApplication);
-                                                    },
-                                                    icon: const Icon(Icons.open_in_new_rounded, size: 14, color: Colors.white),
-                                                    label: Text(context.t('explore.searchOnYouTube', null, 'Search on YouTube')),
-                                                    style: ElevatedButton.styleFrom(
-                                                      backgroundColor: colors.accentPrimary,
-                                                      foregroundColor: Colors.white,
-                                                      elevation: 0,
-                                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-                                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            )
-                                          : VocaEmptyState(
-                                              icon: Icons.filter_alt_off_rounded,
-                                              variant: EmptyStateIconVariant.neutral,
-                                              title: context.t('explore.noVideos', null, 'No videos found'),
-                                              description: context.t(
-                                                'explore.noFilterVideosDesc',
-                                                null,
-                                                'No videos found with the selected filters.',
-                                              ),
-                                              actions: OutlinedButton(
-                                                onPressed: _resetFilters,
-                                                style: OutlinedButton.styleFrom(
-                                                  foregroundColor: colors.textPrimary,
-                                                  side: BorderSide(color: colors.borderColor),
-                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-                                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                                ),
-                                                child: Text(context.t('explore.resetFilters', null, 'Reset All Filters')),
-                                              ),
-                                            ),
+                                )
+                              : VocaEmptyState(
+                                  icon: Icons.filter_alt_off_rounded,
+                                  variant: EmptyStateIconVariant.neutral,
+                                  title: context.t('explore.noVideos', null, 'No videos found'),
+                                  description: context.t(
+                                    'explore.noFilterVideosDesc',
+                                    null,
+                                    'No videos found with the selected filters.',
+                                  ),
+                                  actions: OutlinedButton(
+                                    onPressed: _resetFilters,
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: colors.textPrimary,
+                                      side: BorderSide(color: colors.borderColor),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                     ),
+                                    child: Text(context.t('explore.resetFilters', null, 'Reset All Filters')),
                                   ),
                                 ),
-                              );
-                            },
-                          ),
-                        );
-                      }
-
-                      return ExploreResponsiveFeed(
-                        itemCount: videos.length,
-                        isLoadingMore: isLoadingMore,
-                        bottomPadding: feedBottomPadding,
-                        onRefresh: () => _loadFeed(refresh: true),
-                        itemBuilder: (context, index) {
-                          final item = videos[index];
-                          final videoId = item['videoId'] as String? ?? '';
-                          final title = item['title'] as String? ?? 'YouTube Video';
-                          final channel = item['channel'] as String? ?? 'YouTube Creator';
-                          final levelTag = VideoFeedCard.resolveVideoLevel(item, currentLang);
-                          final thumbnail = item['thumbnail'] as String?;
-
-                          return VideoFeedCard(
-                            video: item,
-                            currentLang: currentLang,
-                            onTap: () => _navigateToPlayer(
-                              videoId,
-                              title,
-                              channel: channel,
-                              level: levelTag,
-                              thumbnail: thumbnail,
-                            ),
-                          );
-                        },
+                        ),
                       );
-                    },
-                  ),
-                ),
+                    } else {
+                      feedContent = KeyedSubtree(
+                        key: const ValueKey('videos_list'),
+                        child: ExploreResponsiveFeed(
+                          itemCount: videos.length,
+                          isLoadingMore: isLoadingMore,
+                          bottomPadding: feedBottomPadding,
+                          onRefresh: () => _loadFeed(refresh: true),
+                          itemBuilder: (context, index) {
+                            final item = videos[index];
+                            final videoId = item['videoId'] as String? ?? '';
+                            final title = item['title'] as String? ?? 'YouTube Video';
+                            final channel = item['channel'] as String? ?? 'YouTube Creator';
+                            final levelTag = VideoFeedCard.resolveVideoLevel(item, currentLang);
+                            final thumbnail = item['thumbnail'] as String?;
+
+                            return VideoFeedCard(
+                              video: item,
+                              currentLang: currentLang,
+                              onTap: () => _navigateToPlayer(
+                                videoId,
+                                title,
+                                channel: channel,
+                                level: levelTag,
+                                thumbnail: thumbnail,
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    }
+                  }
+
+                  // Smooth crossfade transition between loading, error, empty, and feed states
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 220),
+                    child: feedContent,
+                  );
+                }),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-      );
-    });
+      ),
+    );
   }
 }

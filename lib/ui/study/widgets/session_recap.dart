@@ -27,6 +27,18 @@ class SessionRecap extends StatelessWidget {
         : 100;
     final isTablet = MediaQuery.of(context).size.width >= VocaTokens.tabletBreakpoint;
 
+    // Rank tier based on accuracy
+    final isGold = accuracy >= 90;
+    final isSilver = accuracy >= 75 && accuracy < 90;
+    final crestColor = isGold
+        ? colors.accentTertiary
+        : (isSilver ? const Color(0xFF94A3B8) : const Color(0xFFD97706));
+    final rankTitle = isGold
+        ? context.t('gamification.gold', null, 'Gold Champion')
+        : (isSilver
+            ? context.t('gamification.silver', null, 'Silver Knight')
+            : context.t('gamification.bronze', null, 'Bronze Warrior'));
+
     return Center(
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: isTablet ? 600 : double.infinity),
@@ -35,30 +47,50 @@ class SessionRecap extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Trophy Badge
+              // RPG Shield Crest
               Container(
-                width: 88,
-                height: 88,
+                width: 90,
+                height: 90,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: colors.colorGrammar.withValues(alpha: 0.14),
-                  border: Border.all(color: colors.colorGrammar, width: 2),
+                  color: crestColor.withValues(alpha: 0.15),
+                  border: Border.all(color: crestColor, width: 2.2),
                   boxShadow: [
                     BoxShadow(
-                      color: colors.colorGrammar.withValues(alpha: 0.25),
+                      color: crestColor.withValues(alpha: 0.3),
                       blurRadius: 20,
                       spreadRadius: 2,
                     ),
                   ],
                 ),
                 child: Icon(
-                  Icons.emoji_events_rounded,
+                  isGold ? Icons.emoji_events_rounded : Icons.shield_rounded,
                   size: 48,
-                  color: colors.accentTertiary,
+                  color: crestColor,
                 ),
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
+
+              // Rank Badge Pill
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: crestColor.withValues(alpha: 0.12),
+                  borderRadius: VocaRadius.roundedPill,
+                  border: Border.all(color: crestColor.withValues(alpha: 0.35)),
+                ),
+                child: Text(
+                  rankTitle,
+                  style: TextStyle(
+                    color: crestColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 10),
 
               Text(
                 context.t('flashcards.sessionComplete', null, 'Session Complete!'),
@@ -71,14 +103,14 @@ class SessionRecap extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                context.t('flashcards.sessionCompleteDesc', null, 'You finished all spaced repetition reviews for this deck.'),
+                context.t('flashcards.sessionCompleteDesc', null, 'All spaced repetition reviews for this queue are finished.'),
                 textAlign: TextAlign.center,
-                style: TextStyle(color: colors.textSecondary, fontSize: 13.5),
+                style: TextStyle(color: colors.textSecondary, fontSize: 13),
               ),
 
               const SizedBox(height: 20),
 
-              // Streak & Diamond Rewards Row
+              // Streak & Diamonds Row
               Row(
                 children: [
                   Expanded(
@@ -97,7 +129,7 @@ class SessionRecap extends StatelessWidget {
                             '$streak ${context.t('gamification.dayStreak', null, 'Day Streak')}',
                             style: TextStyle(
                               color: colors.textPrimary,
-                              fontSize: 14,
+                              fontSize: 13.5,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -127,13 +159,13 @@ class SessionRecap extends StatelessWidget {
                             '+1 ${context.t('gamification.diamond', null, 'Diamond')}',
                             style: TextStyle(
                               color: colors.textPrimary,
-                              fontSize: 14,
+                              fontSize: 13.5,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           const SizedBox(height: 1),
                           Text(
-                            context.t('flashcards.dailyBonus', null, 'Daily study bonus'),
+                            context.t('flashcards.dailyBonus', null, 'Daily bonus'),
                             style: TextStyle(color: colors.textMuted, fontSize: 11),
                           ),
                         ],
@@ -158,7 +190,7 @@ class SessionRecap extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      context.t('flashcards.sessionRecap', null, 'SESSION RECAP'),
+                      context.t('flashcards.sessionRecap', null, 'PERFORMANCE BREAKDOWN'),
                       style: TextStyle(
                         color: colors.textSecondary,
                         fontSize: 11,
@@ -188,9 +220,9 @@ class SessionRecap extends StatelessWidget {
                           colors,
                         ),
                         _buildRecapItem(
-                          context.t('flashcards.again', null, 'Again / Hard'),
+                          context.t('flashcards.again', null, 'To Review'),
                           '${stats.againOrHardCount}',
-                          colors.warning,
+                          stats.againOrHardCount > 0 ? colors.error : colors.textMuted,
                           colors,
                         ),
                       ],
@@ -205,19 +237,19 @@ class SessionRecap extends StatelessWidget {
               if (onReviewAgain != null && stats.againOrHardCount > 0) ...[
                 SizedBox(
                   width: double.infinity,
-                  height: 46,
+                  height: 48,
                   child: OutlinedButton.icon(
                     onPressed: onReviewAgain,
                     icon: const Icon(Icons.refresh_rounded, size: 18),
                     label: Text(context.t(
                       'flashcards.reviewAgainCount',
                       {'count': stats.againOrHardCount.toString()},
-                      'Review Again (${stats.againOrHardCount})',
+                      'Review Missed Cards (${stats.againOrHardCount})',
                     )),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: colors.accentPrimary,
-                      side: BorderSide(color: colors.accentPrimary),
-                      shape: RoundedRectangleBorder(borderRadius: VocaRadius.roundedMd),
+                      side: BorderSide(color: colors.accentPrimary, width: 1.4),
+                      shape: RoundedRectangleBorder(borderRadius: VocaRadius.roundedPill),
                     ),
                   ),
                 ),
@@ -226,18 +258,18 @@ class SessionRecap extends StatelessWidget {
 
               SizedBox(
                 width: double.infinity,
-                height: 46,
+                height: 50,
                 child: FilledButton.icon(
                   onPressed: onFinish,
-                  icon: const Icon(Icons.home_rounded, size: 18),
+                  icon: const Icon(Icons.check_rounded, size: 20),
                   label: Text(
-                    context.t('flashcards.backToHome', null, 'Back to Home'),
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    context.t('study.done', null, 'Done'),
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                   ),
                   style: FilledButton.styleFrom(
                     backgroundColor: colors.accentPrimary,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: VocaRadius.roundedMd),
+                    shape: RoundedRectangleBorder(borderRadius: VocaRadius.roundedPill),
                   ),
                 ),
               ),

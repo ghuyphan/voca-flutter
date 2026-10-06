@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:signals_flutter/signals_flutter.dart';
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import '../../config/voca_theme.dart';
 import '../../models/voca_models.dart';
 import '../../services/i18n_service.dart';
@@ -156,18 +156,29 @@ class _SubtitlePanelState extends State<SubtitlePanel>
       ),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       child: Center(
-        child: activeCue != null
-            ? _buildActiveCueBody(
-                cue: activeCue,
-                grammarMatches: grammarMatches,
-                showFurigana: showFurigana,
-                showTranslation: showTranslation,
-                subtitleSize: subtitleSize,
-                isTranslating: isTranslating,
-                colors: colors,
-                isDark: isDark,
-              )
-            : _buildWaitingOrLoadingState(colors),
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 180),
+          switchInCurve: Curves.easeOut,
+          switchOutCurve: Curves.easeIn,
+          child: activeCue != null
+              ? KeyedSubtree(
+                  key: ValueKey(activeCue.start),
+                  child: _buildActiveCueBody(
+                    cue: activeCue,
+                    grammarMatches: grammarMatches,
+                    showFurigana: showFurigana,
+                    showTranslation: showTranslation,
+                    subtitleSize: subtitleSize,
+                    isTranslating: isTranslating,
+                    colors: colors,
+                    isDark: isDark,
+                  ),
+                )
+              : KeyedSubtree(
+                  key: const ValueKey('waiting_state'),
+                  child: _buildWaitingOrLoadingState(colors),
+                ),
+        ),
       ),
     );
   }
@@ -284,23 +295,35 @@ class _SubtitlePanelState extends State<SubtitlePanel>
               ),
             ),
 
-          // 2. Secondary Line: Dual Subtitle Translation (Pic 3: 14.5px, regular font, centered)
-          if (showTranslation) ...[
-            const SizedBox(height: 6),
-            if (isTranslating && (cue.translation == null || cue.translation!.isEmpty))
-              _buildAnimatedWaitingDots(colors.textMuted)
-            else if (cue.translation != null && cue.translation!.isNotEmpty)
-              Text(
-                cue.translation!,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: colors.textSecondary,
-                  fontSize: translationFontSize,
-                  fontWeight: FontWeight.w400,
-                  height: 1.35,
-                ),
-              ),
-          ],
+          // 2. Secondary Line: Dual Subtitle Translation with subtle animation
+          AnimatedSize(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            child: showTranslation
+                ? Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: AnimatedOpacity(
+                      duration: const Duration(milliseconds: 180),
+                      opacity: showTranslation ? 1.0 : 0.0,
+                      curve: Curves.easeOut,
+                      child: (isTranslating && (cue.translation == null || cue.translation!.isEmpty))
+                          ? _buildAnimatedWaitingDots(colors.textMuted)
+                          : (cue.translation != null && cue.translation!.isNotEmpty)
+                              ? Text(
+                                  cue.translation!,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: colors.textSecondary,
+                                    fontSize: translationFontSize,
+                                    fontWeight: FontWeight.w400,
+                                    height: 1.35,
+                                  ),
+                                )
+                              : const SizedBox.shrink(),
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
         ],
       ),
     );
@@ -868,7 +891,9 @@ class _SubtitlePanelState extends State<SubtitlePanel>
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(999),
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
           height: 38,
           padding: const EdgeInsets.symmetric(horizontal: 6),
           decoration: BoxDecoration(
@@ -914,7 +939,8 @@ class _SubtitlePanelState extends State<SubtitlePanel>
               ],
               if (badgeText != null) ...[
                 const SizedBox(width: 4),
-                Container(
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
                   padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                   decoration: BoxDecoration(
                     color: isActive
@@ -952,31 +978,27 @@ class _SubtitlePanelState extends State<SubtitlePanel>
     final colors = context.vocaColors;
     final isDark = context.isDarkMode;
 
-    return Watch((context) {
-      final activeCue = widget.controller.activeCue.value;
-      final allCues = widget.controller.cues.value;
-      final grammarMatches = widget.controller.activeGrammarMatches.value;
-      final showFurigana = widget.controller.showFurigana.value;
-      final showTranslation = widget.controller.showTranslation.value;
-      final subtitleSize = widget.controller.subtitleSize.value;
-      final isDualTranslating = widget.controller.isDualSubLoading.value;
-      final isLooping = widget.controller.isLoopingCue.value;
-      final isQuizActive = widget.controller.isQuizActive.value;
-      final savedCount = widget.controller.savedWordCount.value;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(14, 2, 14, 10),
+      decoration: BoxDecoration(
+        color: colors.bgCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.borderColor, width: 1.0),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        mainAxisSize: widget.isCompact ? MainAxisSize.min : MainAxisSize.max,
+        children: [
+          // 1. Current Subtitle (Scoped Watch for active cue and linguistic settings)
+          Watch((context) {
+            final activeCue = widget.controller.activeCue.value;
+            final grammarMatches = widget.controller.activeGrammarMatches.value;
+            final showFurigana = widget.controller.showFurigana.value;
+            final showTranslation = widget.controller.showTranslation.value;
+            final subtitleSize = widget.controller.subtitleSize.value;
+            final isDualTranslating = widget.controller.isDualSubLoading.value;
 
-      return Container(
-        margin: const EdgeInsets.fromLTRB(14, 2, 14, 10),
-        decoration: BoxDecoration(
-          color: colors.bgCard,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: colors.borderColor, width: 1.0),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          mainAxisSize: widget.isCompact ? MainAxisSize.min : MainAxisSize.max,
-          children: [
-            // 1. Current Subtitle (Top section)
-            _buildCurrentSubtitle(
+            return _buildCurrentSubtitle(
               activeCue: activeCue,
               grammarMatches: grammarMatches,
               showFurigana: showFurigana,
@@ -985,11 +1007,19 @@ class _SubtitlePanelState extends State<SubtitlePanel>
               isTranslating: isDualTranslating,
               colors: colors,
               isDark: isDark,
-            ),
+            );
+          }),
 
-            // 2. Subtitle Timeline (3 lines in compact mode, expanded in non-compact mode)
-            if (widget.isCompact)
-              SizedBox(
+          // 2. Subtitle Timeline (Scoped Watch for timeline cues & active cue highlight)
+          Watch((context) {
+            final activeCue = widget.controller.activeCue.value;
+            final allCues = widget.controller.cues.value;
+            final showTranslation = widget.controller.showTranslation.value;
+
+            if (widget.isCompact) {
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
                 height: showTranslation ? 144.0 : 108.0,
                 child: _buildSubtitleList(
                   cues: allCues,
@@ -999,29 +1029,36 @@ class _SubtitlePanelState extends State<SubtitlePanel>
                   isDark: isDark,
                   is3LineCompact: true,
                 ),
-              )
-            else
-              Expanded(
-                child: _buildSubtitleList(
-                  cues: allCues,
-                  activeCue: activeCue,
-                  showTranslation: showTranslation,
-                  colors: colors,
-                  isDark: isDark,
-                ),
+              );
+            }
+            return Expanded(
+              child: _buildSubtitleList(
+                cues: allCues,
+                activeCue: activeCue,
+                showTranslation: showTranslation,
+                colors: colors,
+                isDark: isDark,
               ),
+            );
+          }),
 
-            // 3. Subtitle Controls Toolbar (Bottom section)
-            _buildSubtitleControlsToolbar(
+          // 3. Subtitle Controls Toolbar (Scoped Watch for loop, quiz, saved count)
+          Watch((context) {
+            final isLooping = widget.controller.isLoopingCue.value;
+            final isQuizActive = widget.controller.isQuizActive.value;
+            final savedCount = widget.controller.savedWordCount.value;
+            final hasCues = widget.controller.cues.value.isNotEmpty;
+
+            return _buildSubtitleControlsToolbar(
               isLooping: isLooping,
               isQuizActive: isQuizActive,
               savedCount: savedCount,
-              hasCues: allCues.isNotEmpty,
+              hasCues: hasCues,
               colors: colors,
-            ),
-          ],
-        ),
-      );
-    });
+            );
+          }),
+        ],
+      ),
+    );
   }
 }

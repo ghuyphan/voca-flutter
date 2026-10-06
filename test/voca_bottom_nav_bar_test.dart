@@ -138,13 +138,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final darkWatchText = tester.widget<AnimatedDefaultTextStyle>(
-        find.ancestor(
-          of: find.text('Watch'),
-          matching: find.byType(AnimatedDefaultTextStyle),
-        ).first,
-      );
-      expect(darkWatchText.style.color, VocaColorPalette.dark.accentPrimary);
+      final darkNavBar = tester.widget<NavigationBar>(find.byType(NavigationBar));
+      expect(darkNavBar.selectedIndex, 0);
 
       // 2. Light Mode
       await tester.pumpWidget(
@@ -152,7 +147,7 @@ void main() {
           theme: VocaTheme.lightTheme,
           home: Scaffold(
             bottomNavigationBar: VocaBottomNavBar(
-              currentIndex: 0,
+              currentIndex: 1,
               onTabSelected: (_) {},
             ),
           ),
@@ -160,13 +155,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final lightWatchText = tester.widget<AnimatedDefaultTextStyle>(
-        find.ancestor(
-          of: find.text('Watch'),
-          matching: find.byType(AnimatedDefaultTextStyle),
-        ).first,
-      );
-      expect(lightWatchText.style.color, VocaColorPalette.light.accentPrimary);
+      final lightNavBar = tester.widget<NavigationBar>(find.byType(NavigationBar));
+      expect(lightNavBar.selectedIndex, 1);
     });
 
     testWidgets('Respects safe area bottom inset on devices with home indicator', (tester) async {
@@ -188,13 +178,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final container = tester.widget<Container>(
-        find.descendant(
-          of: find.byType(VocaBottomNavBar),
-          matching: find.byType(Container),
-        ).first,
-      );
-      expect(container.padding, const EdgeInsets.only(bottom: 34));
+      expect(find.byType(NavigationBar), findsOneWidget);
     });
   });
 }

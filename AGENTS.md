@@ -24,7 +24,7 @@ The original web application is located at `../lingua-tube` (`/Users/huyphan/Dow
 - **Framework**: Flutter 3.47.x / Dart 3.13.x
 - **State Management**: `signals_flutter` (directly matching the Angular 19 Signal-first reactivity model)
 - **Networking**: `dio` (with mandatory anti-bot `User-Agent` and tokenization payload shaping)
-- **Video Playback**: `youtube_player_flutter: ^10.0.1` (backed by `youtube_player_iframe: ^6.0.2` and `webview_flutter`)
+- **Video Playback**: `youtube_player_iframe: ^6.0.2` (headless IFrame player engine backed by `webview_flutter`)
 - **Backend & Cloud Persistence**: Supabase (`https://edbkvzviqeulwzcnrrlb.supabase.co`) for Auth, Flashcards, Streaks, Playlists, and Watch History
 - **Offline Storage**: `hive_ce` / `hive_ce_flutter` for local caching and deterministic ID resolution
 

@@ -26,7 +26,7 @@ dependencies:
   hive_ce: ^2.10.0
   hive_ce_flutter: ^2.2.0
 
-  # YouTube Playback
+  # YouTube Video Playback (Headless Engine)
   youtube_player_flutter: ^10.0.1
   youtube_player_iframe: ^6.0.2
 

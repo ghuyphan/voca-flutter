@@ -3,10 +3,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../config/voca_theme.dart';
+import '../../../services/i18n_service.dart';
 import 'pressable_scale.dart';
 
-/// Thumb-zone primary CTA with optional secondary text link below.
-/// Content above fades into the bar instead of a hard divider.
+/// Thumb-zone primary CTA pill button with optional legal consent above
+/// and optional secondary text link below.
 class OnboardingBottomBar extends StatelessWidget {
   final String label;
   final IconData? icon;
@@ -14,6 +15,9 @@ class OnboardingBottomBar extends StatelessWidget {
   final bool isLoading;
   final String? secondaryLabel;
   final VoidCallback? onSecondary;
+  final bool showConsent;
+  final VoidCallback? onTermsTap;
+  final VoidCallback? onPrivacyTap;
 
   const OnboardingBottomBar({
     super.key,
@@ -23,6 +27,9 @@ class OnboardingBottomBar extends StatelessWidget {
     this.isLoading = false,
     this.secondaryLabel,
     this.onSecondary,
+    this.showConsent = false,
+    this.onTermsTap,
+    this.onPrivacyTap,
   });
 
   @override
@@ -39,10 +46,68 @@ class OnboardingBottomBar extends StatelessWidget {
           colors: [colors.bgPrimary.withValues(alpha: 0), colors.bgPrimary],
         ),
       ),
-      padding: EdgeInsets.fromLTRB(20, 16, 20, bottomInset > 0 ? bottomInset : 16),
+      padding: EdgeInsets.fromLTRB(20, 12, 20, bottomInset > 0 ? bottomInset : 16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Optional Legal Consent Line (Above button, matching reference screenshot)
+          if (showConsent) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: Text.rich(
+                TextSpan(
+                  text: context.t('auth.landingPolicyConsentPrefix', null, 'By continuing you agree to our\n'),
+                  style: TextStyle(
+                    color: colors.textSecondary.withValues(alpha: 0.85),
+                    fontSize: 12.5,
+                    height: 1.35,
+                  ),
+                  children: [
+                    WidgetSpan(
+                      alignment: PlaceholderAlignment.baseline,
+                      baseline: TextBaseline.alphabetic,
+                      child: GestureDetector(
+                        onTap: onTermsTap,
+                        child: Text(
+                          context.t('settings.terms', null, 'terms of service'),
+                          style: TextStyle(
+                            color: colors.accentPrimary,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    TextSpan(
+                      text: context.t('auth.landingPolicyConsentJoiner', null, ' and '),
+                      style: TextStyle(
+                        color: colors.textSecondary.withValues(alpha: 0.85),
+                        fontSize: 12.5,
+                      ),
+                    ),
+                    WidgetSpan(
+                      alignment: PlaceholderAlignment.baseline,
+                      baseline: TextBaseline.alphabetic,
+                      child: GestureDetector(
+                        onTap: onPrivacyTap,
+                        child: Text(
+                          context.t('settings.privacy', null, 'privacy policy'),
+                          style: TextStyle(
+                            color: colors.accentPrimary,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+
+          // Primary Full-Width Pill CTA Button
           Semantics(
             button: true,
             label: label,
@@ -55,10 +120,10 @@ class OnboardingBottomBar extends StatelessWidget {
                       onPressed();
                     },
               child: Container(
-                height: 54,
+                height: 52,
                 decoration: BoxDecoration(
                   color: colors.accentPrimary,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(999),
                   boxShadow: [
                     BoxShadow(
                       color: colors.accentPrimary
@@ -84,6 +149,7 @@ class OnboardingBottomBar extends StatelessWidget {
                       : Row(
                           key: ValueKey(label),
                           mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Flexible(
                               child: Text(
@@ -108,6 +174,8 @@ class OnboardingBottomBar extends StatelessWidget {
               ),
             ),
           ),
+
+          // Optional Secondary Action Link Below
           AnimatedSize(
             duration: const Duration(milliseconds: 220),
             curve: Curves.easeOut,
