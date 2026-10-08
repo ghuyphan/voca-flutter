@@ -34,21 +34,16 @@ class StudySessionController {
 
   // Gamification & Combos
   final currentCombo = signal<int>(0);
-  final maxCombo = signal<int>(0);
 
   // Stats & History
   final sessionStats = signal<SessionStats>(const SessionStats());
   final undoStack = signal<List<ReviewEvent>>([]);
-  final lastRatingFeedback = signal<({SRSReviewRating rating, String label, String newLevel, String interval})?>(null);
-  Timer? _feedbackTimer;
 
   // Deck metrics for overview
   final dueCount = signal<int>(0);
   final newCount = signal<int>(0);
   final learningCount = signal<int>(0);
   final knownCount = signal<int>(0);
-  final wordsCount = signal<int>(0);
-  final grammarCount = signal<int>(0);
 
   bool _rewardClaimed = false;
 
@@ -81,9 +76,6 @@ class StudySessionController {
 
   final initialQueueSize = signal<int>(0);
   final Set<String> _reviewedCardIds = {};
-
-  int get remainingInSession =>
-      (sessionCards.value.length - currentIndex.value).clamp(0, sessionCards.value.length);
 
   bool get isFinished =>
       isSessionActive.value &&
@@ -149,8 +141,6 @@ class StudySessionController {
 
   List<Flashcard> get filteredCandidates => _computedFilteredCandidates.value;
 
-  int get availableCandidateCount => _computedFilteredCandidates.value.length;
-
   late final Computed<int> _computedSessionCardsCount = computed(() {
     final candidates = _computedFilteredCandidates.value;
     final size = sessionSize.value;
@@ -205,8 +195,6 @@ class StudySessionController {
     int fresh = 0;
     int learning = 0;
     int known = 0;
-    int words = 0;
-    int grammar = 0;
 
     for (final card in allCards.value) {
       final cl = card.language.trim().toLowerCase();
@@ -215,12 +203,6 @@ class StudySessionController {
       }
 
       final isGrammar = isGrammarCard(card);
-      if (isGrammar) {
-        grammar++;
-      } else {
-        words++;
-      }
-
       if (deck == 'words' && isGrammar) continue;
       if (deck == 'grammar' && !isGrammar) continue;
 
@@ -244,8 +226,6 @@ class StudySessionController {
     newCount.value = fresh;
     learningCount.value = learning;
     knownCount.value = known;
-    wordsCount.value = words;
-    grammarCount.value = grammar;
   }
 
   Future<void> loadDeck({bool autoStart = true, bool practiceAnyway = false}) async {
@@ -269,7 +249,6 @@ class StudySessionController {
       undoStack.value = [];
       sessionStats.value = const SessionStats();
       currentCombo.value = 0;
-      maxCombo.value = 0;
       _rewardClaimed = false;
       resetCardState();
 
@@ -349,7 +328,6 @@ class StudySessionController {
     undoStack.value = [];
     sessionStats.value = const SessionStats();
     currentCombo.value = 0;
-    maxCombo.value = 0;
     _rewardClaimed = false;
     isSessionActive.value = true;
     resetCardState();
@@ -370,7 +348,6 @@ class StudySessionController {
       undoStack.value = [];
       sessionStats.value = const SessionStats();
       currentCombo.value = 0;
-      maxCombo.value = 0;
       _rewardClaimed = false;
       isSessionActive.value = true;
       resetCardState();
@@ -388,14 +365,8 @@ class StudySessionController {
     _recalculateMetrics();
   }
 
-  void exitSession() => exitToOverview();
-
   void toggleReveal() {
     isCardRevealed.value = !isCardRevealed.value;
-  }
-
-  void revealCard() {
-    isCardRevealed.value = true;
   }
 
   void toggleReadingPeek() {
@@ -430,6 +401,10 @@ class StudySessionController {
       reviewCount: card.reviewCount + 1,
     );
 
+    final isLapse = (card.level == 'known' || card.level == 'mastered') &&
+        (updatedCard.level == 'learning');
+    final isNewUnique = _reviewedCardIds.add(card.id);
+
     // Save previous state for instant Undo
     final event = ReviewEvent(
       previousCard: card,
@@ -440,14 +415,12 @@ class StudySessionController {
       wasRelearning: rating == SRSReviewRating.again,
       previousStats: sessionStats.value,
       previousCombo: currentCombo.value,
+      isNewUniqueCard: isNewUnique,
     );
 
     final newUndo = List<ReviewEvent>.from(undoStack.value)..add(event);
     undoStack.value = newUndo;
 
-    final isLapse = (card.level == 'known' || card.level == 'mastered') &&
-        (updatedCard.level == 'learning');
-    final isNewUnique = _reviewedCardIds.add(card.id);
     sessionStats.value = sessionStats.value.copyWithReview(
       rating,
       isLapse,
@@ -459,22 +432,7 @@ class StudySessionController {
       currentCombo.value = 0;
     } else {
       currentCombo.value += 1;
-      if (currentCombo.value > maxCombo.value) {
-        maxCombo.value = currentCombo.value;
-      }
     }
-
-    // Provide transient visual feedback pill
-    _feedbackTimer?.cancel();
-    lastRatingFeedback.value = (
-      rating: rating,
-      label: rating.name.toUpperCase(),
-      newLevel: updatedCard.level.toUpperCase(),
-      interval: SpacedRepetitionService.formatInterval(result.interval, isAgain: rating == SRSReviewRating.again),
-    );
-    _feedbackTimer = Timer(const Duration(milliseconds: 1400), () {
-      lastRatingFeedback.value = null;
-    });
 
     // Relearn queue: if Again, reinsert 3 positions ahead
     final queue = List<Flashcard>.from(sessionCards.value);
@@ -526,6 +484,8 @@ class StudySessionController {
       reviewCount: card.reviewCount + 1,
     );
 
+    final isNewUnique = _reviewedCardIds.add(card.id);
+
     final event = ReviewEvent(
       previousCard: card,
       updatedCard: updatedCard,
@@ -535,38 +495,19 @@ class StudySessionController {
       wasRelearning: false,
       previousStats: sessionStats.value,
       previousCombo: currentCombo.value,
+      isNewUniqueCard: isNewUnique,
     );
 
-    undoStack.value = List<ReviewEvent>.from(undoStack.value)..add(event);
-    final isNewUnique = _reviewedCardIds.add(card.id);
+    final newUndo = List<ReviewEvent>.from(undoStack.value)..add(event);
+    undoStack.value = newUndo;
+
     sessionStats.value = sessionStats.value.copyWithReview(
       SRSReviewRating.easy,
       false,
       isNewUniqueCard: isNewUnique,
     );
 
-    _feedbackTimer?.cancel();
-    lastRatingFeedback.value = (
-      rating: SRSReviewRating.easy,
-      label: 'KNOWN',
-      newLevel: 'KNOWN',
-      interval: '${seed.interval}d',
-    );
-    _feedbackTimer = Timer(const Duration(milliseconds: 1400), () {
-      lastRatingFeedback.value = null;
-    });
-
-    knownCount.value += 1;
-    if (card.level == 'learning' && learningCount.value > 0) {
-      learningCount.value -= 1;
-    } else if (card.level == 'new' && newCount.value > 0) {
-      newCount.value -= 1;
-    }
-
     currentCombo.value += 1;
-    if (currentCombo.value > maxCombo.value) {
-      maxCombo.value = currentCombo.value;
-    }
 
     // Optimistic persistence to Supabase and in-place allCards sync
     final allList = List<Flashcard>.from(allCards.value);
@@ -585,6 +526,7 @@ class StudySessionController {
       unawaited(AppState.instance.gamificationService.onCardReviewed(allCards.value.length));
     } catch (_) {}
 
+    // Advance queue
     currentIndex.value += 1;
     resetCardState();
 
@@ -608,6 +550,10 @@ class StudySessionController {
       if (reinsertedIndex < queue.length && queue[reinsertedIndex].id == lastEvent.updatedCard.id) {
         queue.removeAt(reinsertedIndex);
       }
+    }
+
+    if (lastEvent.isNewUniqueCard) {
+      _reviewedCardIds.remove(lastEvent.previousCard.id);
     }
 
     sessionCards.value = queue;
@@ -653,7 +599,5 @@ class StudySessionController {
     } catch (_) {}
   }
 
-  void dispose() {
-    _feedbackTimer?.cancel();
-  }
+  void dispose() {}
 }

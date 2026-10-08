@@ -13,8 +13,7 @@ import '../../gamification/widgets/rpg_shield_crest.dart';
 /// balanced 2x2 performance metrics grid, and rewarding XP/streak summaries.
 class SessionRecap extends StatefulWidget {
   final SessionStats stats;
-  final VoidCallback? onDone;
-  final VoidCallback onFinish;
+  final VoidCallback onDone;
   final VoidCallback? onKeepGoing;
   final VoidCallback? onReviewAgain;
   final VoidCallback? onClose;
@@ -22,8 +21,7 @@ class SessionRecap extends StatefulWidget {
   const SessionRecap({
     super.key,
     required this.stats,
-    this.onDone,
-    required this.onFinish,
+    required this.onDone,
     this.onKeepGoing,
     this.onReviewAgain,
     this.onClose,
@@ -74,12 +72,12 @@ class _SessionRecapState extends State<SessionRecap>
 
   void _handleDone() {
     HapticFeedback.mediumImpact();
-    (widget.onDone ?? widget.onFinish)();
+    widget.onDone();
   }
 
   void _handleClose() {
     HapticFeedback.lightImpact();
-    (widget.onClose ?? widget.onDone ?? widget.onFinish)();
+    (widget.onClose ?? widget.onDone)();
   }
 
   @override
@@ -521,23 +519,29 @@ class _SessionRecapState extends State<SessionRecap>
               ),
             ),
 
-            // Top-right close button (1:1 with web's complete-close-btn)
+            // Top-right close button (min 48x48 hit target)
             Positioned(
-              top: 8,
-              right: 8,
-              child: Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: colors.bgSurface,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: colors.borderColor),
-                ),
-                child: IconButton(
-                  icon: Icon(Icons.close_rounded, size: 18, color: colors.textMuted),
-                  padding: EdgeInsets.zero,
-                  tooltip: context.t('common.close', null, 'Close'),
-                  onPressed: _handleClose,
+              top: 4,
+              right: 4,
+              child: SizedBox(
+                width: 48,
+                height: 48,
+                child: Center(
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: colors.bgSurface,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: colors.borderColor),
+                    ),
+                    child: IconButton(
+                      icon: Icon(Icons.close_rounded, size: 18, color: colors.textMuted),
+                      padding: EdgeInsets.zero,
+                      tooltip: context.t('common.close', null, 'Close'),
+                      onPressed: _handleClose,
+                    ),
+                  ),
                 ),
               ),
             ),

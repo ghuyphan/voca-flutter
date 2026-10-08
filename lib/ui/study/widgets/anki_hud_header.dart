@@ -7,28 +7,16 @@ import '../../../services/i18n_service.dart';
 
 /// Top HUD header featuring minimal dash capsule progress, session counter, and undo action.
 class AnkiHudHeader extends StatelessWidget {
-  final String activeLanguage;
-  final String subDeck;
-  final int newCount;
-  final int learningCount;
-  final int dueCount;
   final int currentIndex;
   final int totalInSession;
-  final int combo;
   final VoidCallback onOpenDeckSettings;
   final VoidCallback? onExit;
   final VoidCallback? onUndo;
 
   const AnkiHudHeader({
     super.key,
-    required this.activeLanguage,
-    required this.subDeck,
-    required this.newCount,
-    required this.learningCount,
-    required this.dueCount,
     required this.currentIndex,
     required this.totalInSession,
-    this.combo = 0,
     required this.onOpenDeckSettings,
     this.onExit,
     this.onUndo,
@@ -51,7 +39,7 @@ class AnkiHudHeader extends StatelessWidget {
               icon: const Icon(Icons.close_rounded, size: 22),
               color: colors.textSecondary,
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
               tooltip: context.t('study.exitToOverview', null, 'Exit to Overview'),
               onPressed: () {
                 HapticFeedback.selectionClick();
@@ -59,7 +47,7 @@ class AnkiHudHeader extends StatelessWidget {
               },
             )
           else
-            const SizedBox(width: 36),
+            const SizedBox(width: 48),
 
           const SizedBox(width: 8),
 
@@ -96,7 +84,7 @@ class AnkiHudHeader extends StatelessWidget {
                   icon: const Icon(Icons.replay_rounded, size: 21),
                   color: colors.textSecondary,
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+                  constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                   tooltip: context.t('study.undo', null, 'Undo'),
                   onPressed: () {
                     HapticFeedback.selectionClick();
@@ -109,7 +97,7 @@ class AnkiHudHeader extends StatelessWidget {
                 icon: const Icon(Icons.tune_rounded, size: 20),
                 color: colors.textSecondary,
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                 tooltip: context.t('study.deckSettings', null, 'Deck Settings'),
                 onPressed: () {
                   HapticFeedback.selectionClick();

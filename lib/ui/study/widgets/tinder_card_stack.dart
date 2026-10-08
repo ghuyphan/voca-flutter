@@ -23,7 +23,6 @@ class TinderStackController {
   void swipeRight() => _state?.programmaticSwipe(SRSReviewRating.good);
   void swipeUp() => _state?.programmaticSwipe(SRSReviewRating.easy);
   void swipeDown() => _state?.programmaticSwipe(SRSReviewRating.hard);
-  void flipCard() => _state?.toggleFlip();
 }
 
 /// High-performance, physics-based multi-card swiper with natural thumb pivot rotation,
@@ -38,9 +37,7 @@ class TinderCardStack extends StatefulWidget {
   final VoidCallback onToggleFlip;
   final VoidCallback onTogglePeekReading;
   final String againInterval;
-  final String hardInterval;
   final String goodInterval;
-  final String easyInterval;
   final TinderStackController? controller;
 
   const TinderCardStack({
@@ -53,10 +50,8 @@ class TinderCardStack extends StatefulWidget {
     required this.onSwipe,
     required this.onToggleFlip,
     required this.onTogglePeekReading,
-    this.againInterval = '<10m',
-    this.hardInterval = '1d',
-    this.goodInterval = '3d',
-    this.easyInterval = '7d',
+    this.againInterval = '<1 min',
+    this.goodInterval = '1 d',
     this.controller,
   });
 
@@ -324,7 +319,6 @@ class _TinderCardStackState extends State<TinderCardStack>
                       child: FlashcardFace(
                         card: widget.cardAfterNext!,
                         isBack: false,
-                        isInteractive: false,
                       ),
                     ),
                   ),
@@ -349,7 +343,6 @@ class _TinderCardStackState extends State<TinderCardStack>
                       child: FlashcardFace(
                         card: widget.nextCard!,
                         isBack: false,
-                        isInteractive: false,
                       ),
                     ),
                   ),
@@ -403,7 +396,6 @@ class _TinderCardStackState extends State<TinderCardStack>
                               ? FlashcardFace(
                                   card: widget.currentCard,
                                   isBack: true,
-                                  isInteractive: true,
                                   againInterval: widget.againInterval,
                                   goodInterval: widget.goodInterval,
                                 )
@@ -412,7 +404,6 @@ class _TinderCardStackState extends State<TinderCardStack>
                                   isBack: false,
                                   isReadingPeeked: widget.isReadingPeeked,
                                   onTogglePeekReading: widget.onTogglePeekReading,
-                                  isInteractive: true,
                                   againInterval: widget.againInterval,
                                   goodInterval: widget.goodInterval,
                                 ),

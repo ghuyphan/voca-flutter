@@ -13,6 +13,7 @@ class ReviewEvent {
   final bool wasRelearning;
   final SessionStats previousStats;
   final int previousCombo;
+  final bool isNewUniqueCard;
 
   const ReviewEvent({
     required this.previousCard,
@@ -23,6 +24,7 @@ class ReviewEvent {
     this.wasRelearning = false,
     this.previousStats = const SessionStats(),
     this.previousCombo = 0,
+    this.isNewUniqueCard = false,
   });
 }
 

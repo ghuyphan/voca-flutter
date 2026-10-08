@@ -14,7 +14,6 @@ class FlashcardFace extends StatelessWidget {
   final bool isBack;
   final bool isReadingPeeked;
   final VoidCallback? onTogglePeekReading;
-  final bool isInteractive;
   final String againInterval;
   final String goodInterval;
 
@@ -24,7 +23,6 @@ class FlashcardFace extends StatelessWidget {
     required this.isBack,
     this.isReadingPeeked = false,
     this.onTogglePeekReading,
-    this.isInteractive = true,
     this.againInterval = '<1 min',
     this.goodInterval = '1 d',
   });
@@ -305,25 +303,31 @@ class FlashcardFace extends StatelessWidget {
               fallbackAudioUrl: card.audio,
             );
           },
-          child: Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: colors.bgSurface,
-              border: Border.all(
-                color: isPlaying ? colors.accentPrimary : colors.borderColorLight,
-                width: 1.2,
-              ),
-            ),
+          child: SizedBox(
+            width: 48,
+            height: 48,
             child: Center(
-              child: isPlaying
-                  ? const _AudioWaveIndicator(color: Color(0xFF2DD4BF))
-                  : const Icon(
-                      Icons.volume_up_rounded,
-                      size: 19,
-                      color: Color(0xFF2DD4BF),
-                    ),
+              child: Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: colors.bgSurface,
+                  border: Border.all(
+                    color: isPlaying ? colors.accentPrimary : colors.borderColorLight,
+                    width: 1.2,
+                  ),
+                ),
+                child: Center(
+                  child: isPlaying
+                      ? _AudioWaveIndicator(color: colors.accentPrimary)
+                      : Icon(
+                          Icons.volume_up_rounded,
+                          size: 19,
+                          color: colors.accentPrimary,
+                        ),
+                ),
+              ),
             ),
           ),
         );

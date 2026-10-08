@@ -13,7 +13,6 @@ import '../../services/i18n_service.dart';
 import '../../state/app_state.dart';
 import '../../state/player_coordinator.dart';
 import '../../state/player_state.dart';
-import '../../utils/cyrb53_hasher.dart';
 import '../sheets/subtitle_tracks_sheet.dart';
 import '../sheets/video_settings_sheet.dart';
 import 'center_controls.dart';
@@ -75,6 +74,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   final _isEnded = signal<bool>(false);
   final _bufferedFraction = signal<double>(0.0);
 
+  StreamSubscription? _videoStateSubscription;
+  StreamSubscription? _controllerSubscription;
+  Timer? _doubleTapSeekDebounceTimer;
+  DateTime _lastLoopSeekTime = DateTime.fromMillisecondsSinceEpoch(0);
+
   Timer? _controlsAutoHideTimer;
   Timer? _seekFeedbackTimer;
   DateTime? _lastLeftTapTime;
@@ -83,6 +87,13 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   double _accumulatedDragDown = 0.0;
   final ScrollController _bodyScrollController = ScrollController();
   final GlobalKey<VideoMoreFeedState> _moreFeedKey = GlobalKey<VideoMoreFeedState>();
+  bool _isTablet = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _isTablet = MediaQuery.sizeOf(context).width >= VocaTokens.tabletBreakpoint;
+  }
 
   @override
   void initState() {
@@ -124,20 +135,25 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       _playerController.loadVideo(widget.videoId);
     }
 
-    _ytController.videoStateStream.listen((state) {
+    _videoStateSubscription = _ytController.videoStateStream.listen((state) {
       if (!mounted) return;
       final time = state.position.inMilliseconds / 1000.0;
       _playerController.currentTime.value = time;
       _bufferedFraction.value = state.loadedFraction;
 
-      // Sentence / Cue Looping
+      // Sentence / Cue Looping with seek cooldown
       if (_playerController.isLoopingCue.value) {
         final loopCue =
             _playerController.loopingCue.value ?? _playerController.activeCue.value;
         if (loopCue != null && loopCue.duration > 0.3) {
           final cueEnd = loopCue.start + loopCue.duration;
           if (time >= cueEnd || time < loopCue.start - 0.5) {
-            _ytController.seekTo(seconds: loopCue.start, allowSeekAhead: true);
+            final now = DateTime.now();
+            if (now.difference(_lastLoopSeekTime).inMilliseconds >= 500) {
+              _lastLoopSeekTime = now;
+              _ytController.seekTo(seconds: loopCue.start, allowSeekAhead: true);
+              _playerController.handleSeek(loopCue.start);
+            }
           }
         }
       }
@@ -146,11 +162,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       final now = DateTime.now();
       if (now.difference(_lastHistorySave).inSeconds >= 30) {
         _lastHistorySave = now;
-        _saveWatchHistory();
+        PlayerCoordinator.instance.saveWatchHistory();
       }
     });
 
-    _ytController.listen((value) {
+    _controllerSubscription = _ytController.listen((value) {
       if (!mounted) return;
 
       // Sync fullscreen state & system orientation
@@ -158,7 +174,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       if (_playerController.isFullscreen.value != isFs) {
         _playerController.isFullscreen.value = isFs;
         if (!isFs) {
-          SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+          if (_isTablet) {
+            SystemChrome.setPreferredOrientations(DeviceOrientation.values);
+          } else {
+            SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+          }
           SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
         } else {
           SystemChrome.setPreferredOrientations([
@@ -173,10 +193,20 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         _playerController.isPlaying.value = true;
         _isBuffering.value = false;
         _isEnded.value = false;
+        if (_playerError != null) {
+          setState(() {
+            _playerError = null;
+          });
+        }
         PlayerCoordinator.disableNativeCaptions(_ytController);
         _scheduleControlsAutoHide();
       } else if (value.playerState == PlayerState.buffering) {
         _isBuffering.value = true;
+        if (_playerError != null) {
+          setState(() {
+            _playerError = null;
+          });
+        }
       } else if (value.playerState == PlayerState.paused) {
         if (_isFullscreenTransitioning) {
           // Pause-guard: spurious pause from WebView relayout during fullscreen orientation transition
@@ -184,21 +214,34 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         } else {
           _playerController.isPlaying.value = false;
           _isBuffering.value = false;
-          _saveWatchHistory();
+          PlayerCoordinator.instance.saveWatchHistory();
         }
       } else if (value.playerState == PlayerState.ended) {
         _playerController.isPlaying.value = false;
         _isBuffering.value = false;
         _isEnded.value = true;
         _areControlsVisible.value = true;
-        _saveWatchHistory();
+        PlayerCoordinator.instance.saveWatchHistory();
       }
 
       final newError = value.error == YoutubeError.none ? null : value.error;
-      if (newError != _playerError) {
-        debugPrint('[VideoPlayerScreen] YouTube Player Error: $newError (${value.error})');
+      final isFatal = newError == YoutubeError.notEmbeddable ||
+          newError == YoutubeError.sameAsNotEmbeddable ||
+          newError == YoutubeError.sameAsNotEmbeddable2 ||
+          newError == YoutubeError.videoNotFound ||
+          newError == YoutubeError.cannotFindVideo ||
+          newError == YoutubeError.html5Error;
+
+      if (newError != null && isFatal) {
+        if (newError != _playerError) {
+          debugPrint('[VideoPlayerScreen] YouTube Player Fatal Error: $newError (${value.error})');
+          setState(() {
+            _playerError = newError;
+          });
+        }
+      } else if (newError == null && _playerError != null) {
         setState(() {
-          _playerError = newError;
+          _playerError = null;
         });
       }
     });
@@ -278,8 +321,16 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     final cur = _playerController.currentTime.value;
     final total = _ytController.metadata.duration.inSeconds.toDouble();
     final target = (cur + seconds).clamp(0.0, total > 0 ? total : double.infinity);
-    _ytController.seekTo(seconds: target, allowSeekAhead: true);
     _playerController.currentTime.value = target;
+    PlayerCoordinator.instance.currentTime.value = target;
+
+    _doubleTapSeekDebounceTimer?.cancel();
+    _doubleTapSeekDebounceTimer = Timer(const Duration(milliseconds: 250), () {
+      if (mounted) {
+        _ytController.seekTo(seconds: target, allowSeekAhead: true);
+        _playerController.handleSeek(target);
+      }
+    });
   }
 
   void _triggerSeekFeedback({required bool isLeft}) {
@@ -318,43 +369,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     }
   }
 
-  Future<void> _saveWatchHistory() async {
-    try {
-      final user = AppState.instance.supabaseService.currentUser;
-      final userId = user?.id ?? 'guest';
-
-      final videoId = widget.videoId;
-      final id = generateDeterministicRecordId([userId, videoId]);
-      final title = widget.title.isNotEmpty
-          ? widget.title
-          : _playerController.videoTitle.value;
-      final channel = widget.channel ?? _ytController.metadata.author;
-      final thumbnail = 'https://img.youtube.com/vi/$videoId/hqdefault.jpg';
-      final metaDur = _ytController.metadata.duration.inSeconds;
-      final lastCue = _playerController.cues.value.isNotEmpty
-          ? _playerController.cues.value.last
-          : null;
-      final fallbackDur =
-          lastCue != null ? (lastCue.start + lastCue.duration).ceil() : 0;
-      final dur = metaDur > 0 ? metaDur : fallbackDur;
-      final currentSec = _playerController.currentTime.value;
-      final progress = dur > 0 ? ((currentSec / dur) * 100).clamp(0.0, 100.0) : 0.0;
-
-      await AppState.instance.supabaseService.saveHistory(
-        id: id,
-        videoId: videoId,
-        title: title,
-        thumbnail: thumbnail,
-        channel: channel,
-        duration: dur,
-        language: AppState.instance.activeLanguage.value,
-        progress: progress,
-      );
-    } catch (e) {
-      debugPrint('[VideoPlayerScreen] Error saving watch history: $e');
-    }
-  }
-
   void _toggleFullscreen() {
     final isFs = _ytController.value.fullScreenOption.enabled;
     _isFullscreenTransitioning = true;
@@ -366,7 +380,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     if (isFs) {
       _ytController.exitFullScreen();
       _playerController.isFullscreen.value = false;
-      SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+      final isTablet = MediaQuery.sizeOf(context).width >= VocaTokens.tabletBreakpoint;
+      if (isTablet) {
+        SystemChrome.setPreferredOrientations(DeviceOrientation.values);
+      } else {
+        SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+      }
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     } else {
       _ytController.enterFullScreen();
@@ -381,15 +400,22 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
   @override
   void dispose() {
+    _videoStateSubscription?.cancel();
+    _controllerSubscription?.cancel();
+    _doubleTapSeekDebounceTimer?.cancel();
     _fullscreenTransitionTimer?.cancel();
     _controlsAutoHideTimer?.cancel();
     _seekFeedbackTimer?.cancel();
     _pendingSingleTapTimer?.cancel();
-    _saveWatchHistory();
+    PlayerCoordinator.instance.saveWatchHistory();
     if (_ytController.value.fullScreenOption.enabled) {
       _ytController.exitFullScreen();
     }
-    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    if (_isTablet) {
+      SystemChrome.setPreferredOrientations(DeviceOrientation.values);
+    } else {
+      SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    }
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     if (_ownsControllers) {
       _ytController.close();
@@ -640,6 +666,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                               onSeekEnded: (newSeconds) {
                                 _ytController.seekTo(seconds: newSeconds, allowSeekAhead: true);
                                 _playerController.currentTime.value = newSeconds;
+                                PlayerCoordinator.instance.currentTime.value = newSeconds;
+                                _playerController.handleSeek(newSeconds);
                                 _scheduleControlsAutoHide();
                               },
                             ),
@@ -701,14 +729,15 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
   Widget _buildVideoPlayerArea({bool isFullscreen = false}) {
     final colors = context.vocaColors;
-    if (_playerError != null && _playerError != YoutubeError.none) {
-      final isRestricted = _playerError == YoutubeError.notEmbeddable ||
-          _playerError == YoutubeError.sameAsNotEmbeddable ||
-          _playerError == YoutubeError.sameAsNotEmbeddable2 ||
-          _playerError == YoutubeError.html5Error;
-      final isUnavailable = _playerError == YoutubeError.videoNotFound ||
-          _playerError == YoutubeError.cannotFindVideo;
+    final isRestricted = _playerError == YoutubeError.notEmbeddable ||
+        _playerError == YoutubeError.sameAsNotEmbeddable ||
+        _playerError == YoutubeError.sameAsNotEmbeddable2 ||
+        _playerError == YoutubeError.html5Error;
+    final isUnavailable = _playerError == YoutubeError.videoNotFound ||
+        _playerError == YoutubeError.cannotFindVideo;
+    final isFatalError = isRestricted || isUnavailable;
 
+    if (_playerError != null && isFatalError) {
       final title = isRestricted
           ? context.t('player.restrictedTitle', null, 'Playback Restricted by Owner')
           : (isUnavailable
@@ -757,7 +786,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         },
         onVerticalDragCancel: () => _accumulatedDragDown = 0.0,
         child: Container(
-          color: const Color(0xFF0D0F14),
+          color: colors.bgPrimary,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           child: Stack(
             children: [
@@ -962,33 +991,36 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                           // Left Pane (flex 3): 16:9 Youtube player + VideoHeader + Playlist
                           Expanded(
                             flex: 3,
-                            child: Column(
-                              children: [
-                                _buildVideoPlayerArea(isFullscreen: false),
-                                Watch((context) {
-                                  return VideoHeader(
-                                    title: widget.title.isNotEmpty
-                                        ? widget.title
-                                        : _playerController.videoTitle.value,
-                                    channel: widget.channel ?? _ytController.metadata.author,
-                                    videoId: widget.videoId,
-                                    level: widget.level ?? _playerController.difficultyLevel.value,
-                                    controller: _playerController,
-                                    ytController: _ytController,
-                                    onCloseTap: () => PlayerCoordinator.instance.closeVideo(),
-                                    onVerticalDragDown: _handleMinimize,
-                                  );
-                                }),
-                                Watch((context) {
-                                  final coord = PlayerCoordinator.instance;
-                                  if (!coord.hasPlaylist) return const SizedBox.shrink();
-                                  return MobilePlaylistBar(
-                                    title: coord.activePlaylistTitle.value ?? 'Playlist',
-                                    currentIndex: coord.activePlaylistIndex.value ?? 0,
-                                    totalVideos: coord.playlistTotal,
-                                  );
-                                }),
-                              ],
+                            child: SingleChildScrollView(
+                              physics: const BouncingScrollPhysics(),
+                              child: Column(
+                                children: [
+                                  _buildVideoPlayerArea(isFullscreen: false),
+                                  Watch((context) {
+                                    return VideoHeader(
+                                      title: widget.title.isNotEmpty
+                                          ? widget.title
+                                          : _playerController.videoTitle.value,
+                                      channel: widget.channel ?? _ytController.metadata.author,
+                                      videoId: widget.videoId,
+                                      level: widget.level ?? _playerController.difficultyLevel.value,
+                                      controller: _playerController,
+                                      ytController: _ytController,
+                                      onCloseTap: () => PlayerCoordinator.instance.closeVideo(),
+                                      onVerticalDragDown: _handleMinimize,
+                                    );
+                                  }),
+                                  Watch((context) {
+                                    final coord = PlayerCoordinator.instance;
+                                    if (!coord.hasPlaylist) return const SizedBox.shrink();
+                                    return MobilePlaylistBar(
+                                      title: coord.activePlaylistTitle.value ?? 'Playlist',
+                                      currentIndex: coord.activePlaylistIndex.value ?? 0,
+                                      totalVideos: coord.playlistTotal,
+                                    );
+                                  }),
+                                ],
+                              ),
                             ),
                           ),
 

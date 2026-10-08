@@ -129,7 +129,9 @@ class VideoMoreFeedState extends State<VideoMoreFeed> {
         _hasMore.value = list.length >= _pageSize;
       }
     } catch (_) {
-      // Ignore load more errors silently
+      if (seq == _requestId) {
+        _currentOffset = (_currentOffset - _pageSize).clamp(0, double.infinity).toInt();
+      }
     } finally {
       if (seq == _requestId) {
         _isLoadingMore.value = false;

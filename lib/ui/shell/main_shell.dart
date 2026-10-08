@@ -125,6 +125,11 @@ class _MainShellState extends State<MainShell> {
   // ==========================================
   Widget _buildTabletLayout(BuildContext context) {
     final colors = context.vocaColors;
+    final coordinator = PlayerCoordinator.instance;
+    final hasActive = coordinator.hasActiveVideo;
+    final isMini = coordinator.isMiniplayer.value;
+    final videoId = coordinator.activeVideoId.value;
+
     return Row(
       children: [
         // Left Navigation Rail / Sidebar (width ~240dp)
@@ -139,11 +144,34 @@ class _MainShellState extends State<MainShell> {
           child: _buildTabletSidebar(context),
         ),
 
-        // Main content screen
+        // Main content screen with docked MiniplayerBar if active
         Expanded(
-          child: IndexedStack(
-            index: _currentIndex.clamp(0, _tabScreens.length - 1),
-            children: _tabScreens,
+          child: Column(
+            children: [
+              Expanded(
+                child: IndexedStack(
+                  index: _currentIndex.clamp(0, _tabScreens.length - 1),
+                  children: _tabScreens,
+                ),
+              ),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 240),
+                curve: Curves.easeOutCubic,
+                alignment: Alignment.bottomCenter,
+                child: (hasActive && isMini && videoId != null)
+                    ? MiniplayerBar(
+                        key: ValueKey('miniplayer_$videoId'),
+                        videoId: videoId,
+                        title: coordinator.activeTitle.value,
+                        channel: coordinator.activeChannel.value ?? 'YouTube',
+                        thumbnail: coordinator.activeThumbnail.value,
+                        onTap: () => coordinator.expand(context),
+                        onPlayPause: () => coordinator.togglePlayPause(),
+                        onClose: () => coordinator.close(),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ],
           ),
         ),
       ],
@@ -179,10 +207,10 @@ class _MainShellState extends State<MainShell> {
             ),
           ),
 
-          // 2. Elevated "+ New Video" button
+          // 2. M3 "+ New Video" button
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: ElevatedButton.icon(
+            child: FilledButton.icon(
               onPressed: () => NewVideoSheet.show(context),
               icon: const Icon(Icons.add, size: 20, color: Colors.white),
               label: Text(
@@ -193,11 +221,9 @@ class _MainShellState extends State<MainShell> {
                   fontSize: 14,
                 ),
               ),
-              style: ElevatedButton.styleFrom(
+              style: FilledButton.styleFrom(
                 backgroundColor: colors.accentPrimary,
                 foregroundColor: Colors.white,
-                elevation: 3,
-                shadowColor: colors.accentPrimary.withOpacity(0.4),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -443,7 +469,7 @@ class _MainShellState extends State<MainShell> {
               color: isSelected ? colors.accentPrimarySoft : Colors.transparent,
               borderRadius: BorderRadius.circular(10),
               border: isSelected
-                  ? Border.all(color: colors.accentPrimary.withOpacity(0.3))
+                  ? Border.all(color: colors.accentPrimary.withValues(alpha: 0.3))
                   : null,
             ),
             child: Row(
@@ -493,6 +519,7 @@ class _MainShellState extends State<MainShell> {
         AnimatedSize(
           duration: const Duration(milliseconds: 240),
           curve: Curves.easeOutCubic,
+          alignment: Alignment.bottomCenter,
           child: (hasActive && isMini && videoId != null)
               ? MiniplayerBar(
                   key: ValueKey('miniplayer_$videoId'),

@@ -483,13 +483,13 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
 
     if (isGrammar) {
       textColor = Colors.white;
-      chipBgColor = const Color(0xFF2DD4BF).withValues(alpha: 0.18);
+      chipBgColor = colors.colorGrammar.withValues(alpha: 0.18);
       chipBorder = Border.all(
-        color: const Color(0xFF2DD4BF).withValues(alpha: 0.55),
+        color: colors.colorGrammar.withValues(alpha: 0.55),
         width: 1.0,
       );
       textDecoration = TextDecoration.underline;
-      decorationColor = const Color(0xFF2DD4BF);
+      decorationColor = colors.colorGrammar;
     } else if (token.level == 'new') {
       textColor = colors.wordNewText;
       chipBgColor = colors.wordNewBg;

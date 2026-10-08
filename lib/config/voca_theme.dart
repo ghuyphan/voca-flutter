@@ -316,11 +316,15 @@ class LevelColorInfo {
   final Color bg;
   final Color text;
   final Color border;
+  final Color solidBg;
+  final Color solidText;
 
   const LevelColorInfo({
     required this.bg,
     required this.text,
     required this.border,
+    required this.solidBg,
+    required this.solidText,
   });
 
   static String cleanLevel(String raw) {
@@ -352,6 +356,8 @@ class LevelColorInfo {
         bg: palette.levelBeginnerBg,
         text: palette.levelBeginnerText,
         border: palette.levelBeginnerBorder,
+        solidBg: const Color(0xFF2563EB),
+        solidText: Colors.white,
       );
     }
     if (l.contains('N4') ||
@@ -363,6 +369,8 @@ class LevelColorInfo {
         bg: palette.levelElementaryBg,
         text: palette.levelElementaryText,
         border: palette.levelElementaryBorder,
+        solidBg: const Color(0xFF0891B2),
+        solidText: Colors.white,
       );
     }
     if (l.contains('N3') ||
@@ -376,6 +384,8 @@ class LevelColorInfo {
         bg: palette.levelIntermediateBg,
         text: palette.levelIntermediateText,
         border: palette.levelIntermediateBorder,
+        solidBg: const Color(0xFFD97706),
+        solidText: Colors.white,
       );
     }
     if (l.contains('N2') ||
@@ -387,6 +397,8 @@ class LevelColorInfo {
         bg: palette.levelUpperBg,
         text: palette.levelUpperText,
         border: palette.levelUpperBorder,
+        solidBg: const Color(0xFFEA580C),
+        solidText: Colors.white,
       );
     }
     if (l.contains('N1') ||
@@ -399,12 +411,16 @@ class LevelColorInfo {
         bg: palette.levelAdvancedBg,
         text: palette.levelAdvancedText,
         border: palette.levelAdvancedBorder,
+        solidBg: const Color(0xFFE11D48),
+        solidText: Colors.white,
       );
     }
     return LevelColorInfo(
       bg: palette.levelBeginnerBg,
       text: palette.levelBeginnerText,
       border: palette.levelBeginnerBorder,
+      solidBg: const Color(0xFF2563EB),
+      solidText: Colors.white,
     );
   }
 }

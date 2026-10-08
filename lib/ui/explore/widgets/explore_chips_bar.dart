@@ -47,7 +47,7 @@ class ExploreChipsBar extends StatelessWidget {
     ];
 
     return SizedBox(
-      height: 38,
+      height: 40,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -107,77 +107,23 @@ class ExploreChipsBar extends StatelessWidget {
           const SizedBox(width: 8),
 
           // 2. "All" Feed Chip (Official M3 FilterChip)
-          FilterChip(
-            selected: isAllSelected,
-            onSelected: (_) => onAllPressed(),
-            avatar: Icon(
-              Icons.play_arrow_rounded,
-              size: 15,
-              color: isAllSelected ? colors.accentPrimary : colors.textSecondary,
-            ),
-            label: Text(
-              context.t('common.all', null, 'All'),
-              style: TextStyle(
-                color: isAllSelected ? colors.accentPrimary : colors.textSecondary,
-                fontSize: 12.5,
-                fontWeight: isAllSelected ? FontWeight.w700 : FontWeight.w500,
-              ),
-            ),
-            showCheckmark: false,
-            color: WidgetStateProperty.resolveWith((states) {
-              if (states.contains(WidgetState.selected)) {
-                return colors.accentPrimarySoft;
-              }
-              return colors.bgCard;
-            }),
-            surfaceTintColor: Colors.transparent,
-            side: WidgetStateBorderSide.resolveWith((states) {
-              if (states.contains(WidgetState.selected)) {
-                return BorderSide(color: colors.accentPrimary, width: 1.5);
-              }
-              return BorderSide(color: colors.borderColor, width: 1.0);
-            }),
-            shape: const StadiumBorder(),
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-            visualDensity: VisualDensity.compact,
+          _buildFilterChip(
+            isSelected: isAllSelected,
+            onSelected: onAllPressed,
+            icon: Icons.play_arrow_rounded,
+            label: context.t('common.all', null, 'All'),
+            colors: colors,
           ),
 
           const SizedBox(width: 8),
 
           // 3. "Playlists" Chip (Official M3 FilterChip)
-          FilterChip(
-            selected: isPlaylistsSelected,
-            onSelected: (_) => onPlaylistsPressed(),
-            avatar: Icon(
-              Icons.format_list_bulleted_rounded,
-              size: 14,
-              color: isPlaylistsSelected ? colors.accentPrimary : colors.textSecondary,
-            ),
-            label: Text(
-              context.t('explore.playlists', null, 'Playlists'),
-              style: TextStyle(
-                color: isPlaylistsSelected ? colors.accentPrimary : colors.textSecondary,
-                fontSize: 12.5,
-                fontWeight: isPlaylistsSelected ? FontWeight.w700 : FontWeight.w500,
-              ),
-            ),
-            showCheckmark: false,
-            color: WidgetStateProperty.resolveWith((states) {
-              if (states.contains(WidgetState.selected)) {
-                return colors.accentPrimarySoft;
-              }
-              return colors.bgCard;
-            }),
-            surfaceTintColor: Colors.transparent,
-            side: WidgetStateBorderSide.resolveWith((states) {
-              if (states.contains(WidgetState.selected)) {
-                return BorderSide(color: colors.accentPrimary, width: 1.5);
-              }
-              return BorderSide(color: colors.borderColor, width: 1.0);
-            }),
-            shape: const StadiumBorder(),
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-            visualDensity: VisualDensity.compact,
+          _buildFilterChip(
+            isSelected: isPlaylistsSelected,
+            onSelected: onPlaylistsPressed,
+            icon: Icons.format_list_bulleted_rounded,
+            label: context.t('explore.playlists', null, 'Playlists'),
+            colors: colors,
           ),
 
           const SizedBox(width: 8),
@@ -187,44 +133,60 @@ class ExploreChipsBar extends StatelessWidget {
             final isCatSelected = currentTab == ExploreTab.videos && selectedCategory == cat;
             return Padding(
               padding: const EdgeInsets.only(right: 8),
-              child: FilterChip(
-                selected: isCatSelected,
-                onSelected: (_) => onCategorySelected(cat),
-                avatar: Icon(
-                  cat.icon,
-                  size: 14,
-                  color: isCatSelected ? colors.accentPrimary : colors.textSecondary,
-                ),
-                label: Text(
-                  cat.getLabel(context),
-                  style: TextStyle(
-                    color: isCatSelected ? colors.accentPrimary : colors.textSecondary,
-                    fontSize: 12.5,
-                    fontWeight: isCatSelected ? FontWeight.w700 : FontWeight.w500,
-                  ),
-                ),
-                showCheckmark: false,
-                color: WidgetStateProperty.resolveWith((states) {
-                  if (states.contains(WidgetState.selected)) {
-                    return colors.accentPrimarySoft;
-                  }
-                  return colors.bgCard;
-                }),
-                surfaceTintColor: Colors.transparent,
-                side: WidgetStateBorderSide.resolveWith((states) {
-                  if (states.contains(WidgetState.selected)) {
-                    return BorderSide(color: colors.accentPrimary, width: 1.5);
-                  }
-                  return BorderSide(color: colors.borderColor, width: 1.0);
-                }),
-                shape: const StadiumBorder(),
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                visualDensity: VisualDensity.compact,
+              child: _buildFilterChip(
+                isSelected: isCatSelected,
+                onSelected: () => onCategorySelected(cat),
+                icon: cat.icon,
+                label: cat.getLabel(context),
+                colors: colors,
               ),
             );
           }),
         ],
       ),
+    );
+  }
+
+  Widget _buildFilterChip({
+    required bool isSelected,
+    required VoidCallback onSelected,
+    required IconData icon,
+    required String label,
+    required VocaColorPalette colors,
+  }) {
+    return FilterChip(
+      selected: isSelected,
+      onSelected: (_) => onSelected(),
+      avatar: Icon(
+        icon,
+        size: 14,
+        color: isSelected ? colors.accentPrimary : colors.textSecondary,
+      ),
+      label: Text(
+        label,
+        style: TextStyle(
+          color: isSelected ? colors.accentPrimary : colors.textSecondary,
+          fontSize: 12.5,
+          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+        ),
+      ),
+      showCheckmark: false,
+      color: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return colors.accentPrimarySoft;
+        }
+        return colors.bgCard;
+      }),
+      surfaceTintColor: Colors.transparent,
+      side: WidgetStateBorderSide.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return BorderSide(color: colors.accentPrimary, width: 1.5);
+        }
+        return BorderSide(color: colors.borderColor, width: 1.0);
+      }),
+      shape: const StadiumBorder(),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      visualDensity: VisualDensity.compact,
     );
   }
 }

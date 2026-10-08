@@ -14,8 +14,27 @@ class FeedSkeletonCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(14),
       child: AspectRatio(
         aspectRatio: 16 / 9,
-        child: VocaShimmer.box(
-          borderRadius: BorderRadius.zero,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            VocaShimmer.box(
+              borderRadius: BorderRadius.zero,
+            ),
+            const Positioned(
+              bottom: 8,
+              left: 8,
+              child: VocaLevelBadge(isLoading: true),
+            ),
+            Positioned(
+              bottom: 8,
+              right: 8,
+              child: VocaShimmer.box(
+                width: 32,
+                height: 16,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -41,13 +60,7 @@ class FeedSkeletonCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     VocaShimmer.line(width: 160, height: 14),
                     const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        VocaShimmer.line(width: 90, height: 12),
-                        const SizedBox(width: 8),
-                        const VocaLevelBadge(isLoading: true),
-                      ],
-                    ),
+                    VocaShimmer.line(width: 100, height: 12),
                   ],
                 ),
               ),

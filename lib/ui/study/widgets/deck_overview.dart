@@ -128,25 +128,31 @@ class DeckOverview extends StatelessWidget {
 
         const SizedBox(width: 10),
 
-        // Circular 38px Streak Flame Action Button
-        Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            color: colors.bgSurface,
-            shape: BoxShape.circle,
-            border: Border.all(color: colors.borderColor),
-          ),
-          child: IconButton(
-            icon: Icon(Icons.local_fire_department_rounded, size: 19, color: colors.colorFire),
-            padding: EdgeInsets.zero,
-            tooltip: context.t('streak.title', null, 'Streak'),
-            onPressed: () {
-              HapticFeedback.selectionClick();
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const StreakScreen()),
-              );
-            },
+        // Circular Streak Flame Action Button (min 48x48 hit target)
+        SizedBox(
+          width: 48,
+          height: 48,
+          child: Center(
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: colors.bgSurface,
+                shape: BoxShape.circle,
+                border: Border.all(color: colors.borderColor),
+              ),
+              child: IconButton(
+                icon: Icon(Icons.local_fire_department_rounded, size: 20, color: colors.colorFire),
+                padding: EdgeInsets.zero,
+                tooltip: context.t('streak.title', null, 'Streak'),
+                onPressed: () {
+                  HapticFeedback.selectionClick();
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const StreakScreen()),
+                  );
+                },
+              ),
+            ),
           ),
         ),
       ],
@@ -188,7 +194,7 @@ class DeckOverview extends StatelessWidget {
               border: Border.all(color: colors.borderColor),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(colors.isDark ? 0.35 : 0.05),
+                  color: Colors.black.withValues(alpha: colors.isDark ? 0.35 : 0.05),
                   blurRadius: 14,
                   offset: const Offset(0, 4),
                 ),
@@ -649,10 +655,16 @@ class DeckOverview extends StatelessWidget {
       final totalCount = deckCards.length;
       final now = DateTime.now();
 
-      final newCount = controller.newCount.value;
-      final learningCount = controller.learningCount.value;
-      final knownCount = controller.knownCount.value;
-      final masteredCount = deckCards.where((c) => c.level == 'known' && c.srsInterval >= 21).length;
+      final newCount = deckCards.where((c) => WordLevels.normalize(c.level) == WordLevels.isNew).length;
+      final learningCount = deckCards.where((c) => WordLevels.normalize(c.level) == WordLevels.learning).length;
+      final knownCount = deckCards.where((c) {
+        final norm = WordLevels.normalize(c.level);
+        return norm == WordLevels.known && c.srsInterval < 21;
+      }).length;
+      final masteredCount = deckCards.where((c) {
+        final norm = WordLevels.normalize(c.level);
+        return (norm == WordLevels.known || norm == 'mastered') && c.srsInterval >= 21;
+      }).length;
 
       // Calculate actual due count for each stage to render solid fill
       final learningDue = deckCards.where((c) {
@@ -666,7 +678,8 @@ class DeckOverview extends StatelessWidget {
       }).length;
 
       final masteredDue = deckCards.where((c) {
-        return c.level == 'known' && c.srsInterval >= 21 && (c.srsNextReviewAt.isBefore(now) || c.srsNextReviewAt.isAtSameMomentAs(now));
+        final norm = WordLevels.normalize(c.level);
+        return (norm == WordLevels.known || norm == 'mastered') && c.srsInterval >= 21 && (c.srsNextReviewAt.isBefore(now) || c.srsNextReviewAt.isAtSameMomentAs(now));
       }).length;
 
       final maxCount = math.max(1, math.max(math.max(newCount, learningCount), math.max(knownCount, masteredCount)));
@@ -793,10 +806,10 @@ class DeckOverview extends StatelessWidget {
             height: barHeight,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: hasItems ? color.withOpacity(0.18) : colors.bgSurface,
+              color: hasItems ? color.withValues(alpha: 0.18) : colors.bgSurface,
               borderRadius: BorderRadius.circular(hasItems ? 8 : 999),
               border: Border.all(
-                color: hasItems ? color.withOpacity(0.4) : colors.borderColorLight,
+                color: hasItems ? color.withValues(alpha: 0.4) : colors.borderColorLight,
                 width: hasItems ? 1.5 : 1.0,
               ),
             ),
@@ -901,7 +914,7 @@ class DeckOverview extends StatelessWidget {
                       width: 8,
                       height: 8,
                       decoration: BoxDecoration(
-                        color: colors.colorGrammar.withOpacity(0.45),
+                        color: colors.colorGrammar.withValues(alpha: 0.45),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -928,61 +941,9 @@ class DeckOverview extends StatelessWidget {
             // 2 Rows of 15 tiles (0-layout shift, 0 dual-pass measurement overhead)
             Column(
               children: [
-                Row(
-                  children: List.generate(15, (col) {
-                    final dayInfo = days[col];
-                    return Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 2.0),
-                        child: AspectRatio(
-                          aspectRatio: 1.0,
-                          child: Tooltip(
-                            triggerMode: TooltipTriggerMode.tap,
-                            preferBelow: false,
-                            message: '${DateFormat('MMM d').format(dayInfo.date)}: ${dayInfo.isActive ? context.t('study.heatmapReviewed', null, 'Reviewed') : context.t('study.heatmapRestDay', null, 'Rest day')}',
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: dayInfo.isActive ? colors.colorGrammar : colors.bgSurface,
-                                borderRadius: BorderRadius.circular(3.5),
-                                border: dayInfo.isToday
-                                    ? Border.all(color: colors.accentPrimary, width: 1.5)
-                                    : Border.all(color: colors.borderColorLight, width: 0.5),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-                ),
+                _buildHeatmapRow(context, colors, days.sublist(0, 15)),
                 const SizedBox(height: 4),
-                Row(
-                  children: List.generate(15, (col) {
-                    final dayInfo = days[col + 15];
-                    return Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 2.0),
-                        child: AspectRatio(
-                          aspectRatio: 1.0,
-                          child: Tooltip(
-                            triggerMode: TooltipTriggerMode.tap,
-                            preferBelow: false,
-                            message: '${DateFormat('MMM d').format(dayInfo.date)}: ${dayInfo.isActive ? context.t('study.heatmapReviewed', null, 'Reviewed') : context.t('study.heatmapRestDay', null, 'Rest day')}',
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: dayInfo.isActive ? colors.colorGrammar : colors.bgSurface,
-                                borderRadius: BorderRadius.circular(3.5),
-                                border: dayInfo.isToday
-                                    ? Border.all(color: colors.accentPrimary, width: 1.5)
-                                    : Border.all(color: colors.borderColorLight, width: 0.5),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-                ),
+                _buildHeatmapRow(context, colors, days.sublist(15, 30)),
               ],
             ),
 
@@ -1012,6 +973,41 @@ class DeckOverview extends StatelessWidget {
         ),
       );
     });
+  }
+
+  Widget _buildHeatmapRow(
+    BuildContext context,
+    VocaColorPalette colors,
+    List<({DateTime date, bool isActive, bool isToday})> rowDays,
+  ) {
+    return Row(
+      children: List.generate(rowDays.length, (col) {
+        final dayInfo = rowDays[col];
+        return Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2.0),
+            child: AspectRatio(
+              aspectRatio: 1.0,
+              child: Tooltip(
+                triggerMode: TooltipTriggerMode.tap,
+                preferBelow: false,
+                message:
+                    '${DateFormat('MMM d').format(dayInfo.date)}: ${dayInfo.isActive ? context.t('study.heatmapReviewed', null, 'Reviewed') : context.t('study.heatmapRestDay', null, 'Rest day')}',
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: dayInfo.isActive ? colors.colorGrammar : colors.bgSurface,
+                    borderRadius: BorderRadius.circular(3.5),
+                    border: dayInfo.isToday
+                        ? Border.all(color: colors.accentPrimary, width: 1.5)
+                        : Border.all(color: colors.borderColorLight, width: 0.5),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }),
+    );
   }
 
   /// 8. More Practice Section: Cloze Sentence Quiz
@@ -1141,21 +1137,29 @@ class DeckOverview extends StatelessWidget {
     );
   }
 
-  /// 9. Daily Quests Section (Missions with 1-tap rewards & Companion Crest)
+  /// 9. Daily Quests Section (Missions with 1-tap rewards & zero layout-shift architecture)
   Widget _buildDailyQuestsSection(
     BuildContext context,
     VocaColorPalette colors,
     GamificationService gamification,
   ) {
     return Watch((_) {
-      final missions = gamification.dailyMissions.value.missions;
+      final missionsState = gamification.dailyMissions.value;
+      final missions = missionsState.missions;
+      final completedCount = missions.where((m) => m.isCompleted).length;
+      final totalMissions = missions.length;
       final canClaimBonus = gamification.canClaimDailyBonus.value;
+      final isBonusClaimed = missionsState.allCompletedBonusClaimed;
+      final bonusXp = missionsState.bonusXp;
+
       final userSettings = AppState.instance.userSettings.value;
       final companionId = userSettings.companionClass.toLowerCase();
       final compOpt = CompanionOption.all.firstWhere(
         (c) => c.id == companionId,
         orElse: () => CompanionOption.all.first,
       );
+
+      final isAllCompleted = totalMissions > 0 && completedCount >= totalMissions;
 
       return Container(
         decoration: BoxDecoration(
@@ -1167,6 +1171,7 @@ class DeckOverview extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header Row: Icon + Title + Progress Badge + Companion Tag
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -1184,6 +1189,28 @@ class DeckOverview extends StatelessWidget {
                             fontWeight: FontWeight.w700,
                           ),
                           overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: colors.bgSurface,
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: isAllCompleted
+                                ? colors.colorGrammar.withValues(alpha: 0.5)
+                                : colors.borderColorLight,
+                          ),
+                        ),
+                        child: Text(
+                          '$completedCount/$totalMissions',
+                          style: TextStyle(
+                            color: isAllCompleted ? colors.colorGrammar : colors.textSecondary,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
                         ),
                       ),
                     ],
@@ -1216,220 +1243,378 @@ class DeckOverview extends StatelessWidget {
                 ),
               ],
             ),
-            if (canClaimBonus) ...[
-              const SizedBox(height: 10),
-              _buildDailyChestBonusCard(context, colors, gamification),
-            ],
+
             const SizedBox(height: 12),
-            ...missions.map((m) {
-              final isCompleted = m.isCompleted;
-              final isClaimed = m.isClaimed;
-              final fraction = m.progressRatio;
 
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: colors.bgSurface,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: isCompleted && !isClaimed
-                          ? colors.accentPrimary.withValues(alpha: 0.35)
-                          : colors.borderColorLight,
-                    ),
-                  ),
-                  child: Opacity(
-                    opacity: isClaimed ? 0.6 : 1.0,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        // Clean, quiet neutral icon container (38x38)
-                        Container(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: colors.bgCard,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: colors.borderColorLight),
-                          ),
-                          child: Icon(
-                            isCompleted ? Icons.check_circle_rounded : m.icon,
-                            size: 19,
-                            color: isCompleted ? colors.accentPrimary : colors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
+            // Missions List (Permanent height & zero layout shift)
+            ...missions.map((m) => _buildMissionCard(context, colors, gamification, m)),
 
-                        // Mission Body
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // Header: Title + subtle XP tag
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      m.localizedTitle(context),
-                                      style: TextStyle(
-                                        color: colors.textPrimary,
-                                        fontSize: 13.5,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: colors.bgCard,
-                                      borderRadius: BorderRadius.circular(999),
-                                      border: Border.all(color: colors.borderColorLight),
-                                    ),
-                                    child: Text(
-                                      '+${m.xpReward} XP',
-                                      style: TextStyle(
-                                        color: colors.textSecondary,
-                                        fontSize: 10.5,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 3),
+            const SizedBox(height: 4),
 
-                              // Description
-                              Text(
-                                m.localizedDescription(context),
-                                style: TextStyle(
-                                  color: colors.textMuted,
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 8),
-
-                              // Footer: Sleek progress bar + count + claim action
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(999),
-                                      child: Container(
-                                        height: 4,
-                                        color: colors.bgCard,
-                                        child: FractionallySizedBox(
-                                          alignment: Alignment.centerLeft,
-                                          widthFactor: fraction,
-                                          child: Container(
-                                            decoration: BoxDecoration(
-                                              color: colors.accentPrimary,
-                                              borderRadius: BorderRadius.circular(999),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '${m.progress}/${m.target}',
-                                    style: TextStyle(
-                                      color: colors.textMuted,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      fontFeatures: const [FontFeature.tabularFigures()],
-                                    ),
-                                  ),
-                                  if (isClaimed || isCompleted) ...[
-                                    const SizedBox(width: 8),
-                                    if (isClaimed)
-                                      Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(Icons.check_rounded, size: 12, color: colors.textMuted),
-                                          const SizedBox(width: 3),
-                                          Text(
-                                            context.t('missions.claimed', null, 'Claimed'),
-                                            style: TextStyle(
-                                              color: colors.textMuted,
-                                              fontSize: 10.5,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ],
-                                      )
-                                    else
-                                      FilledButton(
-                                        onPressed: () {
-                                          HapticFeedback.mediumImpact();
-                                          gamification.claimMission(m.id);
-                                        },
-                                        style: FilledButton.styleFrom(
-                                          backgroundColor: colors.accentPrimary,
-                                          foregroundColor: Colors.white,
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-                                          minimumSize: const Size(56, 24),
-                                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-                                        ),
-                                        child: Text(
-                                          context.t('missions.claim', null, 'Claim'),
-                                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
-                                        ),
-                                      ),
-                                  ],
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }),
+            // Permanent Daily Completion Chest Goalpost (Always docked at bottom - 0 layout shift)
+            _buildDailyChestGoalpost(
+              context: context,
+              colors: colors,
+              gamification: gamification,
+              completedCount: completedCount,
+              totalMissions: totalMissions,
+              canClaimBonus: canClaimBonus,
+              isBonusClaimed: isBonusClaimed,
+              bonusXp: bonusXp,
+            ),
           ],
         ),
       );
     });
   }
 
-  /// Daily Completion Chest Card matching lingua-tube design when all daily quests are finished
-  Widget _buildDailyChestBonusCard(
+  Widget _buildMissionCard(
     BuildContext context,
     VocaColorPalette colors,
     GamificationService gamification,
+    DailyMission m,
   ) {
+    final isCompleted = m.isCompleted;
+    final isClaimed = m.isClaimed;
+    final fraction = m.progressRatio;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 240),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: colors.bgSurface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isCompleted && !isClaimed
+                ? colors.accentPrimary.withValues(alpha: 0.45)
+                : colors.borderColorLight,
+            width: isCompleted && !isClaimed ? 1.5 : 1.0,
+          ),
+          boxShadow: isCompleted && !isClaimed
+              ? [
+                  BoxShadow(
+                    color: colors.accentPrimary.withValues(alpha: 0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Opacity(
+          opacity: isClaimed ? 0.65 : 1.0,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Icon container with responsive state color
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: isCompleted
+                      ? (isClaimed
+                          ? colors.colorGrammar.withValues(alpha: 0.12)
+                          : colors.accentPrimary.withValues(alpha: 0.12))
+                      : colors.bgCard,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isCompleted
+                        ? (isClaimed
+                            ? colors.colorGrammar.withValues(alpha: 0.3)
+                            : colors.accentPrimary.withValues(alpha: 0.3))
+                        : colors.borderColorLight,
+                  ),
+                ),
+                child: Icon(
+                  isCompleted ? Icons.check_circle_rounded : m.icon,
+                  size: 19,
+                  color: isCompleted
+                      ? (isClaimed ? colors.colorGrammar : colors.accentPrimary)
+                      : colors.textSecondary,
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              // Center content: Title + description + animated progress bar
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Title + XP badge
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            m.localizedTitle(context),
+                            style: TextStyle(
+                              color: colors.textPrimary,
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: colors.bgCard,
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(color: colors.borderColorLight),
+                          ),
+                          child: Text(
+                            '+${m.xpReward} XP',
+                            style: TextStyle(
+                              color: colors.textSecondary,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 3),
+
+                    // Description
+                    Text(
+                      m.localizedDescription(context),
+                      style: TextStyle(
+                        color: colors.textMuted,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Fluid Animated Progress Bar + Tabular Count
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(999),
+                            child: Container(
+                              height: 5,
+                              color: colors.bgCard,
+                              child: TweenAnimationBuilder<double>(
+                                tween: Tween<double>(begin: 0.0, end: fraction),
+                                duration: const Duration(milliseconds: 400),
+                                curve: Curves.easeOutCubic,
+                                builder: (context, animatedValue, _) {
+                                  return FractionallySizedBox(
+                                    alignment: Alignment.centerLeft,
+                                    widthFactor: animatedValue,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: isCompleted ? colors.colorGrammar : colors.accentPrimary,
+                                        borderRadius: BorderRadius.circular(999),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${m.progress}/${m.target}',
+                          style: TextStyle(
+                            color: isCompleted ? colors.colorGrammar : colors.textMuted,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 10),
+
+              // Fixed-Dimension Action Dock (Exactly 76dp wide x 32dp tall in all states -> ZERO layout shift!)
+              SizedBox(
+                width: 76,
+                height: 32,
+                child: _buildMissionActionSlot(
+                  context: context,
+                  colors: colors,
+                  gamification: gamification,
+                  mission: m,
+                  isCompleted: isCompleted,
+                  isClaimed: isClaimed,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMissionActionSlot({
+    required BuildContext context,
+    required VocaColorPalette colors,
+    required GamificationService gamification,
+    required DailyMission mission,
+    required bool isCompleted,
+    required bool isClaimed,
+  }) {
+    if (isClaimed) {
+      return Container(
+        decoration: BoxDecoration(
+          color: colors.bgCard,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: colors.borderColorLight),
+        ),
+        alignment: Alignment.center,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.check_rounded, size: 13, color: colors.colorGrammar),
+            const SizedBox(width: 3),
+            Text(
+              context.t('missions.claimed', null, 'Claimed'),
+              style: TextStyle(
+                color: colors.textMuted,
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (isCompleted) {
+      return FilledButton(
+        onPressed: () {
+          HapticFeedback.mediumImpact();
+          final ok = gamification.claimMission(mission.id);
+          if (ok) {
+            ToastService.success(
+              context,
+              context.t('missions.claimedReward', {'xp': mission.xpReward}, '+${mission.xpReward} XP earned! 🎉'),
+            );
+          }
+        },
+        style: FilledButton.styleFrom(
+          backgroundColor: colors.accentPrimary,
+          foregroundColor: Colors.white,
+          padding: EdgeInsets.zero,
+          minimumSize: const Size(76, 32),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+        ),
+        child: Text(
+          context.t('missions.claim', null, 'Claim'),
+          style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800),
+        ),
+      );
+    }
+
+    // In Progress State (matches 76x32 dimension with percentage or progress tag)
+    final percent = (mission.progressRatio * 100).toInt();
     return Container(
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: colors.bgSurface,
-        borderRadius: BorderRadius.circular(14),
+        color: colors.bgCard,
+        borderRadius: BorderRadius.circular(999),
         border: Border.all(color: colors.borderColorLight),
       ),
+      alignment: Alignment.center,
+      child: Text(
+        '$percent%',
+        style: TextStyle(
+          color: colors.textMuted,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          fontFeatures: const [FontFeature.tabularFigures()],
+        ),
+      ),
+    );
+  }
+
+  /// Permanent Daily Completion Chest Goalpost (Docked at bottom of Daily Quests, 0-shift)
+  Widget _buildDailyChestGoalpost({
+    required BuildContext context,
+    required VocaColorPalette colors,
+    required GamificationService gamification,
+    required int completedCount,
+    required int totalMissions,
+    required bool canClaimBonus,
+    required bool isBonusClaimed,
+    required int bonusXp,
+  }) {
+    final isReadyToOpen = canClaimBonus && !isBonusClaimed;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOutCubic,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: isReadyToOpen
+            ? colors.accentPrimary.withValues(alpha: 0.08)
+            : colors.bgSurface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isReadyToOpen
+              ? colors.accentPrimary.withValues(alpha: 0.5)
+              : (isBonusClaimed
+                  ? colors.colorGrammar.withValues(alpha: 0.3)
+                  : colors.borderColorLight),
+          width: isReadyToOpen ? 1.5 : 1.0,
+        ),
+        boxShadow: isReadyToOpen
+            ? [
+                BoxShadow(
+                  color: colors.accentPrimary.withValues(alpha: 0.12),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ]
+            : null,
+      ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          // Chest Icon Badge
           Container(
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: colors.bgCard,
+              color: isReadyToOpen
+                  ? colors.accentPrimary.withValues(alpha: 0.18)
+                  : (isBonusClaimed
+                      ? colors.colorGrammar.withValues(alpha: 0.14)
+                      : colors.bgCard),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: colors.borderColorLight),
+              border: Border.all(
+                color: isReadyToOpen
+                    ? colors.accentPrimary.withValues(alpha: 0.4)
+                    : (isBonusClaimed
+                        ? colors.colorGrammar.withValues(alpha: 0.35)
+                        : colors.borderColorLight),
+              ),
             ),
-            child: Icon(Icons.card_giftcard_rounded, color: colors.accentPrimary, size: 20),
+            child: Icon(
+              isBonusClaimed
+                  ? Icons.check_circle_rounded
+                  : (isReadyToOpen ? Icons.card_giftcard_rounded : Icons.inventory_2_outlined),
+              color: isReadyToOpen
+                  ? colors.accentPrimary
+                  : (isBonusClaimed ? colors.colorGrammar : colors.textSecondary),
+              size: 20,
+            ),
           ),
           const SizedBox(width: 12),
+
+          // Chest description & progress info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1439,7 +1624,7 @@ class DeckOverview extends StatelessWidget {
                   children: [
                     Flexible(
                       child: Text(
-                        context.t('missions.dailyChest', null, 'Daily Bonus'),
+                        context.t('missions.dailyChest', null, 'Daily Completion Chest'),
                         style: TextStyle(
                           color: colors.textPrimary,
                           fontSize: 13,
@@ -1451,22 +1636,26 @@ class DeckOverview extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      '+50 XP',
+                      '+$bonusXp XP',
                       style: TextStyle(
-                        color: colors.accentPrimary,
+                        color: isBonusClaimed ? colors.colorGrammar : colors.accentPrimary,
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 3),
                 Text(
-                  context.t('missions.dailyChestDesc', null, 'All daily quests finished! Open the chest.'),
+                  isBonusClaimed
+                      ? context.t('missions.allDoneForToday', null, 'All daily quests finished! See you tomorrow. 🎉')
+                      : (isReadyToOpen
+                          ? context.t('missions.dailyChestReady', null, 'All 3 quests done! Tap to open your chest.')
+                          : context.t('missions.dailyChestProgress', {'done': completedCount, 'total': totalMissions}, 'Complete all $totalMissions missions to unlock ($completedCount/$totalMissions)')),
                   style: TextStyle(
-                    color: colors.textMuted,
+                    color: isReadyToOpen ? colors.accentPrimary : colors.textMuted,
                     fontSize: 11,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: isReadyToOpen ? FontWeight.w600 : FontWeight.w500,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -1474,25 +1663,82 @@ class DeckOverview extends StatelessWidget {
               ],
             ),
           ),
+
           const SizedBox(width: 8),
-          FilledButton(
-            onPressed: () {
-              HapticFeedback.mediumImpact();
-              gamification.claimDailyBonus();
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: colors.accentPrimary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-              minimumSize: const Size(60, 28),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+
+          // Action: Open Button, Claimed Badge, or 3-step Progress Dashes
+          if (isReadyToOpen)
+            FilledButton(
+              onPressed: () {
+                HapticFeedback.heavyImpact();
+                final ok = gamification.claimDailyBonus();
+                if (ok) {
+                  HapticFeedback.lightImpact();
+                  ToastService.success(
+                    context,
+                    context.t('missions.dailyChestClaimed', null, 'Claimed +$bonusXp XP Daily Completion Chest! 🏆'),
+                  );
+                }
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: colors.accentPrimary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                minimumSize: const Size(76, 34),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+              ),
+              child: Text(
+                context.t('missions.claim', null, 'Open'),
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+              ),
+            )
+          else if (isBonusClaimed)
+            Container(
+              height: 32,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: colors.bgCard,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: colors.colorGrammar.withValues(alpha: 0.3)),
+              ),
+              alignment: Alignment.center,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.check_rounded, size: 13, color: colors.colorGrammar),
+                  const SizedBox(width: 4),
+                  Text(
+                    context.t('missions.claimed', null, 'Claimed'),
+                    style: TextStyle(
+                      color: colors.colorGrammar,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            // In Progress 3-step Capsule indicators (matching totalMissions)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(totalMissions > 0 ? totalMissions : 3, (i) {
+                final isDone = i < completedCount;
+                return Container(
+                  margin: const EdgeInsets.only(left: 3),
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isDone ? colors.accentPrimary : colors.bgCard,
+                    border: Border.all(
+                      color: isDone ? colors.accentPrimary : colors.borderColorLight,
+                      width: 1,
+                    ),
+                  ),
+                );
+              }),
             ),
-            child: Text(
-              context.t('missions.claim', null, 'Claim'),
-              style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800),
-            ),
-          ),
         ],
       ),
     );
@@ -1550,7 +1796,7 @@ class VocaSlidingSegmentedBar extends StatelessWidget {
                     borderRadius: BorderRadius.circular(999),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(colors.isDark ? 0.35 : 0.08),
+                        color: Colors.black.withValues(alpha: colors.isDark ? 0.35 : 0.08),
                         blurRadius: 4,
                         offset: const Offset(0, 1),
                       ),

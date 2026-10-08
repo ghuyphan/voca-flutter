@@ -7,6 +7,7 @@ import '../../config/voca_theme.dart';
 import '../../models/voca_models.dart';
 import '../../services/i18n_service.dart';
 import '../../state/app_state.dart';
+import '../../state/player_coordinator.dart';
 import '../../state/player_state.dart';
 import '../../utils/video_format_utils.dart';
 import '../sheets/dictionary_bottom_sheet.dart';
@@ -261,17 +262,27 @@ class _SubtitlePanelState extends State<SubtitlePanel>
                 }
 
                 return InkWell(
-                  onTap: () {
-                    widget.ytController.pauseVideo();
-                    if (grammarPattern != null) {
-                      GrammarBottomSheet.show(context, grammarPattern);
-                    } else {
-                      DictionaryBottomSheet.show(
-                        context,
-                        token: token,
-                        sourceLang: widget.controller.activeLanguage.value,
-                        contextSentence: cue.text,
-                        contextTranslation: cue.translation,
+                  onTap: () async {
+                    widget.controller.acquirePauseLock(
+                      'sheet',
+                      onPause: () => widget.ytController.pauseVideo(),
+                    );
+                    try {
+                      if (grammarPattern != null) {
+                        await GrammarBottomSheet.show(context, grammarPattern);
+                      } else {
+                        await DictionaryBottomSheet.show(
+                          context,
+                          token: token,
+                          sourceLang: widget.controller.activeLanguage.value,
+                          contextSentence: cue.text,
+                          contextTranslation: cue.translation,
+                        );
+                      }
+                    } finally {
+                      widget.controller.releasePauseLock(
+                        'sheet',
+                        onResume: () => widget.ytController.playVideo(),
                       );
                     }
                   },
@@ -700,6 +711,8 @@ class _SubtitlePanelState extends State<SubtitlePanel>
             onTap: () {
               widget.onSeek(cue.start);
               widget.controller.currentTime.value = cue.start;
+              PlayerCoordinator.instance.currentTime.value = cue.start;
+              widget.controller.handleSeek(cue.start);
               _scrollToActiveCue(cue, force: true);
             },
             borderRadius: BorderRadius.circular(8),
@@ -851,12 +864,23 @@ class _SubtitlePanelState extends State<SubtitlePanel>
               icon: Icons.quiz_rounded,
               label: context.t('quiz.short', null, 'Luyện tập'),
               isActive: isQuizActive,
-              onTap: () {
-                PracticeSheet.show(
-                  context,
-                  controller: widget.controller,
-                  ytController: widget.ytController,
+              onTap: () async {
+                widget.controller.acquirePauseLock(
+                  'practice_sheet',
+                  onPause: () => widget.ytController.pauseVideo(),
                 );
+                try {
+                  await PracticeSheet.show(
+                    context,
+                    controller: widget.controller,
+                    ytController: widget.ytController,
+                  );
+                } finally {
+                  widget.controller.releasePauseLock(
+                    'practice_sheet',
+                    onResume: () => widget.ytController.playVideo(),
+                  );
+                }
               },
               colors: colors,
             ),
@@ -869,12 +893,23 @@ class _SubtitlePanelState extends State<SubtitlePanel>
               icon: Icons.tune_rounded,
               label: context.t('vocab.options', null, 'Tùy chọn'),
               isActive: false,
-              onTap: () {
-                SubtitleOptionsSheet.show(
-                  context,
-                  controller: widget.controller,
-                  ytController: widget.ytController,
+              onTap: () async {
+                widget.controller.acquirePauseLock(
+                  'options_sheet',
+                  onPause: () => widget.ytController.pauseVideo(),
                 );
+                try {
+                  await SubtitleOptionsSheet.show(
+                    context,
+                    controller: widget.controller,
+                    ytController: widget.ytController,
+                  );
+                } finally {
+                  widget.controller.releasePauseLock(
+                    'options_sheet',
+                    onResume: () => widget.ytController.playVideo(),
+                  );
+                }
               },
               colors: colors,
             ),

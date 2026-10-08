@@ -1,6 +1,5 @@
 // lib/ui/explore/widgets/explore_spotlight_bar.dart
 
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../config/voca_theme.dart';
@@ -32,7 +31,6 @@ class _ExploreSpotlightBarState extends State<ExploreSpotlightBar>
     with WidgetsBindingObserver {
   late final FocusNode _focusNode;
   bool _ownsFocusNode = false;
-  Timer? _debounceTimer;
   bool _hasClipboardText = false;
 
   @override
@@ -70,7 +68,6 @@ class _ExploreSpotlightBarState extends State<ExploreSpotlightBar>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _debounceTimer?.cancel();
     widget.controller.removeListener(_onTextChange);
     if (_ownsFocusNode) {
       _focusNode.dispose();
@@ -83,7 +80,6 @@ class _ExploreSpotlightBarState extends State<ExploreSpotlightBar>
   }
 
   void _handleSubmit(String value) {
-    _debounceTimer?.cancel();
     final trimmed = value.trim();
     if (trimmed.isEmpty) return;
 

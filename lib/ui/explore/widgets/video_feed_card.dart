@@ -105,6 +105,17 @@ class VideoFeedCard extends StatelessWidget {
               ),
             ),
 
+            // Level Badge (Bottom-Left)
+            if (levelTag.isNotEmpty)
+              Positioned(
+                bottom: 8,
+                left: 8,
+                child: VocaLevelBadge(
+                  level: levelTag,
+                  size: LevelBadgeSize.small,
+                ),
+              ),
+
             // Duration Badge (Bottom-Right)
             if (durationStr.isNotEmpty)
               Positioned(
@@ -137,7 +148,7 @@ class VideoFeedCard extends StatelessWidget {
                 bottom: 0,
                 child: LinearProgressIndicator(
                   value: resumeProgress.clamp(0.0, 1.0),
-                  backgroundColor: Colors.black38,
+                  backgroundColor: Colors.black.withValues(alpha: 0.38),
                   valueColor: AlwaysStoppedAnimation<Color>(colors.accentPrimary),
                   minHeight: 3.5,
                 ),
@@ -214,37 +225,15 @@ class VideoFeedCard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  channel,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: colors.textSecondary,
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                                ),
-                              ),
-                              if (levelTag.isNotEmpty) ...[
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                                  child: Text(
-                                    '•',
-                                    style: TextStyle(
-                                      color: colors.textTertiary,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                                VocaLevelBadge(
-                                  level: levelTag,
-                                  size: LevelBadgeSize.small,
-                                ),
-                              ],
-                            ],
+                          Text(
+                            channel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: colors.textSecondary,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w400,
+                            ),
                           ),
                         ],
                       ),

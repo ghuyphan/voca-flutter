@@ -93,26 +93,37 @@ class ExploreResponsiveFeed extends StatelessWidget {
         const double spacing = 20.0;
         const double horizontalPadding = 16.0 * 2;
         final cardWidth = (width - horizontalPadding - spacing * (crossAxisCount - 1)) / crossAxisCount;
-        final cardHeight = (cardWidth / (16 / 9)) + 100.0;
+        final metaHeight = MediaQuery.textScalerOf(context).scale(100.0);
+        final cardHeight = (cardWidth / (16 / 9)) + metaHeight;
         final childAspectRatio = cardWidth / cardHeight;
 
-        return GridView.builder(
+        return CustomScrollView(
           physics: physics ?? const AlwaysScrollableScrollPhysics(),
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: EdgeInsets.fromLTRB(16, 6, 16, bottomPadding),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            mainAxisSpacing: spacing,
-            crossAxisSpacing: spacing,
-            childAspectRatio: childAspectRatio,
-          ),
-          itemCount: totalCount,
-          itemBuilder: (context, index) {
-            if (index >= itemCount) {
-              return Center(child: _buildLoadingMoreIndicator(colors));
-            }
-            return itemBuilder(context, index);
-          },
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+              sliver: SliverGrid(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  mainAxisSpacing: spacing,
+                  crossAxisSpacing: spacing,
+                  childAspectRatio: childAspectRatio,
+                ),
+                delegate: SliverChildBuilderDelegate(
+                  itemBuilder,
+                  childCount: itemCount,
+                ),
+              ),
+            ),
+            if (isLoadingMore)
+              SliverToBoxAdapter(
+                child: _buildLoadingMoreIndicator(colors),
+              ),
+            SliverToBoxAdapter(
+              child: SizedBox(height: bottomPadding),
+            ),
+          ],
         );
       },
     );

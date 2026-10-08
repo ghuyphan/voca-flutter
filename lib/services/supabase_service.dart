@@ -584,6 +584,47 @@ class SupabaseService {
     return playlist;
   }
 
+  Future<PlaylistItem> updatePlaylist({
+    required String id,
+    required String title,
+    String? description,
+    String language = 'ja',
+    String visibility = 'private',
+    String? level,
+  }) async {
+    final local = await _getPlaylistsFromLocal();
+    final idx = local.indexWhere((p) => p.id == id);
+    final existing = idx != -1 ? local[idx] : null;
+
+    final updated = PlaylistItem(
+      id: id,
+      userId: existing?.userId ?? currentUser?.id ?? 'guest',
+      title: title,
+      description: description,
+      language: language,
+      visibility: visibility,
+      level: level,
+      videoCount: existing?.videoCount ?? 0,
+      thumbnail: existing?.thumbnail,
+      videoIds: existing?.videoIds ?? const [],
+      createdAt: existing?.createdAt ?? DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+
+    await _savePlaylistToLocal(updated);
+
+    final user = currentUser;
+    if (user != null) {
+      try {
+        await client.from('playlists').upsert(updated.toJson());
+      } catch (e) {
+        debugPrint('[SupabaseService] updatePlaylist remote error: $e');
+      }
+    }
+
+    return updated;
+  }
+
   Future<void> deletePlaylist(String playlistId) async {
     final user = currentUser;
     if (user != null) {

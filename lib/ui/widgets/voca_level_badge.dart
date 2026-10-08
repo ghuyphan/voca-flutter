@@ -6,29 +6,40 @@ import 'voca_shimmer.dart';
 
 enum LevelBadgeSize { small, medium, large }
 
-/// Reusable level badge matching lingua-tube's LevelBadgeComponent.
-/// Automatically adapts to current theme (Dark / Light) with high-contrast pastel styling.
+/// Reusable level badge styled with Material 3 filled-pill guidelines.
+/// Features high-contrast solid color fills without borders for instant readability across media.
 /// Supports clickable interactions and evaluating shimmer loading state.
 class VocaLevelBadge extends StatelessWidget {
   final String? level;
   final LevelBadgeSize size;
   final bool showBorder;
+  final bool isSolid;
   final bool isLoading;
   final VoidCallback? onTap;
   final String? customTitle;
+  final double? borderRadius;
 
   const VocaLevelBadge({
     super.key,
     this.level,
     this.size = LevelBadgeSize.small,
-    this.showBorder = true,
+    this.showBorder = false,
+    this.isSolid = true,
     this.isLoading = false,
     this.onTap,
     this.customTitle,
+    this.borderRadius,
   });
 
   @override
   Widget build(BuildContext context) {
+    final double radius = borderRadius ??
+        switch (size) {
+          LevelBadgeSize.small => 5.0,
+          LevelBadgeSize.medium => 6.0,
+          LevelBadgeSize.large => 8.0,
+        };
+
     if (isLoading) {
       double width;
       double height;
@@ -51,7 +62,7 @@ class VocaLevelBadge extends StatelessWidget {
         child: VocaShimmer.box(
           width: width,
           height: height,
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: BorderRadius.circular(radius),
         ),
       );
     }
@@ -74,25 +85,37 @@ class VocaLevelBadge extends StatelessWidget {
         padding = const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5);
         break;
       case LevelBadgeSize.small:
-        fontSize = 10.5;
-        padding = const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5);
+        fontSize = 11.0;
+        padding = const EdgeInsets.symmetric(horizontal: 6, vertical: 3);
         break;
     }
+
+    final bgColor = isSolid ? info.solidBg : info.bg;
+    final textColor = isSolid ? info.solidText : info.text;
 
     Widget badge = Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: info.bg,
-        borderRadius: BorderRadius.circular(999),
+        color: bgColor,
+        borderRadius: BorderRadius.circular(radius),
         border: showBorder ? Border.all(color: info.border, width: 1) : null,
+        boxShadow: isSolid
+            ? const [
+                BoxShadow(
+                  color: Color(0x33000000),
+                  blurRadius: 3,
+                  offset: Offset(0, 1),
+                ),
+              ]
+            : null,
       ),
       child: Text(
         clean,
         style: TextStyle(
-          color: info.text,
+          color: textColor,
           fontSize: fontSize,
           fontWeight: FontWeight.w700,
-          letterSpacing: 0.3,
+          letterSpacing: 0.2,
         ),
       ),
     );
@@ -100,7 +123,7 @@ class VocaLevelBadge extends StatelessWidget {
     if (onTap != null) {
       badge = InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(radius),
         child: badge,
       );
     }

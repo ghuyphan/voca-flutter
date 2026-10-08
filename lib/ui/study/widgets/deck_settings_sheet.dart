@@ -1,8 +1,10 @@
 // lib/ui/study/widgets/deck_settings_sheet.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../config/voca_theme.dart';
 import '../../../services/i18n_service.dart';
+import '../../sheets/voca_bottom_sheet.dart';
 import '../study_session_controller.dart';
 
 class DeckSettingsSheet extends StatefulWidget {
@@ -16,10 +18,11 @@ class DeckSettingsSheet extends StatefulWidget {
   });
 
   static Future<void> show(BuildContext context, StudySessionController controller, VoidCallback onApply) {
-    return showModalBottomSheet(
+    return showVocaBottomSheet(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      title: context.t('study.settingsTitle', null, 'Deck Configuration'),
+      showCloseButton: true,
+      contentPadding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
       builder: (_) => DeckSettingsSheet(controller: controller, onApply: onApply),
     );
   }
@@ -66,59 +69,13 @@ class _DeckSettingsSheetState extends State<DeckSettingsSheet> {
     final learning = widget.controller.learningCount.value;
     final known = widget.controller.knownCount.value;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.bgCard,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border.all(color: colors.borderColorLight),
-      ),
-      padding: EdgeInsets.fromLTRB(
-        20,
-        12,
-        20,
-        MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Drag handle
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: colors.textMuted.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Title & Close Button
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  context.t('study.settingsTitle', null, 'Deck Configuration'),
-                  style: TextStyle(
-                    color: colors.textPrimary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.close_rounded, size: 20),
-                color: colors.textSecondary,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 4),
 
           // 1. Sub-Deck Filter (All / Words / Grammar)
           Text(
@@ -263,38 +220,44 @@ class _DeckSettingsSheetState extends State<DeckSettingsSheet> {
   Widget _buildTypeChip(String type, String label, IconData icon, VocaColorPalette colors) {
     final isSelected = _subDeck == type;
     return Expanded(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => setState(() => _subDeck = type),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            color: isSelected ? colors.accentPrimary.withValues(alpha: 0.12) : colors.bgSurface,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isSelected ? colors.accentPrimary : colors.borderColorLight,
-              width: isSelected ? 1.5 : 1.0,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: () {
+            HapticFeedback.selectionClick();
+            setState(() => _subDeck = type);
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: isSelected ? colors.accentPrimary.withValues(alpha: 0.12) : colors.bgSurface,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isSelected ? colors.accentPrimary : colors.borderColorLight,
+                width: isSelected ? 1.5 : 1.0,
+              ),
             ),
-          ),
-          child: Column(
-            children: [
-              Icon(
-                icon,
-                size: 16,
-                color: isSelected ? colors.accentPrimary : colors.textSecondary,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                style: TextStyle(
+            child: Column(
+              children: [
+                Icon(
+                  icon,
+                  size: 16,
                   color: isSelected ? colors.accentPrimary : colors.textSecondary,
-                  fontSize: 11,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                 ),
-              ),
-            ],
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: isSelected ? colors.accentPrimary : colors.textSecondary,
+                    fontSize: 11,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -304,27 +267,33 @@ class _DeckSettingsSheetState extends State<DeckSettingsSheet> {
   Widget _buildSizeChip(int? size, String label, VocaColorPalette colors) {
     final isSelected = _sessionSize == size;
     return Expanded(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => setState(() => _sessionSize = size),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            color: isSelected ? colors.accentPrimary.withValues(alpha: 0.12) : colors.bgSurface,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isSelected ? colors.accentPrimary : colors.borderColorLight,
-              width: isSelected ? 1.5 : 1.0,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: () {
+            HapticFeedback.selectionClick();
+            setState(() => _sessionSize = size);
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: isSelected ? colors.accentPrimary.withValues(alpha: 0.12) : colors.bgSurface,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isSelected ? colors.accentPrimary : colors.borderColorLight,
+                width: isSelected ? 1.5 : 1.0,
+              ),
             ),
-          ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: isSelected ? colors.accentPrimary : colors.textSecondary,
-              fontSize: 12,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: isSelected ? colors.accentPrimary : colors.textSecondary,
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              ),
             ),
           ),
         ),

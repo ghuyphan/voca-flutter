@@ -173,7 +173,11 @@ class PlayerCoordinator {
     activeVideoId.value = videoId;
 
     // Load video immediately
-    newYtController.loadVideoById(videoId: videoId, startSeconds: startSeconds);
+    if (startSeconds != null && startSeconds > 0) {
+      newYtController.loadVideoById(videoId: videoId, startSeconds: startSeconds);
+    } else {
+      newYtController.loadVideoById(videoId: videoId);
+    }
     newPlayerController.loadVideo(videoId);
 
     if (startSeconds != null && startSeconds > 0) {

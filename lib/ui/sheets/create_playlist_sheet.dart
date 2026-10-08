@@ -127,11 +127,13 @@ class _CreatePlaylistSheetState extends State<CreatePlaylistSheet> {
       final supabase = AppState.instance.supabaseService;
       if (isEditing) {
         // Updating existing
-        await supabase.createPlaylist(
+        await supabase.updatePlaylist(
+          id: widget.playlist!.id,
           title: title,
           description: _descController.text.trim(),
           language: _selectedLang,
           visibility: _visibility,
+          level: _selectedLevel,
         );
       } else {
         await supabase.createPlaylist(
@@ -139,6 +141,7 @@ class _CreatePlaylistSheetState extends State<CreatePlaylistSheet> {
           description: _descController.text.trim(),
           language: _selectedLang,
           visibility: _visibility,
+          level: _selectedLevel,
         );
       }
 

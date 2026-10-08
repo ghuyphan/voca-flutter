@@ -75,7 +75,7 @@ class _DoubleTapSeekRippleState extends State<DoubleTapSeekRipple>
         final opacity = (phase >= 0.0 && phase <= 1.2) ? 1.0 : 0.35;
 
         return Icon(
-          widget.isLeft ? Icons.play_arrow_rounded : Icons.play_arrow_rounded,
+          Icons.play_arrow_rounded,
           color: Colors.white.withValues(alpha: opacity),
           size: 20,
         );

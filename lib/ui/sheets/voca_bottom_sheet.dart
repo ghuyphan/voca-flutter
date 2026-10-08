@@ -31,6 +31,8 @@ Future<T?> showVocaBottomSheet<T>({
     builder: (ctx) {
       final colors = ctx.vocaColors;
       final viewInsets = MediaQuery.of(ctx).viewInsets;
+      final screenHeight = MediaQuery.sizeOf(ctx).height;
+      final availableHeight = (screenHeight - viewInsets.bottom).clamp(100.0, screenHeight);
 
       return AnimatedPadding(
         padding: EdgeInsets.only(bottom: viewInsets.bottom),
@@ -38,7 +40,7 @@ Future<T?> showVocaBottomSheet<T>({
         curve: Curves.easeOutCubic,
         child: Container(
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(ctx).size.height * maxHeightFactor,
+            maxHeight: availableHeight * maxHeightFactor,
           ),
           decoration: BoxDecoration(
             color: colors.bgCard,

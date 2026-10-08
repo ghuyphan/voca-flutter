@@ -83,6 +83,9 @@ class _ExploreScreenState extends State<ExploreScreen>
       untracked(() {
         _selectedLevel.value = 'All';
         _selectedCategory.value = ExploreCategory.all;
+        _searchController.clear();
+        _searchQuery.value = '';
+        _directDetectedVideoId.value = null;
         _loadFeed(refresh: true);
       });
     });
@@ -324,6 +327,9 @@ class _ExploreScreenState extends State<ExploreScreen>
         _hasMore.value = list.length >= _pageSize;
       }
     } catch (e) {
+      if (currentSeq == _requestSequenceId) {
+        _currentOffset = (_currentOffset - _pageSize).clamp(0, double.infinity).toInt();
+      }
       debugPrint('[ExploreScreen] Error loading more videos: $e');
     } finally {
       if (currentSeq == _requestSequenceId) {
@@ -359,6 +365,7 @@ class _ExploreScreenState extends State<ExploreScreen>
 
     _searchFocusNode.unfocus();
     _searchQuery.value = query;
+    _selectedCategory.value = ExploreCategory.all;
     _loadFeed();
   }
 
@@ -536,6 +543,11 @@ class _ExploreScreenState extends State<ExploreScreen>
                     }
                   },
                   onPlaylistsPressed: () {
+                    if (_searchController.text.isNotEmpty || _searchQuery.value.isNotEmpty) {
+                      _searchController.clear();
+                      _searchQuery.value = '';
+                      _directDetectedVideoId.value = null;
+                    }
                     if (_currentTab.value == ExploreTab.playlists) {
                       _loadFeed(refresh: true);
                     } else {
@@ -544,6 +556,11 @@ class _ExploreScreenState extends State<ExploreScreen>
                     }
                   },
                   onCategorySelected: (cat) {
+                    if (_searchController.text.isNotEmpty || _searchQuery.value.isNotEmpty) {
+                      _searchController.clear();
+                      _searchQuery.value = '';
+                      _directDetectedVideoId.value = null;
+                    }
                     if (_currentTab.value == ExploreTab.videos &&
                         _selectedCategory.value == cat) {
                       _selectedCategory.value = ExploreCategory.all;
@@ -572,8 +589,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                   final videos = _videos.value;
                   final playlists = _playlists.value;
 
-                  final hasMini = PlayerCoordinator.instance.hasActiveVideo && PlayerCoordinator.instance.isMiniplayer.value;
-                  final feedBottomPadding = hasMini ? 84.0 : 24.0;
+                  const feedBottomPadding = 24.0;
 
                   Widget feedContent;
 

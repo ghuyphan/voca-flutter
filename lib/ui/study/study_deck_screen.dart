@@ -1,5 +1,6 @@
 // lib/ui/study/study_deck_screen.dart
 
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import '../../config/voca_theme.dart';
@@ -63,7 +64,6 @@ class _StudyDeckScreenState extends State<StudyDeckScreen> {
   Widget build(BuildContext context) {
     final colors = context.vocaColors;
     final isTablet = MediaQuery.of(context).size.width >= VocaTokens.tabletBreakpoint;
-    final activeLang = AppState.instance.activeLanguage.value;
 
     return Scaffold(
       backgroundColor: colors.bgPrimary,
@@ -84,8 +84,6 @@ class _StudyDeckScreenState extends State<StudyDeckScreen> {
                 return SessionRecap(
                   stats: _controller.sessionStats.value,
                   onDone: () => _controller.exitToOverview(),
-                  onFinish: () => _controller.exitToOverview(),
-                  onClose: () => _controller.exitToOverview(),
                   onKeepGoing: () => _controller.startNextBatch(),
                   onReviewAgain: _controller.sessionStats.value.againOrHardCount > 0
                       ? () => _controller.restartFailedCards()
@@ -112,16 +110,11 @@ class _StudyDeckScreenState extends State<StudyDeckScreen> {
                 children: [
                   // Top Anki HUD with integrated Exit and Undo Buttons
                   AnkiHudHeader(
-                    activeLanguage: activeLang,
-                    subDeck: _controller.subDeck.value,
-                    newCount: _controller.newCount.value,
-                    learningCount: _controller.learningCount.value,
-                    dueCount: _controller.dueCount.value,
                     currentIndex: _controller.currentIndex.value,
-                    totalInSession: _controller.initialQueueSize.value > 0
-                        ? _controller.initialQueueSize.value
-                        : _controller.sessionCards.value.length,
-                    combo: _controller.currentCombo.value,
+                    totalInSession: math.max(
+                      _controller.initialQueueSize.value,
+                      _controller.sessionCards.value.length,
+                    ),
                     onOpenDeckSettings: _openDeckSettings,
                     onExit: () => _controller.exitToOverview(),
                     onUndo: _controller.canUndo ? () => _controller.undoLastRating() : null,
@@ -139,9 +132,7 @@ class _StudyDeckScreenState extends State<StudyDeckScreen> {
                         isRevealed: _controller.isCardRevealed.value,
                         isReadingPeeked: _controller.isReadingPeeked.value,
                         againInterval: '<1 min',
-                        hardInterval: intervals.hard,
                         goodInterval: intervals.good,
-                        easyInterval: intervals.easy,
                         onSwipe: (rating) => _controller.rateCurrentCard(rating),
                         onToggleFlip: () => _controller.toggleReveal(),
                         onTogglePeekReading: () => _controller.toggleReadingPeek(),

@@ -91,6 +91,7 @@ class _PlaylistQueueSheetState extends State<PlaylistQueueSheet>
   late bool _isLooping;
   bool _isCopied = false;
   late final AnimationController _eqController;
+  Future<List<Map<String, dynamic>>>? _recommendedVideosFuture;
 
   @override
   void initState() {
@@ -101,6 +102,17 @@ class _PlaylistQueueSheetState extends State<PlaylistQueueSheet>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     )..repeat(reverse: true);
+
+    if (widget.initialVideos == null || widget.initialVideos!.isEmpty) {
+      final lang = AppState.instance.activeLanguage.value;
+      _recommendedVideosFuture = AppState.instance.apiClient.getRecommendedVideos(
+        lang: lang,
+        query: widget.playlistTitle != 'Anime' &&
+                widget.playlistTitle != 'Tuyển chọn'
+            ? widget.playlistTitle.toLowerCase()
+            : null,
+      );
+    }
   }
 
   @override
@@ -121,7 +133,6 @@ class _PlaylistQueueSheetState extends State<PlaylistQueueSheet>
   @override
   Widget build(BuildContext context) {
     final colors = context.vocaColors;
-    final lang = AppState.instance.activeLanguage.value;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -174,13 +185,7 @@ class _PlaylistQueueSheetState extends State<PlaylistQueueSheet>
           child: widget.initialVideos != null && widget.initialVideos!.isNotEmpty
               ? _buildVideoList(widget.initialVideos!, colors)
               : FutureBuilder<List<Map<String, dynamic>>>(
-                  future: AppState.instance.apiClient.getRecommendedVideos(
-                    lang: lang,
-                    query: widget.playlistTitle != 'Anime' &&
-                            widget.playlistTitle != 'Tuyển chọn'
-                        ? widget.playlistTitle.toLowerCase()
-                        : null,
-                  ),
+                  future: _recommendedVideosFuture,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return _buildSkeletonList(colors);

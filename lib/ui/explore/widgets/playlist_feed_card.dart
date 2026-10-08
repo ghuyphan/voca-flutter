@@ -72,6 +72,17 @@ class PlaylistFeedCard extends StatelessWidget {
                 ),
               ),
 
+            // Level Badge (Bottom-Left)
+            if (playlist.level != null && playlist.level!.isNotEmpty)
+              Positioned(
+                bottom: 8,
+                left: 8,
+                child: VocaLevelBadge(
+                  level: playlist.level!,
+                  size: LevelBadgeSize.small,
+                ),
+              ),
+
             // Playlist Count Badge (Bottom-Right)
             Positioned(
               bottom: 8,
@@ -152,39 +163,17 @@ class PlaylistFeedCard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  playlist.description?.isNotEmpty == true
-                                      ? playlist.description!
-                                      : '${context.t('playlist.playlist', null, 'Playlist')} • $videoCount ${videoCount == 1 ? context.t('history.videoSingular', null, 'video') : context.t('history.videoPlural', null, 'video')}',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: colors.textSecondary,
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                                ),
-                              ),
-                              if (playlist.level != null && playlist.level!.isNotEmpty) ...[
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                                  child: Text(
-                                    '•',
-                                    style: TextStyle(
-                                      color: colors.textTertiary,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                                VocaLevelBadge(
-                                  level: playlist.level!,
-                                  size: LevelBadgeSize.small,
-                                ),
-                              ],
-                            ],
+                          Text(
+                            playlist.description?.isNotEmpty == true
+                                ? playlist.description!
+                                : '${context.t('playlist.playlist', null, 'Playlist')} • $videoCount ${videoCount == 1 ? context.t('history.videoSingular', null, 'video') : context.t('history.videoPlural', null, 'video')}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: colors.textSecondary,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w400,
+                            ),
                           ),
                         ],
                       ),
