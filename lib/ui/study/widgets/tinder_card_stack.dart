@@ -167,6 +167,7 @@ class _TinderCardStackState extends State<TinderCardStack>
     ).animate(CurvedAnimation(parent: _flightController, curve: Curves.easeOutCubic));
 
     _flightController.forward(from: 0.0).then((_) {
+      if (!mounted) return;
       _dragOffset = Offset.zero;
       _flightController.reset();
       widget.onSwipe(rating);
@@ -263,6 +264,7 @@ class _TinderCardStackState extends State<TinderCardStack>
       ).animate(CurvedAnimation(parent: _flightController, curve: Curves.easeOutCubic));
 
       _flightController.forward(from: 0.0).then((_) {
+        if (!mounted) return;
         setState(() {
           _isDragging = false;
           _dragOffset = Offset.zero;
@@ -284,6 +286,7 @@ class _TinderCardStackState extends State<TinderCardStack>
       ).animate(CurvedAnimation(parent: _flightController, curve: Curves.easeOutBack));
 
       _flightController.forward(from: 0.0).then((_) {
+        if (!mounted) return;
         setState(() {
           _isDragging = false;
           _dragOffset = Offset.zero;

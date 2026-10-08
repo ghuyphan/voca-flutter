@@ -100,6 +100,7 @@ class ExploreChipsBar extends StatelessWidget {
               return BorderSide(color: colors.borderColor, width: 1.0);
             }),
             shape: const StadiumBorder(),
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
             visualDensity: VisualDensity.compact,
           ),
@@ -185,6 +186,7 @@ class ExploreChipsBar extends StatelessWidget {
         return BorderSide(color: colors.borderColor, width: 1.0);
       }),
       shape: const StadiumBorder(),
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       visualDensity: VisualDensity.compact,
     );

@@ -484,8 +484,15 @@ class FlashcardFace extends StatelessWidget {
   TextSpan _buildHighlightedSentence(
       String sentence, String word, VocaColorPalette colors) {
     final spans = <TextSpan>[];
+    final cleanWord = word.trim();
+    if (cleanWord.isEmpty || sentence.trim().isEmpty) {
+      return TextSpan(
+        text: sentence,
+        style: TextStyle(color: colors.textSecondary, fontSize: 13, height: 1.4),
+      );
+    }
     final lowerSentence = sentence.toLowerCase();
-    final lowerWord = word.toLowerCase();
+    final lowerWord = cleanWord.toLowerCase();
 
     int start = 0;
     while (true) {

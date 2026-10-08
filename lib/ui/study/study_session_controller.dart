@@ -334,11 +334,12 @@ class StudySessionController {
   }
 
   void restartFailedCards() {
-    final missed = undoStack.value
+    final missedIds = undoStack.value
         .where((e) => e.rating == SRSReviewRating.again || e.rating == SRSReviewRating.hard)
-        .map((e) => e.previousCard)
-        .toSet()
-        .toList();
+        .map((e) => e.previousCard.id)
+        .toSet();
+
+    final missed = allCards.value.where((c) => missedIds.contains(c.id)).toList();
 
     if (missed.isNotEmpty) {
       sessionCards.value = missed;
