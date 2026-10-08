@@ -208,19 +208,14 @@ class _ExploreScreenState extends State<ExploreScreen>
 
     // Videos tab
     final tier = _mapLevelToTier(_selectedLevel.value);
-
-    String? query;
-    if (_searchQuery.value.isNotEmpty) {
-      query = _searchQuery.value;
-    } else if (_selectedCategory.value != ExploreCategory.all &&
-        _selectedCategory.value != ExploreCategory.trending) {
-      query = _selectedCategory.value.searchKeyword;
-    }
+    final category = _selectedCategory.value.serverCategory;
+    final query = _searchQuery.value.isNotEmpty ? _searchQuery.value : null;
 
     try {
       final list = await AppState.instance.apiClient.getRecommendedVideos(
         lang: lang,
         tier: tier,
+        category: category,
         query: query,
         limit: _pageSize,
         offset: 0,
@@ -297,18 +292,14 @@ class _ExploreScreenState extends State<ExploreScreen>
     final lang = AppState.instance.activeLanguage.value;
     final tier = _mapLevelToTier(_selectedLevel.value);
 
-    String? query;
-    if (_searchQuery.value.isNotEmpty) {
-      query = _searchQuery.value;
-    } else if (_selectedCategory.value != ExploreCategory.all &&
-        _selectedCategory.value != ExploreCategory.trending) {
-      query = _selectedCategory.value.searchKeyword;
-    }
+    final category = _selectedCategory.value.serverCategory;
+    final query = _searchQuery.value.isNotEmpty ? _searchQuery.value : null;
 
     try {
       final list = await AppState.instance.apiClient.getRecommendedVideos(
         lang: lang,
         tier: tier,
+        category: category,
         query: query,
         limit: _pageSize,
         offset: _currentOffset,

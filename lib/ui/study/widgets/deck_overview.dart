@@ -119,7 +119,26 @@ class DeckOverview extends StatelessWidget {
               values: subDeckKeys,
               labels: subDeckLabels,
               selectedValue: selectedSubDeck,
-              onSelected: (val) => controller.setSubDeck(val),
+              onSelected: (val) {
+                controller.setSubDeck(val);
+                final cards = controller.allCards.value;
+                if (cards.isNotEmpty) {
+                  final inDeck = cards.where((c) {
+                    final isG = controller.isGrammarCard(c);
+                    if (val == 'words') return !isG;
+                    if (val == 'grammar') return isG;
+                    return true;
+                  }).length;
+                  if (inDeck == 0) {
+                    ToastService.info(
+                      context,
+                      val == 'grammar'
+                          ? context.t('study.noGrammarHint', null, 'No grammar patterns saved in this deck yet!')
+                          : context.t('study.noWordsHint', null, 'No vocabulary words saved in this deck yet!'),
+                    );
+                  }
+                }
+              },
               colors: colors,
               height: 38,
             );
@@ -183,7 +202,18 @@ class DeckOverview extends StatelessWidget {
             if (dueCount > 0) {
               onStartDueOnlySession();
             } else if (!isEmptyDeck) {
-              ToastService.info(context, context.t('study.allDone', null, 'All cards cleared for today! 🎉'));
+              ToastService.info(
+                context,
+                context.t('study.allDone', null, 'All cards cleared for today! 🎉'),
+              );
+            } else {
+              ToastService.info(
+                context,
+                context.t('study.noWordsHint', null, 'Save words while watching videos to build your review deck.'),
+                actionLabel: onExploreVideos != null ? context.t('study.exploreVideos', null, 'Explore') : null,
+                onAction: onExploreVideos,
+              );
+              onExploreVideos?.call();
             }
           },
           borderRadius: BorderRadius.circular(20),
@@ -518,6 +548,12 @@ class DeckOverview extends StatelessWidget {
             onTap: () {
               HapticFeedback.selectionClick();
               controller.toggleDueOnly();
+              if (controller.dueOnly.value && controller.dueCount.value == 0) {
+                ToastService.info(
+                  context,
+                  context.t('study.allDone', null, 'All cards cleared for today! 🎉 Turn off "Due Only" to practice ahead.'),
+                );
+              }
             },
             borderRadius: BorderRadius.circular(999),
             child: AnimatedContainer(
@@ -566,11 +602,46 @@ class DeckOverview extends StatelessWidget {
               onPressed: () {
                 HapticFeedback.mediumImpact();
                 if (isEmptyDeck) {
+                  ToastService.info(
+                    context,
+                    context.t('study.noWordsHint', null, 'Save words while watching videos to build your review deck.'),
+                    actionLabel: onExploreVideos != null ? context.t('study.exploreVideos', null, 'Explore') : null,
+                    onAction: onExploreVideos,
+                  );
                   onExploreVideos?.call();
                 } else if (!hasCandidates) {
-                  controller.startSession(practiceAnyway: true);
+                  final currentSubDeck = controller.subDeck.value;
+                  final availableInDeck = controller.allCards.value.where((card) {
+                    final isG = controller.isGrammarCard(card);
+                    if (currentSubDeck == 'words' && isG) return false;
+                    if (currentSubDeck == 'grammar' && !isG) return false;
+                    return true;
+                  }).length;
+
+                  if (availableInDeck == 0) {
+                    ToastService.info(
+                      context,
+                      currentSubDeck == 'grammar'
+                          ? context.t('study.noGrammarHint', null, 'No grammar patterns saved in this deck yet!')
+                          : context.t('study.noWordsHint', null, 'Save words while watching videos to build your review deck.'),
+                    );
+                  } else {
+                    controller.startSession(practiceAnyway: true);
+                    if (controller.sessionCards.value.isEmpty) {
+                      ToastService.info(
+                        context,
+                        context.t('study.allDone', null, 'All cards cleared for today! 🎉'),
+                      );
+                    }
+                  }
                 } else {
                   onStartSession();
+                  if (controller.sessionCards.value.isEmpty) {
+                    ToastService.info(
+                      context,
+                      context.t('study.allDone', null, 'All cards cleared for today! 🎉'),
+                    );
+                  }
                 }
               },
               style: FilledButton.styleFrom(
@@ -845,169 +916,13 @@ class DeckOverview extends StatelessWidget {
       ),
     );
   }
-
-  /// 7. Last 30 Days Activity Heatmap Section (0-shift, high-performance static row matrix)
+  /// 7. Last 30 Days Activity Heatmap Section (with fluid in-place day inspector)
   Widget _buildHeatmapSection(
     BuildContext context,
     VocaColorPalette colors,
     GamificationService gamification,
   ) {
-    return Watch((_) {
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      final activeDates = gamification.activeDates;
-      final df = DateFormat('yyyy-MM-dd');
-      final streak = gamification.currentStreak.value;
-
-      final days = List.generate(30, (i) {
-        final d = today.subtract(Duration(days: 29 - i));
-        final dStr = df.format(d);
-        final isActive = activeDates.contains(dStr);
-        final isToday = (i == 29);
-        return (date: d, isActive: isActive, isToday: isToday);
-      });
-
-      return Container(
-        decoration: BoxDecoration(
-          color: colors.bgCard,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: colors.borderColor),
-        ),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.calendar_month_rounded, size: 16, color: colors.colorFire),
-                    const SizedBox(width: 8),
-                    Text(
-                      context.t('study.last30Days', null, 'Last 30 days'),
-                      style: TextStyle(
-                        color: colors.textPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Text(
-                      context.t('study.less', null, 'Less'),
-                      style: TextStyle(color: colors.textMuted, fontSize: 11),
-                    ),
-                    const SizedBox(width: 4),
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: colors.bgSurface,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(width: 3),
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: colors.colorGrammar.withValues(alpha: 0.45),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(width: 3),
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: colors.colorGrammar,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      context.t('study.more', null, 'More'),
-                      style: TextStyle(color: colors.textMuted, fontSize: 11),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-
-            // 2 Rows of 15 tiles (0-layout shift, 0 dual-pass measurement overhead)
-            Column(
-              children: [
-                _buildHeatmapRow(context, colors, days.sublist(0, 15)),
-                const SizedBox(height: 4),
-                _buildHeatmapRow(context, colors, days.sublist(15, 30)),
-              ],
-            ),
-
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '🔥 $streak ${context.t('streak.dayStreak', null, 'days streak')}',
-                  style: TextStyle(
-                    color: colors.colorFire,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                Text(
-                  context.t('study.tapDayToView', null, 'Tap a day to view'),
-                  style: TextStyle(
-                    color: colors.textMuted,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      );
-    });
-  }
-
-  Widget _buildHeatmapRow(
-    BuildContext context,
-    VocaColorPalette colors,
-    List<({DateTime date, bool isActive, bool isToday})> rowDays,
-  ) {
-    return Row(
-      children: List.generate(rowDays.length, (col) {
-        final dayInfo = rowDays[col];
-        return Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2.0),
-            child: AspectRatio(
-              aspectRatio: 1.0,
-              child: Tooltip(
-                triggerMode: TooltipTriggerMode.tap,
-                preferBelow: false,
-                message:
-                    '${DateFormat('MMM d').format(dayInfo.date)}: ${dayInfo.isActive ? context.t('study.heatmapReviewed', null, 'Reviewed') : context.t('study.heatmapRestDay', null, 'Rest day')}',
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: dayInfo.isActive ? colors.colorGrammar : colors.bgSurface,
-                    borderRadius: BorderRadius.circular(3.5),
-                    border: dayInfo.isToday
-                        ? Border.all(color: colors.accentPrimary, width: 1.5)
-                        : Border.all(color: colors.borderColorLight, width: 0.5),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      }),
-    );
+    return _HeatmapCard(colors: colors, gamification: gamification);
   }
 
   /// 8. More Practice Section: Cloze Sentence Quiz
@@ -1839,6 +1754,221 @@ class VocaSlidingSegmentedBar extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+/// 7. Last 30 Days Activity Heatmap Section (with zero layout-shift Material 3 Tooltips)
+class _HeatmapCard extends StatelessWidget {
+  final VocaColorPalette colors;
+  final GamificationService gamification;
+
+  const _HeatmapCard({
+    required this.colors,
+    required this.gamification,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Watch((_) {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final activeDates = gamification.activeDates;
+      final df = DateFormat('yyyy-MM-dd');
+      final streak = gamification.currentStreak.value;
+
+      final days = List.generate(30, (i) {
+        final d = today.subtract(Duration(days: 29 - i));
+        final dStr = df.format(d);
+        final isActive = activeDates.contains(dStr);
+        final isToday = (i == 29);
+        return (date: d, isActive: isActive, isToday: isToday, index: i);
+      });
+
+      return Container(
+        decoration: BoxDecoration(
+          color: colors.bgCard,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: colors.borderColor),
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.calendar_month_rounded, size: 16, color: colors.colorFire),
+                    const SizedBox(width: 8),
+                    Text(
+                      context.t('study.last30Days', null, 'Last 30 days'),
+                      style: TextStyle(
+                        color: colors.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    Text(
+                      context.t('study.less', null, 'Less'),
+                      style: TextStyle(color: colors.textMuted, fontSize: 11),
+                    ),
+                    const SizedBox(width: 4),
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: colors.bgSurface,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(width: 3),
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: colors.colorGrammar.withValues(alpha: 0.45),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(width: 3),
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: colors.colorGrammar,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      context.t('study.more', null, 'More'),
+                      style: TextStyle(color: colors.textMuted, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+
+            // 2 Rows of 15 tiles (0-layout shift, Material 3 floating tooltips on tap)
+            Column(
+              children: [
+                _buildRow(context, colors, days.sublist(0, 15)),
+                const SizedBox(height: 4),
+                _buildRow(context, colors, days.sublist(15, 30)),
+              ],
+            ),
+
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '🔥 $streak ${context.t('streak.dayStreak', null, 'days streak')}',
+                  style: TextStyle(
+                    color: colors.colorFire,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  context.t('study.tapDayToView', null, 'Tap a day to view'),
+                  style: TextStyle(
+                    color: colors.textMuted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  Widget _buildRow(
+    BuildContext context,
+    VocaColorPalette colors,
+    List<({DateTime date, bool isActive, bool isToday, int index})> rowDays,
+  ) {
+    return Row(
+      children: List.generate(rowDays.length, (col) {
+        final dayInfo = rowDays[col];
+
+        return Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2.0),
+            child: AspectRatio(
+              aspectRatio: 1.0,
+              child: Tooltip(
+                triggerMode: TooltipTriggerMode.tap,
+                preferBelow: false,
+                verticalOffset: 10,
+                showDuration: const Duration(milliseconds: 2500),
+                waitDuration: Duration.zero,
+                enableFeedback: true,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: colors.bgCard,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: dayInfo.isActive
+                        ? colors.colorGrammar.withValues(alpha: 0.5)
+                        : colors.borderColor,
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: colors.isDark ? 0.35 : 0.12),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                richMessage: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: '${DateFormat('EEEE, MMM d').format(dayInfo.date)}${dayInfo.isToday ? ' (Today)' : ''}\n',
+                      style: TextStyle(
+                        color: colors.textPrimary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        height: 1.35,
+                      ),
+                    ),
+                    TextSpan(
+                      text: dayInfo.isActive
+                          ? '✓ ${context.t('study.heatmapReviewed', null, 'Reviewed & Active')}'
+                          : '· ${context.t('study.heatmapRestDay', null, 'Rest day')}',
+                      style: TextStyle(
+                        color: dayInfo.isActive ? colors.colorGrammar : colors.textSecondary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: dayInfo.isActive ? colors.colorGrammar : colors.bgSurface,
+                    borderRadius: BorderRadius.circular(3.5),
+                    border: dayInfo.isToday
+                        ? Border.all(color: colors.accentPrimary, width: 1.5)
+                        : Border.all(color: colors.borderColorLight, width: 0.5),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }),
     );
   }
 }

@@ -453,7 +453,7 @@ class _SessionRecapState extends State<SessionRecap>
                             icon: const Icon(Icons.refresh_rounded, size: 19),
                             label: Text(
                               context.t(
-                                'flashcards.reviewAgainCount',
+                                'study.reviewMissedCards',
                                 {'count': widget.stats.againOrHardCount.toString()},
                                 'Review Missed Cards (${widget.stats.againOrHardCount})',
                               ),
@@ -469,7 +469,7 @@ class _SessionRecapState extends State<SessionRecap>
                         const SizedBox(height: 10),
                       ],
 
-                      // Keep Going / Study Again (Next Batch) Button
+                      // Keep Going / Study Next Batch Button
                       if (widget.onKeepGoing != null) ...[
                         SizedBox(
                           width: double.infinity,
@@ -481,7 +481,7 @@ class _SessionRecapState extends State<SessionRecap>
                             },
                             icon: const Icon(Icons.play_arrow_rounded, size: 20),
                             label: Text(
-                              context.t('study.studyAgain', null, 'Keep Going (Next Batch)'),
+                              context.t('study.continueNextBatch', null, 'Continue (Next Batch)'),
                               style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold),
                             ),
                             style: OutlinedButton.styleFrom(

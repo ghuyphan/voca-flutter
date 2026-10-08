@@ -17,6 +17,7 @@ class FakeVocaApiClient extends VocaApiClient {
   Future<List<Map<String, dynamic>>> getRecommendedVideos({
     String lang = 'ja',
     String? tier,
+    String? category,
     String? query,
     int limit = 20,
     int offset = 0,

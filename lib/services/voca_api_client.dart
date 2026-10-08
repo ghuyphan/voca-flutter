@@ -289,6 +289,7 @@ class VocaApiClient {
   Future<List<Map<String, dynamic>>> getRecommendedVideos({
     String lang = 'ja',
     String? tier,
+    String? category,
     String? query,
     int limit = 20,
     int offset = 0,
@@ -297,6 +298,7 @@ class VocaApiClient {
     final response = await _dio.get('/api/recommended-videos', queryParameters: {
       'lang': lang,
       if (tier != null && tier != 'all') 'tier': tier,
+      if (category != null && category != 'all') 'category': category,
       if (query != null && query.trim().isNotEmpty) 'q': query.trim(),
       'limit': limit,
       'offset': offset,
@@ -305,6 +307,22 @@ class VocaApiClient {
 
     final videos = response.data['videos'] as List<dynamic>?;
     return videos?.map((v) => Map<String, dynamic>.from(v as Map)).toList() ?? [];
+  }
+
+  /// Update video category on server
+  Future<bool> updateVideoCategory({
+    required String videoId,
+    required String category,
+  }) async {
+    try {
+      final response = await _dio.post('/api/video-category', data: {
+        'videoId': videoId,
+        'category': category,
+      });
+      return response.data['success'] == true;
+    } catch (_) {
+      return false;
+    }
   }
 
   /// 8. Two-tier video metadata check

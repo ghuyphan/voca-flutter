@@ -3,6 +3,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../config/voca_theme.dart';
 import '../../../models/voca_models.dart';
 import '../../../services/srs_service.dart';
 import 'flashcard_face.dart';
@@ -31,13 +32,16 @@ class TinderCardStack extends StatefulWidget {
   final Flashcard currentCard;
   final Flashcard? nextCard;
   final Flashcard? cardAfterNext;
+  final int cardIndex;
   final bool isRevealed;
   final bool isReadingPeeked;
   final ValueChanged<SRSReviewRating> onSwipe;
   final VoidCallback onToggleFlip;
   final VoidCallback onTogglePeekReading;
   final String againInterval;
+  final String? hardInterval;
   final String goodInterval;
+  final String? easyInterval;
   final TinderStackController? controller;
 
   const TinderCardStack({
@@ -45,13 +49,16 @@ class TinderCardStack extends StatefulWidget {
     required this.currentCard,
     this.nextCard,
     this.cardAfterNext,
+    this.cardIndex = 0,
     required this.isRevealed,
     required this.isReadingPeeked,
     required this.onSwipe,
     required this.onToggleFlip,
     required this.onTogglePeekReading,
     this.againInterval = '<1 min',
+    this.hardInterval,
     this.goodInterval = '1 d',
+    this.easyInterval,
     this.controller,
   });
 
@@ -106,7 +113,8 @@ class _TinderCardStackState extends State<TinderCardStack>
       widget.controller?._attach(this);
     }
 
-    if (widget.currentCard.id != oldWidget.currentCard.id) {
+    if (widget.currentCard.id != oldWidget.currentCard.id ||
+        widget.cardIndex != oldWidget.cardIndex) {
       _dragOffset = Offset.zero;
       _isDragging = false;
       _hasHapticTriggered = false;
@@ -168,8 +176,8 @@ class _TinderCardStackState extends State<TinderCardStack>
 
     _flightController.forward(from: 0.0).then((_) {
       if (!mounted) return;
-      _dragOffset = Offset.zero;
-      _flightController.reset();
+      _dragOffset = endOffset;
+      _isDragging = false;
       widget.onSwipe(rating);
     });
   }
@@ -265,11 +273,8 @@ class _TinderCardStackState extends State<TinderCardStack>
 
       _flightController.forward(from: 0.0).then((_) {
         if (!mounted) return;
-        setState(() {
-          _isDragging = false;
-          _dragOffset = Offset.zero;
-        });
-        _flightController.reset();
+        _dragOffset = targetOffset;
+        _isDragging = false;
         widget.onSwipe(rating!);
       });
     } else {
@@ -354,6 +359,135 @@ class _TinderCardStackState extends State<TinderCardStack>
             ),
           ),
 
+        // 2.5 Background Swipe Indicators (Revealed behind the active card as it moves)
+        Positioned.fill(
+          child: IgnorePointer(
+            ignoring: true,
+            child: AnimatedBuilder(
+              animation: _flightController,
+              builder: (context, _) {
+                final currentOffset = _flightController.isAnimating
+                    ? _flightOffsetAnimation.value
+                    : _dragOffset;
+                final dx = currentOffset.dx;
+                final dy = currentOffset.dy;
+                final isHorizontal = dx.abs() >= dy.abs();
+
+                // Normalized progress for 4 directions
+                final goodProgress = (isHorizontal && dx > 0 ? (dx / 80.0) : 0.0).clamp(0.0, 1.0);
+                final againProgress = (isHorizontal && dx < 0 ? (-dx / 80.0) : 0.0).clamp(0.0, 1.0);
+                final hardProgress = (!isHorizontal && dy > 0 ? (dy / 80.0) : 0.0).clamp(0.0, 1.0);
+                final easyProgress = (!isHorizontal && dy < 0 ? (-dy / 80.0) : 0.0).clamp(0.0, 1.0);
+
+                if (goodProgress <= 0.02 &&
+                    againProgress <= 0.02 &&
+                    hardProgress <= 0.02 &&
+                    easyProgress <= 0.02) {
+                  return const SizedBox.shrink();
+                }
+
+                final colors = context.vocaColors;
+
+                return Stack(
+                  children: [
+                    // Drag Right exposes LEFT side: Good Indicator
+                    if (goodProgress > 0.02)
+                      Positioned(
+                        left: 28,
+                        top: 0,
+                        bottom: 0,
+                        child: Center(
+                          child: Opacity(
+                            opacity: goodProgress,
+                            child: Transform.scale(
+                              scale: 0.82 + (0.18 * goodProgress),
+                              child: _buildBackgroundIndicator(
+                                icon: Icons.check_circle_rounded,
+                                title: 'Good',
+                                interval: widget.goodInterval,
+                                color: colors.colorGrammar,
+                                colors: colors,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                    // Drag Left exposes RIGHT side: Again Indicator
+                    if (againProgress > 0.02)
+                      Positioned(
+                        right: 28,
+                        top: 0,
+                        bottom: 0,
+                        child: Center(
+                          child: Opacity(
+                            opacity: againProgress,
+                            child: Transform.scale(
+                              scale: 0.82 + (0.18 * againProgress),
+                              child: _buildBackgroundIndicator(
+                                icon: Icons.replay_circle_filled_rounded,
+                                title: 'Again',
+                                interval: widget.againInterval,
+                                color: colors.accentPrimary,
+                                colors: colors,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                    // Drag Up exposes BOTTOM side: Easy Indicator
+                    if (easyProgress > 0.02)
+                      Positioned(
+                        bottom: 40,
+                        left: 0,
+                        right: 0,
+                        child: Center(
+                          child: Opacity(
+                            opacity: easyProgress,
+                            child: Transform.scale(
+                              scale: 0.82 + (0.18 * easyProgress),
+                              child: _buildBackgroundIndicator(
+                                icon: Icons.bolt_rounded,
+                                title: 'Easy',
+                                interval: widget.easyInterval,
+                                color: colors.accentSecondary,
+                                colors: colors,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                    // Drag Down exposes TOP side: Hard Indicator
+                    if (hardProgress > 0.02)
+                      Positioned(
+                        top: 40,
+                        left: 0,
+                        right: 0,
+                        child: Center(
+                          child: Opacity(
+                            opacity: hardProgress,
+                            child: Transform.scale(
+                              scale: 0.82 + (0.18 * hardProgress),
+                              child: _buildBackgroundIndicator(
+                                icon: Icons.timelapse_rounded,
+                                title: 'Hard',
+                                interval: widget.hardInterval,
+                                color: colors.colorFire,
+                                colors: colors,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+
         // 3. Foreground Top Card (Active interactive swipeable card)
         Positioned.fill(
           child: GestureDetector(
@@ -433,6 +567,67 @@ class _TinderCardStackState extends State<TinderCardStack>
             ),
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildBackgroundIndicator({
+    required IconData icon,
+    required String title,
+    String? interval,
+    required Color color,
+    required VocaColorPalette colors,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          size: 44,
+          color: color,
+          shadows: [
+            Shadow(
+              color: Colors.black.withValues(alpha: colors.isDark ? 0.45 : 0.12),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        const SizedBox(height: 5),
+        Text(
+          title,
+          style: TextStyle(
+            color: color,
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.3,
+            shadows: [
+              Shadow(
+                color: Colors.black.withValues(alpha: colors.isDark ? 0.45 : 0.10),
+                blurRadius: 8,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+        ),
+        if (interval != null && interval.isNotEmpty) ...[
+          const SizedBox(height: 2),
+          Text(
+            interval,
+            style: TextStyle(
+              color: color.withValues(alpha: 0.85),
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              shadows: [
+                Shadow(
+                  color: Colors.black.withValues(alpha: colors.isDark ? 0.4 : 0.08),
+                  blurRadius: 6,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }

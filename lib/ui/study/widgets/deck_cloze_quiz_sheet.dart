@@ -144,7 +144,7 @@ class _DeckClozeQuizSheetState extends State<DeckClozeQuizSheet> {
     final currentCard = _quizCards[_currentIndex];
     final sentence = currentCard.contextSentence ?? '';
     final translation = currentCard.contextTranslation;
-    final maskedSentence = sentence.replaceAll(currentCard.word, '[ _____ ]');
+    final maskedSentence = sentence.replaceFirst(currentCard.word, '[ _____ ]');
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -291,27 +291,70 @@ class _DeckClozeQuizSheetState extends State<DeckClozeQuizSheet> {
 
         const SizedBox(height: 18),
 
-        // Next / Continue Action Button (only shown after selecting an option)
-        if (_selectedOptionIndex != null)
-          SizedBox(
-            height: 46,
-            child: FilledButton(
-              onPressed: _goToNext,
-              style: FilledButton.styleFrom(
-                backgroundColor: colors.accentPrimary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              ),
-              child: Text(
-                _currentIndex + 1 < _quizCards.length
-                    ? context.t('common.next', null, 'Next Question')
-                    : context.t('study.done', null, 'Complete Quiz'),
-                style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700),
+        // Answer Feedback Indicator (shows instantly when an option is selected)
+        if (_selectedOptionIndex != null) ...[
+          Builder(
+            builder: (_) {
+              final isCorrect = _currentOptions[_selectedOptionIndex!] == currentCard.word;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      isCorrect ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                      color: isCorrect ? colors.success : colors.error,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      isCorrect
+                          ? context.t('study.correctBonus', null, 'Correct! +15 XP')
+                          : '${context.t('study.correctAnswer', null, 'Correct answer:')} ${currentCard.word}',
+                      style: TextStyle(
+                        color: isCorrect ? colors.success : colors.error,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ] else
+          const SizedBox(height: 6),
+
+        // Permanent Bottom Action Button (always visible, disabled before choosing, active once chosen)
+        SizedBox(
+          height: 48,
+          child: FilledButton(
+            onPressed: _selectedOptionIndex != null ? _goToNext : null,
+            style: FilledButton.styleFrom(
+              backgroundColor: colors.accentPrimary,
+              foregroundColor: Colors.white,
+              disabledBackgroundColor: colors.bgSurface,
+              disabledForegroundColor: colors.textMuted,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: _selectedOptionIndex == null
+                    ? BorderSide(color: colors.borderColor, width: 1.2)
+                    : BorderSide.none,
               ),
             ),
-          )
-        else
-          const SizedBox(height: 46),
+            child: Text(
+              _currentIndex + 1 < _quizCards.length
+                  ? context.t('common.next', null, 'Next Question')
+                  : context.t('study.done', null, 'Done'),
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: _selectedOptionIndex != null ? Colors.white : colors.textMuted,
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }

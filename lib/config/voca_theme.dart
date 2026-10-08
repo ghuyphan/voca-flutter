@@ -683,6 +683,28 @@ class VocaTheme {
         textColor: Colors.white,
         textStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
       ),
+      tooltipTheme: TooltipThemeData(
+        decoration: BoxDecoration(
+          color: VocaColorPalette.dark.bgCard,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: VocaColorPalette.dark.borderColor),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.35),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        textStyle: TextStyle(
+          color: VocaColorPalette.dark.textPrimary,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          fontFamily: 'Nunito',
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        waitDuration: const Duration(milliseconds: 400),
+      ),
     );
   }
 
@@ -935,6 +957,28 @@ class VocaTheme {
         backgroundColor: VocaColorPalette.light.accentPrimary,
         textColor: Colors.white,
         textStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+      ),
+      tooltipTheme: TooltipThemeData(
+        decoration: BoxDecoration(
+          color: VocaColorPalette.light.bgCard,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: VocaColorPalette.light.borderColor),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        textStyle: TextStyle(
+          color: VocaColorPalette.light.textPrimary,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          fontFamily: 'Nunito',
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        waitDuration: const Duration(milliseconds: 400),
       ),
     );
   }

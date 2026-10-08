@@ -329,7 +329,7 @@ class StudySessionController {
     sessionStats.value = const SessionStats();
     currentCombo.value = 0;
     _rewardClaimed = false;
-    isSessionActive.value = true;
+    isSessionActive.value = queue.isNotEmpty;
     resetCardState();
   }
 

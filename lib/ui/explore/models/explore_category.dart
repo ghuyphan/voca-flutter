@@ -42,6 +42,25 @@ enum ExploreCategory {
     }
   }
 
+  /// Canonical server-side category identifier passed to /api/recommended-videos
+  String? get serverCategory {
+    switch (this) {
+      case ExploreCategory.animeDrama:
+        return 'anime_drama';
+      case ExploreCategory.music:
+        return 'music';
+      case ExploreCategory.news:
+        return 'news';
+      case ExploreCategory.vlog:
+        return 'vlog';
+      case ExploreCategory.conversation:
+        return 'conversation';
+      case ExploreCategory.all:
+      case ExploreCategory.trending:
+        return null;
+    }
+  }
+
   String? get searchKeyword {
     switch (this) {
       case ExploreCategory.animeDrama:
