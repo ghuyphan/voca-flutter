@@ -16,6 +16,7 @@ import '../sheets/new_video_sheet.dart';
 import '../sheets/gamification_dialogs.dart';
 import '../video/video_navigation_host.dart';
 import '../video/miniplayer_bar.dart';
+import '../widgets/circle_flag.dart';
 import '../widgets/voca_bottom_nav_bar.dart';
 
 class MainShell extends StatefulWidget {
@@ -293,42 +294,70 @@ class _MainShellState extends State<MainShell> {
                         items: [
                           DropdownMenuItem(
                             value: 'ja',
-                            child: Text(
-                              '🇯🇵 Japanese',
-                              style: TextStyle(
-                                color: colors.textPrimary,
-                                fontSize: 13,
-                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const CircleFlag(code: 'ja', size: 16),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Japanese',
+                                  style: TextStyle(
+                                    color: colors.textPrimary,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           DropdownMenuItem(
                             value: 'zh',
-                            child: Text(
-                              '🇨🇳 Chinese',
-                              style: TextStyle(
-                                color: colors.textPrimary,
-                                fontSize: 13,
-                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const CircleFlag(code: 'zh', size: 16),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Chinese',
+                                  style: TextStyle(
+                                    color: colors.textPrimary,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           DropdownMenuItem(
                             value: 'ko',
-                            child: Text(
-                              '🇰🇷 Korean',
-                              style: TextStyle(
-                                color: colors.textPrimary,
-                                fontSize: 13,
-                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const CircleFlag(code: 'ko', size: 16),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Korean',
+                                  style: TextStyle(
+                                    color: colors.textPrimary,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           DropdownMenuItem(
                             value: 'en',
-                            child: Text(
-                              '🇺🇸 English',
-                              style: TextStyle(
-                                color: colors.textPrimary,
-                                fontSize: 13,
-                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const CircleFlag(code: 'en', size: 16),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'English',
+                                  style: TextStyle(
+                                    color: colors.textPrimary,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],

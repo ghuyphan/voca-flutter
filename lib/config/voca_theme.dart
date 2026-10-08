@@ -32,18 +32,18 @@ class VocaTokens {
   static const Color accentPrimaryShadow = Color(0xFFE03E58);
   static const Color accentPrimarySoft = Color(0x1FFF6B82);
 
-  // Secondary & Tertiary Accents
-  static const Color accentSecondary = Color(0xFFA78BFA); // Purple
-  static const Color accentSecondarySoft = Color(0x1FA78BFA);
-  static const Color accentTertiary = Color(0xFFFBBF24); // Gold / Amber
+  // Secondary & Tertiary Accents (Material 3 Harmonized)
+  static const Color accentSecondary = Color(0xFFCFBCFF); // M3 Tone 80 Pastel Lavender / Violet
+  static const Color accentSecondarySoft = Color(0x26CFBCFF);
+  static const Color accentTertiary = Color(0xFFFFB959); // M3 Tone 80 Warm Topaz Gold (XP / Trophy)
 
-  // Gamification & Semantics
-  static const Color colorFire = Color(0xFFEA580C); // Streak flame
-  static const Color colorDiamond = Color(0xFF0284C7); // AI Credit / Diamond
-  static const Color colorGrammar = Color(0xFF10B981); // Crisp mint / emerald
-  static const Color success = Color(0xFF4ADE80);
-  static const Color warning = Color(0xFFF59E0B);
-  static const Color error = Color(0xFFEF4444);
+  // Gamification & Semantics (Chill Pastel for dark canvas - Apple & Linear Inspired)
+  static const Color colorFire = Color(0xFFFDBA74); // Chill pastel apricot flame
+  static const Color colorDiamond = Color(0xFF93C5FD); // Chill pastel baby blue diamond
+  static const Color colorGrammar = Color(0xFF6EE7B7); // Chill pastel mint teal
+  static const Color success = Color(0xFF86EFAC); // Chill pastel matcha green
+  static const Color warning = Color(0xFFFDE068); // Chill pastel butter gold
+  static const Color error = Color(0xFFFDA4AF); // Chill pastel rose blush
 
   // Word Mastery Status Colors
   static const Color wordNewBg = Color(0x26FF6B82);
@@ -55,26 +55,26 @@ class VocaTokens {
   static const Color wordMasteredBg = Color(0x264ADE80);
   static const Color wordMasteredText = Color(0xFF86EFAC);
 
-  // Chill Pastel Grammar / Difficulty Level Colors (Dark Mode)
-  static const Color levelBeginnerBg = Color(0x2458AFFF);
-  static const Color levelBeginnerText = Color(0xFF9BCEFF);
-  static const Color levelBeginnerBorder = Color(0x4058AFFF);
+  // Material 3 Tonal Difficulty Level Colors (Dark Mode M3 Tonal)
+  static const Color levelBeginnerBg = Color(0x336366F1);
+  static const Color levelBeginnerText = Color(0xFFA5B4FC);
+  static const Color levelBeginnerBorder = Color(0x59818CF8);
 
-  static const Color levelElementaryBg = Color(0x2438D9EE);
-  static const Color levelElementaryText = Color(0xFF67E8F9);
-  static const Color levelElementaryBorder = Color(0x4038D9EE);
+  static const Color levelElementaryBg = Color(0x3314B8A6);
+  static const Color levelElementaryText = Color(0xFF5EEAD4);
+  static const Color levelElementaryBorder = Color(0x592DD4BF);
 
-  static const Color levelIntermediateBg = Color(0x24FBC53D);
-  static const Color levelIntermediateText = Color(0xFFFDE068);
-  static const Color levelIntermediateBorder = Color(0x40FBC53D);
+  static const Color levelIntermediateBg = Color(0x33F59E0B);
+  static const Color levelIntermediateText = Color(0xFFFCD34D);
+  static const Color levelIntermediateBorder = Color(0x59FBBF24);
 
-  static const Color levelUpperBg = Color(0x24FB923C);
+  static const Color levelUpperBg = Color(0x33F97316);
   static const Color levelUpperText = Color(0xFFFDBA74);
-  static const Color levelUpperBorder = Color(0x40FB923C);
+  static const Color levelUpperBorder = Color(0x59FB923C);
 
-  static const Color levelAdvancedBg = Color(0x24FF7891);
-  static const Color levelAdvancedText = Color(0xFFFFA4B5);
-  static const Color levelAdvancedBorder = Color(0x40FF7891);
+  static const Color levelAdvancedBg = Color(0x33F43F5E);
+  static const Color levelAdvancedText = Color(0xFFFDA4AF);
+  static const Color levelAdvancedBorder = Color(0x59FB7185);
 
   // Responsive Breakpoints
   static const double tabletBreakpoint = 720.0;
@@ -222,15 +222,15 @@ class VocaColorPalette {
     accentPrimaryHover: Color(0xFFFF8095),
     accentPrimaryShadow: Color(0xFFE03E58),
     accentPrimarySoft: Color(0x1FFF6B82),
-    accentSecondary: Color(0xFFA78BFA),
-    accentSecondarySoft: Color(0x1FA78BFA),
-    accentTertiary: Color(0xFFFBBF24),
-    colorFire: Color(0xFFEA580C),
-    colorDiamond: Color(0xFF0284C7),
-    colorGrammar: Color(0xFF10B981),
-    success: Color(0xFF4ADE80),
-    warning: Color(0xFFF59E0B),
-    error: Color(0xFFEF4444),
+    accentSecondary: Color(0xFFCFBCFF),
+    accentSecondarySoft: Color(0x26CFBCFF),
+    accentTertiary: Color(0xFFFFB959),
+    colorFire: Color(0xFFFDBA74),
+    colorDiamond: Color(0xFF93C5FD),
+    colorGrammar: Color(0xFF6EE7B7),
+    success: Color(0xFF86EFAC),
+    warning: Color(0xFFFDE068),
+    error: Color(0xFFFDA4AF),
     wordNewBg: Color(0x26FF6B82),
     wordNewText: Color(0xFFFF8CA0),
     wordLearningBg: Color(0x26FBBF24),
@@ -239,21 +239,21 @@ class VocaColorPalette {
     wordKnownText: Color(0xFF7DD3FC),
     wordMasteredBg: Color(0x264ADE80),
     wordMasteredText: Color(0xFF86EFAC),
-    levelBeginnerBg: Color(0x2458AFFF),
-    levelBeginnerText: Color(0xFF9BCEFF),
-    levelBeginnerBorder: Color(0x4058AFFF),
-    levelElementaryBg: Color(0x2438D9EE),
-    levelElementaryText: Color(0xFF67E8F9),
-    levelElementaryBorder: Color(0x4038D9EE),
-    levelIntermediateBg: Color(0x24FBC53D),
-    levelIntermediateText: Color(0xFFFDE068),
-    levelIntermediateBorder: Color(0x40FBC53D),
-    levelUpperBg: Color(0x24FB923C),
+    levelBeginnerBg: Color(0x336366F1),
+    levelBeginnerText: Color(0xFFA5B4FC),
+    levelBeginnerBorder: Color(0x59818CF8),
+    levelElementaryBg: Color(0x3314B8A6),
+    levelElementaryText: Color(0xFF5EEAD4),
+    levelElementaryBorder: Color(0x592DD4BF),
+    levelIntermediateBg: Color(0x33F59E0B),
+    levelIntermediateText: Color(0xFFFCD34D),
+    levelIntermediateBorder: Color(0x59FBBF24),
+    levelUpperBg: Color(0x33F97316),
     levelUpperText: Color(0xFFFDBA74),
-    levelUpperBorder: Color(0x40FB923C),
-    levelAdvancedBg: Color(0x24FF7891),
-    levelAdvancedText: Color(0xFFFFA4B5),
-    levelAdvancedBorder: Color(0x40FF7891),
+    levelUpperBorder: Color(0x59FB923C),
+    levelAdvancedBg: Color(0x33F43F5E),
+    levelAdvancedText: Color(0xFFFDA4AF),
+    levelAdvancedBorder: Color(0x59FB7185),
   );
 
   /// Light Mode Palette (Crisp Porcelain - Apple & Linear Inspired)
@@ -277,38 +277,38 @@ class VocaColorPalette {
     accentPrimaryHover: Color(0xFFD83855),
     accentPrimaryShadow: Color(0xFFB82542),
     accentPrimarySoft: Color(0x14E84562),
-    accentSecondary: Color(0xFF7C3AED),
-    accentSecondarySoft: Color(0x147C3AED),
-    accentTertiary: Color(0xFFD97706),
-    colorFire: Color(0xFFEA580C),
-    colorDiamond: Color(0xFF0284C7),
-    colorGrammar: Color(0xFF10B981),
-    success: Color(0xFF22C55E),
-    warning: Color(0xFFF59E0B),
-    error: Color(0xFFEF4444),
-    wordNewBg: Color(0xFFFFEBF0),
-    wordNewText: Color(0xFFC42B47),
-    wordLearningBg: Color(0xFFFEF3D6),
-    wordLearningText: Color(0xFF8B5700),
-    wordKnownBg: Color(0xFFE6F2FF),
-    wordKnownText: Color(0xFF0E60B8),
-    wordMasteredBg: Color(0xFFE6F9F0),
+    accentSecondary: Color(0xFF6750A4), // M3 Tone 40 Iris/Violet (Google M3 Baseline)
+    accentSecondarySoft: Color(0x1F6750A4),
+    accentTertiary: Color(0xFF855300), // M3 Tone 40 Topaz Gold (Trophy / Star / XP)
+    colorFire: Color(0xFFC2410C), // M3 Tone 40 deep warm flame on light canvas
+    colorDiamond: Color(0xFF0284C7), // M3 Tone 40 deep sky diamond on light canvas
+    colorGrammar: Color(0xFF0F766E), // M3 Tone 40 deep mint teal on light canvas
+    success: Color(0xFF15803D), // M3 Tone 40 accessible green on light canvas
+    warning: Color(0xFFB45309), // M3 Tone 40 accessible dark amber on light canvas (WCAG AA >= 4.5:1)
+    error: Color(0xFFDC2626), // M3 Tone 40 accessible crimson on light canvas
+    wordNewBg: Color(0xFFFFE4E6),
+    wordNewText: Color(0xFFBE123C),
+    wordLearningBg: Color(0xFFFEF9C3), // Fresh warm gold container
+    wordLearningText: Color(0xFF854D0E), // Deep gold amber (WCAG AAA >= 7:1)
+    wordKnownBg: Color(0xFFE0F2FE),
+    wordKnownText: Color(0xFF0369A1),
+    wordMasteredBg: Color(0xFFDCFCE7),
     wordMasteredText: Color(0xFF15803D),
-    levelBeginnerBg: Color(0xFFE6F2FF),
-    levelBeginnerText: Color(0xFF0E60B8),
-    levelBeginnerBorder: Color(0x330E60B8),
-    levelElementaryBg: Color(0xFFE2F6F9),
-    levelElementaryText: Color(0xFF087382),
-    levelElementaryBorder: Color(0x33087382),
-    levelIntermediateBg: Color(0xFFFEF3D6),
-    levelIntermediateText: Color(0xFF8B5700),
-    levelIntermediateBorder: Color(0x338B5700),
-    levelUpperBg: Color(0xFFFFF0E5),
-    levelUpperText: Color(0xFFA74A00),
-    levelUpperBorder: Color(0x33A74A00),
-    levelAdvancedBg: Color(0xFFFFEBF0),
-    levelAdvancedText: Color(0xFFC42B47),
-    levelAdvancedBorder: Color(0x33C42B47),
+    levelBeginnerBg: Color(0xFFEEF2FF), // M3 Indigo Tone 95
+    levelBeginnerText: Color(0xFF3730A3), // M3 Indigo Tone 30 (WCAG AAA >= 7:1)
+    levelBeginnerBorder: Color(0xFFC7D2FE), // M3 Indigo Tone 80
+    levelElementaryBg: Color(0xFFF0FDFA), // M3 Teal Tone 95
+    levelElementaryText: Color(0xFF0F766E), // M3 Teal Tone 30 (WCAG AAA >= 7:1)
+    levelElementaryBorder: Color(0xFF99F6E4), // M3 Teal Tone 80
+    levelIntermediateBg: Color(0xFFFEF9C3), // M3 Amber Tone 95
+    levelIntermediateText: Color(0xFF854D0E), // M3 Amber Tone 30 (WCAG AAA >= 7:1)
+    levelIntermediateBorder: Color(0xFFFDE047), // M3 Amber Tone 80
+    levelUpperBg: Color(0xFFFFF7ED), // M3 Orange Tone 95
+    levelUpperText: Color(0xFF9A3412), // M3 Orange Tone 30 (WCAG AAA >= 7:1)
+    levelUpperBorder: Color(0xFFFED7AA), // M3 Orange Tone 80
+    levelAdvancedBg: Color(0xFFFFF1F2), // M3 Rose Tone 95
+    levelAdvancedText: Color(0xFF9F1239), // M3 Rose Tone 30 (WCAG AAA >= 7:1)
+    levelAdvancedBorder: Color(0xFFFECDD3), // M3 Rose Tone 80
   );
 }
 
@@ -356,8 +356,8 @@ class LevelColorInfo {
         bg: palette.levelBeginnerBg,
         text: palette.levelBeginnerText,
         border: palette.levelBeginnerBorder,
-        solidBg: const Color(0xFF2563EB),
-        solidText: Colors.white,
+        solidBg: isDark ? const Color(0xFF9BCEFF) : const Color(0xFF2563EB),
+        solidText: isDark ? const Color(0xFF0F172A) : Colors.white,
       );
     }
     if (l.contains('N4') ||
@@ -369,8 +369,8 @@ class LevelColorInfo {
         bg: palette.levelElementaryBg,
         text: palette.levelElementaryText,
         border: palette.levelElementaryBorder,
-        solidBg: const Color(0xFF0891B2),
-        solidText: Colors.white,
+        solidBg: isDark ? const Color(0xFF67E8F9) : const Color(0xFF0891B2),
+        solidText: isDark ? const Color(0xFF042F2E) : Colors.white,
       );
     }
     if (l.contains('N3') ||
@@ -384,8 +384,8 @@ class LevelColorInfo {
         bg: palette.levelIntermediateBg,
         text: palette.levelIntermediateText,
         border: palette.levelIntermediateBorder,
-        solidBg: const Color(0xFFD97706),
-        solidText: Colors.white,
+        solidBg: isDark ? const Color(0xFFFDE068) : const Color(0xFFD97706),
+        solidText: isDark ? const Color(0xFF451A03) : Colors.white,
       );
     }
     if (l.contains('N2') ||
@@ -397,8 +397,8 @@ class LevelColorInfo {
         bg: palette.levelUpperBg,
         text: palette.levelUpperText,
         border: palette.levelUpperBorder,
-        solidBg: const Color(0xFFEA580C),
-        solidText: Colors.white,
+        solidBg: isDark ? const Color(0xFFFDBA74) : const Color(0xFFEA580C),
+        solidText: isDark ? const Color(0xFF431407) : Colors.white,
       );
     }
     if (l.contains('N1') ||
@@ -411,16 +411,16 @@ class LevelColorInfo {
         bg: palette.levelAdvancedBg,
         text: palette.levelAdvancedText,
         border: palette.levelAdvancedBorder,
-        solidBg: const Color(0xFFE11D48),
-        solidText: Colors.white,
+        solidBg: isDark ? const Color(0xFFFFA4B5) : const Color(0xFFE11D48),
+        solidText: isDark ? const Color(0xFF4C0519) : Colors.white,
       );
     }
     return LevelColorInfo(
       bg: palette.levelBeginnerBg,
       text: palette.levelBeginnerText,
       border: palette.levelBeginnerBorder,
-      solidBg: const Color(0xFF2563EB),
-      solidText: Colors.white,
+      solidBg: isDark ? const Color(0xFF9BCEFF) : const Color(0xFF2563EB),
+      solidText: isDark ? const Color(0xFF0F172A) : Colors.white,
     );
   }
 }
@@ -444,18 +444,31 @@ class VocaTheme {
       dividerColor: VocaColorPalette.dark.borderColor,
       colorScheme: ColorScheme.dark(
         primary: VocaColorPalette.dark.accentPrimary,
-        onPrimary: Colors.white,
-        primaryContainer: VocaColorPalette.dark.accentPrimarySoft,
-        onPrimaryContainer: VocaColorPalette.dark.accentPrimary,
-        secondary: VocaColorPalette.dark.accentPrimary,
-        onSecondary: Colors.white,
-        secondaryContainer: VocaColorPalette.dark.accentPrimarySoft,
-        onSecondaryContainer: VocaColorPalette.dark.accentPrimary,
+        onPrimary: const Color(0xFF5C0018),
+        primaryContainer: const Color(0xFF7A142A),
+        onPrimaryContainer: const Color(0xFFFFD9DF),
+        secondary: VocaColorPalette.dark.accentSecondary,
+        onSecondary: const Color(0xFF381E72),
+        secondaryContainer: const Color(0xFF4F378B),
+        onSecondaryContainer: const Color(0xFFEADDFF),
+        tertiary: VocaColorPalette.dark.accentTertiary,
+        onTertiary: const Color(0xFF452B00),
+        tertiaryContainer: const Color(0xFF633F00),
+        onTertiaryContainer: const Color(0xFFFFDDB4),
         surface: VocaColorPalette.dark.bgCard,
         onSurface: VocaColorPalette.dark.textPrimary,
+        surfaceContainerLowest: VocaColorPalette.dark.bgPrimary,
+        surfaceContainerLow: VocaColorPalette.dark.bgSecondary,
+        surfaceContainer: VocaColorPalette.dark.bgCard,
+        surfaceContainerHigh: VocaColorPalette.dark.bgSurface,
+        surfaceContainerHighest: VocaColorPalette.dark.bgHover,
+        outline: VocaColorPalette.dark.borderColor,
+        outlineVariant: VocaColorPalette.dark.borderColorLight,
         surfaceTint: Colors.transparent,
         error: VocaColorPalette.dark.error,
-        onError: Colors.white,
+        onError: const Color(0xFF601410),
+        errorContainer: const Color(0xFF8C1D18),
+        onErrorContainer: const Color(0xFFF9DEDC),
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: VocaColorPalette.dark.bgPrimary,
@@ -685,17 +698,30 @@ class VocaTheme {
       colorScheme: ColorScheme.light(
         primary: VocaColorPalette.light.accentPrimary,
         onPrimary: Colors.white,
-        primaryContainer: VocaColorPalette.light.accentPrimarySoft,
-        onPrimaryContainer: VocaColorPalette.light.accentPrimary,
-        secondary: VocaColorPalette.light.accentPrimary,
+        primaryContainer: const Color(0xFFFFD9DF),
+        onPrimaryContainer: const Color(0xFF3E0011),
+        secondary: VocaColorPalette.light.accentSecondary,
         onSecondary: Colors.white,
-        secondaryContainer: VocaColorPalette.light.accentPrimarySoft,
-        onSecondaryContainer: VocaColorPalette.light.accentPrimary,
+        secondaryContainer: const Color(0xFFE8DEF8),
+        onSecondaryContainer: const Color(0xFF21005D),
+        tertiary: VocaColorPalette.light.accentTertiary,
+        onTertiary: Colors.white,
+        tertiaryContainer: const Color(0xFFFFDDB4),
+        onTertiaryContainer: const Color(0xFF2B1700),
         surface: VocaColorPalette.light.bgCard,
         onSurface: VocaColorPalette.light.textPrimary,
+        surfaceContainerLowest: VocaColorPalette.light.bgCard,
+        surfaceContainerLow: VocaColorPalette.light.bgSurface,
+        surfaceContainer: VocaColorPalette.light.bgPrimary,
+        surfaceContainerHigh: VocaColorPalette.light.bgSecondary,
+        surfaceContainerHighest: VocaColorPalette.light.bgTertiary,
+        outline: VocaColorPalette.light.borderColor,
+        outlineVariant: VocaColorPalette.light.borderColorLight,
         surfaceTint: Colors.transparent,
         error: VocaColorPalette.light.error,
         onError: Colors.white,
+        errorContainer: const Color(0xFFF9DEDC),
+        onErrorContainer: const Color(0xFF410E0B),
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: VocaColorPalette.light.bgPrimary,

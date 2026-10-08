@@ -60,13 +60,13 @@ class VocaEmptyState extends StatelessWidget {
         iconColor = colors.textMuted;
         break;
       case EmptyStateIconVariant.error:
-        boxBg = colors.error.withOpacity(0.10);
-        boxBorder = colors.error.withOpacity(0.25);
+        boxBg = colors.error.withValues(alpha: 0.10);
+        boxBorder = colors.error.withValues(alpha: 0.25);
         iconColor = colors.error;
         break;
       case EmptyStateIconVariant.accent:
         boxBg = colors.accentPrimarySoft;
-        boxBorder = colors.accentPrimary.withOpacity(0.25);
+        boxBorder = colors.accentPrimary.withValues(alpha: 0.25);
         iconColor = colors.accentPrimary;
         break;
     }

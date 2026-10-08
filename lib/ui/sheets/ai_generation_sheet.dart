@@ -257,12 +257,12 @@ class _AiGenerationSheetState extends State<AiGenerationSheet> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.12),
+                color: colors.error.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 _error!,
-                style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                style: TextStyle(color: colors.error, fontSize: 12),
               ),
             ),
           ],

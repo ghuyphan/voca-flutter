@@ -69,8 +69,9 @@ class _DoubleTapSeekRippleState extends State<DoubleTapSeekRipple>
       builder: (context, child) {
         // Staggered light sequence across the 3 chevrons (0, 1, 2)
         final progress = _arrowsController.value;
-        // Direction: if left (rewind), animation flows right-to-left; if right, left-to-right
-        final activeIndex = widget.isLeft ? (2 - index) : index;
+        // Direction: horizontal Transform mirrors the row when isLeft is true,
+        // so index 0 -> 1 -> 2 naturally flows right-to-left for rewind
+        final activeIndex = index;
         final phase = (progress * 3.0) - activeIndex;
         final opacity = (phase >= 0.0 && phase <= 1.2) ? 1.0 : 0.35;
 

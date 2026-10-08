@@ -105,7 +105,12 @@ class FlashcardFace extends StatelessWidget {
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.5,
                         height: 1.2,
-                        fontFamily: card.language == 'ja' ? 'Kosugi Maru' : null,
+                        fontFamily: switch (card.language.toLowerCase()) {
+                          'ja' || 'japanese' => 'Kosugi Maru',
+                          'zh' || 'chinese' => 'Noto Sans SC',
+                          'ko' || 'korean' => 'Noto Sans KR',
+                          _ => null,
+                        },
                       ),
                     ),
 
@@ -166,6 +171,7 @@ class FlashcardFace extends StatelessWidget {
                       card.contextSentence!,
                       card.word,
                       colors,
+                      card.language,
                     ),
                   ),
 
@@ -249,10 +255,10 @@ class FlashcardFace extends StatelessWidget {
   ) {
     final normLevel = card.level.toLowerCase().trim();
     final (dotsFilled, label, activeColor) = switch (normLevel) {
-      'mastered' => (4, context.t('study.mastered', null, 'Mastered'), const Color(0xFFA78BFA)),
-      'known' => (3, context.t('study.known', null, 'Known'), const Color(0xFF60A5FA)),
-      'learning' => (2, context.t('study.learning', null, 'Learning'), const Color(0xFFFBBF24)),
-      _ => (1, context.t('study.new', null, 'New'), const Color(0xFF2DD4BF)),
+      'mastered' => (4, context.t('study.mastered', null, 'Mastered'), colors.wordMasteredText),
+      'known' => (3, context.t('study.known', null, 'Known'), colors.wordKnownText),
+      'learning' => (2, context.t('study.learning', null, 'Learning'), colors.wordLearningText),
+      _ => (1, context.t('study.new', null, 'New'), colors.wordNewText),
     };
 
     return Row(
@@ -399,7 +405,7 @@ class FlashcardFace extends StatelessWidget {
                 height: 7,
                 decoration: BoxDecoration(
                   color: isFilled
-                      ? const Color(0xFFFB923C)
+                      ? colors.colorFire
                       : colors.borderColorLight,
                   borderRadius: BorderRadius.circular(999),
                 ),
@@ -482,13 +488,25 @@ class FlashcardFace extends StatelessWidget {
   }
 
   TextSpan _buildHighlightedSentence(
-      String sentence, String word, VocaColorPalette colors) {
+      String sentence, String word, VocaColorPalette colors, String language) {
     final spans = <TextSpan>[];
     final cleanWord = word.trim();
+    final fontFamily = switch (language.toLowerCase()) {
+      'ja' || 'japanese' => 'Kosugi Maru',
+      'zh' || 'chinese' => 'Noto Sans SC',
+      'ko' || 'korean' => 'Noto Sans KR',
+      _ => null,
+    };
+
     if (cleanWord.isEmpty || sentence.trim().isEmpty) {
       return TextSpan(
         text: sentence,
-        style: TextStyle(color: colors.textSecondary, fontSize: 13, height: 1.4),
+        style: TextStyle(
+          color: colors.textSecondary,
+          fontSize: 13,
+          height: 1.4,
+          fontFamily: fontFamily,
+        ),
       );
     }
     final lowerSentence = sentence.toLowerCase();
@@ -502,7 +520,11 @@ class FlashcardFace extends StatelessWidget {
           spans.add(TextSpan(
             text: sentence.substring(start),
             style: TextStyle(
-                color: colors.textSecondary, fontSize: 13, height: 1.4),
+              color: colors.textSecondary,
+              fontSize: 13,
+              height: 1.4,
+              fontFamily: fontFamily,
+            ),
           ));
         }
         break;
@@ -512,7 +534,11 @@ class FlashcardFace extends StatelessWidget {
         spans.add(TextSpan(
           text: sentence.substring(start, index),
           style: TextStyle(
-              color: colors.textSecondary, fontSize: 13, height: 1.4),
+            color: colors.textSecondary,
+            fontSize: 13,
+            height: 1.4,
+            fontFamily: fontFamily,
+          ),
         ));
       }
 
@@ -523,6 +549,7 @@ class FlashcardFace extends StatelessWidget {
           fontSize: 13,
           fontWeight: FontWeight.bold,
           height: 1.4,
+          fontFamily: fontFamily,
         ),
       ));
 

@@ -474,6 +474,25 @@
     "exploreVideos": "Xem video để thu thập từ",
     "studyTip": "Mẹo học tập"
   },
+  "kanji": {
+    "title": "Hán tự (漢字)",
+    "strokes": "nét",
+    "radical": "Bộ thủ",
+    "strokeOrder": "Thứ tự nét",
+    "animation": "Hoạt họa",
+    "stepByStep": "Từng bước",
+    "onyomi": "Âm On (音読み)",
+    "kunyomi": "Âm Kun (訓読み)",
+    "meanings": "Ý nghĩa",
+    "parts": "Bộ thủ & Thành phần",
+    "breakdown": "Phân tích Hán tự",
+    "detailsTitle": "Chi tiết chữ Hán",
+    "errorLoading": "Không thể tải thông tin chữ Hán.",
+    "strokeUnavailable": "Không có sơ đồ nét viết",
+    "tapToInspect": "Nhấn để xem chi tiết",
+    "strokeOf": "Nét {{current}} / {{total}}",
+    "showNumbers": "Số thứ tự nét"
+  },
   "settings": {
     "title": "Cài đặt",
     "synced": "Đã đồng bộ",

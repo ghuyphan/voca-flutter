@@ -90,7 +90,7 @@ void main() {
 
       // Section 2: Appearance
       expect(find.text('APPEARANCE'), findsOneWidget);
-      expect(find.text('Dark Mode'), findsOneWidget);
+      expect(find.text('Theme'), findsOneWidget);
 
       // Section 3: About & Updates
       expect(find.text('ABOUT & UPDATES'), findsOneWidget);

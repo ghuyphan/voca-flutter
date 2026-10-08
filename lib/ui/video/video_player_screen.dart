@@ -547,27 +547,27 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                               IconButton(
                                 icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white, size: 28),
                                 tooltip: context.t('player.minimize', null, 'Minimize'),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
+                                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                                padding: const EdgeInsets.all(8),
                                 onPressed: _handleMinimize,
                               ),
                               const Spacer(),
                               IconButton(
                                 icon: const Icon(Icons.subtitles_rounded, color: Colors.white, size: 20),
                                 tooltip: context.t('subtitle.tracksTitle', null, 'Subtitle Tracks'),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
+                                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                                padding: const EdgeInsets.all(8),
                                 onPressed: () => SubtitleTracksSheet.show(
                                   context,
                                   controller: _playerController,
                                 ),
                               ),
-                              const SizedBox(width: 14),
+                              const SizedBox(width: 4),
                               IconButton(
                                 icon: const Icon(Icons.settings_rounded, color: Colors.white, size: 20),
                                 tooltip: context.t('player.settings', null, 'Settings'),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
+                                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                                padding: const EdgeInsets.all(8),
                                 onPressed: () => VideoSettingsSheet.show(
                                   context,
                                   controller: _playerController,
@@ -578,11 +578,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                               IconButton(
                                 icon: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 22),
                                 tooltip: 'Exit Fullscreen',
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
+                                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                                padding: const EdgeInsets.all(8),
                                 onPressed: _toggleFullscreen,
                               ),
-                              const SizedBox(width: 10),
+                              const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   widget.title.isNotEmpty ? widget.title : _playerController.videoTitle.value,
@@ -598,19 +598,19 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                               IconButton(
                                 icon: const Icon(Icons.subtitles_rounded, color: Colors.white, size: 20),
                                 tooltip: context.t('subtitle.tracksTitle', null, 'Subtitle Tracks'),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
+                                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                                padding: const EdgeInsets.all(8),
                                 onPressed: () => SubtitleTracksSheet.show(
                                   context,
                                   controller: _playerController,
                                 ),
                               ),
-                              const SizedBox(width: 14),
+                              const SizedBox(width: 4),
                               IconButton(
                                 icon: const Icon(Icons.settings_rounded, color: Colors.white, size: 20),
                                 tooltip: context.t('player.settings', null, 'Settings'),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
+                                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                                padding: const EdgeInsets.all(8),
                                 onPressed: () => VideoSettingsSheet.show(
                                   context,
                                   controller: _playerController,
@@ -802,8 +802,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                   tooltip: isFullscreen
                       ? 'Exit Fullscreen'
                       : context.t('player.minimize', null, 'Minimize'),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
+                  constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                  padding: const EdgeInsets.all(8),
                   onPressed: isFullscreen ? _toggleFullscreen : _handleMinimize,
                 ),
               ),

@@ -188,10 +188,10 @@ class _DeckSettingsSheetState extends State<DeckSettingsSheet> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildStatPill(context.t('study.new', null, 'New'), fresh, const Color(0xFF3B82F6), colors),
-                _buildStatPill(context.t('study.learning', null, 'Learning'), learning, const Color(0xFFF97316), colors),
-                _buildStatPill(context.t('study.due', null, 'Due'), due, const Color(0xFF10B981), colors),
-                _buildStatPill(context.t('study.known', null, 'Known'), known, colors.accentSecondary, colors),
+                _buildStatPill(context.t('study.new', null, 'New'), fresh, colors.wordNewText, colors),
+                _buildStatPill(context.t('study.learning', null, 'Learning'), learning, colors.wordLearningText, colors),
+                _buildStatPill(context.t('study.due', null, 'Due'), due, colors.colorGrammar, colors),
+                _buildStatPill(context.t('study.known', null, 'Known'), known, colors.wordKnownText, colors),
               ],
             ),
           ),

@@ -17,8 +17,8 @@ class VocaApiClient {
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
-        // Mandatory User-Agent to bypass Cloudflare Bot Defense
-        'User-Agent': 'VocaMobile/1.0.0 (Flutter; Android/iOS)',
+        // Mandatory Anti-Bot User-Agent header (AGENTS.md RULE 2)
+        'User-Agent': 'VocaMobile/1.0.0 (Android; Mobile)',
         if (authToken != null) 'Authorization': 'Bearer $authToken',
       },
     ));
@@ -132,6 +132,22 @@ class VocaApiClient {
       queryParameters: {'word': word, 'from': from, 'to': to},
     );
     return DictionaryResult.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// 3b. Kanji search and stroke order diagrams (via Edge /api/kanji)
+  Future<List<KanjiData>> lookupKanji(String query) async {
+    final response = await _dio.get(
+      '/api/kanji',
+      queryParameters: {'query': query},
+    );
+    if (response.statusCode == 200 && response.data is Map<String, dynamic>) {
+      final list = (response.data['kanji'] as List<dynamic>?) ?? [];
+      return list
+          .whereType<Map>()
+          .map((e) => KanjiData.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    }
+    return [];
   }
 
   /// 4. Urgent seek micro-batch (< 200ms) for immediate bilingual cue display
@@ -346,6 +362,23 @@ class VocaApiClient {
     } catch (e) {
       print('[VocaApiClient] Version fetch error: $e');
       return null;
+    }
+  }
+
+  /// 12. Report player-verified video duration back to Cloudflare Edge
+  Future<bool> reportVideoDuration({
+    required String videoId,
+    required int duration,
+  }) async {
+    if (videoId.isEmpty || duration <= 0) return false;
+    try {
+      final response = await _dio.post('/api/video-info', data: {
+        'videoId': videoId,
+        'duration': duration,
+      });
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
     }
   }
 }

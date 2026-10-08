@@ -114,8 +114,8 @@ class _SplashScreenState extends State<SplashScreen>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      VocaTokens.accentPrimary.withOpacity(0.18),
-                      VocaTokens.accentPrimary.withOpacity(0.04),
+                      VocaTokens.accentPrimary.withValues(alpha: 0.18),
+                      VocaTokens.accentPrimary.withValues(alpha: 0.04),
                       Colors.transparent,
                     ],
                     stops: const [0.0, 0.45, 1.0],
@@ -148,13 +148,13 @@ class _SplashScreenState extends State<SplashScreen>
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: VocaTokens.accentPrimary.withOpacity(0.35),
+                            color: VocaTokens.accentPrimary.withValues(alpha: 0.35),
                             blurRadius: 28,
                             spreadRadius: 2,
                             offset: const Offset(0, 8),
                           ),
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.4),
+                            color: Colors.black.withValues(alpha: 0.4),
                             blurRadius: 16,
                             offset: const Offset(0, 4),
                           ),

@@ -11,9 +11,12 @@ import '../../state/app_state.dart';
 import '../../state/player_coordinator.dart';
 import '../../utils/cyrb53_hasher.dart';
 import '../../utils/pos_utils.dart';
+import '../widgets/circle_flag.dart';
 import '../widgets/voca_empty_state.dart';
 import '../widgets/voca_option_picker.dart';
 import 'voca_bottom_sheet.dart';
+import '../../services/kanji_service.dart';
+import 'kanji_detail_sheet.dart';
 
 class TargetLangInfo {
   final String code;
@@ -83,17 +86,17 @@ class DictionaryBottomSheet extends StatefulWidget {
 
 class _DictionaryBottomSheetState extends State<DictionaryBottomSheet> {
   static const List<TargetLangInfo> _supportedTargetLangs = [
-    TargetLangInfo(code: 'vi', name: 'Tiếng Việt', flag: '🇻🇳'),
-    TargetLangInfo(code: 'en', name: 'English', flag: '🇬🇧'),
-    TargetLangInfo(code: 'ja', name: '日本語', flag: '🇯🇵'),
-    TargetLangInfo(code: 'zh', name: '中文', flag: '🇨🇳'),
-    TargetLangInfo(code: 'ko', name: '한국어', flag: '🇰🇷'),
-    TargetLangInfo(code: 'es', name: 'Español', flag: '🇪🇸'),
-    TargetLangInfo(code: 'fr', name: 'Français', flag: '🇫🇷'),
-    TargetLangInfo(code: 'de', name: 'Deutsch', flag: '🇩🇪'),
-    TargetLangInfo(code: 'id', name: 'Bahasa Indonesia', flag: '🇮🇩'),
-    TargetLangInfo(code: 'ru', name: 'Русский', flag: '🇷🇺'),
-    TargetLangInfo(code: 'th', name: 'ไทย', flag: '🇹🇭'),
+    TargetLangInfo(code: 'vi', name: 'Tiếng Việt', flag: 'vn'),
+    TargetLangInfo(code: 'en', name: 'English', flag: 'gb'),
+    TargetLangInfo(code: 'ja', name: '日本語', flag: 'jp'),
+    TargetLangInfo(code: 'zh', name: '中文', flag: 'cn'),
+    TargetLangInfo(code: 'ko', name: '한국어', flag: 'kr'),
+    TargetLangInfo(code: 'es', name: 'Español', flag: 'es'),
+    TargetLangInfo(code: 'fr', name: 'Français', flag: 'fr'),
+    TargetLangInfo(code: 'de', name: 'Deutsch', flag: 'de'),
+    TargetLangInfo(code: 'id', name: 'Bahasa Indonesia', flag: 'id'),
+    TargetLangInfo(code: 'ru', name: 'Русский', flag: 'ru'),
+    TargetLangInfo(code: 'th', name: 'ไทย', flag: 'th'),
   ];
 
   late String _currentTargetLang;
@@ -110,6 +113,10 @@ class _DictionaryBottomSheetState extends State<DictionaryBottomSheet> {
   final Map<int, String> _definitionTranslations = {};
   final Set<int> _translationErrors = {};
   bool _isTranslatingAll = false;
+
+  // Kanji breakdown state (Japanese only)
+  List<String> _kanjis = const [];
+  final Map<String, KanjiData> _kanjiDataMap = {};
 
   DictionaryEntry? get _activeEntry {
     if (_result == null || _result!.entries.isEmpty) return null;
@@ -128,8 +135,27 @@ class _DictionaryBottomSheetState extends State<DictionaryBottomSheet> {
         ? uiLang
         : widget.explanationLang;
 
+    if (widget.sourceLang == 'ja') {
+      final combined = '${widget.token.surface} ${widget.token.baseForm ?? ''}';
+      _kanjis = KanjiService.instance.extractUniqueKanji(combined);
+      if (_kanjis.isNotEmpty) {
+        _loadKanjiBreakdown();
+      }
+    }
+
     _checkSavedStatus();
     _fetchDefinition();
+  }
+
+  Future<void> _loadKanjiBreakdown() async {
+    final list = await KanjiService.instance.lookupWordKanji(widget.token.surface);
+    if (mounted && list.isNotEmpty) {
+      setState(() {
+        for (final k in list) {
+          _kanjiDataMap[k.literal] = k;
+        }
+      });
+    }
   }
 
   void _checkSavedStatus() {
@@ -266,8 +292,9 @@ class _DictionaryBottomSheetState extends State<DictionaryBottomSheet> {
   Future<void> _showTargetLangPicker() async {
     final options = _supportedTargetLangs.map((lang) {
       return OptionItem(
-        label: '${lang.flag}  ${lang.name}',
+        label: lang.name,
         value: lang.code,
+        leading: CircleFlag(code: lang.code, size: 20),
       );
     }).toList();
 
@@ -577,6 +604,12 @@ class _DictionaryBottomSheetState extends State<DictionaryBottomSheet> {
                   if (_activeEntry!.examples.isNotEmpty)
                     _buildExamplesBox(context, _activeEntry!),
                 ],
+
+                // 7. Kanji Breakdown (Japanese only)
+                if (widget.sourceLang == 'ja' && _kanjis.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  _buildKanjiSection(context),
+                ],
               ],
             ),
           ),
@@ -611,7 +644,7 @@ class _DictionaryBottomSheetState extends State<DictionaryBottomSheet> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(info.flag, style: const TextStyle(fontSize: 13)),
+                CircleFlag(code: info.code, size: 16),
                 const SizedBox(width: 4),
                 Icon(Icons.keyboard_arrow_down_rounded, size: 14, color: colors.textMuted),
               ],
@@ -1002,6 +1035,113 @@ class _DictionaryBottomSheetState extends State<DictionaryBottomSheet> {
               ),
             );
           }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildKanjiSection(BuildContext context) {
+    final colors = context.vocaColors;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colors.bgSurface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: colors.borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.brush_rounded, size: 14, color: colors.accentPrimary),
+              const SizedBox(width: 6),
+              Text(
+                context.t('kanji.title', null, 'Kanji (漢字)'),
+                style: TextStyle(
+                  color: colors.textPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${_kanjis.length}',
+                style: TextStyle(
+                  color: colors.textMuted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _kanjis.map((char) {
+              final data = _kanjiDataMap[char] ?? KanjiService.instance.getCached(char);
+              return Material(
+                color: colors.bgCard,
+                borderRadius: BorderRadius.circular(12),
+                child: InkWell(
+                  onTap: () {
+                    KanjiDetailSheet.show(
+                      context,
+                      kanji: char,
+                      initialData: data,
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: colors.borderColor),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          char,
+                          style: TextStyle(
+                            color: colors.textPrimary,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Kosugi Maru',
+                          ),
+                        ),
+                        if (data != null) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: data.jlpt != null
+                                  ? colors.accentPrimary.withValues(alpha: 0.12)
+                                  : colors.bgSurface,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              data.jlpt != null ? 'N${data.jlpt}' : '${data.strokeCount}画',
+                              style: TextStyle(
+                                color: data.jlpt != null ? colors.accentPrimary : colors.textSecondary,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(width: 4),
+                        Icon(Icons.chevron_right_rounded, size: 14, color: colors.textMuted),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
         ],
       ),
     );

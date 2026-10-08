@@ -6,8 +6,10 @@ import '../../config/voca_theme.dart';
 import '../../services/i18n_service.dart';
 import '../../services/toast_service.dart';
 import '../../state/app_state.dart';
+import '../widgets/circle_flag.dart';
 import '../widgets/voca_back_button.dart';
 import '../widgets/voca_option_picker.dart';
+export '../widgets/circle_flag.dart';
 
 /// Preset avatar representation
 class AvatarPreset {
@@ -145,51 +147,6 @@ class VocaAvatarWidget extends StatelessWidget {
   }
 }
 
-/// Helper widget to render country SVG flag
-class VocaFlagWidget extends StatelessWidget {
-  final String? countryCode;
-  final double size;
-
-  const VocaFlagWidget({
-    super.key,
-    required this.countryCode,
-    this.size = 20,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.vocaColors;
-    final code = countryCode?.trim().toLowerCase();
-
-    if (code == null || code.isEmpty || code == 'auto') {
-      return Icon(Icons.public_rounded, size: size, color: colors.accentPrimary);
-    }
-
-    final flagAsset = 'assets/flags/$code.svg';
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.12),
-            blurRadius: 2,
-          ),
-        ],
-      ),
-      child: ClipOval(
-        child: SvgPicture.asset(
-          flagAsset,
-          width: size,
-          height: size,
-          fit: BoxFit.cover,
-          placeholderBuilder: (_) => Icon(Icons.flag_rounded, size: size * 0.7, color: colors.textMuted),
-        ),
-      ),
-    );
-  }
-}
 
 /// Dedicated Edit Profile screen for learners
 class EditProfileScreen extends StatefulWidget {
@@ -462,7 +419,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               border: Border.all(color: colors.accentPrimary, width: 3),
               boxShadow: [
                 BoxShadow(
-                  color: colors.accentPrimary.withOpacity(0.2),
+                  color: colors.accentPrimary.withValues(alpha: 0.2),
                   blurRadius: 16,
                   spreadRadius: 2,
                 ),
@@ -477,7 +434,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 border: Border.all(color: colors.bgCard, width: 2.5),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
+                    color: Colors.black.withValues(alpha: 0.3),
                     blurRadius: 4,
                   ),
                 ],
@@ -571,7 +528,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             boxShadow: isSelected
                                 ? [
                                     BoxShadow(
-                                      color: colors.accentPrimary.withOpacity(0.3),
+                                      color: colors.accentPrimary.withValues(alpha: 0.3),
                                       blurRadius: 8,
                                     ),
                                   ]

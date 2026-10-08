@@ -63,7 +63,7 @@ class VocaBackButton extends StatelessWidget {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(colors.isDark ? 0.25 : 0.04),
+                      color: Colors.black.withValues(alpha: colors.isDark ? 0.25 : 0.04),
                       blurRadius: 4,
                       offset: const Offset(0, 1),
                     ),

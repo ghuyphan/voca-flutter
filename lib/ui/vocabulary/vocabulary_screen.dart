@@ -309,13 +309,13 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
         return (
           bg: colors.wordKnownBg,
           text: colors.wordKnownText,
-          border: colors.wordKnownText.withOpacity(0.35),
+          border: colors.wordKnownText.withValues(alpha: 0.35),
         );
       case 'learning':
         return (
           bg: colors.wordLearningBg,
           text: colors.wordLearningText,
-          border: colors.wordLearningText.withOpacity(0.35),
+          border: colors.wordLearningText.withValues(alpha: 0.35),
         );
       case 'ignored':
         return (
@@ -328,7 +328,7 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
         return (
           bg: colors.wordNewBg,
           text: colors.wordNewText,
-          border: colors.wordNewText.withOpacity(0.35),
+          border: colors.wordNewText.withValues(alpha: 0.35),
         );
     }
   }
@@ -465,7 +465,7 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
                   decoration: BoxDecoration(
                     color: colors.accentPrimarySoft,
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: colors.accentPrimary.withOpacity(0.3)),
+                    border: Border.all(color: colors.accentPrimary.withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     '$count',
@@ -555,7 +555,7 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(colors.isDark ? 0.28 : 0.04),
+            color: Colors.black.withValues(alpha: colors.isDark ? 0.28 : 0.04),
             blurRadius: 6,
             offset: const Offset(0, 1.5),
           ),
@@ -757,7 +757,7 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                 decoration: BoxDecoration(
-                  color: isSelected ? Colors.white.withOpacity(0.25) : colors.bgSurface,
+                  color: isSelected ? Colors.white.withValues(alpha: 0.25) : colors.bgSurface,
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
@@ -947,7 +947,7 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
               border: Border.all(color: colors.borderColor),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(colors.isDark ? 0.20 : 0.03),
+                  color: Colors.black.withValues(alpha: colors.isDark ? 0.20 : 0.03),
                   blurRadius: 4,
                   offset: const Offset(0, 1.5),
                 ),
@@ -997,7 +997,7 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
                             Icon(
                               Icons.keyboard_arrow_down_rounded,
                               size: 13,
-                              color: levelStyle.text.withOpacity(0.8),
+                              color: levelStyle.text.withValues(alpha: 0.8),
                             ),
                           ],
                         ),
@@ -1153,7 +1153,7 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
                     decoration: BoxDecoration(
                       border: Border(
                         left: BorderSide(
-                          color: colors.accentPrimary.withOpacity(0.5),
+                          color: colors.accentPrimary.withValues(alpha: 0.5),
                           width: 2,
                         ),
                       ),

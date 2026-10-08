@@ -51,6 +51,7 @@ class PlayerCoordinator {
   StreamSubscription<YoutubePlayerValue>? _playerStateSubscription;
   void Function()? _cuesDisposer;
   Timer? _autoAdvanceTimer;
+  bool _needsDurationReport = false;
 
   bool get hasActiveVideo =>
       activeVideoId.value != null && activeVideoId.value!.isNotEmpty;
@@ -94,9 +95,11 @@ class PlayerCoordinator {
     int? playlistTotal,
     List<PlaylistVideo>? playlist,
     double? startSeconds,
+    int? initialDuration,
   }) {
     _autoAdvanceTimer?.cancel();
     _hasAwardedVideoCompletion = false;
+    _needsDurationReport = initialDuration == null || initialDuration <= 0;
 
     if (playlist != null && playlist.isNotEmpty) {
       playlistVideos.value = List.from(playlist);
@@ -169,7 +172,7 @@ class PlayerCoordinator {
     }
     isMiniplayer.value = false;
     currentTime.value = startSeconds ?? 0.0;
-    duration.value = 0.0;
+    duration.value = (initialDuration != null && initialDuration > 0) ? initialDuration.toDouble() : 0.0;
     activeVideoId.value = videoId;
 
     // Load video immediately
@@ -178,7 +181,7 @@ class PlayerCoordinator {
     } else {
       newYtController.loadVideoById(videoId: videoId);
     }
-    newPlayerController.loadVideo(videoId);
+    newPlayerController.loadVideo(videoId, duration: initialDuration);
 
     if (startSeconds != null && startSeconds > 0) {
       newPlayerController.updatePlaybackTime(startSeconds);
@@ -187,14 +190,39 @@ class PlayerCoordinator {
       _resumeFromHistoryIfAvailable(videoId, newYtController, newPlayerController);
     }
 
+    void maybeResolveAndReportDuration(double durSecs, {bool isEstimate = false}) {
+      if (durSecs <= 0) return;
+      if (duration.value <= 0) {
+        duration.value = durSecs;
+      }
+      if (_needsDurationReport && activeVideoId.value == videoId) {
+        if (!isEstimate) {
+          _needsDurationReport = false;
+        }
+        AppState.instance.apiClient.reportVideoDuration(
+          videoId: videoId,
+          duration: durSecs.round(),
+        );
+      }
+    }
+
     // Sync duration from cues if available before or alongside video metadata
     _cuesDisposer = newPlayerController.cues.subscribe((cList) {
-      if (cList.isNotEmpty && duration.value <= 0) {
+      if (cList.isNotEmpty) {
         final lastCue = cList.last;
         final estimatedDur = lastCue.start + lastCue.duration;
-        if (estimatedDur > 0) {
+        if (estimatedDur > 0 && duration.value <= 0) {
           duration.value = estimatedDur;
         }
+      }
+    });
+
+    // Fallback timer: If after 3.5s YouTube metadata has not resolved (e.g. syndication-blocked video),
+    // but cues are present, heal the backend using estimated duration
+    Future.delayed(const Duration(milliseconds: 3500), () {
+      if (_needsDurationReport && activeVideoId.value == videoId && duration.value > 0) {
+        _needsDurationReport = false;
+        maybeResolveAndReportDuration(duration.value, isEstimate: true);
       }
     });
 
@@ -206,7 +234,7 @@ class PlayerCoordinator {
 
       final metaDur = newYtController.metadata.duration.inSeconds.toDouble();
       if (metaDur > 0) {
-        duration.value = metaDur;
+        maybeResolveAndReportDuration(metaDur);
       } else if (duration.value <= 0 && newPlayerController.cues.value.isNotEmpty) {
         final lastCue = newPlayerController.cues.value.last;
         final estimatedDur = lastCue.start + lastCue.duration;
@@ -228,6 +256,15 @@ class PlayerCoordinator {
 
     // Listen to player state
     _playerStateSubscription = newYtController.listen((value) {
+      final metaDur = value.metaData.duration.inSeconds.toDouble();
+      if (metaDur > 0) {
+        maybeResolveAndReportDuration(metaDur);
+      } else if (value.playerState == PlayerState.playing || value.playerState == PlayerState.cued) {
+        newYtController.duration.then((d) {
+          if (d > 0) maybeResolveAndReportDuration(d);
+        }).catchError((_) {});
+      }
+
       if (value.playerState == PlayerState.playing) {
         isPlaying.value = true;
         isEnded.value = false;

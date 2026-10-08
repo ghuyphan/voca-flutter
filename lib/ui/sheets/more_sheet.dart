@@ -8,6 +8,7 @@ import '../../state/app_state.dart';
 import '../library/library_screen.dart';
 import '../profile/profile_screen.dart';
 import '../settings/settings_screen.dart';
+import '../widgets/circle_flag.dart';
 import '../widgets/voca_option_picker.dart';
 import 'gamification_dialogs.dart';
 import 'voca_bottom_sheet.dart';
@@ -117,7 +118,7 @@ class MoreSheet extends StatelessWidget {
           _buildActionRow(
             context: context,
             icon: Icons.playlist_play_rounded,
-            iconColor: const Color(0xFF38BDF8),
+            iconColor: colors.colorDiamond,
             title: context.t('nav.playlists', null, 'Playlists'),
             colors: colors,
             onTap: () {
@@ -136,7 +137,7 @@ class MoreSheet extends StatelessWidget {
           _buildActionRow(
             context: context,
             icon: Icons.history_rounded,
-            iconColor: const Color(0xFFA78BFA),
+            iconColor: colors.accentSecondary,
             title: context.t('history.title', null, 'History'),
             colors: colors,
             onTap: () {
@@ -156,9 +157,28 @@ class MoreSheet extends StatelessWidget {
           // Theme Quick Switch
           Watch((context) {
             final isDark = context.isDarkMode;
-            final themeLabel = isDark ? context.t('settings.themeLight') : context.t('settings.themeDark');
-            final themeIcon = isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded;
-            final iconColor = isDark ? Colors.amber : colors.accentSecondary;
+            final settings = AppState.instance.userSettings.value;
+            final currentMode = settings.themeMode.toLowerCase();
+            final String themeLabel;
+            final IconData themeIcon;
+
+            switch (currentMode) {
+              case 'light':
+                themeLabel = context.t('settings.themeLight');
+                themeIcon = Icons.light_mode_rounded;
+                break;
+              case 'dark':
+                themeLabel = context.t('settings.themeDark');
+                themeIcon = Icons.dark_mode_rounded;
+                break;
+              case 'system':
+              default:
+                themeLabel = context.t('settings.themeSystem');
+                themeIcon = Icons.brightness_auto_rounded;
+                break;
+            }
+
+            final iconColor = isDark ? colors.accentTertiary : colors.accentSecondary;
 
             return _buildActionRow(
               context: context,
@@ -166,9 +186,37 @@ class MoreSheet extends StatelessWidget {
               iconColor: iconColor,
               title: '${context.t('settings.theme')}: $themeLabel',
               colors: colors,
-              onTap: () {
-                final nextMode = isDark ? 'light' : 'dark';
-                AppState.instance.setThemeMode(nextMode);
+              onTap: () async {
+                await showVocaOptionPicker(
+                  context: context,
+                  title: context.t('settings.theme'),
+                  selectedValue: currentMode,
+                  options: [
+                    OptionItem(
+                      value: 'system',
+                      label: context.t('settings.themeSystem'),
+                      example: context.t('settings.themeSystemDesc', null, 'Follow device appearance'),
+                      iconData: Icons.brightness_auto_rounded,
+                    ),
+                    OptionItem(
+                      value: 'light',
+                      label: context.t('settings.themeLight'),
+                      example: context.t('settings.themeLightDesc', null, 'Light theme'),
+                      iconData: Icons.light_mode_rounded,
+                    ),
+                    OptionItem(
+                      value: 'dark',
+                      label: context.t('settings.themeDark'),
+                      example: context.t('settings.themeDarkDesc', null, 'Dark theme'),
+                      iconData: Icons.dark_mode_rounded,
+                    ),
+                  ],
+                  onSelect: (selected) {
+                    if (selected != currentMode) {
+                      AppState.instance.setThemeMode(selected);
+                    }
+                  },
+                );
               },
             );
           }),
@@ -181,10 +229,11 @@ class MoreSheet extends StatelessWidget {
               context: context,
               icon: Icons.language_rounded,
               iconColor: colors.accentSecondary,
-              title: '${context.t('settings.uiLanguage')}: ${currentLang.flag} ${currentLang.nativeName}',
+              title: '${context.t('settings.uiLanguage')}: ${currentLang.nativeName}',
+              trailingWidget: CircleFlag(code: currentLang.code, size: 20),
               colors: colors,
               onTap: () async {
-                final selected = await showVocaOptionPicker(
+                await showVocaOptionPicker(
                   context: context,
                   title: context.t('settings.uiLanguage'),
                   selectedValue: i18n.currentLanguage.value,
@@ -193,13 +242,15 @@ class MoreSheet extends StatelessWidget {
                       value: l.code,
                       label: l.nativeName,
                       example: l.name,
-                      icon: l.flag,
+                      leading: CircleFlag(code: l.code, size: 22),
                     );
                   }).toList(),
+                  onSelect: (selected) {
+                    if (selected != i18n.currentLanguage.value) {
+                      AppState.instance.setUiLanguage(selected);
+                    }
+                  },
                 );
-                if (selected != null) {
-                  AppState.instance.setUiLanguage(selected);
-                }
               },
             );
           }),
@@ -303,6 +354,7 @@ class MoreSheet extends StatelessWidget {
     required IconData icon,
     required Color iconColor,
     required String title,
+    Widget? trailingWidget,
     required VoidCallback onTap,
     required VocaColorPalette colors,
   }) {
@@ -336,6 +388,10 @@ class MoreSheet extends StatelessWidget {
                   ),
                 ),
               ),
+              if (trailingWidget != null) ...[
+                trailingWidget,
+                const SizedBox(width: 8),
+              ],
               Icon(
                 Icons.chevron_right_rounded,
                 color: colors.textMuted,

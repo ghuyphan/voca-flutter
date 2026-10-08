@@ -353,17 +353,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: colors.accentSecondarySoft,
+                    color: colors.colorDiamond.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: colors.accentSecondary.withOpacity(0.3)),
+                    border: Border.all(color: colors.colorDiamond.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.ac_unit_rounded, color: colors.accentSecondary, size: 14),
+                      Icon(Icons.ac_unit_rounded, color: colors.colorDiamond, size: 14),
                       const SizedBox(width: 4),
                       Text(
                         '$streakFreezes ${context.t('streak.freezesRemaining', null, 'Freezes')}',
-                        style: TextStyle(color: colors.accentSecondary, fontSize: 11.5, fontWeight: FontWeight.bold),
+                        style: TextStyle(color: colors.colorDiamond, fontSize: 11.5, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
@@ -451,7 +451,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: colors.colorDiamond.withOpacity(0.15),
+                color: colors.colorDiamond.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
               child: Icon(Icons.diamond_rounded, color: colors.colorDiamond, size: 28),
@@ -530,7 +530,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 color: colors.bgCard,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isUnlocked ? colors.accentTertiary.withOpacity(0.4) : colors.borderColor,
+                  color: isUnlocked ? colors.accentTertiary.withValues(alpha: 0.4) : colors.borderColor,
                 ),
               ),
               child: Row(
@@ -540,11 +540,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     height: 44,
                     decoration: BoxDecoration(
                       color: isUnlocked
-                          ? colors.accentTertiary.withOpacity(0.15)
+                          ? colors.accentTertiary.withValues(alpha: 0.15)
                           : colors.bgSecondary,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: isUnlocked ? colors.accentTertiary.withOpacity(0.3) : colors.borderColor,
+                        color: isUnlocked ? colors.accentTertiary.withValues(alpha: 0.3) : colors.borderColor,
                       ),
                     ),
                     child: Icon(

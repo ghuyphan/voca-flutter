@@ -62,7 +62,7 @@ class VideoFeedCard extends StatelessWidget {
     final title = video['title'] as String? ?? 'YouTube Video';
     final channel = video['channel'] as String? ?? 'YouTube Creator';
     final channelAvatar = video['channelAvatar'] as String?;
-    final duration = video['duration'] as int? ?? 0;
+    final duration = (video['duration'] as num?)?.toInt() ?? 0;
     final durationStr = duration > 0 ? formatVideoTime(duration) : '';
     final levelTag = VideoFeedCard.resolveVideoLevel(video, currentLang);
     final double? resumeProgress = (video['resumeProgress'] as num?)?.toDouble() ??
@@ -113,6 +113,7 @@ class VideoFeedCard extends StatelessWidget {
                 child: VocaLevelBadge(
                   level: levelTag,
                   size: LevelBadgeSize.small,
+                  isSolid: true,
                 ),
               ),
 

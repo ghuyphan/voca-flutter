@@ -182,7 +182,7 @@ class _AchievementsHubScreenState extends State<AchievementsHubScreen> {
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: Colors.black.withOpacity(colors.isDark ? 0.3 : 0.05),
+                      color: Colors.black.withValues(alpha: colors.isDark ? 0.3 : 0.05),
                       blurRadius: 4,
                       offset: const Offset(0, 1),
                     ),
@@ -366,12 +366,12 @@ class _AchievementsHubScreenState extends State<AchievementsHubScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: canClaim
-            ? colors.accentTertiary.withOpacity(0.08)
+            ? colors.accentTertiary.withValues(alpha: 0.08)
             : colors.bgCard,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: canClaim
-              ? colors.accentTertiary.withOpacity(0.5)
+              ? colors.accentTertiary.withValues(alpha: 0.5)
               : colors.borderColor,
           width: canClaim ? 1.5 : 1,
         ),
@@ -386,14 +386,14 @@ class _AchievementsHubScreenState extends State<AchievementsHubScreen> {
                 height: 44,
                 decoration: BoxDecoration(
                   color: isClaimed
-                      ? colors.success.withOpacity(0.12)
+                      ? colors.success.withValues(alpha: 0.12)
                       : (canClaim
-                          ? colors.accentTertiary.withOpacity(0.2)
+                          ? colors.accentTertiary.withValues(alpha: 0.2)
                           : colors.bgSecondary),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isClaimed
-                        ? colors.success.withOpacity(0.3)
+                        ? colors.success.withValues(alpha: 0.3)
                         : (canClaim ? colors.accentTertiary : colors.borderColor),
                   ),
                 ),
@@ -424,7 +424,7 @@ class _AchievementsHubScreenState extends State<AchievementsHubScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: colors.accentTertiary.withOpacity(0.15),
+                            color: colors.accentTertiary.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
@@ -451,7 +451,7 @@ class _AchievementsHubScreenState extends State<AchievementsHubScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: colors.success.withOpacity(0.12),
+                    color: colors.success.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -523,7 +523,7 @@ class _AchievementsHubScreenState extends State<AchievementsHubScreen> {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: mission.isCompleted && !mission.isClaimed
-              ? colors.accentPrimary.withOpacity(0.4)
+              ? colors.accentPrimary.withValues(alpha: 0.4)
               : colors.borderColor,
         ),
       ),
@@ -534,7 +534,7 @@ class _AchievementsHubScreenState extends State<AchievementsHubScreen> {
             height: 42,
             decoration: BoxDecoration(
               color: mission.isCompleted
-                  ? colors.success.withOpacity(0.12)
+                  ? colors.success.withValues(alpha: 0.12)
                   : colors.bgSecondary,
               borderRadius: BorderRadius.circular(10),
             ),
@@ -796,7 +796,7 @@ class _AchievementsHubScreenState extends State<AchievementsHubScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                 decoration: BoxDecoration(
-                  color: isSelected ? Colors.white.withOpacity(0.2) : colors.bgHover,
+                  color: isSelected ? Colors.white.withValues(alpha: 0.2) : colors.bgHover,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -844,9 +844,9 @@ class _AchievementsHubScreenState extends State<AchievementsHubScreen> {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: achievement.canClaim
-              ? colors.accentTertiary.withOpacity(0.6)
+              ? colors.accentTertiary.withValues(alpha: 0.6)
               : (achievement.isUnlocked
-                  ? colors.accentTertiary.withOpacity(0.25)
+                  ? colors.accentTertiary.withValues(alpha: 0.25)
                   : colors.borderColor),
           width: achievement.canClaim ? 1.5 : 1,
         ),
@@ -916,7 +916,7 @@ class _AchievementsHubScreenState extends State<AchievementsHubScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                             decoration: BoxDecoration(
-                              color: crestStyle.rimGradient.colors.first.withOpacity(0.15),
+                              color: crestStyle.rimGradient.colors.first.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -1203,12 +1203,12 @@ class _AchievementsHubScreenState extends State<AchievementsHubScreen> {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                style.rimGradient.colors.first.withOpacity(0.25),
+                style.rimGradient.colors.first.withValues(alpha: 0.25),
                 colors.bgSecondary,
               ],
             ),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
-            border: Border.all(color: style.rimGradient.colors.first.withOpacity(0.4)),
+            border: Border.all(color: style.rimGradient.colors.first.withValues(alpha: 0.4)),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -1239,10 +1239,10 @@ class _AchievementsHubScreenState extends State<AchievementsHubScreen> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: entry.isCurrentUser ? colors.accentPrimary.withOpacity(0.08) : colors.bgCard,
+        color: entry.isCurrentUser ? colors.accentPrimary.withValues(alpha: 0.08) : colors.bgCard,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: entry.isCurrentUser ? colors.accentPrimary.withOpacity(0.4) : colors.borderColor,
+          color: entry.isCurrentUser ? colors.accentPrimary.withValues(alpha: 0.4) : colors.borderColor,
         ),
       ),
       child: Row(
@@ -1350,9 +1350,9 @@ class _AchievementsHubScreenState extends State<AchievementsHubScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: style.rimGradient.colors.first.withOpacity(0.15),
+                        color: style.rimGradient.colors.first.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: style.rimGradient.colors.first.withOpacity(0.3)),
+                        border: Border.all(color: style.rimGradient.colors.first.withValues(alpha: 0.3)),
                       ),
                       child: Text(
                         'LEVEL $level • ${style.displayName.toUpperCase()}',

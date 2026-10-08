@@ -474,6 +474,25 @@
     "exploreVideos": "Browse Videos",
     "studyTip": "Learning Tip"
   },
+  "kanji": {
+    "title": "Kanji (漢字)",
+    "strokes": "strokes",
+    "radical": "Radical",
+    "strokeOrder": "Stroke Order",
+    "animation": "Animation",
+    "stepByStep": "Step-by-Step",
+    "onyomi": "On'yomi (音読み)",
+    "kunyomi": "Kun'yomi (訓読み)",
+    "meanings": "Meanings",
+    "parts": "Components & Radicals",
+    "breakdown": "Character Breakdown",
+    "detailsTitle": "Kanji Character",
+    "errorLoading": "Could not load kanji details.",
+    "strokeUnavailable": "Stroke diagram unavailable",
+    "tapToInspect": "Tap to inspect",
+    "strokeOf": "Stroke {{current}} of {{total}}",
+    "showNumbers": "Stroke Numbers"
+  },
   "settings": {
     "title": "Settings",
     "synced": "Synced",

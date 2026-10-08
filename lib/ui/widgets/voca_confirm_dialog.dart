@@ -43,9 +43,9 @@ Future<bool> showVocaConfirmDialog({
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.12),
+              color: iconColor.withValues(alpha: 0.12),
               shape: BoxShape.circle,
-              border: Border.all(color: iconColor.withOpacity(0.3), width: 1.5),
+              border: Border.all(color: iconColor.withValues(alpha: 0.3), width: 1.5),
             ),
             child: Icon(displayIcon, color: iconColor, size: 28),
           ),

@@ -80,6 +80,7 @@ class PlaylistFeedCard extends StatelessWidget {
                 child: VocaLevelBadge(
                   level: playlist.level!,
                   size: LevelBadgeSize.small,
+                  isSolid: true,
                 ),
               ),
 

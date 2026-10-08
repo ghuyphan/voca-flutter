@@ -152,14 +152,19 @@ class DualSubService {
   }
 
   /// Called on playback time update or manual seek
-  void onPlaybackProgress(int currentCueIndex) {
+  void onPlaybackProgress(int currentCueIndex, {bool isSeek = false}) {
     if (_currentVideoId == null || _sourceLang == null || _targetLang == null) return;
     if (_sourceLang == _targetLang || _cues.isEmpty || currentCueIndex < 0) return;
 
-    final diff = (_lastLookaheadIndex - currentCueIndex).abs();
-    // Only re-evaluate if approaching the edge of the previous batch window
-    if (_lastLookaheadIndex != -1 && diff < 4 && !_isUrgentTranslating) {
-      return;
+    if (!isSeek) {
+      final diff = (_lastLookaheadIndex - currentCueIndex).abs();
+      // Only re-evaluate if approaching the edge of the previous batch window
+      if (_lastLookaheadIndex != -1 && diff < 4 && !_isUrgentTranslating) {
+        return;
+      }
+    } else {
+      // Prioritize urgent seek: cancel pending background streamer timer
+      _backgroundStreamTimer?.cancel();
     }
 
     _processLookaheadStreaming(currentCueIndex);

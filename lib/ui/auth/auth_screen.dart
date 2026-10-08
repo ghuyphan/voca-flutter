@@ -448,7 +448,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                       child: GestureDetector(
                         onTap: _dismissForm,
                         child: Container(
-                          color: Colors.black.withOpacity(0.55 * _sheetAnimation.value),
+                          color: Colors.black.withValues(alpha: 0.55 * _sheetAnimation.value),
                         ),
                       ),
                     );
@@ -536,7 +536,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                               shape: BoxShape.circle,
                               gradient: RadialGradient(
                                 colors: [
-                                  colors.accentPrimary.withOpacity(isDark ? 0.22 : 0.12),
+                                  colors.accentPrimary.withValues(alpha: isDark ? 0.22 : 0.12),
                                   Colors.transparent,
                                 ],
                               ),
@@ -553,7 +553,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                               border: Border.all(color: colors.borderColor, width: 1.2),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(isDark ? 0.35 : 0.06),
+                                  color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.06),
                                   blurRadius: 22,
                                   offset: const Offset(0, 8),
                                 ),
@@ -754,7 +754,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.45),
+            color: Colors.black.withValues(alpha: 0.45),
             blurRadius: 28,
             offset: const Offset(0, -6),
           ),
@@ -837,9 +837,9 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         margin: const EdgeInsets.only(bottom: 14),
                         decoration: BoxDecoration(
-                          color: colors.success.withOpacity(0.12),
+                          color: colors.success.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: colors.success.withOpacity(0.3)),
+                          border: Border.all(color: colors.success.withValues(alpha: 0.3)),
                         ),
                         child: Row(
                           children: [
@@ -867,9 +867,9 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         margin: const EdgeInsets.only(bottom: 14),
                         decoration: BoxDecoration(
-                          color: colors.error.withOpacity(0.12),
+                          color: colors.error.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: colors.error.withOpacity(0.3)),
+                          border: Border.all(color: colors.error.withValues(alpha: 0.3)),
                         ),
                         child: Row(
                           children: [
@@ -1175,7 +1175,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: colors.accentPrimary.withOpacity(0.35),
+            color: colors.accentPrimary.withValues(alpha: 0.35),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -1186,8 +1186,8 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
         style: ElevatedButton.styleFrom(
           backgroundColor: colors.accentPrimary,
           foregroundColor: Colors.white,
-          disabledBackgroundColor: colors.accentPrimary.withOpacity(0.55),
-          disabledForegroundColor: Colors.white.withOpacity(0.55),
+          disabledBackgroundColor: colors.accentPrimary.withValues(alpha: 0.55),
+          disabledForegroundColor: Colors.white.withValues(alpha: 0.55),
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
@@ -1235,10 +1235,10 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
         style: ElevatedButton.styleFrom(
           backgroundColor: backgroundColor,
           foregroundColor: textColor,
-          disabledBackgroundColor: backgroundColor.withOpacity(0.55),
-          disabledForegroundColor: textColor.withOpacity(0.55),
+          disabledBackgroundColor: backgroundColor.withValues(alpha: 0.55),
+          disabledForegroundColor: textColor.withValues(alpha: 0.55),
           elevation: 0,
-          shadowColor: Colors.black.withOpacity(0.06),
+          shadowColor: Colors.black.withValues(alpha: 0.06),
           side: borderColor != null ? BorderSide(color: borderColor, width: 1.2) : BorderSide.none,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
@@ -1406,7 +1406,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
         TextSpan(
           text: context.t('auth.landingPolicyConsentPrefix', null, 'By continuing, you agree to our '),
           style: TextStyle(
-            color: colors.textSecondary.withOpacity(0.85),
+            color: colors.textSecondary.withValues(alpha: 0.85),
             fontSize: 12.5,
             height: 1.35,
           ),
@@ -1429,7 +1429,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
             ),
             TextSpan(
               text: context.t('auth.landingPolicyConsentJoiner', null, ' and '),
-              style: TextStyle(color: colors.textSecondary.withOpacity(0.85), fontSize: 12.5),
+              style: TextStyle(color: colors.textSecondary.withValues(alpha: 0.85), fontSize: 12.5),
             ),
             WidgetSpan(
               alignment: PlaceholderAlignment.baseline,

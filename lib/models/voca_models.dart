@@ -462,6 +462,96 @@ class DictionaryEntry {
   }
 }
 
+class KanjiData {
+  final String literal;
+  final List<String> meanings;
+  final int strokeCount;
+  final int? grade;
+  final int? jlpt;
+  final int? frequency;
+  final List<String> onyomi;
+  final List<String> kunyomi;
+  final List<String> chinese;
+  final List<String> koreanR;
+  final List<String> koreanH;
+  final String? radical;
+  final List<String> parts;
+
+  KanjiData({
+    required this.literal,
+    required this.meanings,
+    required this.strokeCount,
+    this.grade,
+    this.jlpt,
+    this.frequency,
+    this.onyomi = const [],
+    this.kunyomi = const [],
+    this.chinese = const [],
+    this.koreanR = const [],
+    this.koreanH = const [],
+    this.radical,
+    this.parts = const [],
+  });
+
+  String get animationSvgUrl => 'https://jotoba.de/resource/kanji/animation/$literal';
+  String get framesSvgUrl => 'https://jotoba.de/resource/kanji/frames/$literal';
+
+  factory KanjiData.fromJson(Map<String, dynamic> json) {
+    return KanjiData(
+      literal: json['literal']?.toString() ?? '',
+      meanings: (json['meanings'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      strokeCount: (json['stroke_count'] as num?)?.toInt() ?? 0,
+      grade: (json['grade'] as num?)?.toInt(),
+      jlpt: (json['jlpt'] as num?)?.toInt(),
+      frequency: (json['frequency'] as num?)?.toInt(),
+      onyomi: (json['onyomi'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      kunyomi: (json['kunyomi'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      chinese: (json['chinese'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      koreanR: (json['korean_r'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      koreanH: (json['korean_h'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      radical: json['radical']?.toString(),
+      parts: (json['parts'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'literal': literal,
+    'meanings': meanings,
+    'stroke_count': strokeCount,
+    if (grade != null) 'grade': grade,
+    if (jlpt != null) 'jlpt': jlpt,
+    if (frequency != null) 'frequency': frequency,
+    'onyomi': onyomi,
+    'kunyomi': kunyomi,
+    'chinese': chinese,
+    'korean_r': koreanR,
+    'korean_h': koreanH,
+    if (radical != null) 'radical': radical,
+    'parts': parts,
+  };
+}
+
 typedef WordLevel = String;
 
 class WordLevels {

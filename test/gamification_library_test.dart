@@ -313,7 +313,7 @@ void main() {
       expect(find.text('Library'), findsAtLeastNWidgets(1));
 
       // Bottom controls
-      expect(find.text('🇯🇵 Japanese'), findsAtLeastNWidgets(1));
+      expect(find.text('Japanese'), findsAtLeastNWidgets(1));
       expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
 
       // Tapping Library item in sidebar

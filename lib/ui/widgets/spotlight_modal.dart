@@ -10,6 +10,7 @@ import '../../utils/youtube_url_parser.dart';
 import '../../services/i18n_service.dart';
 import '../settings/settings_screen.dart';
 import '../../state/player_coordinator.dart';
+import '../../utils/video_format_utils.dart';
 
 /// Authentic Spotlight / Command Palette matching lingua-tube's command-palette component.
 class SpotlightModal extends StatefulWidget {
@@ -32,7 +33,7 @@ class SpotlightModal extends StatefulWidget {
       context: context,
       barrierDismissible: true,
       barrierLabel: 'Dismiss Spotlight',
-      barrierColor: Colors.black.withOpacity(0.75),
+      barrierColor: Colors.black.withValues(alpha: 0.75),
       transitionDuration: const Duration(milliseconds: 180),
       pageBuilder: (dialogContext, animation, secondaryAnimation) {
         return SpotlightModal(
@@ -226,7 +227,7 @@ class _SpotlightModalState extends State<SpotlightModal>
     _triggerShake();
   }
 
-  void _navigateToPlayer(String videoId, String title) {
+  void _navigateToPlayer(String videoId, String title, {int? duration}) {
     Navigator.of(context).pop();
     if (widget.onVideoSelected != null) {
       widget.onVideoSelected!(videoId);
@@ -235,6 +236,7 @@ class _SpotlightModalState extends State<SpotlightModal>
         context,
         videoId: videoId,
         title: title,
+        initialDuration: duration,
       );
     }
   }
@@ -251,17 +253,6 @@ class _SpotlightModalState extends State<SpotlightModal>
     );
   }
 
-  String _formatDuration(int seconds) {
-    if (seconds <= 0) return '';
-    final minutes = seconds ~/ 60;
-    final remainingSeconds = seconds % 60;
-    if (minutes >= 60) {
-      final hours = minutes ~/ 60;
-      final remMins = minutes % 60;
-      return '$hours:${remMins.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
-    }
-    return '$minutes:${remainingSeconds.toString().padLeft(2, '0')}';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -350,20 +341,20 @@ class _SpotlightModalState extends State<SpotlightModal>
                 boxShadow: [
                   BoxShadow(
                     color: context.isDarkMode
-                        ? Colors.black.withOpacity(0.40)
-                        : Colors.black.withOpacity(0.12),
+                        ? Colors.black.withValues(alpha: 0.40)
+                        : Colors.black.withValues(alpha: 0.12),
                     blurRadius: 28,
                     offset: const Offset(0, 10),
                   ),
                   if (_hasError)
                     BoxShadow(
-                      color: colors.error.withOpacity(0.25),
+                      color: colors.error.withValues(alpha: 0.25),
                       blurRadius: 10,
                       spreadRadius: 2,
                     )
                   else if (_focusNode.hasFocus || _detectedVideoId != null)
                     BoxShadow(
-                      color: colors.accentPrimary.withOpacity(0.18),
+                      color: colors.accentPrimary.withValues(alpha: 0.18),
                       blurRadius: 8,
                       spreadRadius: 1,
                     ),
@@ -507,8 +498,8 @@ class _SpotlightModalState extends State<SpotlightModal>
         boxShadow: [
           BoxShadow(
             color: context.isDarkMode
-                ? Colors.black.withOpacity(0.40)
-                : Colors.black.withOpacity(0.12),
+                ? Colors.black.withValues(alpha: 0.40)
+                : Colors.black.withValues(alpha: 0.12),
             blurRadius: 32,
             offset: const Offset(0, 14),
           ),
@@ -566,7 +557,7 @@ class _SpotlightModalState extends State<SpotlightModal>
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: colors.accentPrimary.withOpacity(0.4),
+                    color: colors.accentPrimary.withValues(alpha: 0.4),
                   ),
                 ),
                 child: Row(
@@ -700,8 +691,8 @@ class _SpotlightModalState extends State<SpotlightModal>
           final videoId = item['videoId'] as String? ?? '';
           final title = item['title'] as String? ?? 'YouTube Video';
           final channel = item['channel'] as String? ?? '';
-          final duration = item['duration'] as int? ?? 0;
-          final durationStr = _formatDuration(duration);
+          final duration = (item['duration'] as num?)?.toInt() ?? 0;
+          final durationStr = duration > 0 ? formatVideoTime(duration) : '';
           final level = item['level'] as String? ?? item['tier'] as String? ?? '';
 
           return Material(
@@ -709,7 +700,7 @@ class _SpotlightModalState extends State<SpotlightModal>
             borderRadius: BorderRadius.circular(10),
             child: InkWell(
               borderRadius: BorderRadius.circular(10),
-              onTap: () => _navigateToPlayer(videoId, title),
+              onTap: () => _navigateToPlayer(videoId, title, duration: duration > 0 ? duration : null),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 child: Row(

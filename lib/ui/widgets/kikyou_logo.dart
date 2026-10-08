@@ -21,7 +21,7 @@ class KikyouLogo extends StatelessWidget {
       width: size,
       height: size,
       child: CustomPaint(
-        painter: _KikyouPainter(color ?? VocaTokens.accentPrimary),
+        painter: _KikyouPainter(color ?? context.vocaColors.accentPrimary),
       ),
     );
   }

@@ -35,6 +35,7 @@ Future<String?> showVocaOptionPicker({
   String? subtitle,
   required List<OptionItem> options,
   String? selectedValue,
+  ValueChanged<String>? onSelect,
 }) {
   return showVocaBottomSheet<String>(
     context: context,
@@ -56,7 +57,16 @@ Future<String?> showVocaOptionPicker({
           return Material(
             color: isSelected ? colors.accentPrimarySoft : Colors.transparent,
             child: InkWell(
-              onTap: () => Navigator.of(ctx).pop(item.value),
+              onTap: () async {
+                if (onSelect != null) {
+                  onSelect(item.value);
+                  // Brief micro-pause for visual tactile ink feedback and live transform
+                  await Future.delayed(const Duration(milliseconds: 120));
+                }
+                if (ctx.mounted) {
+                  Navigator.of(ctx).pop(item.value);
+                }
+              },
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                 child: Row(
@@ -98,7 +108,7 @@ Future<String?> showVocaOptionPicker({
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: (item.badgeColor ?? colors.accentSecondary).withOpacity(0.15),
+                                    color: (item.badgeColor ?? colors.accentSecondary).withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(

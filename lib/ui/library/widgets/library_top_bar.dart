@@ -97,7 +97,7 @@ class LibraryTopBar extends StatelessWidget {
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: Colors.black.withOpacity(colors.isDark ? 0.4 : 0.06),
+                      color: Colors.black.withValues(alpha: colors.isDark ? 0.4 : 0.06),
                       blurRadius: 3,
                       offset: const Offset(0, 1),
                     ),

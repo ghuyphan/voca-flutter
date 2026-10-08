@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:ui' show PlatformDispatcher;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:signals_flutter/signals_flutter.dart';
+import '../ui/widgets/circle_flag.dart';
 
 class UILanguageInfo {
   final String code;
@@ -27,11 +29,11 @@ class I18nService {
   static const List<String> supportedLanguageCodes = ['en', 'vi', 'ja', 'ko', 'zh'];
 
   final List<UILanguageInfo> availableLanguages = const [
-    UILanguageInfo(code: 'en', name: 'English', nativeName: 'English', flag: '🇬🇧'),
-    UILanguageInfo(code: 'vi', name: 'Vietnamese', nativeName: 'Tiếng Việt', flag: '🇻🇳'),
-    UILanguageInfo(code: 'ja', name: 'Japanese', nativeName: '日本語', flag: '🇯🇵'),
-    UILanguageInfo(code: 'ko', name: 'Korean', nativeName: '한국어', flag: '🇰🇷'),
-    UILanguageInfo(code: 'zh', name: 'Chinese', nativeName: '中文', flag: '🇨🇳'),
+    UILanguageInfo(code: 'en', name: 'English', nativeName: 'English', flag: 'gb'),
+    UILanguageInfo(code: 'vi', name: 'Vietnamese', nativeName: 'Tiếng Việt', flag: 'vn'),
+    UILanguageInfo(code: 'ja', name: 'Japanese', nativeName: '日本語', flag: 'jp'),
+    UILanguageInfo(code: 'ko', name: 'Korean', nativeName: '한국어', flag: 'kr'),
+    UILanguageInfo(code: 'zh', name: 'Chinese', nativeName: '中文', flag: 'cn'),
   ];
 
   final currentLanguage = signal<String>('en');
@@ -43,6 +45,7 @@ class I18nService {
   /// Loads all language files from assets/i18n and restores saved user language preference.
   Future<void> init([AssetBundle? bundle]) async {
     final assetBundle = bundle ?? rootBundle;
+    unawaited(CircleFlag.precacheAll(assetBundle));
 
     for (final code in supportedLanguageCodes) {
       try {

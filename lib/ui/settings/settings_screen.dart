@@ -31,10 +31,10 @@ const String _googleSvg = '''
 const String kAppVersion = '1.2.4';
 const String kBuildDate = '2026-09-30';
 
-/// Strict 1:1 mobile port of the canonical Settings Sheet from lingua-tube:
+/// Material 3 Settings Screen for VOCA Mobile:
 /// 1. Account Hero Card (Profile row when logged in, or calm Guest Sync card with Google sign-in)
-/// 2. Learning & Display Group (Learning Language, Interface Language, Reading Display)
-/// 3. Appearance Group (Dark Mode native switch with white thumb)
+/// 2. Learning & Display Group (Learning Language, Interface Language, Reading Display, Replay Onboarding)
+/// 3. Appearance Group (Dark Mode native M3 switch)
 /// 4. About & Updates Group (Version with What's New modal, Live Check for Updates, Discord Community)
 /// 5. Sign Out Action (when authenticated) & Simplified Clean Footer
 class SettingsScreen extends StatefulWidget {
@@ -104,21 +104,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               // 2. LEARNING & DISPLAY GROUP
               _buildSectionHeader(
-                context.t('settings.learningSection', null, 'LEARNING & DISPLAY'),
+                context.t('settings.learningSection', null, 'Learning & Display'),
                 colors,
               ),
               _buildLearningDisplayGroup(context, colors, settings, targetLang),
 
               // 3. APPEARANCE GROUP
               _buildSectionHeader(
-                context.t('settings.appearance', null, 'APPEARANCE'),
+                context.t('settings.appearance', null, 'Appearance'),
                 colors,
               ),
-              _buildAppearanceGroup(context, colors, isDarkMode),
+              _buildAppearanceGroup(context, colors, settings, isDarkMode),
 
               // 4. ABOUT & UPDATES GROUP
               _buildSectionHeader(
-                context.t('settings.about', null, 'ABOUT & UPDATES'),
+                context.t('settings.about', null, 'About & Updates'),
                 colors,
               ),
               _buildAboutGroup(context, colors),
@@ -153,112 +153,109 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final isAuthenticated = currentUser != null;
 
     if (!isAuthenticated) {
-      // Guest Mode: Clean banner matching lingua-tube account-guest-banner
-      return Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
+      // Guest Mode: Material 3 Outlined Card
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Card.outlined(
           color: colors.bgCard,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: colors.borderColor),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(colors.isDark ? 0.25 : 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: colors.borderColor),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: colors.accentPrimary.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Center(
-                    child: Icon(Icons.cloud_outlined, color: colors.accentPrimary, size: 20),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        context.t('settings.syncVocab', null, 'Sync vocabulary across devices'),
-                        style: TextStyle(
-                          color: colors.textPrimary,
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        context.t(
-                          'settings.syncVocabHint',
-                          null,
-                          'Sign in to save your flashcards, streak, and history',
-                        ),
-                        style: TextStyle(
-                          color: colors.textMuted,
-                          fontSize: 12,
-                          height: 1.3,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            SizedBox(
-              width: double.infinity,
-              height: 42,
-              child: OutlinedButton(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const AuthScreen()),
-                  );
-                },
-                style: OutlinedButton.styleFrom(
-                  backgroundColor: colors.bgSurface,
-                  foregroundColor: colors.textPrimary,
-                  side: BorderSide(color: colors.borderColor),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  elevation: 0,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                Row(
                   children: [
-                    SvgPicture.string(_googleSvg, width: 18, height: 18),
-                    const SizedBox(width: 10),
-                    Text(
-                      context.t('settings.signInGoogle', null, 'Continue with Google'),
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: colors.textPrimary,
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: colors.accentPrimary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: Icon(Icons.cloud_outlined, color: colors.accentPrimary, size: 22),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            context.t('settings.syncVocab', null, 'Sync vocabulary across devices'),
+                            style: TextStyle(
+                              color: colors.textPrimary,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            context.t(
+                              'settings.syncVocabHint',
+                              null,
+                              'Sign in to save your flashcards, streak, and history',
+                            ),
+                            style: TextStyle(
+                              color: colors.textMuted,
+                              fontSize: 12.5,
+                              height: 1.3,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const AuthScreen()),
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: colors.bgSurface,
+                      foregroundColor: colors.textPrimary,
+                      side: BorderSide(color: colors.borderColor),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SvgPicture.string(_googleSvg, width: 18, height: 18),
+                        const SizedBox(width: 10),
+                        Text(
+                          context.t('settings.signInGoogle', null, 'Continue with Google'),
+                          style: TextStyle(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w600,
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       );
     }
 
-    // Logged In: Tappable Profile Tile matching lingua-tube account-user-row
+    // Logged In: Tappable Material 3 Outlined Profile Card
     final meta = currentUser.userMetadata;
     final displayName = profile?.name ??
         (meta?['name'] ?? meta?['full_name']) as String? ??
@@ -270,101 +267,97 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final isPro = tier == 'PRO';
     final isFounder = tier == 'FOUNDER' || tier == 'PREMIUM';
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Card.outlined(
         color: colors.bgCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colors.borderColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(colors.isDark ? 0.2 : 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const EditProfileScreen()),
-          );
-        },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            children: [
-              Stack(
-                alignment: Alignment.bottomRight,
-                children: [
-                  VocaAvatarWidget(
-                    avatarUrl: avatarUrl,
-                    size: 46,
-                    border: Border.all(color: colors.borderColor, width: 1.5),
-                  ),
-                  Container(
-                    width: 16,
-                    height: 16,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: colors.accentPrimary,
-                      border: Border.all(color: colors.bgCard, width: 1.5),
-                    ),
-                    child: const Icon(
-                      Icons.edit_rounded,
-                      size: 9,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: colors.borderColor),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Stack(
+                  alignment: Alignment.bottomRight,
                   children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            displayName,
-                            style: TextStyle(
-                              color: colors.textPrimary,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (countryCode != null && countryCode.isNotEmpty) ...[
-                          const SizedBox(width: 6),
-                          VocaFlagWidget(countryCode: countryCode, size: 14),
-                        ],
-                        const SizedBox(width: 8),
-                        _buildTierChip(tier, isPro: isPro, isFounder: isFounder, colors: colors),
-                      ],
+                    VocaAvatarWidget(
+                      avatarUrl: avatarUrl,
+                      size: 48,
+                      border: Border.all(color: colors.borderColor, width: 1.5),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      email,
-                      style: TextStyle(
-                        color: colors.textMuted,
-                        fontSize: 12,
+                    Container(
+                      width: 18,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: colors.accentPrimary,
+                        border: Border.all(color: colors.bgCard, width: 2),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      child: const Icon(
+                        Icons.edit_rounded,
+                        size: 10,
+                        color: Colors.white,
+                      ),
                     ),
                   ],
                 ),
-              ),
-              IconButton(
-                icon: Icon(Icons.logout_rounded, color: colors.error, size: 20),
-                tooltip: context.t('header.signOut', null, 'Sign Out'),
-                onPressed: () => _showSignOutDialog(context, colors),
-              ),
-            ],
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              displayName,
+                              style: TextStyle(
+                                color: colors.textPrimary,
+                                fontSize: 15.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (countryCode != null && countryCode.isNotEmpty) ...[
+                            const SizedBox(width: 6),
+                            VocaFlagWidget(countryCode: countryCode, size: 14),
+                          ],
+                          const SizedBox(width: 8),
+                          _buildTierChip(tier, isPro: isPro, isFounder: isFounder, colors: colors),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        email,
+                        style: TextStyle(
+                          color: colors.textMuted,
+                          fontSize: 12.5,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.logout_rounded, color: colors.error, size: 20),
+                  tooltip: context.t('header.signOut', null, 'Sign Out'),
+                  onPressed: () => _showSignOutDialog(context, colors),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -382,12 +375,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Color chipText = colors.textMuted;
 
     if (isFounder) {
-      chipBg = colors.accentTertiary.withOpacity(0.18);
-      chipBorder = colors.accentTertiary.withOpacity(0.4);
+      chipBg = colors.accentTertiary.withValues(alpha: 0.18);
+      chipBorder = colors.accentTertiary.withValues(alpha: 0.4);
       chipText = colors.accentTertiary;
     } else if (isPro) {
       chipBg = colors.accentSecondarySoft;
-      chipBorder = colors.accentSecondary.withOpacity(0.4);
+      chipBorder = colors.accentSecondary.withValues(alpha: 0.4);
       chipText = colors.accentSecondary;
     }
 
@@ -411,7 +404,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   // ===========================================================================
-  // 2. LEARNING & DISPLAY GROUP (Learning Language & UI Language next to each other)
+  // 2. LEARNING & DISPLAY GROUP
   // ===========================================================================
 
   Widget _buildLearningDisplayGroup(
@@ -453,21 +446,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
         // 1. Target Learning Language (Circle Flag Leading)
         _buildSettingTile(
           context: context,
-          leading: _buildFlagLeading(langFlag),
+          leading: _buildFlagLeading(langFlag, colors),
           title: context.t('settings.learningLanguage', null, 'Learning Language'),
-          valueText: langName,
+          subtitle: langName,
           colors: colors,
           onTap: () => _pickLearningLanguage(context, targetLang),
         ),
 
         _buildDivider(colors),
 
-        // 2. App Interface Language (Circle Flag Leading - right next to Learning Language!)
+        // 2. App Interface Language (Circle Flag Leading)
         _buildSettingTile(
           context: context,
-          leading: _buildFlagLeading(uiLangCountryCode),
+          leading: _buildFlagLeading(uiLangCountryCode, colors),
           title: context.t('settings.interfaceLanguage', null, 'Interface Language'),
-          valueText: currentUILang.nativeName,
+          subtitle: currentUILang.nativeName,
           colors: colors,
           onTap: () => _pickUILanguage(context),
         ),
@@ -477,9 +470,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         // 3. Reading Display Mode (Furigana / Pinyin / Romaji / Off)
         _buildSettingTile(
           context: context,
-          leading: _buildIconBox(Icons.subtitles_outlined, colors),
+          leading: _buildM3IconBox(Icons.subtitles_outlined, colors),
           title: readingGuideTitle,
-          valueText: readingModeLabel,
+          subtitle: readingModeLabel,
           colors: colors,
           onTap: () => _pickRubyMode(context, settings.rubyMode, readingGuideTitle),
         ),
@@ -489,9 +482,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         // 4. Onboarding & Setup (allows checking/replaying onboarding without clearing app state)
         _buildSettingTile(
           context: context,
-          leading: _buildIconBox(Icons.explore_outlined, colors),
+          leading: _buildM3IconBox(Icons.explore_outlined, colors),
           title: context.t('settings.replayOnboarding', null, 'Replay Onboarding'),
-          valueText: context.t('settings.replayOnboardingDesc', null, 'Tour & Setup'),
+          subtitle: context.t('settings.replayOnboardingDesc', null, 'Tour & Setup'),
           colors: colors,
           onTap: () => _openOnboarding(context),
         ),
@@ -590,7 +583,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _pickUILanguage(BuildContext context) async {
     final i18n = I18nService.instance;
-    final selected = await showVocaOptionPicker(
+    await showVocaOptionPicker(
       context: context,
       title: context.t('settings.interfaceLanguage', null, 'Interface Language'),
       selectedValue: i18n.currentLanguage.value,
@@ -602,44 +595,98 @@ class _SettingsScreenState extends State<SettingsScreen> {
           leading: VocaFlagWidget(countryCode: _getLanguageCountryCode(l.code), size: 22),
         );
       }).toList(),
+      onSelect: (selected) {
+        if (selected != i18n.currentLanguage.value) {
+          AppState.instance.setUiLanguage(selected);
+        }
+      },
     );
-
-    if (selected != null) {
-      AppState.instance.setUiLanguage(selected);
-    }
   }
 
   // ===========================================================================
-  // 3. APPEARANCE GROUP (Dark Mode Switch)
+  // 3. APPEARANCE GROUP (Material 3 Tri-State Theme Selector)
   // ===========================================================================
 
   Widget _buildAppearanceGroup(
     BuildContext context,
     VocaColorPalette colors,
+    UserSettings settings,
     bool isDarkMode,
   ) {
+    final currentThemeMode = settings.themeMode.toLowerCase();
+    final String themeSubtitle;
+    final IconData themeIcon;
+
+    switch (currentThemeMode) {
+      case 'light':
+        themeSubtitle = context.t('settings.themeLight', null, 'Light');
+        themeIcon = Icons.light_mode_outlined;
+        break;
+      case 'dark':
+        themeSubtitle = context.t('settings.themeDark', null, 'Dark');
+        themeIcon = Icons.dark_mode_outlined;
+        break;
+      case 'system':
+      default:
+        themeSubtitle = context.t('settings.themeSystem', null, 'System');
+        themeIcon = Icons.brightness_auto_outlined;
+        break;
+    }
+
     return _buildCardGroup(
       colors: colors,
       children: [
-        _buildSwitchTile(
+        _buildSettingTile(
           context: context,
-          leading: _buildIconBox(
-            isDarkMode ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
+          leading: _buildM3IconBox(
+            themeIcon,
             colors,
+            iconColor: colors.accentPrimary,
           ),
-          title: context.t('settings.darkMode', null, 'Dark Mode'),
-          value: isDarkMode,
+          title: context.t('settings.theme', null, 'Theme'),
+          subtitle: themeSubtitle,
           colors: colors,
-          onChanged: (val) {
-            AppState.instance.setThemeMode(val ? 'dark' : 'light');
-          },
+          onTap: () => _pickThemeMode(context, currentThemeMode),
         ),
       ],
     );
   }
 
+  Future<void> _pickThemeMode(BuildContext context, String currentMode) async {
+    await showVocaOptionPicker(
+      context: context,
+      title: context.t('settings.theme', null, 'Theme'),
+      selectedValue: currentMode,
+      options: [
+        OptionItem(
+          value: 'system',
+          label: context.t('settings.themeSystem', null, 'System'),
+          example: context.t('settings.themeSystemDesc', null, 'Follow device appearance'),
+          iconData: Icons.brightness_auto_rounded,
+        ),
+        OptionItem(
+          value: 'light',
+          label: context.t('settings.themeLight', null, 'Light'),
+          example: context.t('settings.themeLightDesc', null, 'Light theme'),
+          iconData: Icons.light_mode_rounded,
+        ),
+        OptionItem(
+          value: 'dark',
+          label: context.t('settings.themeDark', null, 'Dark'),
+          example: context.t('settings.themeDarkDesc', null, 'Dark theme'),
+          iconData: Icons.dark_mode_rounded,
+        ),
+      ],
+      onSelect: (selected) {
+        if (selected != currentMode) {
+          AppState.instance.setThemeMode(selected);
+        }
+      },
+    );
+  }
+
   // ===========================================================================
-  // 4. ABOUT & UPDATES GROUP (Real Version, Live Updates, Discord)
+  // 4. ABOUT & UPDATES GROUP (Version, Live Updates, Discord)
   // ===========================================================================
 
   Widget _buildAboutGroup(BuildContext context, VocaColorPalette colors) {
@@ -649,24 +696,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
         // 1. Version & Release Notes Modal
         _buildSettingTile(
           context: context,
-          leading: _buildIconBox(Icons.info_outline_rounded, colors),
+          leading: _buildM3IconBox(Icons.info_outline_rounded, colors),
           title: context.t('settings.appVersion', null, 'Version'),
-          valueText: 'v$kAppVersion',
+          subtitle: 'v$kAppVersion',
           trailingWidget: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: colors.accentPrimary.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(6),
+              color: colors.accentPrimary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.star_rounded, size: 12, color: colors.accentPrimary),
+                Icon(Icons.star_rounded, size: 13, color: colors.accentPrimary),
                 const SizedBox(width: 4),
                 Text(
                   context.t('settings.whatsNew', null, "What's New"),
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: 11.5,
                     fontWeight: FontWeight.w700,
                     color: colors.accentPrimary,
                   ),
@@ -684,12 +731,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
         // 2. Real Live Check for Updates (Queries Cloudflare API)
         _buildSettingTile(
           context: context,
-          leading: _buildIconBox(
+          leading: _buildM3IconBox(
             _isCheckingUpdate ? Icons.hourglass_top_rounded : Icons.refresh_rounded,
             colors,
           ),
           title: context.t('settings.checkForUpdates', null, 'Check for Updates'),
-          valueText: _isCheckingUpdate ? context.t('settings.checkingUpdates', null, 'Checking...') : _updateStatusText,
+          subtitle: _isCheckingUpdate ? context.t('settings.checkingUpdates', null, 'Checking...') : _updateStatusText,
+          trailingWidget: _isCheckingUpdate
+              ? SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: colors.accentPrimary),
+                )
+              : null,
           showChevron: false,
           colors: colors,
           onTap: _isCheckingUpdate ? null : _handleCheckForUpdates,
@@ -700,8 +754,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         // 3. Discord Community & Feedback
         _buildSettingTile(
           context: context,
-          leading: _buildIconBox(Icons.forum_outlined, colors),
+          leading: _buildM3IconBox(Icons.forum_outlined, colors),
           title: context.t('settings.discordCommunity', null, 'Discord Community'),
+          subtitle: context.t('settings.discordDesc', null, 'Join community & report issues'),
           trailingIcon: Icons.open_in_new_rounded,
           colors: colors,
           onTap: () async {
@@ -861,34 +916,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ===========================================================================
 
   Widget _buildSignOutTile(BuildContext context, VocaColorPalette colors) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Card.outlined(
         color: colors.bgCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colors.borderColor),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => _showSignOutDialog(context, colors),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              _buildIconBox(Icons.logout_rounded, colors, iconColor: colors.error),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  context.t('header.signOut', null, 'Sign Out'),
-                  style: TextStyle(
-                    color: colors.error,
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: colors.borderColor),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
+          leading: _buildM3IconBox(
+            Icons.logout_rounded,
+            colors,
+            iconColor: colors.error,
+            bgColor: colors.error.withValues(alpha: 0.12),
           ),
+          title: Text(
+            context.t('header.signOut', null, 'Sign Out'),
+            style: TextStyle(
+              color: colors.error,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          subtitle: Text(
+            context.t('settings.signOutDesc', null, 'Sign out of your account on this device'),
+            style: TextStyle(
+              color: colors.textMuted,
+              fontSize: 13,
+            ),
+          ),
+          trailing: Icon(Icons.chevron_right_rounded, size: 20, color: colors.error.withValues(alpha: 0.7)),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+          onTap: () => _showSignOutDialog(context, colors),
         ),
       ),
     );
@@ -920,19 +982,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   // ===========================================================================
-  // REUSABLE ROW TILES & HEADERS
+  // REUSABLE M3 ROW TILES & HEADERS
   // ===========================================================================
 
   Widget _buildSectionHeader(String title, VocaColorPalette colors) {
     return Padding(
-      padding: const EdgeInsets.only(left: 20, right: 20, top: 22, bottom: 8),
+      padding: const EdgeInsets.only(left: 20, right: 20, top: 24, bottom: 8),
       child: Text(
         title.toUpperCase(),
         style: TextStyle(
-          color: colors.textMuted,
-          fontSize: 11,
+          color: colors.accentPrimary,
+          fontSize: 12,
           fontWeight: FontWeight.w700,
-          letterSpacing: 0.8,
+          letterSpacing: 0.6,
         ),
       ),
     );
@@ -942,17 +1004,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required List<Widget> children,
     required VocaColorPalette colors,
   }) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Card.outlined(
         color: colors.bgCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colors.borderColor),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: children,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: colors.borderColor),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: children,
+        ),
       ),
     );
   }
@@ -961,9 +1026,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Divider(
       height: 1,
       thickness: 1,
-      indent: 52,
+      indent: 70,
       endIndent: 16,
-      color: colors.borderColorLight.withOpacity(0.55),
+      color: colors.borderColorLight.withValues(alpha: 0.6),
     );
   }
 
@@ -971,7 +1036,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required BuildContext context,
     required Widget leading,
     required String title,
-    String? valueText,
+    String? subtitle,
     Color? titleColor,
     IconData? trailingIcon,
     Widget? trailingWidget,
@@ -979,133 +1044,80 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required VocaColorPalette colors,
     VoidCallback? onTap,
   }) {
-    return InkWell(
+    Widget? trailing;
+    if (trailingWidget != null) {
+      trailing = trailingWidget;
+    } else if (trailingIcon != null) {
+      trailing = Icon(trailingIcon, size: 18, color: colors.textMuted);
+    } else if (showChevron && onTap != null) {
+      trailing = Icon(Icons.chevron_right_rounded, size: 20, color: colors.textMuted);
+    }
+
+    return ListTile(
+      leading: leading,
+      title: Text(
+        title,
+        style: TextStyle(
+          color: titleColor ?? colors.textPrimary,
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: (subtitle != null && subtitle.isNotEmpty)
+          ? Text(
+              subtitle,
+              style: TextStyle(
+                color: colors.textMuted,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            )
+          : null,
+      trailing: trailing,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      minLeadingWidth: 38,
       onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 24,
-              height: 24,
-              child: Center(child: leading),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  color: titleColor ?? colors.textPrimary,
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w600,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            if (valueText != null && valueText.isNotEmpty) ...[
-              const SizedBox(width: 8),
-              Text(
-                valueText,
-                style: TextStyle(
-                  color: colors.textMuted,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-            if (trailingWidget != null) ...[
-              const SizedBox(width: 6),
-              trailingWidget,
-            ] else if (trailingIcon != null) ...[
-              const SizedBox(width: 6),
-              Icon(trailingIcon, size: 16, color: colors.textMuted),
-            ] else if (showChevron && onTap != null) ...[
-              const SizedBox(width: 4),
-              Icon(Icons.chevron_right_rounded, size: 18, color: colors.textMuted),
-            ],
-          ],
-        ),
-      ),
     );
   }
 
-  Widget _buildSwitchTile({
-    required BuildContext context,
-    required Widget leading,
-    required String title,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-    required VocaColorPalette colors,
+
+  Widget _buildM3IconBox(
+    IconData icon,
+    VocaColorPalette colors, {
+    Color? iconColor,
+    Color? bgColor,
   }) {
-    return InkWell(
-      onTap: () => onChanged(!value),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 24,
-              height: 24,
-              child: Center(child: leading),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  color: colors.textPrimary,
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w600,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Switch(
-              value: value,
-              onChanged: onChanged,
-              activeColor: Colors.white,
-              activeTrackColor: colors.accentPrimary,
-              inactiveThumbColor: colors.textSecondary,
-              inactiveTrackColor: colors.bgSurface,
-              trackOutlineColor: WidgetStateProperty.resolveWith((states) {
-                if (states.contains(WidgetState.selected)) {
-                  return Colors.transparent;
-                }
-                return colors.borderColor;
-              }),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildIconBox(IconData icon, VocaColorPalette colors, {Color? iconColor}) {
     return Container(
-      width: 24,
-      height: 24,
+      width: 38,
+      height: 38,
       decoration: BoxDecoration(
-        color: colors.bgSurface,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: colors.borderColor),
+        color: bgColor ?? colors.bgSurface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: colors.borderColor.withValues(alpha: 0.7)),
       ),
       child: Center(
-        child: Icon(icon, size: 14, color: iconColor ?? colors.textSecondary),
+        child: Icon(icon, size: 20, color: iconColor ?? colors.textSecondary),
       ),
     );
   }
 
-  Widget _buildFlagLeading(String countryCode) {
-    return SizedBox(
-      width: 20,
-      height: 20,
-      child: ClipOval(
-        child: VocaFlagWidget(countryCode: countryCode, size: 20),
+  Widget _buildFlagLeading(String countryCode, VocaColorPalette colors) {
+    return Container(
+      width: 38,
+      height: 38,
+      decoration: BoxDecoration(
+        color: colors.bgSurface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: colors.borderColor.withValues(alpha: 0.7)),
+      ),
+      child: Center(
+        child: ClipOval(
+          child: VocaFlagWidget(countryCode: countryCode, size: 22),
+        ),
       ),
     );
   }
@@ -1115,7 +1127,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const KikyouLogo(size: 14),
+          const KikyouLogo(size: 16),
           const SizedBox(width: 8),
           Text(
             'VOCA MOBILE • v$kAppVersion',

@@ -10,6 +10,7 @@ import '../../services/i18n_service.dart';
 import '../../state/player_state.dart';
 import 'add_to_playlist_sheet.dart';
 import 'voca_bottom_sheet.dart';
+import '../widgets/circle_flag.dart';
 
 /// YouTube-style nested multi-panel settings sheet.
 /// Ported 1:1 from lingua-tube's playerSettingsTemplate:
@@ -63,14 +64,14 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
   ];
 
   static const List<Map<String, String>> _dualSubLanguages = [
-    {'code': 'vi', 'name': 'Tiếng Việt', 'flag': '🇻🇳'},
-    {'code': 'en', 'name': 'English', 'flag': '🇺🇸'},
-    {'code': 'ja', 'name': '日本語', 'flag': '🇯🇵'},
-    {'code': 'zh', 'name': '中文', 'flag': '🇨🇳'},
-    {'code': 'ko', 'name': '한국어', 'flag': '🇰🇷'},
-    {'code': 'es', 'name': 'Español', 'flag': '🇪🇸'},
-    {'code': 'fr', 'name': 'Français', 'flag': '🇫🇷'},
-    {'code': 'de', 'name': 'Deutsch', 'flag': '🇩🇪'},
+    {'code': 'vi', 'name': 'Tiếng Việt'},
+    {'code': 'en', 'name': 'English'},
+    {'code': 'ja', 'name': '日本語'},
+    {'code': 'zh', 'name': '中文'},
+    {'code': 'ko', 'name': '한국어'},
+    {'code': 'es', 'name': 'Español'},
+    {'code': 'fr', 'name': 'Français'},
+    {'code': 'de', 'name': 'Deutsch'},
   ];
 
   String _getReadingScriptIcon(String lang) {
@@ -113,9 +114,9 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
   String _getTargetLangName(String langCode) {
     final found = _dualSubLanguages.firstWhere(
       (l) => l['code'] == langCode,
-      orElse: () => {'code': langCode, 'name': langCode.toUpperCase(), 'flag': '🌐'},
+      orElse: () => {'code': langCode, 'name': langCode.toUpperCase()},
     );
-    return '${found['flag']} ${found['name']}';
+    return found['name']!;
   }
 
   void _handleSaveToPlaylist() {
@@ -277,6 +278,7 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
               icon: Icons.translate_rounded,
               label: context.t('subtitle.dualSubs', null, 'Phụ đề song ngữ'),
               value: dualSubLabel,
+              leadingValueWidget: showDual ? CircleFlag(code: targetLang, size: 16) : null,
               onTap: () => setState(() => _currentView = 'dualSub'),
             ),
 
@@ -333,6 +335,7 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
     required IconData icon,
     required String label,
     String? value,
+    Widget? leadingValueWidget,
     required VoidCallback onTap,
   }) {
     final colors = context.vocaColors;
@@ -354,6 +357,10 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
                 ),
               ),
             ),
+            if (leadingValueWidget != null) ...[
+              leadingValueWidget,
+              const SizedBox(width: 6),
+            ],
             if (value != null) ...[
               Text(
                 value,
@@ -509,7 +516,6 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
               final item = _dualSubLanguages[index];
               final code = item['code']!;
               final name = item['name']!;
-              final flag = item['flag']!;
               final isLearningLang = code == activeLearningLang;
               final isSelected = showDual && currentTarget == code;
 
@@ -518,7 +524,7 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
                 label: name,
                 isSelected: isSelected,
                 isDisabled: isLearningLang,
-                leading: Text(flag, style: const TextStyle(fontSize: 18)),
+                leading: CircleFlag(code: code, size: 20),
                 onTap: () {
                   widget.controller.dualSubLanguage.value = code;
                   widget.controller.showTranslation.value = true;

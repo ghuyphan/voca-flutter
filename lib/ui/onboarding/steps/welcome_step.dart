@@ -171,7 +171,7 @@ class WelcomeStep extends StatelessWidget {
                   children: [
                     _FeatureTile(
                       icon: Icons.play_circle_fill_rounded,
-                      iconColor: colors.accentPrimary,
+                      iconColor: colors.isDark ? colors.wordNewText : colors.accentPrimary,
                       text: context.t(
                         'onboarding.features.subtitles',
                         null,

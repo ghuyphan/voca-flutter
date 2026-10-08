@@ -41,7 +41,7 @@ class LibraryPlaylistCard extends StatelessWidget {
         color: colors.bgCard,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isDefault ? colors.accentPrimary.withOpacity(0.35) : colors.borderColor,
+          color: isDefault ? colors.accentPrimary.withValues(alpha: 0.35) : colors.borderColor,
         ),
       ),
       clipBehavior: Clip.antiAlias,

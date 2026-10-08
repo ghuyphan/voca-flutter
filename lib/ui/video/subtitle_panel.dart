@@ -15,6 +15,7 @@ import '../sheets/grammar_bottom_sheet.dart';
 import '../sheets/practice_sheet.dart';
 import '../sheets/saved_words_sheet.dart';
 import '../sheets/subtitle_options_sheet.dart';
+import '../sheets/subtitle_tracks_sheet.dart';
 
 /// SubtitlePanel Widget
 ///
@@ -261,39 +262,42 @@ class _SubtitlePanelState extends State<SubtitlePanel>
                   );
                 }
 
-                return InkWell(
-                  onTap: () async {
-                    widget.controller.acquirePauseLock(
-                      'sheet',
-                      onPause: () => widget.ytController.pauseVideo(),
-                    );
-                    try {
-                      if (grammarPattern != null) {
-                        await GrammarBottomSheet.show(context, grammarPattern);
-                      } else {
-                        await DictionaryBottomSheet.show(
-                          context,
-                          token: token,
-                          sourceLang: widget.controller.activeLanguage.value,
-                          contextSentence: cue.text,
-                          contextTranslation: cue.translation,
+                return Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () async {
+                      widget.controller.acquirePauseLock(
+                        'sheet',
+                        onPause: () => widget.ytController.pauseVideo(),
+                      );
+                      try {
+                        if (grammarPattern != null) {
+                          await GrammarBottomSheet.show(context, grammarPattern);
+                        } else {
+                          await DictionaryBottomSheet.show(
+                            context,
+                            token: token,
+                            sourceLang: widget.controller.activeLanguage.value,
+                            contextSentence: cue.text,
+                            contextTranslation: cue.translation,
+                          );
+                        }
+                      } finally {
+                        widget.controller.releasePauseLock(
+                          'sheet',
+                          onResume: () => widget.ytController.playVideo(),
                         );
                       }
-                    } finally {
-                      widget.controller.releasePauseLock(
-                        'sheet',
-                        onResume: () => widget.ytController.playVideo(),
-                      );
-                    }
-                  },
-                  borderRadius: BorderRadius.circular(4),
-                  child: _buildTokenChip(
-                    token: token,
-                    grammarPattern: grammarPattern,
-                    surfaceFontSize: surfaceFontSize,
-                    rubyFontSize: rubyFontSize,
-                    showFurigana: showFurigana,
-                    colors: colors,
+                    },
+                    borderRadius: BorderRadius.circular(4),
+                    child: _buildTokenChip(
+                      token: token,
+                      grammarPattern: grammarPattern,
+                      surfaceFontSize: surfaceFontSize,
+                      rubyFontSize: rubyFontSize,
+                      showFurigana: showFurigana,
+                      colors: colors,
+                    ),
                   ),
                 );
               }).toList(),
@@ -540,6 +544,46 @@ class _SubtitlePanelState extends State<SubtitlePanel>
       );
     }
 
+    if (widget.controller.languageMismatch.value && widget.controller.cues.value.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.info_outline, size: 18, color: colors.colorFire),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                context.t('subtitle.languageMismatchNotice', null, 'Subtitles may not match target language'),
+                style: TextStyle(color: colors.textSecondary, fontSize: 13),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
+            TextButton(
+              onPressed: () => SubtitleTracksSheet.show(
+                context,
+                controller: widget.controller,
+              ),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                minimumSize: const Size(0, 32),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                context.t('subtitle.switchTrack', null, 'Switch Track'),
+                style: TextStyle(
+                  color: colors.accentPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     // Default waiting state: 3 pulsing dots (exact match with Pic 2!)
     return _buildAnimatedWaitingDots(colors.textMuted);
   }
@@ -641,10 +685,12 @@ class _SubtitlePanelState extends State<SubtitlePanel>
             left: 0,
             right: 0,
             child: Center(
-              child: InkWell(
-                onTap: () => _scrollToActiveCue(activeCue, force: true),
-                borderRadius: BorderRadius.circular(999),
-                child: Container(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _scrollToActiveCue(activeCue, force: true),
+                  borderRadius: BorderRadius.circular(999),
+                  child: Container(
                   height: is3LineCompact ? 26 : 30,
                   padding: EdgeInsets.symmetric(horizontal: is3LineCompact ? 10 : 14),
                   decoration: BoxDecoration(
@@ -681,6 +727,7 @@ class _SubtitlePanelState extends State<SubtitlePanel>
                 ),
               ),
             ),
+          ),
           ),
       ],
     );
@@ -1035,6 +1082,46 @@ class _SubtitlePanelState extends State<SubtitlePanel>
       child: Column(
         mainAxisSize: widget.isCompact ? MainAxisSize.min : MainAxisSize.max,
         children: [
+          // Language mismatch warning banner (AGENTS.md RULE 9)
+          Watch((context) {
+            final mismatch = widget.controller.languageMismatch.value;
+            if (!mismatch) return const SizedBox.shrink();
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: colors.colorFire.withValues(alpha: 0.12),
+                border: Border(bottom: BorderSide(color: colors.borderColor, width: 0.5)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, size: 16, color: colors.colorFire),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      context.t('subtitle.languageMismatchNotice', null, 'Subtitle track language mismatch'),
+                      style: TextStyle(color: colors.textPrimary, fontSize: 12, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  FilledButton.tonal(
+                    onPressed: () => SubtitleTracksSheet.show(
+                      context,
+                      controller: widget.controller,
+                    ),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                      minimumSize: const Size(0, 28),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(
+                      context.t('subtitle.tracksTitle', null, 'Tracks'),
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+
           // 1. Current Subtitle (Scoped Watch for active cue and linguistic settings)
           Watch((context) {
             final activeCue = widget.controller.activeCue.value;

@@ -6,6 +6,7 @@ import '../../models/voca_models.dart';
 import '../../services/i18n_service.dart';
 import '../../services/toast_service.dart';
 import '../../state/app_state.dart';
+import '../widgets/circle_flag.dart';
 import 'voca_bottom_sheet.dart';
 
 /// Bottom sheet dialog for creating or editing playlists.
@@ -275,10 +276,50 @@ class _CreatePlaylistSheetState extends State<CreatePlaylistSheet> {
                 isExpanded: true,
                 icon: Icon(Icons.arrow_drop_down_rounded, color: colors.textSecondary),
                 items: [
-                  DropdownMenuItem(value: 'ja', child: Text('🇯🇵 ${context.t('settings.japanese', null, 'Japanese')}')),
-                  DropdownMenuItem(value: 'zh', child: Text('🇨🇳 ${context.t('settings.chinese', null, 'Chinese')}')),
-                  DropdownMenuItem(value: 'ko', child: Text('🇰🇷 ${context.t('settings.korean', null, 'Korean')}')),
-                  DropdownMenuItem(value: 'en', child: Text('🇺🇸 ${context.t('settings.english', null, 'English')}')),
+                  DropdownMenuItem(
+                    value: 'ja',
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const CircleFlag(code: 'ja', size: 18),
+                        const SizedBox(width: 8),
+                        Text(context.t('settings.japanese', null, 'Japanese')),
+                      ],
+                    ),
+                  ),
+                  DropdownMenuItem(
+                    value: 'zh',
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const CircleFlag(code: 'zh', size: 18),
+                        const SizedBox(width: 8),
+                        Text(context.t('settings.chinese', null, 'Chinese')),
+                      ],
+                    ),
+                  ),
+                  DropdownMenuItem(
+                    value: 'ko',
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const CircleFlag(code: 'ko', size: 18),
+                        const SizedBox(width: 8),
+                        Text(context.t('settings.korean', null, 'Korean')),
+                      ],
+                    ),
+                  ),
+                  DropdownMenuItem(
+                    value: 'en',
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const CircleFlag(code: 'en', size: 18),
+                        const SizedBox(width: 8),
+                        Text(context.t('settings.english', null, 'English')),
+                      ],
+                    ),
+                  ),
                 ],
                 onChanged: (val) {
                   if (val != null) {

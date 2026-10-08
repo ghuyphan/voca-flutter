@@ -5,6 +5,7 @@ import '../../config/voca_theme.dart';
 import '../../services/i18n_service.dart';
 import '../../state/app_state.dart';
 import '../../state/player_state.dart';
+import '../widgets/circle_flag.dart';
 import 'ai_generation_sheet.dart';
 import 'voca_bottom_sheet.dart';
 
@@ -61,29 +62,6 @@ class SubtitleTracksSheet extends StatelessWidget {
     }
   }
 
-  String _getLanguageFlag(String code) {
-    switch (code.toLowerCase()) {
-      case 'ja':
-        return '🇯🇵';
-      case 'zh':
-        return '🇨🇳';
-      case 'ko':
-        return '🇰🇷';
-      case 'en':
-        return '🇬🇧';
-      case 'vi':
-        return '🇻🇳';
-      case 'es':
-        return '🇪🇸';
-      case 'fr':
-        return '🇫🇷';
-      case 'de':
-        return '🇩🇪';
-      default:
-        return '🌐';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final colors = context.vocaColors;
@@ -119,7 +97,7 @@ class SubtitleTracksSheet extends StatelessWidget {
             subtitle: isAIGenerated
                 ? '${activeLang.toUpperCase()} • Whisper AI'
                 : '${activeLang.toUpperCase()} • Native Subtitles',
-            leading: Text(_getLanguageFlag(activeLang), style: const TextStyle(fontSize: 20)),
+            leading: CircleFlag(code: activeLang, size: 22),
             isSelected: !isOff,
             badge: isAIGenerated ? 'AI' : null,
             badgeColor: colors.colorDiamond,
@@ -136,7 +114,7 @@ class SubtitleTracksSheet extends StatelessWidget {
                 context: context,
                 title: _getLanguageName(lang),
                 subtitle: '${lang.toUpperCase()} • Native Subtitles',
-                leading: Text(_getLanguageFlag(lang), style: const TextStyle(fontSize: 20)),
+                leading: CircleFlag(code: lang, size: 22),
                 isSelected: false,
                 onTap: () {
                   AppState.instance.setLanguage(lang);

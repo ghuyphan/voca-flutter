@@ -338,7 +338,7 @@ class _ExploreScreenState extends State<ExploreScreen>
     }
   }
 
-  void _navigateToPlayer(String videoId, String title, {String? channel, String? level, String? thumbnail}) {
+  void _navigateToPlayer(String videoId, String title, {String? channel, String? level, String? thumbnail, int? duration}) {
     PlayerCoordinator.instance.openVideo(
       context,
       videoId: videoId,
@@ -346,6 +346,7 @@ class _ExploreScreenState extends State<ExploreScreen>
       channel: channel,
       level: level,
       thumbnail: thumbnail,
+      initialDuration: duration,
     );
   }
 
@@ -768,6 +769,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                             final channel = item['channel'] as String? ?? 'YouTube Creator';
                             final levelTag = VideoFeedCard.resolveVideoLevel(item, currentLang);
                             final thumbnail = item['thumbnail'] as String?;
+                            final duration = (item['duration'] as num?)?.toInt();
 
                             return VideoFeedCard(
                               video: item,
@@ -778,6 +780,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                                 channel: channel,
                                 level: levelTag,
                                 thumbnail: thumbnail,
+                                duration: duration,
                               ),
                             );
                           },

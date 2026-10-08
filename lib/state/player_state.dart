@@ -191,13 +191,13 @@ class VideoPlayerController {
         }
       }
 
-      // 2. Rule 6 Sticky Subtitle: hold ended cue for up to 2.5s gap if next cue hasn't started
+      // 2. RULE 7 Sticky Subtitle: hold ended cue across short gaps (< 3.0s) to prevent screen blanking
       final candCue = list[candidate];
       final candEnd = candCue.start + candCue.duration;
       final nextStart = (candidate + 1 < list.length) ? list[candidate + 1].start : double.infinity;
 
       if (time >= candEnd && time < nextStart) {
-        if ((time - candEnd) <= 2.5) {
+        if ((nextStart - candEnd) < 3.0 || (time - candEnd) <= 3.0) {
           return candidate;
         }
       }
@@ -346,6 +346,7 @@ class VideoPlayerController {
     bool preferAI = false,
     String? turnstileToken,
     String? language,
+    int? duration,
   }) async {
     currentVideoId.value = videoId;
     isLoading.value = true;
@@ -370,6 +371,7 @@ class VideoPlayerController {
         videoId: videoId,
         lang: requestedLang,
         preferAI: preferAI,
+        duration: duration,
         turnstileToken: turnstileToken,
         onProgress: (status) => statusMessage.value = status,
       );
@@ -455,9 +457,12 @@ class VideoPlayerController {
     final cueList = cues.value;
     if (cueList.isEmpty) return;
 
-    final index = cueList.indexWhere((c) => time >= c.start && time < (c.start + c.duration + 2.0));
+    int index = findActiveCueIndex(time, cueList);
+    if (index == -1) {
+      index = cueList.indexWhere((c) => c.start >= time);
+    }
     if (index != -1) {
-      dualSubService.onPlaybackProgress(index);
+      dualSubService.onPlaybackProgress(index, isSeek: true);
     }
   }
 

@@ -325,7 +325,7 @@ class _WordDetailSheetState extends State<WordDetailSheet> {
                           decoration: BoxDecoration(
                             color: mastery.bg,
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: mastery.text.withOpacity(0.35)),
+                            border: Border.all(color: mastery.text.withValues(alpha: 0.35)),
                           ),
                           child: Text(
                             _card.level.toUpperCase(),
@@ -461,7 +461,7 @@ class _WordDetailSheetState extends State<WordDetailSheet> {
                   decoration: BoxDecoration(
                     color: colors.bgCard,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: colors.accentPrimary.withOpacity(0.3)),
+                    border: Border.all(color: colors.accentPrimary.withValues(alpha: 0.3)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -649,7 +649,7 @@ class _WordDetailSheetState extends State<WordDetailSheet> {
                     onPressed: _isSaving ? null : _deleteCard,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: colors.error,
-                      side: BorderSide(color: colors.error.withOpacity(0.4)),
+                      side: BorderSide(color: colors.error.withValues(alpha: 0.4)),
                       padding: const EdgeInsets.all(14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),

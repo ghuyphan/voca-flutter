@@ -1,6 +1,7 @@
 // lib/main.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'config/api_endpoints.dart';
 import 'config/voca_theme.dart';
@@ -36,11 +37,8 @@ Future<void> main() async {
     supabaseService: appState.supabaseService,
   );
 
-  // Load persistent settings & gamification stats
+  // Load persistent settings & gamification stats (initializes I18nService & profile)
   await appState.initSettingsAndGamification();
-
-  // Initialize I18n Localization Service
-  await I18nService.instance.init();
 
   // Pre-load default learning language grammar database
   await appState.grammarEngine.loadLanguage('ja');
@@ -72,19 +70,9 @@ class _VocaAppState extends State<VocaApp> {
   Widget build(BuildContext context) {
     return Watch((context) {
       final lang = I18nService.instance.currentLanguage.value;
-      final settings = AppState.instance.userSettings.value;
-      ThemeMode themeMode;
-      switch (settings.themeMode.toLowerCase()) {
-        case 'light':
-          themeMode = ThemeMode.light;
-          break;
-        case 'dark':
-          themeMode = ThemeMode.dark;
-          break;
-        default:
-          themeMode = ThemeMode.system;
-          break;
-      }
+      final themeMode = AppState.instance.themeModeSignal.value;
+      final hasCompletedOnboarding =
+          AppState.instance.hasCompletedOnboardingSignal.value;
 
       return MaterialApp(
         scaffoldMessengerKey: ToastService.messengerKey,
@@ -94,8 +82,20 @@ class _VocaAppState extends State<VocaApp> {
         darkTheme: VocaTheme.darkTheme,
         themeMode: themeMode,
         locale: Locale(lang),
+        supportedLocales: const [
+          Locale('en'),
+          Locale('vi'),
+          Locale('ja'),
+          Locale('ko'),
+          Locale('zh'),
+        ],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
         home: widget.home ??
-            (settings.hasCompletedOnboarding
+            (hasCompletedOnboarding
                 ? const MainShell()
                 : const SplashScreen()),
       );

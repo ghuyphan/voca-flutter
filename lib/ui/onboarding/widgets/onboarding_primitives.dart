@@ -1,8 +1,8 @@
 // lib/ui/onboarding/widgets/onboarding_primitives.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import '../../../config/voca_theme.dart';
+import '../../widgets/circle_flag.dart';
 import 'staggered_entrance.dart';
 
 /// Circular flag from `assets/flags/*.svg` rendered seamlessly without outer borders.
@@ -14,22 +14,10 @@ class RoundFlag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
-    return SizedBox(
-      width: size,
-      height: size,
-      child: ClipOval(
-        child: SvgPicture.asset(
-          asset,
-          width: size,
-          height: size,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => ColoredBox(
-            color: colors.bgSurface,
-            child: Icon(Icons.language_rounded, size: size * 0.55, color: colors.textMuted),
-          ),
-        ),
-      ),
+    return CircleFlag(
+      code: asset,
+      size: size,
+      hasShadow: false,
     );
   }
 }

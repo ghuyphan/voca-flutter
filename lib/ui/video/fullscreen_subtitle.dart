@@ -64,7 +64,7 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
     _dotsAnimController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
-    );
+    )..repeat();
   }
 
   @override
@@ -143,10 +143,6 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
       final subtitleSize = widget.controller.subtitleSize.value;
       final isDualSubLoading = widget.controller.isDualSubLoading.value;
       final grammarMatches = widget.controller.activeGrammarMatches.value;
-
-      if (!isDualSubLoading && _dotsAnimController.isAnimating) {
-        _dotsAnimController.stop();
-      }
 
       // Font sizing scale (1:1 with CSS tokens)
       double surfaceFontSize;
@@ -700,9 +696,6 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
   }
 
   Widget _buildAnimatedDots(Color color) {
-    if (!_dotsAnimController.isAnimating) {
-      _dotsAnimController.repeat();
-    }
     return AnimatedBuilder(
       animation: _dotsAnimController,
       builder: (context, _) {

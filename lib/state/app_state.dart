@@ -49,6 +49,11 @@ class AppState {
   Signal<int> get streakFreezes => gamificationService.streakFreezes;
 
   // Theme & Locale helpers
+  late final ReadonlySignal<ThemeMode> themeModeSignal = computed(() => themeMode);
+  late final ReadonlySignal<bool> isDarkModeSignal = computed(() => isDarkMode);
+  late final ReadonlySignal<bool> hasCompletedOnboardingSignal =
+      computed(() => userSettings.value.hasCompletedOnboarding);
+
   ThemeMode get themeMode {
     switch (userSettings.value.themeMode.toLowerCase()) {
       case 'light':
@@ -159,6 +164,11 @@ class AppState {
   void setUiLanguage(String lang) {
     updateUserSettings(userSettings.value.copyWith(uiLanguage: lang));
     I18nService.instance.setLanguage(lang);
+    try {
+      if (lang != 'en') {
+        grammarEngine.loadTranslation(activeLanguage.value, lang);
+      }
+    } catch (_) {}
   }
 
   void setReadingDisplayMode(String mode) {

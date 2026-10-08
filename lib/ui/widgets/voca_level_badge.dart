@@ -7,7 +7,7 @@ import 'voca_shimmer.dart';
 enum LevelBadgeSize { small, medium, large }
 
 /// Reusable level badge styled with Material 3 filled-pill guidelines.
-/// Features high-contrast solid color fills without borders for instant readability across media.
+/// Features clean tonal pill containers for UI surfaces and solid contrast fills for media overlays.
 /// Supports clickable interactions and evaluating shimmer loading state.
 class VocaLevelBadge extends StatelessWidget {
   final String? level;
@@ -33,12 +33,7 @@ class VocaLevelBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double radius = borderRadius ??
-        switch (size) {
-          LevelBadgeSize.small => 5.0,
-          LevelBadgeSize.medium => 6.0,
-          LevelBadgeSize.large => 8.0,
-        };
+    final double radius = borderRadius ?? 100.0;
 
     if (isLoading) {
       double width;
@@ -46,7 +41,7 @@ class VocaLevelBadge extends StatelessWidget {
       switch (size) {
         case LevelBadgeSize.large:
           width = 64;
-          height = 30;
+          height = 28;
           break;
         case LevelBadgeSize.medium:
           width = 54;
@@ -77,16 +72,16 @@ class VocaLevelBadge extends StatelessWidget {
 
     switch (size) {
       case LevelBadgeSize.large:
-        fontSize = 13.0;
-        padding = const EdgeInsets.symmetric(horizontal: 10, vertical: 5);
+        fontSize = 12.5;
+        padding = const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5);
         break;
       case LevelBadgeSize.medium:
         fontSize = 11.5;
-        padding = const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5);
+        padding = const EdgeInsets.symmetric(horizontal: 8, vertical: 3.0);
         break;
       case LevelBadgeSize.small:
-        fontSize = 11.0;
-        padding = const EdgeInsets.symmetric(horizontal: 6, vertical: 3);
+        fontSize = 10.5;
+        padding = const EdgeInsets.symmetric(horizontal: 7, vertical: 2.0);
         break;
     }
 
@@ -98,16 +93,9 @@ class VocaLevelBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(radius),
-        border: showBorder ? Border.all(color: info.border, width: 1) : null,
-        boxShadow: isSolid
-            ? const [
-                BoxShadow(
-                  color: Color(0x33000000),
-                  blurRadius: 3,
-                  offset: Offset(0, 1),
-                ),
-              ]
-            : null,
+        border: showBorder
+            ? Border.all(color: info.border, width: 1)
+            : (isSolid ? null : Border.all(color: info.border, width: 1)),
       ),
       child: Text(
         clean,
@@ -115,7 +103,7 @@ class VocaLevelBadge extends StatelessWidget {
           color: textColor,
           fontSize: fontSize,
           fontWeight: FontWeight.w700,
-          letterSpacing: 0.2,
+          letterSpacing: 0.3,
         ),
       ),
     );

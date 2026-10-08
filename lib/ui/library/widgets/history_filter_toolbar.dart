@@ -1,10 +1,10 @@
 // lib/ui/library/widgets/history_filter_toolbar.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import '../../../config/voca_theme.dart';
 import '../../../services/i18n_service.dart';
 import '../../sheets/voca_bottom_sheet.dart';
+import '../../widgets/circle_flag.dart';
 
 /// Clean, solid 2-row toolbar matching lingua-tube's .panel-toolbar:
 /// Row 1: 38px Pill Search input + Clear History button
@@ -36,23 +36,7 @@ class HistoryFilterToolbar extends StatelessWidget {
   });
 
   static Widget buildCircleFlag(String langCode, {double size = 16}) {
-    String assetCode;
-    switch (langCode.toLowerCase()) {
-      case 'ja': assetCode = 'jp'; break;
-      case 'zh': assetCode = 'cn'; break;
-      case 'ko': assetCode = 'kr'; break;
-      case 'en': assetCode = 'us'; break;
-      default: assetCode = 'jp';
-    }
-    return ClipOval(
-      child: SvgPicture.asset(
-        'assets/flags/$assetCode.svg',
-        width: size,
-        height: size,
-        fit: BoxFit.cover,
-        placeholderBuilder: (_) => Icon(Icons.language_rounded, size: size),
-      ),
-    );
+    return CircleFlag(code: langCode, size: size);
   }
 
   static String getLanguageLabel(String lang) {
@@ -149,7 +133,7 @@ class HistoryFilterToolbar extends StatelessWidget {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: colors.accentPrimary.withOpacity(0.12),
+                    color: colors.accentPrimary.withValues(alpha: 0.12),
                     blurRadius: 4,
                     offset: const Offset(0, 1),
                   ),

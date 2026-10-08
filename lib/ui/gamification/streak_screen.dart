@@ -228,7 +228,7 @@ class _StreakScreenState extends State<StreakScreen>
           height: 100,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: style.glowColor.withOpacity(0.35),
+            color: style.glowColor.withValues(alpha: 0.35),
           ),
         ),
 
@@ -256,7 +256,7 @@ class _StreakScreenState extends State<StreakScreen>
                 border: Border.all(color: colors.colorDiamond, width: 2),
                 boxShadow: [
                   BoxShadow(
-                    color: colors.colorDiamond.withOpacity(0.4),
+                    color: colors.colorDiamond.withValues(alpha: 0.4),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -310,13 +310,13 @@ class _StreakScreenState extends State<StreakScreen>
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: practicedToday
-            ? colors.success.withOpacity(0.10)
-            : colors.colorFire.withOpacity(0.08),
+            ? colors.success.withValues(alpha: 0.10)
+            : colors.colorFire.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: practicedToday
-              ? colors.success.withOpacity(0.25)
-              : colors.colorFire.withOpacity(0.25),
+              ? colors.success.withValues(alpha: 0.25)
+              : colors.colorFire.withValues(alpha: 0.25),
         ),
       ),
       child: Row(
@@ -380,18 +380,18 @@ class _StreakScreenState extends State<StreakScreen>
                 Container(
                   width: 32,
                   height: 32,
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                      colors: [colors.colorFire, colors.accentTertiary],
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Color(0x40F59E0B),
+                        color: colors.colorFire.withValues(alpha: 0.25),
                         blurRadius: 6,
-                        offset: Offset(0, 2),
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
@@ -405,7 +405,7 @@ class _StreakScreenState extends State<StreakScreen>
                   height: 32,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: colors.colorFire.withOpacity(0.12),
+                    color: colors.colorFire.withValues(alpha: 0.12),
                     border: Border.all(color: colors.colorFire, width: 2),
                   ),
                   child: Center(
@@ -419,7 +419,7 @@ class _StreakScreenState extends State<StreakScreen>
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: colors.colorFire.withOpacity(0.6),
+                              color: colors.colorFire.withValues(alpha: 0.6),
                               blurRadius: 6,
                             ),
                           ],
@@ -471,9 +471,9 @@ class _StreakScreenState extends State<StreakScreen>
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: colors.accentTertiary.withOpacity(0.12),
+                    color: colors.accentTertiary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: colors.accentTertiary.withOpacity(0.25)),
+                    border: Border.all(color: colors.accentTertiary.withValues(alpha: 0.25)),
                   ),
                   child: Icon(Icons.emoji_events_rounded, color: colors.accentTertiary, size: 20),
                 ),
@@ -524,9 +524,9 @@ class _StreakScreenState extends State<StreakScreen>
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: colors.colorDiamond.withOpacity(0.12),
+                    color: colors.colorDiamond.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: colors.colorDiamond.withOpacity(0.25)),
+                    border: Border.all(color: colors.colorDiamond.withValues(alpha: 0.25)),
                   ),
                   child: Icon(Icons.shield_outlined, color: colors.colorDiamond, size: 20),
                 ),

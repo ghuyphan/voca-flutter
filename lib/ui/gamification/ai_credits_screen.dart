@@ -146,14 +146,14 @@ class _AiCreditsScreenState extends State<AiCreditsScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF0284C7).withOpacity(0.15),
+                        color: colors.colorDiamond.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: const Color(0xFF38BDF8).withOpacity(0.35)),
+                        border: Border.all(color: colors.colorDiamond.withValues(alpha: 0.35)),
                       ),
                       child: Text(
                         context.t('subtitle.creditsAvailable', null, 'Available'),
-                        style: const TextStyle(
-                          color: Color(0xFF38BDF8),
+                        style: TextStyle(
+                          color: colors.colorDiamond,
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                         ),
@@ -175,7 +175,7 @@ class _AiCreditsScreenState extends State<AiCreditsScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.access_time_rounded, size: 14, color: Color(0xFF38BDF8)),
+                        Icon(Icons.access_time_rounded, size: 14, color: colors.colorDiamond),
                         const SizedBox(width: 6),
                         Text(
                           '+1 credit in ${_formatTimer(_timeUntilRefill)}',
@@ -196,9 +196,9 @@ class _AiCreditsScreenState extends State<AiCreditsScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
-                      color: colors.warning.withOpacity(0.12),
+                      color: colors.warning.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: colors.warning.withOpacity(0.3)),
+                      border: Border.all(color: colors.warning.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       children: [
@@ -240,7 +240,7 @@ class _AiCreditsScreenState extends State<AiCreditsScreen> {
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _selectedTier == 'premium' ? const Color(0xFF7C3AED) : colors.accentPrimary,
+                        backgroundColor: _selectedTier == 'premium' ? colors.accentSecondary : colors.accentPrimary,
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -265,9 +265,9 @@ class _AiCreditsScreenState extends State<AiCreditsScreen> {
         Container(
           width: 90,
           height: 90,
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Color(0x3338BDF8),
+            color: colors.colorDiamond.withValues(alpha: 0.20),
           ),
         ),
         const RpgShieldCrest(
@@ -314,7 +314,7 @@ class _AiCreditsScreenState extends State<AiCreditsScreen> {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: colors.success.withOpacity(0.12),
+                  color: colors.success.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(Icons.subtitles_rounded, color: colors.success, size: 20),
@@ -339,7 +339,7 @@ class _AiCreditsScreenState extends State<AiCreditsScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: colors.success.withOpacity(0.12),
+                  color: colors.success.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -366,10 +366,10 @@ class _AiCreditsScreenState extends State<AiCreditsScreen> {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0284C7).withOpacity(0.12),
+                  color: colors.colorDiamond.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.auto_awesome_rounded, color: Color(0xFF38BDF8), size: 20),
+                child: Icon(Icons.auto_awesome_rounded, color: colors.colorDiamond, size: 20),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -391,12 +391,12 @@ class _AiCreditsScreenState extends State<AiCreditsScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0284C7).withOpacity(0.12),
+                  color: colors.colorDiamond.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: const Text(
+                child: Text(
                   '1-2 💎',
-                  style: TextStyle(color: Color(0xFF38BDF8), fontSize: 10.5, fontWeight: FontWeight.w800),
+                  style: TextStyle(color: colors.colorDiamond, fontSize: 10.5, fontWeight: FontWeight.w800),
                 ),
               ),
             ],
@@ -486,7 +486,7 @@ class _AiCreditsScreenState extends State<AiCreditsScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.diamond_rounded, size: 16, color: Color(0xFFA78BFA)),
+                        Icon(Icons.diamond_rounded, size: 16, color: colors.accentSecondary),
                         const SizedBox(width: 6),
                         Text(
                           'Founder VIP',
@@ -546,7 +546,7 @@ class _AiCreditsScreenState extends State<AiCreditsScreen> {
             color: colors.bgCard,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isPremium ? const Color(0xFFA78BFA).withOpacity(0.4) : colors.borderColor,
+              color: isPremium ? colors.accentSecondary.withValues(alpha: 0.40) : colors.borderColor,
             ),
           ),
           child: Column(
@@ -598,13 +598,13 @@ class _AiCreditsScreenState extends State<AiCreditsScreen> {
         decoration: BoxDecoration(
           color: isSelected
               ? (_selectedTier == 'premium'
-                  ? const Color(0xFFA78BFA).withOpacity(0.12)
+                  ? colors.accentSecondary.withValues(alpha: 0.12)
                   : colors.accentPrimarySoft)
               : colors.bgCard,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isSelected
-                ? (_selectedTier == 'premium' ? const Color(0xFFA78BFA) : colors.accentPrimary)
+                ? (_selectedTier == 'premium' ? colors.accentSecondary : colors.accentPrimary)
                 : colors.borderColor,
             width: isSelected ? 1.5 : 1,
           ),
@@ -666,7 +666,7 @@ class _AiCreditsScreenState extends State<AiCreditsScreen> {
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: _selectedTier == 'premium' ? const Color(0xFFA78BFA) : colors.accentPrimary),
+          Icon(icon, size: 16, color: _selectedTier == 'premium' ? colors.accentSecondary : colors.accentPrimary),
           const SizedBox(width: 10),
           Expanded(
             child: Text(

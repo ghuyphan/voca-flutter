@@ -143,23 +143,22 @@ class VideoLevelSheet extends StatelessWidget {
 
           // Hero Level Badge
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 9),
             decoration: BoxDecoration(
-              color: colorInfo.bg,
+              color: colorInfo.solidBg,
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: colorInfo.border, width: 1.5),
               boxShadow: [
                 BoxShadow(
-                  color: colorInfo.bg.withValues(alpha: 0.5),
-                  blurRadius: 16,
-                  spreadRadius: 2,
+                  color: Colors.black.withValues(alpha: colors.isDark ? 0.25 : 0.06),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
             child: Text(
               _cleanLevel,
               style: TextStyle(
-                color: colorInfo.text,
+                color: colorInfo.solidText,
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.5,
@@ -235,12 +234,12 @@ class VideoLevelSheet extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.all(5),
                             decoration: BoxDecoration(
-                              color: const Color(0x266366F1),
+                              color: colors.colorGrammar.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(6),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.auto_awesome_rounded,
-                              color: Color(0xFF6366F1),
+                              color: colors.colorGrammar,
                               size: 14,
                             ),
                           ),
@@ -288,12 +287,12 @@ class VideoLevelSheet extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.all(5),
                             decoration: BoxDecoration(
-                              color: const Color(0x26F59E0B),
+                              color: colors.warning.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(6),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.speed_rounded,
-                              color: Color(0xFFF59E0B),
+                              color: colors.warning,
                               size: 14,
                             ),
                           ),
@@ -362,14 +361,14 @@ class VideoLevelSheet extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0x1AF59E0B),
+              color: colors.warning.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0x4DF59E0B)),
+              border: Border.all(color: colors.warning.withValues(alpha: 0.30)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.lightbulb_outline_rounded, size: 18, color: Color(0xFFF59E0B)),
+                Icon(Icons.lightbulb_outline_rounded, size: 18, color: colors.warning),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -377,8 +376,8 @@ class VideoLevelSheet extends StatelessWidget {
                     children: [
                       Text(
                         context.t('level.immersionTip', null, 'Immersion Tip'),
-                        style: const TextStyle(
-                          color: Color(0xFFF59E0B),
+                        style: TextStyle(
+                          color: colors.warning,
                           fontSize: 12.5,
                           fontWeight: FontWeight.bold,
                         ),

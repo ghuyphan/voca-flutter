@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../config/voca_theme.dart';
 import '../../../state/player_coordinator.dart';
+import '../../../utils/video_format_utils.dart';
 import '../../widgets/voca_level_badge.dart';
 
 /// Sleek 16:9 History Video Card matching lingua-tube's yt-video-card.
@@ -45,16 +46,7 @@ class HistoryVideoCard extends StatelessWidget {
     }
   }
 
-  static String formatDuration(int seconds) {
-    if (seconds <= 0) return '0:00';
-    final h = seconds ~/ 3600;
-    final m = (seconds % 3600) ~/ 60;
-    final s = seconds % 60;
-    if (h > 0) {
-      return '$h:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
-    }
-    return '$m:${s.toString().padLeft(2, '0')}';
-  }
+  static String formatDuration(int seconds) => formatVideoTime(seconds);
 
   @override
   Widget build(BuildContext context) {
@@ -82,9 +74,9 @@ class HistoryVideoCard extends StatelessWidget {
         padding: const EdgeInsets.only(right: 20),
         alignment: Alignment.centerRight,
         decoration: BoxDecoration(
-          color: colors.error.withOpacity(0.15),
+          color: colors.error.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: colors.error.withOpacity(0.35)),
+          border: Border.all(color: colors.error.withValues(alpha: 0.35)),
         ),
         child: Icon(Icons.delete_outline_rounded, color: colors.error, size: 22),
       ),
@@ -108,6 +100,7 @@ class HistoryVideoCard extends StatelessWidget {
                 title: title,
                 channel: channel,
                 level: level.isNotEmpty ? level : null,
+                initialDuration: duration > 0 ? duration : null,
               );
             },
             child: Padding(

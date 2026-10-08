@@ -51,9 +51,13 @@ class MiniplayerBar extends StatefulWidget {
 
 class _MiniplayerBarState extends State<MiniplayerBar> with SingleTickerProviderStateMixin {
   late final AnimationController _animController;
-  Animation<double>? _springAnim;
+  late final Animation<double> _springCurve = CurvedAnimation(
+    parent: _animController,
+    curve: Curves.easeOutCubic,
+  );
 
   double _dragOffsetY = 0.0;
+  double _springStartOffsetY = 0.0;
   bool _isDismissing = false;
   bool _isCardPressed = false;
   double _dismissStartOffsetY = 0.0;
@@ -89,21 +93,16 @@ class _MiniplayerBarState extends State<MiniplayerBar> with SingleTickerProvider
   }
 
   void _springBack() {
-    final startY = _dragOffsetY;
-    if (startY == 0.0) return;
-
-    _springAnim = Tween<double>(begin: 1.0, end: 0.0).animate(
-      CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
-    )..addListener(() {
-        if (mounted) {
-          setState(() {
-            _dragOffsetY = startY * _springAnim!.value;
-          });
-        }
-      });
+    if (_dragOffsetY == 0.0) return;
+    _isDismissing = false;
+    _springStartOffsetY = _dragOffsetY;
     _animController.forward(from: 0.0).then((_) {
-      _springAnim = null;
-      _dragOffsetY = 0.0;
+      if (mounted) {
+        setState(() {
+          _springStartOffsetY = 0.0;
+          _dragOffsetY = 0.0;
+        });
+      }
     });
   }
 
@@ -137,11 +136,14 @@ class _MiniplayerBarState extends State<MiniplayerBar> with SingleTickerProvider
       opacity = (1.0 - t * 1.2).clamp(0.0, 1.0);
       translationY = _dismissStartOffsetY + (t * 36.0);
     } else {
-      translationY = _dragOffsetY.clamp(0.0, 60.0);
+      final currentOffset = (_springStartOffsetY != 0.0)
+          ? (_springStartOffsetY * (1.0 - _springCurve.value))
+          : _dragOffsetY;
+      translationY = currentOffset.clamp(0.0, 60.0);
 
-      if (_dragOffsetY > 0) {
+      if (currentOffset > 0) {
         // Dragging downwards: smoothly shrink height and fade in real-time
-        final downRatio = (_dragOffsetY / 100.0).clamp(0.0, 1.0);
+        final downRatio = (currentOffset / 100.0).clamp(0.0, 1.0);
         heightFactor = (1.0 - downRatio * 0.45).clamp(0.0, 1.0);
         opacity = (1.0 - downRatio * 0.45).clamp(0.0, 1.0);
       }
@@ -165,6 +167,10 @@ class _MiniplayerBarState extends State<MiniplayerBar> with SingleTickerProvider
                   },
                   onVerticalDragStart: (details) {
                     if (_isDismissing) return;
+                    if (_animController.isAnimating) {
+                      _animController.stop();
+                    }
+                    _springStartOffsetY = 0.0;
                     setState(() => _isCardPressed = true);
                   },
                   onVerticalDragUpdate: (details) {
