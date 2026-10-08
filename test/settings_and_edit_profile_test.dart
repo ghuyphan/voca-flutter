@@ -180,8 +180,7 @@ void main() {
 
       // OnboardingScreen is opened at Welcome step (step 0)
       expect(find.byType(OnboardingScreen), findsOneWidget);
-      expect(find.text('Welcome to'), findsOneWidget);
-      expect(find.text('Voca'), findsOneWidget);
+      expect(find.text('Welcome to Voca'), findsOneWidget);
 
       // Back button is visible and pops back to SettingsScreen
       final backButton = find.byIcon(Icons.arrow_back_rounded);

@@ -6,7 +6,9 @@ import 'package:signals_flutter/signals_flutter.dart';
 import '../../config/voca_tokens.dart';
 import '../../models/study_session_models.dart';
 import '../../models/voca_models.dart';
+import '../../services/audio_service.dart';
 import '../../services/srs_service.dart';
+import '../../services/supabase_service.dart';
 import '../../state/app_state.dart';
 
 class StudySessionController {
@@ -77,10 +79,14 @@ class StudySessionController {
     return null;
   }
 
+  final initialQueueSize = signal<int>(0);
+  final Set<String> _reviewedCardIds = {};
+
   int get remainingInSession =>
       (sessionCards.value.length - currentIndex.value).clamp(0, sessionCards.value.length);
 
   bool get isFinished =>
+      isSessionActive.value &&
       !isLoading.value &&
       sessionCards.value.isNotEmpty &&
       currentIndex.value >= sessionCards.value.length;
@@ -111,22 +117,32 @@ class StudySessionController {
     final incNew = includeNew.value;
     final incLearning = includeLearning.value;
     final incKnown = includeKnown.value;
+    final activeLang = AppState.instance.activeLanguage.value.trim().toLowerCase();
     final cards = allCards.value;
 
     return cards.where((card) {
+      final cl = card.language.trim().toLowerCase();
+      if (cl != activeLang && !cl.startsWith('$activeLang-') && !activeLang.startsWith('$cl-')) {
+        return false;
+      }
       final isGrammar = isGrammarCard(card);
       if (deck == 'words' && isGrammar) return false;
       if (deck == 'grammar' && !isGrammar) return false;
 
       final norm = WordLevels.normalize(card.level);
-      if (norm == WordLevels.isNew && !incNew) return false;
-      if (norm == WordLevels.learning && !incLearning) return false;
-      if ((norm == WordLevels.known || norm == 'mastered') && !incKnown) return false;
+      final isDue = (card.srsNextReviewAt.isBefore(now) || card.srsNextReviewAt.isAtSameMomentAs(now)) && norm != WordLevels.isNew;
 
       if (onlyDue) {
         if (norm == WordLevels.isNew) return false;
-        if (card.srsNextReviewAt.isAfter(now)) return false;
+        if (!isDue) return false;
+        return true;
       }
+
+      if (norm == WordLevels.isNew && !incNew) return false;
+      if (norm == WordLevels.learning && !incLearning) return false;
+      // Due mature cards should never be hidden from review queue just because includeKnown is disabled
+      if ((norm == WordLevels.known || norm == 'mastered') && !incKnown && !isDue) return false;
+
       return true;
     }).toList();
   });
@@ -183,6 +199,7 @@ class StudySessionController {
   void _recalculateMetrics() {
     final now = DateTime.now();
     final deck = subDeck.value;
+    final activeLang = AppState.instance.activeLanguage.value.trim().toLowerCase();
 
     int due = 0;
     int fresh = 0;
@@ -192,6 +209,11 @@ class StudySessionController {
     int grammar = 0;
 
     for (final card in allCards.value) {
+      final cl = card.language.trim().toLowerCase();
+      if (cl != activeLang && !cl.startsWith('$activeLang-') && !activeLang.startsWith('$cl-')) {
+        continue;
+      }
+
       final isGrammar = isGrammarCard(card);
       if (isGrammar) {
         grammar++;
@@ -229,12 +251,18 @@ class StudySessionController {
   Future<void> loadDeck({bool autoStart = true, bool practiceAnyway = false}) async {
     isLoading.value = true;
     final supabase = AppState.instance.supabaseService;
-    final lang = AppState.instance.activeLanguage.value;
+    final lang = AppState.instance.activeLanguage.value.trim().toLowerCase();
 
     try {
       final cards = await supabase.getVocabularyCards(language: lang);
       _grammarCache.clear();
-      allCards.value = cards;
+
+      final filtered = cards.where((c) {
+        final cl = c.language.trim().toLowerCase();
+        return cl == lang || cl.startsWith('$lang-') || lang.startsWith('$cl-');
+      }).toList();
+
+      allCards.value = SupabaseService.deduplicateCards(filtered);
       _recalculateMetrics();
 
       currentIndex.value = 0;
@@ -262,11 +290,9 @@ class StudySessionController {
   }
 
   void startSession({bool dueOnlyMode = false, bool practiceAnyway = false}) {
+    unawaited(AudioService.instance.stop());
     if (dueOnlyMode) {
       dueOnly.value = true;
-      includeKnown.value = true;
-      includeLearning.value = true;
-      includeNew.value = false;
     }
 
     final candidates = filteredCandidates;
@@ -279,7 +305,26 @@ class StudySessionController {
       final newCards = <Flashcard>[];
       final otherCards = <Flashcard>[];
 
-      for (final card in (candidates.isNotEmpty ? candidates : allCards.value)) {
+      final currentSubDeck = subDeck.value;
+      final pool = candidates.isNotEmpty
+          ? candidates
+          : allCards.value.where((card) {
+              final isGrammar = isGrammarCard(card);
+              if (currentSubDeck == 'words' && isGrammar) return false;
+              if (currentSubDeck == 'grammar' && !isGrammar) return false;
+              return true;
+            }).toList();
+
+      // Deduplicate cards by ID
+      final seenIds = <String>{};
+      final uniquePool = <Flashcard>[];
+      for (final card in pool) {
+        if (seenIds.add(card.id)) {
+          uniquePool.add(card);
+        }
+      }
+
+      for (final card in uniquePool) {
         final norm = WordLevels.normalize(card.level);
         if (norm == WordLevels.isNew) {
           newCards.add(card);
@@ -298,7 +343,9 @@ class StudySessionController {
     }
 
     sessionCards.value = queue;
+    initialQueueSize.value = queue.length;
     currentIndex.value = 0;
+    _reviewedCardIds.clear();
     undoStack.value = [];
     sessionStats.value = const SessionStats();
     currentCombo.value = 0;
@@ -317,7 +364,9 @@ class StudySessionController {
 
     if (missed.isNotEmpty) {
       sessionCards.value = missed;
+      initialQueueSize.value = missed.length;
       currentIndex.value = 0;
+      _reviewedCardIds.clear();
       undoStack.value = [];
       sessionStats.value = const SessionStats();
       currentCombo.value = 0;
@@ -329,10 +378,17 @@ class StudySessionController {
   }
 
   void exitToOverview() {
+    unawaited(AudioService.instance.stop());
     isSessionActive.value = false;
+    sessionCards.value = [];
+    initialQueueSize.value = 0;
+    currentIndex.value = 0;
+    _reviewedCardIds.clear();
     resetCardState();
     _recalculateMetrics();
   }
+
+  void exitSession() => exitToOverview();
 
   void toggleReveal() {
     isCardRevealed.value = !isCardRevealed.value;
@@ -354,6 +410,7 @@ class StudySessionController {
   Future<void> rateCurrentCard(SRSReviewRating rating) async {
     final card = currentCard;
     if (card == null) return;
+    unawaited(AudioService.instance.stop());
 
     final result = SpacedRepetitionService.calculateNextReview(
       rating: rating,
@@ -381,6 +438,8 @@ class StudySessionController {
       timestamp: DateTime.now(),
       previousQueueIndex: currentIndex.value,
       wasRelearning: rating == SRSReviewRating.again,
+      previousStats: sessionStats.value,
+      previousCombo: currentCombo.value,
     );
 
     final newUndo = List<ReviewEvent>.from(undoStack.value)..add(event);
@@ -388,7 +447,12 @@ class StudySessionController {
 
     final isLapse = (card.level == 'known' || card.level == 'mastered') &&
         (updatedCard.level == 'learning');
-    sessionStats.value = sessionStats.value.copyWithReview(rating, isLapse);
+    final isNewUnique = _reviewedCardIds.add(card.id);
+    sessionStats.value = sessionStats.value.copyWithReview(
+      rating,
+      isLapse,
+      isNewUniqueCard: isNewUnique,
+    );
 
     // Update combo streak
     if (rating == SRSReviewRating.again) {
@@ -420,7 +484,18 @@ class StudySessionController {
       sessionCards.value = queue;
     }
 
-    // Optimistic persistence to Supabase
+    // Optimistic persistence to Supabase and in-place allCards sync
+    final allList = List<Flashcard>.from(allCards.value);
+    final allIdx = allList.indexWhere((c) =>
+        c.id == updatedCard.id ||
+        (c.word.trim().toLowerCase() == updatedCard.word.trim().toLowerCase() &&
+            c.language.toLowerCase() == updatedCard.language.toLowerCase()));
+    if (allIdx >= 0) {
+      allList[allIdx] = updatedCard;
+      allCards.value = allList;
+      _recalculateMetrics();
+    }
+
     unawaited(AppState.instance.supabaseService.upsertVocabularyCard(updatedCard));
     try {
       unawaited(AppState.instance.gamificationService.onCardReviewed(allCards.value.length));
@@ -438,6 +513,7 @@ class StudySessionController {
   Future<void> markCurrentCardAsKnown() async {
     final card = currentCard;
     if (card == null) return;
+    unawaited(AudioService.instance.stop());
 
     final seed = SpacedRepetitionService.seedSrsParamsForLevel('known');
     final updatedCard = card.copyWith(
@@ -457,10 +533,17 @@ class StudySessionController {
       timestamp: DateTime.now(),
       previousQueueIndex: currentIndex.value,
       wasRelearning: false,
+      previousStats: sessionStats.value,
+      previousCombo: currentCombo.value,
     );
 
     undoStack.value = List<ReviewEvent>.from(undoStack.value)..add(event);
-    sessionStats.value = sessionStats.value.copyWithReview(SRSReviewRating.easy, false);
+    final isNewUnique = _reviewedCardIds.add(card.id);
+    sessionStats.value = sessionStats.value.copyWithReview(
+      SRSReviewRating.easy,
+      false,
+      isNewUniqueCard: isNewUnique,
+    );
 
     _feedbackTimer?.cancel();
     lastRatingFeedback.value = (
@@ -485,6 +568,18 @@ class StudySessionController {
       maxCombo.value = currentCombo.value;
     }
 
+    // Optimistic persistence to Supabase and in-place allCards sync
+    final allList = List<Flashcard>.from(allCards.value);
+    final allIdx = allList.indexWhere((c) =>
+        c.id == updatedCard.id ||
+        (c.word.trim().toLowerCase() == updatedCard.word.trim().toLowerCase() &&
+            c.language.toLowerCase() == updatedCard.language.toLowerCase()));
+    if (allIdx >= 0) {
+      allList[allIdx] = updatedCard;
+      allCards.value = allList;
+      _recalculateMetrics();
+    }
+
     unawaited(AppState.instance.supabaseService.upsertVocabularyCard(updatedCard));
     try {
       unawaited(AppState.instance.gamificationService.onCardReviewed(allCards.value.length));
@@ -500,6 +595,7 @@ class StudySessionController {
 
   Future<void> undoLastRating() async {
     if (!canUndo) return;
+    unawaited(AudioService.instance.stop());
 
     final events = List<ReviewEvent>.from(undoStack.value);
     final lastEvent = events.removeLast();
@@ -517,7 +613,22 @@ class StudySessionController {
     sessionCards.value = queue;
     currentIndex.value = lastEvent.previousQueueIndex;
 
-    // Revert DB record
+    // Restore stats and streak combo
+    sessionStats.value = lastEvent.previousStats;
+    currentCombo.value = lastEvent.previousCombo;
+
+    // Revert DB record and in-place allCards sync
+    final allList = List<Flashcard>.from(allCards.value);
+    final allIdx = allList.indexWhere((c) =>
+        c.id == lastEvent.previousCard.id ||
+        (c.word.trim().toLowerCase() == lastEvent.previousCard.word.trim().toLowerCase() &&
+            c.language.toLowerCase() == lastEvent.previousCard.language.toLowerCase()));
+    if (allIdx >= 0) {
+      allList[allIdx] = lastEvent.previousCard;
+      allCards.value = allList;
+      _recalculateMetrics();
+    }
+
     unawaited(AppState.instance.supabaseService.upsertVocabularyCard(lastEvent.previousCard));
 
     resetCardState();

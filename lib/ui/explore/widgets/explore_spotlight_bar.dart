@@ -7,7 +7,7 @@ import '../../../config/voca_theme.dart';
 import '../../../services/i18n_service.dart';
 import '../../../utils/youtube_url_parser.dart';
 
-/// Authentic Spotlight Search Bar matching lingua-tube's .spotlight-bar & AGENTS.md Section 4.1.
+/// Modern Spotlight Search Bar using Flutter's official Material 3 SearchBar & IconButton.
 class ExploreSpotlightBar extends StatefulWidget {
   final TextEditingController controller;
   final FocusNode? focusNode;
@@ -115,108 +115,80 @@ class _ExploreSpotlightBarState extends State<ExploreSpotlightBar>
     final hasText = text.isNotEmpty;
     final directVideoId = hasText ? YouTubeUrlParser.extractVideoId(text.trim()) : null;
 
-    return Container(
-      height: 48,
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: colors.bgCard,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: colors.borderColor,
-          width: 1.0,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: SearchBar(
+        controller: widget.controller,
+        focusNode: _focusNode,
+        textInputAction: TextInputAction.search,
+        onSubmitted: _handleSubmit,
+        constraints: const BoxConstraints(minHeight: 48, maxHeight: 48),
+        elevation: const WidgetStatePropertyAll(0),
+        backgroundColor: WidgetStatePropertyAll(colors.bgCard),
+        shadowColor: const WidgetStatePropertyAll(Colors.transparent),
+        surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+        shape: WidgetStatePropertyAll(
+          StadiumBorder(
+            side: BorderSide(
+              color: colors.borderColor,
+              width: 1.0,
+            ),
+          ),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(colors.isDark ? 0.35 : 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+        padding: const WidgetStatePropertyAll(EdgeInsets.only(left: 14, right: 8)),
+        hintText: context.t('explore.searchHint', null, 'Paste YouTube URL or search...'),
+        hintStyle: WidgetStatePropertyAll(
+          TextStyle(
+            color: colors.textMuted,
+            fontSize: 13.5,
+            fontWeight: FontWeight.w400,
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Left Icon with subtle animated transition
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
-            child: Icon(
-              directVideoId != null ? Icons.link_rounded : Icons.search_rounded,
-              key: ValueKey(directVideoId != null),
-              color: directVideoId != null ? colors.accentPrimary : colors.textMuted,
-              size: 19,
-            ),
+        ),
+        textStyle: WidgetStatePropertyAll(
+          TextStyle(
+            color: colors.textPrimary,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
           ),
-          const SizedBox(width: 10),
-
-          // Input Text Field
-          Expanded(
-            child: TextField(
-              controller: widget.controller,
-              focusNode: _focusNode,
-              cursorColor: colors.accentPrimary,
-              textInputAction: TextInputAction.search,
-              onSubmitted: _handleSubmit,
-              style: TextStyle(
-                color: colors.textPrimary,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-              decoration: InputDecoration(
-                hintText: context.t('explore.searchHint', null, 'Paste YouTube URL or search...'),
-                hintStyle: TextStyle(
-                  color: colors.textMuted,
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w400,
-                ),
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
+        ),
+        leading: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+          child: Icon(
+            directVideoId != null ? Icons.link_rounded : Icons.search_rounded,
+            key: ValueKey(directVideoId != null),
+            color: directVideoId != null ? colors.accentPrimary : colors.textMuted,
+            size: 19,
           ),
-
-          // Right Actions with smooth AnimatedSwitcher
+        ),
+        trailing: [
           if (hasText)
-            Tooltip(
-              message: context.t('common.clear', null, 'Clear'),
-              child: InkWell(
-                onTap: widget.onClear,
-                borderRadius: BorderRadius.circular(14),
-                child: Container(
-                  width: 26,
-                  height: 26,
-                  decoration: BoxDecoration(
-                    color: colors.bgSurface,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(Icons.close_rounded, size: 14, color: colors.textMuted),
-                ),
+            IconButton(
+              onPressed: widget.onClear,
+              tooltip: context.t('common.clear', null, 'Clear'),
+              iconSize: 16,
+              visualDensity: VisualDensity.compact,
+              style: IconButton.styleFrom(
+                backgroundColor: colors.bgSurface,
+                foregroundColor: colors.textMuted,
+                padding: EdgeInsets.zero,
+                minimumSize: const Size(28, 28),
               ),
+              icon: const Icon(Icons.close_rounded),
             )
           else if (_hasClipboardText)
-            Tooltip(
-              message: context.t('commandPalette.paste', null, 'Paste from clipboard'),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: _handlePasteFromClipboard,
-                  borderRadius: BorderRadius.circular(14),
-                  child: Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: colors.bgSurface,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.content_paste_rounded,
-                      size: 15,
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                ),
+            IconButton(
+              onPressed: _handlePasteFromClipboard,
+              tooltip: context.t('commandPalette.paste', null, 'Paste from clipboard'),
+              iconSize: 16,
+              visualDensity: VisualDensity.compact,
+              style: IconButton.styleFrom(
+                backgroundColor: colors.bgSurface,
+                foregroundColor: colors.textSecondary,
+                padding: EdgeInsets.zero,
+                minimumSize: const Size(28, 28),
               ),
+              icon: const Icon(Icons.content_paste_rounded),
             ),
         ],
       ),

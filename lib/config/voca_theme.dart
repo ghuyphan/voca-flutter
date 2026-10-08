@@ -429,10 +429,15 @@ class VocaTheme {
       colorScheme: ColorScheme.dark(
         primary: VocaColorPalette.dark.accentPrimary,
         onPrimary: Colors.white,
-        secondary: VocaColorPalette.dark.accentSecondary,
+        primaryContainer: VocaColorPalette.dark.accentPrimarySoft,
+        onPrimaryContainer: VocaColorPalette.dark.accentPrimary,
+        secondary: VocaColorPalette.dark.accentPrimary,
         onSecondary: Colors.white,
+        secondaryContainer: VocaColorPalette.dark.accentPrimarySoft,
+        onSecondaryContainer: VocaColorPalette.dark.accentPrimary,
         surface: VocaColorPalette.dark.bgCard,
         onSurface: VocaColorPalette.dark.textPrimary,
+        surfaceTint: Colors.transparent,
         error: VocaColorPalette.dark.error,
         onError: Colors.white,
       ),
@@ -451,43 +456,57 @@ class VocaTheme {
         ),
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: VocaColorPalette.dark.bgSecondary,
+        backgroundColor: VocaColorPalette.dark.bgCard,
         selectedItemColor: VocaColorPalette.dark.accentPrimary,
-        unselectedItemColor: VocaColorPalette.dark.textMuted,
+        unselectedItemColor: VocaColorPalette.dark.textSecondary,
+        elevation: 3.0,
       ),
       navigationBarTheme: NavigationBarThemeData(
         height: 80.0,
-        backgroundColor: VocaColorPalette.dark.bgSecondary,
-        elevation: 0,
+        backgroundColor: VocaColorPalette.dark.bgCard,
+        elevation: 3.0,
+        shadowColor: Colors.black.withValues(alpha: 0.5),
         surfaceTintColor: Colors.transparent,
-        indicatorColor: VocaColorPalette.dark.accentPrimarySoft,
+        indicatorColor: VocaColorPalette.dark.accentPrimary.withValues(alpha: 0.22),
         indicatorShape: const StadiumBorder(),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        overlayColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.pressed)) {
+            return VocaColorPalette.dark.accentPrimary.withValues(alpha: 0.12);
+          }
+          if (states.contains(WidgetState.hovered)) {
+            return VocaColorPalette.dark.accentPrimary.withValues(alpha: 0.08);
+          }
+          if (states.contains(WidgetState.focused)) {
+            return VocaColorPalette.dark.accentPrimary.withValues(alpha: 0.12);
+          }
+          return null;
+        }),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: VocaColorPalette.dark.textPrimary,
-              letterSpacing: 0.18,
+              color: VocaColorPalette.dark.accentPrimary,
+              letterSpacing: 0.2,
             );
           }
           return TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: VocaColorPalette.dark.textMuted,
-            letterSpacing: 0.18,
+            color: VocaColorPalette.dark.textSecondary,
+            letterSpacing: 0.2,
           );
         }),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return IconThemeData(
-              size: 22,
+              size: 24,
               color: VocaColorPalette.dark.accentPrimary,
             );
           }
           return IconThemeData(
-            size: 22,
+            size: 24,
             color: VocaColorPalette.dark.textSecondary,
           );
         }),
@@ -570,6 +589,71 @@ class VocaTheme {
         }),
         thumbIcon: const WidgetStatePropertyAll<Icon?>(null),
       ),
+      searchBarTheme: SearchBarThemeData(
+        elevation: const WidgetStatePropertyAll(0),
+        backgroundColor: WidgetStatePropertyAll(VocaColorPalette.dark.bgCard),
+        shadowColor: const WidgetStatePropertyAll(Colors.transparent),
+        surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+        shape: WidgetStatePropertyAll(
+          StadiumBorder(side: BorderSide(color: VocaColorPalette.dark.borderColor, width: 1.0)),
+        ),
+        textStyle: WidgetStatePropertyAll(
+          TextStyle(color: VocaColorPalette.dark.textPrimary, fontSize: 14, fontWeight: FontWeight.w500),
+        ),
+        hintStyle: WidgetStatePropertyAll(
+          TextStyle(color: VocaColorPalette.dark.textMuted, fontSize: 13.5, fontWeight: FontWeight.w400),
+        ),
+        padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 14)),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: VocaColorPalette.dark.bgCard,
+        selectedColor: VocaColorPalette.dark.accentPrimarySoft,
+        disabledColor: VocaColorPalette.dark.bgTertiary,
+        color: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) {
+            return VocaColorPalette.dark.bgTertiary;
+          }
+          if (states.contains(WidgetState.selected)) {
+            return VocaColorPalette.dark.accentPrimarySoft;
+          }
+          return VocaColorPalette.dark.bgCard;
+        }),
+        surfaceTintColor: Colors.transparent,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        shape: const StadiumBorder(),
+        side: BorderSide(color: VocaColorPalette.dark.borderColor, width: 1.0),
+        labelStyle: TextStyle(color: VocaColorPalette.dark.textSecondary, fontSize: 12.5, fontWeight: FontWeight.w600),
+        secondaryLabelStyle: TextStyle(color: VocaColorPalette.dark.accentPrimary, fontSize: 12.5, fontWeight: FontWeight.w700),
+        checkmarkColor: VocaColorPalette.dark.accentPrimary,
+        showCheckmark: false,
+        elevation: 0,
+        pressElevation: 0,
+      ),
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: SegmentedButton.styleFrom(
+          selectedBackgroundColor: VocaColorPalette.dark.textPrimary,
+          selectedForegroundColor: VocaColorPalette.dark.textInverse,
+          backgroundColor: VocaColorPalette.dark.bgCard,
+          foregroundColor: VocaColorPalette.dark.textSecondary,
+          side: BorderSide(color: VocaColorPalette.dark.borderColor, width: 1.0),
+          shape: const StadiumBorder(),
+          textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: VocaColorPalette.dark.accentPrimary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shape: const StadiumBorder(),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5),
+        ),
+      ),
+      badgeTheme: BadgeThemeData(
+        backgroundColor: VocaColorPalette.dark.accentPrimary,
+        textColor: Colors.white,
+        textStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+      ),
     );
   }
 
@@ -585,10 +669,15 @@ class VocaTheme {
       colorScheme: ColorScheme.light(
         primary: VocaColorPalette.light.accentPrimary,
         onPrimary: Colors.white,
-        secondary: VocaColorPalette.light.accentSecondary,
+        primaryContainer: VocaColorPalette.light.accentPrimarySoft,
+        onPrimaryContainer: VocaColorPalette.light.accentPrimary,
+        secondary: VocaColorPalette.light.accentPrimary,
         onSecondary: Colors.white,
+        secondaryContainer: VocaColorPalette.light.accentPrimarySoft,
+        onSecondaryContainer: VocaColorPalette.light.accentPrimary,
         surface: VocaColorPalette.light.bgCard,
         onSurface: VocaColorPalette.light.textPrimary,
+        surfaceTint: Colors.transparent,
         error: VocaColorPalette.light.error,
         onError: Colors.white,
       ),
@@ -607,43 +696,57 @@ class VocaTheme {
         ),
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: VocaColorPalette.light.bgSecondary,
+        backgroundColor: VocaColorPalette.light.bgCard,
         selectedItemColor: VocaColorPalette.light.accentPrimary,
-        unselectedItemColor: VocaColorPalette.light.textMuted,
+        unselectedItemColor: VocaColorPalette.light.textSecondary,
+        elevation: 3.0,
       ),
       navigationBarTheme: NavigationBarThemeData(
         height: 80.0,
-        backgroundColor: VocaColorPalette.light.bgSecondary,
-        elevation: 0,
+        backgroundColor: VocaColorPalette.light.bgCard,
+        elevation: 3.0,
+        shadowColor: Colors.black.withValues(alpha: 0.08),
         surfaceTintColor: Colors.transparent,
-        indicatorColor: VocaColorPalette.light.accentPrimarySoft,
+        indicatorColor: VocaColorPalette.light.accentPrimary.withValues(alpha: 0.14),
         indicatorShape: const StadiumBorder(),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        overlayColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.pressed)) {
+            return VocaColorPalette.light.accentPrimary.withValues(alpha: 0.12);
+          }
+          if (states.contains(WidgetState.hovered)) {
+            return VocaColorPalette.light.accentPrimary.withValues(alpha: 0.08);
+          }
+          if (states.contains(WidgetState.focused)) {
+            return VocaColorPalette.light.accentPrimary.withValues(alpha: 0.12);
+          }
+          return null;
+        }),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: VocaColorPalette.light.textPrimary,
-              letterSpacing: 0.18,
+              color: VocaColorPalette.light.accentPrimary,
+              letterSpacing: 0.2,
             );
           }
           return TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: VocaColorPalette.light.textMuted,
-            letterSpacing: 0.18,
+            color: VocaColorPalette.light.textSecondary,
+            letterSpacing: 0.2,
           );
         }),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return IconThemeData(
-              size: 22,
+              size: 24,
               color: VocaColorPalette.light.accentPrimary,
             );
           }
           return IconThemeData(
-            size: 22,
+            size: 24,
             color: VocaColorPalette.light.textSecondary,
           );
         }),
@@ -725,6 +828,71 @@ class VocaTheme {
           return VocaColorPalette.light.borderColor;
         }),
         thumbIcon: const WidgetStatePropertyAll<Icon?>(null),
+      ),
+      searchBarTheme: SearchBarThemeData(
+        elevation: const WidgetStatePropertyAll(0),
+        backgroundColor: WidgetStatePropertyAll(VocaColorPalette.light.bgCard),
+        shadowColor: const WidgetStatePropertyAll(Colors.transparent),
+        surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+        shape: WidgetStatePropertyAll(
+          StadiumBorder(side: BorderSide(color: VocaColorPalette.light.borderColor, width: 1.0)),
+        ),
+        textStyle: WidgetStatePropertyAll(
+          TextStyle(color: VocaColorPalette.light.textPrimary, fontSize: 14, fontWeight: FontWeight.w500),
+        ),
+        hintStyle: WidgetStatePropertyAll(
+          TextStyle(color: VocaColorPalette.light.textMuted, fontSize: 13.5, fontWeight: FontWeight.w400),
+        ),
+        padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 14)),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: VocaColorPalette.light.bgCard,
+        selectedColor: VocaColorPalette.light.accentPrimarySoft,
+        disabledColor: VocaColorPalette.light.bgTertiary,
+        color: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) {
+            return VocaColorPalette.light.bgTertiary;
+          }
+          if (states.contains(WidgetState.selected)) {
+            return VocaColorPalette.light.accentPrimarySoft;
+          }
+          return VocaColorPalette.light.bgCard;
+        }),
+        surfaceTintColor: Colors.transparent,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        shape: const StadiumBorder(),
+        side: BorderSide(color: VocaColorPalette.light.borderColor, width: 1.0),
+        labelStyle: TextStyle(color: VocaColorPalette.light.textSecondary, fontSize: 12.5, fontWeight: FontWeight.w600),
+        secondaryLabelStyle: TextStyle(color: VocaColorPalette.light.accentPrimary, fontSize: 12.5, fontWeight: FontWeight.w700),
+        checkmarkColor: VocaColorPalette.light.accentPrimary,
+        showCheckmark: false,
+        elevation: 0,
+        pressElevation: 0,
+      ),
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: SegmentedButton.styleFrom(
+          selectedBackgroundColor: VocaColorPalette.light.textPrimary,
+          selectedForegroundColor: VocaColorPalette.light.textInverse,
+          backgroundColor: VocaColorPalette.light.bgCard,
+          foregroundColor: VocaColorPalette.light.textSecondary,
+          side: BorderSide(color: VocaColorPalette.light.borderColor, width: 1.0),
+          shape: const StadiumBorder(),
+          textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: VocaColorPalette.light.accentPrimary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shape: const StadiumBorder(),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5),
+        ),
+      ),
+      badgeTheme: BadgeThemeData(
+        backgroundColor: VocaColorPalette.light.accentPrimary,
+        textColor: Colors.white,
+        textStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
       ),
     );
   }

@@ -3,37 +3,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../config/voca_theme.dart';
+import '../../../services/i18n_service.dart';
 
-/// Refined circular action dock combining Tinder gesture ergonomics
-/// with SuperMemo-2 / Anki spaced repetition intervals.
-/// Uses Voca's obsidian dark theme with crisp 1.5px semantic borders,
-/// spring press micro-interactions, and visual focus states.
+/// Clean, tactile 4-button SRS Action Dock matching the canonical review UI.
+/// Features centered swipe hint and 4 large rounded buttons (Again, Hard, Good, Easy)
+/// with colored borders, intervals, and subtle spring press micro-interactions.
 class TinderActionDock extends StatelessWidget {
-  final bool canUndo;
-  final bool isRevealed;
   final String againInterval;
   final String hardInterval;
   final String goodInterval;
   final String easyInterval;
-  final VoidCallback onUndo;
   final VoidCallback onAgain;
   final VoidCallback onHard;
-  final VoidCallback onFlip;
   final VoidCallback onGood;
   final VoidCallback onEasy;
 
   const TinderActionDock({
     super.key,
-    required this.canUndo,
-    required this.isRevealed,
-    this.againInterval = '<10m',
-    this.hardInterval = '1d',
-    this.goodInterval = '3d',
-    this.easyInterval = '7d',
-    required this.onUndo,
+    this.againInterval = '<1 min',
+    this.hardInterval = '1 d',
+    this.goodInterval = '1 d',
+    this.easyInterval = '2 d',
     required this.onAgain,
     required this.onHard,
-    required this.onFlip,
     required this.onGood,
     required this.onEasy,
   });
@@ -41,85 +33,87 @@ class TinderActionDock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.vocaColors;
+    final isDark = context.isDarkMode;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        crossAxisAlignment: CrossAxisAlignment.center,
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // 1. Undo / Rewind Button (38px, subtle neutral)
-          _DockButton(
-            size: 38,
-            icon: Icons.replay_rounded,
-            iconSize: 18,
-            color: colors.textSecondary,
-            label: 'Undo',
-            isEnabled: canUndo,
-            onTap: onUndo,
-            colors: colors,
+          // Centered Gesture Hint matching reference UI
+          Text(
+            context.t('study.swipeHintShort', null, 'Swipe right: Good · left: Again'),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: colors.textMuted,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
           ),
+          const SizedBox(height: 10),
 
-          // 2. Again Button (50px, Coral / Red)
-          _DockButton(
-            size: 50,
-            icon: Icons.close_rounded,
-            iconSize: 26,
-            color: colors.error,
-            label: againInterval,
-            onTap: onAgain,
-            colors: colors,
-            isPrimary: true,
-            isHighlighted: isRevealed,
-          ),
+          // Row of 4 Tactile Action Buttons [ Again | Hard | Good | Easy ]
+          Row(
+            children: [
+              // 1. Again
+              Expanded(
+                child: _SrsActionButton(
+                  title: context.t('study.again', null, 'Again'),
+                  interval: againInterval,
+                  borderColor: const Color(0xFFE11D48),
+                  bgColor: isDark
+                      ? const Color(0xFFE11D48).withValues(alpha: 0.18)
+                      : const Color(0xFFFDE8EC),
+                  textColor: const Color(0xFFD9264E),
+                  onTap: onAgain,
+                ),
+              ),
+              const SizedBox(width: 8),
 
-          // 3. Hard Button (44px, Amber)
-          _DockButton(
-            size: 44,
-            icon: Icons.hourglass_bottom_rounded,
-            iconSize: 20,
-            color: colors.warning,
-            label: hardInterval,
-            onTap: onHard,
-            colors: colors,
-            isHighlighted: isRevealed,
-          ),
+              // 2. Hard
+              Expanded(
+                child: _SrsActionButton(
+                  title: context.t('study.hard', null, 'Hard'),
+                  interval: hardInterval,
+                  borderColor: const Color(0xFFF97316),
+                  bgColor: isDark
+                      ? const Color(0xFFF97316).withValues(alpha: 0.18)
+                      : const Color(0xFFFFF3E0),
+                  textColor: const Color(0xFFEA580C),
+                  onTap: onHard,
+                ),
+              ),
+              const SizedBox(width: 8),
 
-          // 4. Flip / Reveal Center Button (44px, Surface Neutral)
-          _DockButton(
-            size: 44,
-            icon: isRevealed ? Icons.visibility_off_rounded : Icons.visibility_rounded,
-            iconSize: 20,
-            color: colors.textPrimary,
-            label: 'Flip',
-            onTap: onFlip,
-            colors: colors,
-            isNeutral: true,
-          ),
+              // 3. Good
+              Expanded(
+                child: _SrsActionButton(
+                  title: context.t('study.good', null, 'Good'),
+                  interval: goodInterval,
+                  borderColor: const Color(0xFFEF4444),
+                  bgColor: isDark
+                      ? const Color(0xFFEF4444).withValues(alpha: 0.18)
+                      : const Color(0xFFFDE8E8),
+                  textColor: const Color(0xFFDC2626),
+                  onTap: onGood,
+                ),
+              ),
+              const SizedBox(width: 8),
 
-          // 5. Good Button (50px, Mint / Emerald)
-          _DockButton(
-            size: 50,
-            icon: Icons.check_rounded,
-            iconSize: 28,
-            color: colors.colorGrammar,
-            label: goodInterval,
-            onTap: onGood,
-            colors: colors,
-            isPrimary: true,
-            isHighlighted: isRevealed,
-          ),
-
-          // 6. Easy Button (44px, Electric Purple)
-          _DockButton(
-            size: 44,
-            icon: Icons.star_rounded,
-            iconSize: 22,
-            color: colors.accentSecondary,
-            label: easyInterval,
-            onTap: onEasy,
-            colors: colors,
-            isHighlighted: isRevealed,
+              // 4. Easy
+              Expanded(
+                child: _SrsActionButton(
+                  title: context.t('study.easy', null, 'Easy'),
+                  interval: easyInterval,
+                  borderColor: const Color(0xFF14B8A6),
+                  bgColor: isDark
+                      ? const Color(0xFF14B8A6).withValues(alpha: 0.18)
+                      : const Color(0xFFE0F7F6),
+                  textColor: const Color(0xFF0D9488),
+                  onTap: onEasy,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -127,112 +121,85 @@ class TinderActionDock extends StatelessWidget {
   }
 }
 
-class _DockButton extends StatefulWidget {
-  final double size;
-  final IconData icon;
-  final double iconSize;
-  final Color color;
-  final String label;
+/// Tactile rounded push button matching the screenshot's tactile aesthetic
+class _SrsActionButton extends StatefulWidget {
+  final String title;
+  final String interval;
+  final Color borderColor;
+  final Color bgColor;
+  final Color textColor;
   final VoidCallback onTap;
-  final VocaColorPalette colors;
-  final bool isEnabled;
-  final bool isPrimary;
-  final bool isNeutral;
-  final bool isHighlighted;
 
-  const _DockButton({
-    required this.size,
-    required this.icon,
-    required this.iconSize,
-    required this.color,
-    required this.label,
+  const _SrsActionButton({
+    required this.title,
+    required this.interval,
+    required this.borderColor,
+    required this.bgColor,
+    required this.textColor,
     required this.onTap,
-    required this.colors,
-    this.isEnabled = true,
-    this.isPrimary = false,
-    this.isNeutral = false,
-    this.isHighlighted = false,
   });
 
   @override
-  State<_DockButton> createState() => _DockButtonState();
+  State<_SrsActionButton> createState() => _SrsActionButtonState();
 }
 
-class _DockButtonState extends State<_DockButton> {
+class _SrsActionButtonState extends State<_SrsActionButton> {
   bool _isPressed = false;
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = widget.isNeutral
-        ? widget.colors.borderColor
-        : widget.color.withValues(
-            alpha: widget.isPrimary
-                ? (widget.isHighlighted ? 0.90 : 0.70)
-                : (widget.isHighlighted ? 0.70 : 0.45),
-          );
-
-    return Opacity(
-      opacity: widget.isEnabled ? 1.0 : 0.35,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTapDown: widget.isEnabled ? (_) => setState(() => _isPressed = true) : null,
-        onTapUp: widget.isEnabled
-            ? (_) {
-                setState(() => _isPressed = false);
-                HapticFeedback.lightImpact();
-                widget.onTap();
-              }
-            : null,
-        onTapCancel: widget.isEnabled ? () => setState(() => _isPressed = false) : null,
-        child: AnimatedScale(
-          scale: _isPressed ? 0.88 : 1.0,
-          duration: const Duration(milliseconds: 110),
-          curve: Curves.easeOutCubic,
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        HapticFeedback.lightImpact();
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _isPressed = false),
+      child: AnimatedScale(
+        scale: _isPressed ? 0.92 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeOutCubic,
+        child: Container(
+          height: 64,
+          decoration: BoxDecoration(
+            color: widget.bgColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: widget.borderColor,
+              width: 2.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: widget.borderColor.withValues(alpha: 0.15),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                width: widget.size,
-                height: widget.size,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: widget.isNeutral ? widget.colors.bgSurface : widget.colors.bgCard,
-                  border: Border.all(
-                    color: borderColor,
-                    width: widget.isPrimary ? 2.0 : 1.4,
-                  ),
-                  boxShadow: [
-                    if (widget.isEnabled)
-                      BoxShadow(
-                        color: (widget.isHighlighted && !widget.isNeutral
-                                ? widget.color
-                                : Colors.black)
-                            .withValues(alpha: widget.isHighlighted ? 0.25 : 0.3),
-                        blurRadius: widget.isHighlighted ? 10 : 6,
-                        offset: const Offset(0, 2),
-                      ),
-                  ],
-                ),
-                child: Center(
-                  child: Icon(
-                    widget.icon,
-                    size: widget.iconSize,
-                    color: widget.isNeutral ? widget.colors.textPrimary : widget.color,
-                  ),
+              Text(
+                widget.title,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: widget.textColor,
+                  fontSize: 15.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.2,
                 ),
               ),
-              const SizedBox(height: 4),
-              // Interval Label
+              const SizedBox(height: 3),
               Text(
-                widget.label,
+                widget.interval,
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: widget.isEnabled
-                      ? (widget.isNeutral ? widget.colors.textSecondary : widget.color)
-                      : widget.colors.textMuted,
-                  fontSize: 10.5,
+                  color: widget.textColor.withValues(alpha: 0.85),
+                  fontSize: 11.5,
                   fontWeight: FontWeight.w700,
-                  letterSpacing: 0.2,
                 ),
               ),
             ],

@@ -15,12 +15,13 @@ import 'steps/welcome_step.dart';
 import 'steps/learning_language_step.dart';
 import 'steps/level_goal_step.dart';
 import 'steps/companion_step.dart';
+import 'steps/ready_step.dart';
 import 'widgets/onboarding_header.dart';
 import 'widgets/onboarding_bottom_bar.dart';
 
 /// Complete, modern native Onboarding Screen for VOCA.
-/// Features tactile micro-interactions, signal reactivity, live companion preview,
-/// and smooth page navigation with smart device-locale detection.
+/// 5-step intuitive flow with zero image dependencies, signal reactivity,
+/// live companion preview, and smooth page navigation with smart device-locale detection.
 class OnboardingScreen extends StatefulWidget {
   final VoidCallback? onFinish;
   final bool isReplay;
@@ -163,28 +164,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   String _getBottomBarLabel(int currentStep) {
-    if (currentStep == OnboardingController.welcomeStep) {
-      return context.t('onboarding.continue', null, 'Continue');
-    } else if (currentStep == OnboardingController.lastStep) {
+    if (currentStep == OnboardingController.lastStep) {
       if (widget.isReplay) {
         return context.t('onboarding.saveCalibration', null, 'Save Changes');
       }
-      return context.t(
-        'onboarding.startLearning',
-        null,
-        'Start Learning',
-      );
-    } else {
-      return context.t('onboarding.continue', null, 'Continue');
+      return context.t('onboarding.startLearning', null, 'Start Learning');
     }
+    return context.t('onboarding.continue', null, 'Continue');
   }
 
   IconData? _getBottomBarIcon(int currentStep) {
     if (currentStep == OnboardingController.welcomeStep) {
       return null;
     }
-    if (currentStep == OnboardingController.lastStep && widget.isReplay) {
-      return Icons.check_rounded;
+    if (currentStep == OnboardingController.lastStep) {
+      return widget.isReplay ? Icons.check_rounded : Icons.auto_awesome_rounded;
     }
     return Icons.arrow_forward_rounded;
   }
@@ -197,7 +191,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       final currentStep = _controller.step.value;
       final learningLang = _controller.learningLang.value;
       final nativeLang = _controller.nativeLang.value;
-      final showDualSubtitles = _controller.showDualSubtitles.value;
       final selectedLevel = _controller.level.value;
       final selectedDailyGoal = _controller.dailyGoal.value;
       final selectedCompanion = _controller.companion.value;
@@ -214,9 +207,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         },
         child: Scaffold(
           backgroundColor: colors.bgPrimary,
-          body: SafeArea(
-            bottom: false,
-            child: Column(
+          body: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: colors.isDark
+                    ? [colors.bgPrimary, colors.bgSecondary, colors.bgTertiary]
+                    : [colors.bgPrimary, colors.bgSurface, colors.bgSecondary],
+              ),
+            ),
+            child: SafeArea(
+              bottom: false,
+              child: Column(
               children: [
                 // Top Header with Back, Segmented Bar, Locale Picker & Skip
                 OnboardingHeader(
@@ -230,7 +233,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   onLanguageChanged: _controller.selectNativeLanguage,
                 ),
 
-                // Page Content
+                // Page Content (5 Steps)
                 Expanded(
                   child: PageView(
                     controller: _pageController,
@@ -242,16 +245,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       // Step 0: Welcome & Core Values
                       WelcomeStep(demoLanguage: learningLang),
 
-                      // Step 1: Target Learning Language & Native Language Card
+                      // Step 1: Target Learning Language
                       LearningLanguageStep(
                         selectedLanguage: learningLang,
                         onSelect: _controller.selectLearningLanguage,
-                        nativeLanguage: nativeLang,
-                        onSelectNativeLanguage: _controller.selectNativeLanguage,
-                        showDualSubtitles: showDualSubtitles,
-                        onToggleDualSubtitles: (val) {
-                          _controller.showDualSubtitles.value = val;
-                        },
                       ),
 
                       // Step 2: Difficulty Ladder & Habit Pact
@@ -267,12 +264,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         },
                       ),
 
-                      // Step 3: Companion Guide & Appearance Theme
+                      // Step 3: Companion Spirit Guide
                       CompanionStep(
                         selectedCompanion: selectedCompanion,
                         onCompanionChanged: (comp) {
                           _controller.companion.value = comp;
                         },
+                      ),
+
+                      // Step 4: Plan Summary, Starter Loot & Appearance
+                      ReadyStep(
+                        learningLanguage: learningLang,
+                        selectedLevel: selectedLevel,
+                        selectedCompanion: selectedCompanion,
+                        dailyGoal: selectedDailyGoal,
                         themeMode: selectedThemeMode,
                         onThemeChanged: _controller.setThemeMode,
                       ),
@@ -290,7 +295,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   onTermsTap: () => _openLegalUrl('https://voca.study/terms'),
                   onPrivacyTap: () => _openLegalUrl('https://voca.study/privacy'),
                   secondaryLabel: currentStep == OnboardingController.welcomeStep
-                      ? context.t('auth.alreadyHaveAccount', null, 'I already have an account')
+                      ? context.t(
+                          'auth.alreadyHaveAccount',
+                          null,
+                          'Already have an account? Sign in',
+                        )
                       : null,
                   onSecondary: currentStep == OnboardingController.welcomeStep
                       ? _openAuth
@@ -300,7 +309,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
           ),
         ),
-      );
+      ),
+    );
     });
   }
 }

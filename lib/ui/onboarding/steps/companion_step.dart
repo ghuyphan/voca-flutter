@@ -8,21 +8,18 @@ import '../models/onboarding_models.dart';
 import '../widgets/onboarding_primitives.dart';
 import '../widgets/pressable_scale.dart';
 
-/// Step 4: Choose companion spirit guide archetype & appearance theme.
+/// Step 3: Choose companion spirit guide archetype.
 /// Features a native horizontal snapping carousel with smooth scale transformations,
-/// companion speech bubble, dot jump-pills, and theme personalization (System / Light / Dark).
+/// explicit passive perk explanation, live dialogue speech bubble, and an
+/// interactive companion roster comparison sheet.
 class CompanionStep extends StatefulWidget {
   final String selectedCompanion;
   final ValueChanged<String> onCompanionChanged;
-  final String themeMode;
-  final ValueChanged<String>? onThemeChanged;
 
   const CompanionStep({
     super.key,
     required this.selectedCompanion,
     required this.onCompanionChanged,
-    this.themeMode = 'system',
-    this.onThemeChanged,
   });
 
   @override
@@ -39,7 +36,7 @@ class _CompanionStepState extends State<CompanionStep> {
     _currentPage = CompanionOption.indexOf(widget.selectedCompanion);
     _pageController = PageController(
       initialPage: _currentPage,
-      viewportFraction: 0.68,
+      viewportFraction: 0.70,
     );
   }
 
@@ -70,15 +67,190 @@ class _CompanionStepState extends State<CompanionStep> {
     widget.onCompanionChanged(CompanionOption.all[page].id);
   }
 
+  void _showRosterSheet(BuildContext context, VocaColorPalette colors) {
+    HapticFeedback.lightImpact();
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: colors.bgCard,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.72,
+          minChildSize: 0.45,
+          maxChildSize: 0.90,
+          builder: (_, scrollController) {
+            return SafeArea(
+              child: Column(
+                children: [
+                  // Drag Handle
+                  Container(
+                    width: 36,
+                    height: 4,
+                    margin: const EdgeInsets.only(top: 12, bottom: 12),
+                    decoration: BoxDecoration(
+                      color: colors.borderColorHover,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+
+                  // Sheet Header
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.auto_awesome_rounded,
+                          size: 18,
+                          color: colors.accentPrimary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          context.t(
+                            'onboarding.companionPerksGuide',
+                            null,
+                            'Spirit Guide Perks',
+                          ),
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  // Roster List
+                  Expanded(
+                    child: ListView.separated(
+                      controller: scrollController,
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                      itemCount: CompanionOption.all.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (ctx, index) {
+                        final comp = CompanionOption.all[index];
+                        final isSelected = index == _currentPage;
+                        final name = context.t(comp.nameKey, null, comp.id);
+                        final trait = context.t(comp.traitKey, null, '');
+                        final perk = context.t(comp.perkKey, null, '');
+
+                        return InkWell(
+                          onTap: () {
+                            Navigator.of(ctx).pop();
+                            _pageController.animateToPage(
+                              index,
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeOutCubic,
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? comp.color.withValues(alpha: colors.isDark ? 0.16 : 0.08)
+                                  : colors.bgSurface,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isSelected ? comp.color : colors.borderColorLight,
+                                width: isSelected ? 1.6 : 1.0,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                // Avatar
+                                Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: comp.color, width: 1.5),
+                                  ),
+                                  child: ClipOval(
+                                    child: Image.asset(
+                                      comp.avatarAsset,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Icon(
+                                        comp.icon,
+                                        size: 22,
+                                        color: comp.color,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+
+                                // Name & Perk Text
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Text(
+                                            name,
+                                            style: TextStyle(
+                                              fontSize: 14.5,
+                                              fontWeight: FontWeight.w700,
+                                              color: colors.textPrimary,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          TagChip(
+                                            label: trait,
+                                            bg: comp.color.withValues(
+                                                alpha: colors.isDark ? 0.16 : 0.10),
+                                            fg: comp.color,
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        perk,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          color: colors.textSecondary,
+                                          height: 1.25,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (isSelected)
+                                  Icon(Icons.check_circle_rounded,
+                                      color: comp.color, size: 20),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final isDark = colors.isDark;
     final activeCompanion = CompanionOption.all[_currentPage];
     final activeQuote = context.t(activeCompanion.quoteKey, null, '');
-    final effectiveTheme =
-        (widget.themeMode == 'light' || widget.themeMode == 'dark')
-            ? widget.themeMode
-            : 'system';
+    final activeTrait = context.t(activeCompanion.traitKey, null, '');
+    final activePerk = context.t(activeCompanion.perkKey, null, '');
 
     return OnboardingStepLayout(
       title: context.t('onboarding.companionTitle', null, 'Choose Your Companion'),
@@ -88,6 +260,44 @@ class _CompanionStepState extends State<CompanionStep> {
         'Your companion guide brings unique passive mastery to your journey',
       ),
       children: [
+        // Roster comparison button row
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: GestureDetector(
+              onTap: () => _showRosterSheet(context, colors),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: colors.bgCard,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: colors.borderColorLight, width: 1.0),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.info_outline_rounded, size: 14, color: colors.accentPrimary),
+                    const SizedBox(width: 5),
+                    Text(
+                      context.t(
+                        'onboarding.companionPerksGuide',
+                        null,
+                        'Spirit Guide Perks',
+                      ),
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: colors.accentPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+
         // 1. Horizontal snapping companion carousel
         SizedBox(
           height: 220,
@@ -136,51 +346,9 @@ class _CompanionStepState extends State<CompanionStep> {
           ),
         ),
 
-        const SizedBox(height: 14),
+        const SizedBox(height: 12),
 
-        // 2. Live Companion Speech Bubble
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 240),
-          child: Container(
-            key: ValueKey(activeCompanion.id),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: activeCompanion.color
-                  .withValues(alpha: colors.isDark ? 0.14 : 0.08),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: activeCompanion.color.withValues(alpha: 0.35),
-                width: 1.2,
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.auto_awesome_rounded,
-                  size: 16,
-                  color: activeCompanion.color,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    '“$activeQuote”',
-                    style: TextStyle(
-                      color: colors.textPrimary,
-                      fontSize: 13,
-                      height: 1.35,
-                      fontStyle: FontStyle.italic,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 14),
-
-        // 3. Mini Avatar Jump Dots
+        // 2. Mini Jump Indicator Dots
         Center(
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -201,8 +369,8 @@ class _CompanionStepState extends State<CompanionStep> {
                       },
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
-                        width: i == _currentPage ? 26 : 7,
-                        height: 7,
+                        width: i == _currentPage ? 24 : 6,
+                        height: 6,
                         decoration: BoxDecoration(
                           color: i == _currentPage
                               ? activeCompanion.color
@@ -217,41 +385,130 @@ class _CompanionStepState extends State<CompanionStep> {
           ),
         ),
 
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
 
-        // 4. Appearance & Theme Selection
-        SectionLabel(
-          context.t('onboarding.appearance', null, 'Appearance'),
+        // 3. Dedicated Passive Perk Explanation Card
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 240),
+          child: Container(
+            key: ValueKey('perk_${activeCompanion.id}'),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: colors.bgCard,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: activeCompanion.color.withValues(alpha: isDark ? 0.40 : 0.25),
+                width: 1.4,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: activeCompanion.color.withValues(alpha: isDark ? 0.16 : 0.08),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: activeCompanion.color.withValues(alpha: isDark ? 0.20 : 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.bolt_rounded,
+                    size: 20,
+                    color: activeCompanion.color,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            context.t('onboarding.passivePerk', null, 'Passive Perk').toUpperCase(),
+                            style: TextStyle(
+                              color: activeCompanion.color,
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.6,
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            activeTrait,
+                            style: TextStyle(
+                              color: colors.textMuted,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        activePerk,
+                        style: TextStyle(
+                          color: colors.textPrimary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-        Row(
-          children: [
-            _ThemeOptionTile(
-              icon: Icons.brightness_auto_outlined,
-              label: context.t('onboarding.themeSystem', null, 'System'),
-              subtitle:
-                  context.t('onboarding.themeSystemDesc', null, 'Auto'),
-              isSelected: effectiveTheme == 'system',
-              onTap: () => widget.onThemeChanged?.call('system'),
+
+        const SizedBox(height: 10),
+
+        // 4. Live Companion Dialogue Speech Bubble
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 240),
+          child: Container(
+            key: ValueKey('quote_${activeCompanion.id}'),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: activeCompanion.color
+                  .withValues(alpha: isDark ? 0.10 : 0.06),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: activeCompanion.color.withValues(alpha: 0.25),
+                width: 1.0,
+              ),
             ),
-            const SizedBox(width: 8),
-            _ThemeOptionTile(
-              icon: Icons.light_mode_outlined,
-              label: context.t('onboarding.themeLight', null, 'Light'),
-              subtitle:
-                  context.t('onboarding.themeLightDesc', null, 'Light theme'),
-              isSelected: effectiveTheme == 'light',
-              onTap: () => widget.onThemeChanged?.call('light'),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.chat_bubble_outline_rounded,
+                  size: 15,
+                  color: activeCompanion.color,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    '“$activeQuote”',
+                    style: TextStyle(
+                      color: colors.textSecondary,
+                      fontSize: 12.5,
+                      height: 1.35,
+                      fontStyle: FontStyle.italic,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            _ThemeOptionTile(
-              icon: Icons.dark_mode_outlined,
-              label: context.t('onboarding.themeDark', null, 'Dark'),
-              subtitle:
-                  context.t('onboarding.themeDarkDesc', null, 'Dark theme'),
-              isSelected: effectiveTheme == 'dark',
-              onTap: () => widget.onThemeChanged?.call('dark'),
-            ),
-          ],
+          ),
         ),
       ],
     );
@@ -288,7 +545,7 @@ class _CompanionCarouselCard extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: colors.bgCard,
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: isSelected ? companion.color : colors.borderColor,
               width: isSelected ? 2.0 : 1.0,
@@ -302,7 +559,14 @@ class _CompanionCarouselCard extends StatelessWidget {
                       offset: const Offset(0, 8),
                     ),
                   ]
-                : null,
+                : [
+                    BoxShadow(
+                      color: Colors.black
+                          .withValues(alpha: colors.isDark ? 0.20 : 0.04),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -313,8 +577,8 @@ class _CompanionCarouselCard extends StatelessWidget {
                 alignment: Alignment.center,
                 children: [
                   Container(
-                    width: 72,
-                    height: 72,
+                    width: 74,
+                    height: 74,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: companion.color
@@ -327,8 +591,8 @@ class _CompanionCarouselCard extends StatelessWidget {
                     child: ClipOval(
                       child: Image.asset(
                         companion.avatarAsset,
-                        width: 72,
-                        height: 72,
+                        width: 74,
+                        height: 74,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Icon(
                           companion.icon,
@@ -342,7 +606,7 @@ class _CompanionCarouselCard extends StatelessWidget {
                     bottom: -3,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 7,
+                        horizontal: 8,
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
@@ -378,91 +642,13 @@ class _CompanionCarouselCard extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 4),
+              const SizedBox(height: 5),
 
               TagChip(
                 label: trait,
                 bg: companion.color
                     .withValues(alpha: colors.isDark ? 0.16 : 0.10),
                 fg: companion.color,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ThemeOptionTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String subtitle;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _ThemeOptionTile({
-    required this.icon,
-    required this.label,
-    required this.subtitle,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final isDark = context.isDark;
-
-    final border = isSelected
-        ? Border.all(color: colors.accentPrimary, width: 1.6)
-        : Border.all(color: colors.borderColorLight, width: 1.0);
-
-    final bg = isSelected
-        ? colors.accentPrimary.withValues(alpha: isDark ? 0.20 : 0.08)
-        : colors.bgCard;
-
-    final textColor = isSelected ? colors.accentPrimary : colors.textPrimary;
-    final iconColor = isSelected ? colors.accentPrimary : colors.textSecondary;
-
-    return Expanded(
-      child: PressableScale(
-        haptic: true,
-        onTap: () {
-          HapticFeedback.selectionClick();
-          onTap();
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOut,
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(14),
-            border: border,
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 20, color: iconColor),
-              const SizedBox(height: 3),
-              Text(
-                label,
-                style: TextStyle(
-                  color: textColor,
-                  fontSize: 12.5,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                ),
-              ),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  color: isSelected
-                      ? colors.accentPrimary.withValues(alpha: 0.8)
-                      : colors.textMuted,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w400,
-                ),
               ),
             ],
           ),

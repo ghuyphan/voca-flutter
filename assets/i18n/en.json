@@ -734,7 +734,29 @@
     "less": "Less",
     "more": "More",
     "tapDayToView": "Tap a day to view",
-    "stageMastered": "Mastered"
+    "stageMastered": "Mastered",
+    "allDone": "All cards cleared for today! 🎉",
+    "startReview": "Start Review",
+    "exploreVideos": "Explore videos for new words",
+    "items": "items",
+    "heatmapReviewed": "Reviewed",
+    "heatmapRestDay": "Rest day",
+    "markKnownShort": "Known",
+    "memory": "Memory",
+    "settingsTitle": "Deck Configuration",
+    "exitToOverview": "Exit to Overview",
+    "deckSettings": "Deck Settings",
+    "flip": "Flip",
+    "contentType": "CONTENT TYPE",
+    "allTypes": "All Items",
+    "wordsOnly": "Words Only",
+    "grammarOnly": "Grammar Only",
+    "batchSize": "BATCH SIZE",
+    "cardsCount": "{{count}} cards",
+    "reviewDueOnly": "Review Due Cards Only",
+    "reviewDueOnlyDesc": "Study strictly what SM-2 scheduled for today",
+    "deckMasteryStatus": "DECK MASTERY STATUS ({{total}} TOTAL)",
+    "applyAndStart": "Apply & Start Deck"
   },
   "streak": {
     "dayStreak": "Streak",
@@ -981,7 +1003,8 @@
     "save": "Save",
     "remove": "Remove",
     "delete": "Delete",
-    "apply": "Apply Filters"
+    "apply": "Apply Filters",
+    "next": "Next Question"
   },
   "onboarding": {
     "welcomeTitle": "Welcome to Voca",
@@ -1166,7 +1189,10 @@
         "text": "Let's master languages together",
         "translation": "Let's master languages together!"
       }
-    }
+    },
+    "perkSovereign": "Mythic Sovereign: Polyglot Mantle bestowed! Dual Subtitles & Grammar Insights active!",
+    "passivePerk": "Passive Perk",
+    "companionPerksGuide": "Spirit Guide Perks"
   },
   "quiz": {
     "dictation": "Dictation",
@@ -1346,7 +1372,8 @@
     "diamond": "Diamond",
     "streak": "Day Streak",
     "polyglotScholar": "Polyglot Scholar",
-    "totalXp": "Total XP"
+    "totalXp": "Total XP",
+    "earnedXp": "Study bonus earned"
   },
   "leaderboard": {
     "title": "Global Ranking",
@@ -1698,7 +1725,8 @@
     "savedToBookmarks": "Saved \"{{title}}\" to bookmarks",
     "searchOnYouTube": "Search on YouTube",
     "noSearchVideosDesc": "No immersion videos found for \"{{query}}\" in the catalog. You can search directly on YouTube or paste any YouTube link.",
-    "noFilterVideosDesc": "No videos found with the selected filters."
+    "noFilterVideosDesc": "No videos found with the selected filters.",
+    "applyFilters": "Apply Filters"
   },
   "flashcards": {
     "again": "Again",

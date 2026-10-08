@@ -76,7 +76,7 @@ class MobilePlaylistBar extends StatelessWidget {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: colors.accentPrimary.withOpacity(0.12),
+                  color: colors.accentPrimary.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(

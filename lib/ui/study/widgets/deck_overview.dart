@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import '../../../config/voca_theme.dart';
+import '../../../models/voca_models.dart';
 import '../../../services/gamification_service.dart';
 import '../../../services/i18n_service.dart';
 import '../../../services/toast_service.dart';
@@ -168,40 +169,56 @@ class DeckOverview extends StatelessWidget {
       final dailyProgress = srsMission?.progress ?? controller.sessionStats.value.totalReviewed;
       final goalFraction = dailyTarget > 0 ? (dailyProgress / dailyTarget).clamp(0.0, 1.0) : 0.0;
 
-      return Container(
-        decoration: BoxDecoration(
-          color: colors.bgCard,
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.mediumImpact();
+            if (dueCount > 0) {
+              onStartDueOnlySession();
+            } else if (!isEmptyDeck) {
+              ToastService.info(context, context.t('study.allDone', null, 'All cards cleared for today! 🎉'));
+            }
+          },
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: colors.borderColor),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(colors.isDark ? 0.35 : 0.05),
-              blurRadius: 14,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
-        child: Column(
-          children: [
-            // Top row: Section tag + Estimated study time badge
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.schedule_rounded, size: 15, color: colors.accentPrimary),
-                    const SizedBox(width: 6),
-                    Text(
-                      context.t('study.dueToday', null, 'Due Today'),
-                      style: TextStyle(
-                        color: colors.textSecondary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+          child: Container(
+            decoration: BoxDecoration(
+              color: colors.bgCard,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: colors.borderColor),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(colors.isDark ? 0.35 : 0.05),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
                 ),
+              ],
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+            child: Column(
+              children: [
+                // Top row: Section tag + Estimated study time badge
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.schedule_rounded, size: 15, color: colors.accentPrimary),
+                        const SizedBox(width: 6),
+                        Text(
+                          context.t('study.dueToday', null, 'Due Today'),
+                          style: TextStyle(
+                            color: colors.textSecondary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (dueCount > 0) ...[
+                          const SizedBox(width: 5),
+                          Icon(Icons.arrow_forward_ios_rounded, size: 11, color: colors.accentPrimary),
+                        ],
+                      ],
+                    ),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
@@ -215,7 +232,7 @@ class DeckOverview extends StatelessWidget {
                       Icon(Icons.timer_outlined, size: 12, color: colors.textMuted),
                       const SizedBox(width: 4),
                       Text(
-                        '~$estMinutes min',
+                        context.t('study.estimatedMinutes', {'minutes': estMinutes}, '~$estMinutes min'),
                         style: TextStyle(
                           color: colors.textSecondary,
                           fontSize: 11.5,
@@ -348,9 +365,11 @@ class DeckOverview extends StatelessWidget {
             ),
           ],
         ),
-      );
-    });
-  }
+      ),
+    ),
+  );
+});
+}
 
   /// 3. Stage Filter Pills Row (● New, ● Learning, ● Known)
   Widget _buildStagePillsRow(BuildContext context, VocaColorPalette colors) {
@@ -542,6 +561,8 @@ class DeckOverview extends StatelessWidget {
                 HapticFeedback.mediumImpact();
                 if (isEmptyDeck) {
                   onExploreVideos?.call();
+                } else if (!hasCandidates) {
+                  controller.startSession(practiceAnyway: true);
                 } else {
                   onStartSession();
                 }
@@ -563,7 +584,7 @@ class DeckOverview extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     isEmptyDeck
-                        ? context.t('navigation.watch', null, 'Explore Videos')
+                        ? context.t('study.exploreVideos', null, 'Explore Videos')
                         : hasCandidates
                             ? '${context.t('study.startReview', null, 'Start Review')} ($sessionCount)'
                             : context.t('study.practiceAnyway', null, 'Practice Anyway'),
@@ -617,14 +638,43 @@ class DeckOverview extends StatelessWidget {
   Widget _buildMemoryMapSection(BuildContext context, VocaColorPalette colors) {
     return Watch((_) {
       final cards = controller.allCards.value;
-      final totalCount = cards.length;
+      final activeDeck = controller.subDeck.value;
+      final deckCards = cards.where((c) {
+        final isG = controller.isGrammarCard(c);
+        if (activeDeck == 'words') return !isG;
+        if (activeDeck == 'grammar') return isG;
+        return true;
+      }).toList();
+
+      final totalCount = deckCards.length;
+      final now = DateTime.now();
 
       final newCount = controller.newCount.value;
       final learningCount = controller.learningCount.value;
       final knownCount = controller.knownCount.value;
-      final masteredCount = cards.where((c) => c.level == 'known' && c.srsInterval >= 21).length;
+      final masteredCount = deckCards.where((c) => c.level == 'known' && c.srsInterval >= 21).length;
+
+      // Calculate actual due count for each stage to render solid fill
+      final learningDue = deckCards.where((c) {
+        final norm = WordLevels.normalize(c.level);
+        return norm == WordLevels.learning && (c.srsNextReviewAt.isBefore(now) || c.srsNextReviewAt.isAtSameMomentAs(now));
+      }).length;
+
+      final knownDue = deckCards.where((c) {
+        final norm = WordLevels.normalize(c.level);
+        return norm == WordLevels.known && c.srsInterval < 21 && (c.srsNextReviewAt.isBefore(now) || c.srsNextReviewAt.isAtSameMomentAs(now));
+      }).length;
+
+      final masteredDue = deckCards.where((c) {
+        return c.level == 'known' && c.srsInterval >= 21 && (c.srsNextReviewAt.isBefore(now) || c.srsNextReviewAt.isAtSameMomentAs(now));
+      }).length;
 
       final maxCount = math.max(1, math.max(math.max(newCount, learningCount), math.max(knownCount, masteredCount)));
+      final deckNoun = activeDeck == 'grammar'
+          ? context.t('study.deckGrammar', null, 'grammar').toLowerCase()
+          : (activeDeck == 'words'
+              ? context.t('study.deckWords', null, 'words').toLowerCase()
+              : context.t('study.items', null, 'items').toLowerCase());
 
       return Container(
         decoration: BoxDecoration(
@@ -642,7 +692,7 @@ class DeckOverview extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '${context.t('study.memoryMap', null, 'Memory map')} · $totalCount ${context.t('study.deckWords', null, 'words').toLowerCase()}',
+                    '${context.t('study.memoryMap', null, 'Memory map')} · $totalCount $deckNoun',
                     style: TextStyle(
                       color: colors.textPrimary,
                       fontSize: 14,
@@ -663,6 +713,7 @@ class DeckOverview extends StatelessWidget {
                   count: newCount,
                   maxCount: maxCount,
                   color: const Color(0xFF38BDF8),
+                  dueCount: 0,
                 ),
                 const SizedBox(width: 8),
                 _buildMemoryMapColumn(
@@ -672,6 +723,7 @@ class DeckOverview extends StatelessWidget {
                   count: learningCount,
                   maxCount: maxCount,
                   color: colors.colorGrammar,
+                  dueCount: learningDue,
                 ),
                 const SizedBox(width: 8),
                 _buildMemoryMapColumn(
@@ -681,6 +733,7 @@ class DeckOverview extends StatelessWidget {
                   count: knownCount,
                   maxCount: maxCount,
                   color: const Color(0xFF58AFFF),
+                  dueCount: knownDue,
                 ),
                 const SizedBox(width: 8),
                 _buildMemoryMapColumn(
@@ -690,6 +743,7 @@ class DeckOverview extends StatelessWidget {
                   count: masteredCount,
                   maxCount: maxCount,
                   color: colors.accentSecondary,
+                  dueCount: masteredDue,
                 ),
               ],
             ),
@@ -715,10 +769,12 @@ class DeckOverview extends StatelessWidget {
     required int count,
     required int maxCount,
     required Color color,
+    int dueCount = 0,
   }) {
     final double normalizedFraction = count > 0 ? (count / maxCount).clamp(0.08, 1.0) : 0.0;
     final double barHeight = count > 0 ? (normalizedFraction * 48.0) : 4.0;
     final bool hasItems = count > 0;
+    final double dueFraction = (count > 0 && dueCount > 0) ? (dueCount / count).clamp(0.0, 1.0) : 0.0;
 
     return Expanded(
       child: Column(
@@ -740,10 +796,26 @@ class DeckOverview extends StatelessWidget {
               color: hasItems ? color.withOpacity(0.18) : colors.bgSurface,
               borderRadius: BorderRadius.circular(hasItems ? 8 : 999),
               border: Border.all(
-                color: hasItems ? color : colors.borderColorLight,
+                color: hasItems ? color.withOpacity(0.4) : colors.borderColorLight,
                 width: hasItems ? 1.5 : 1.0,
               ),
             ),
+            child: hasItems && dueFraction > 0
+                ? Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Container(
+                      height: (barHeight * dueFraction).clamp(3.0, barHeight),
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: color,
+                        borderRadius: BorderRadius.vertical(
+                          bottom: const Radius.circular(6.5),
+                          top: dueFraction >= 0.95 ? const Radius.circular(6.5) : Radius.zero,
+                        ),
+                      ),
+                    ),
+                  )
+                : null,
           ),
           const SizedBox(height: 8),
           Text(
@@ -865,7 +937,9 @@ class DeckOverview extends StatelessWidget {
                         child: AspectRatio(
                           aspectRatio: 1.0,
                           child: Tooltip(
-                            message: '${DateFormat('MMM d').format(dayInfo.date)}: ${dayInfo.isActive ? 'Reviewed' : 'Rest day'}',
+                            triggerMode: TooltipTriggerMode.tap,
+                            preferBelow: false,
+                            message: '${DateFormat('MMM d').format(dayInfo.date)}: ${dayInfo.isActive ? context.t('study.heatmapReviewed', null, 'Reviewed') : context.t('study.heatmapRestDay', null, 'Rest day')}',
                             child: Container(
                               decoration: BoxDecoration(
                                 color: dayInfo.isActive ? colors.colorGrammar : colors.bgSurface,
@@ -891,7 +965,9 @@ class DeckOverview extends StatelessWidget {
                         child: AspectRatio(
                           aspectRatio: 1.0,
                           child: Tooltip(
-                            message: '${DateFormat('MMM d').format(dayInfo.date)}: ${dayInfo.isActive ? 'Reviewed' : 'Rest day'}',
+                            triggerMode: TooltipTriggerMode.tap,
+                            preferBelow: false,
+                            message: '${DateFormat('MMM d').format(dayInfo.date)}: ${dayInfo.isActive ? context.t('study.heatmapReviewed', null, 'Reviewed') : context.t('study.heatmapRestDay', null, 'Rest day')}',
                             child: Container(
                               decoration: BoxDecoration(
                                 color: dayInfo.isActive ? colors.colorGrammar : colors.bgSurface,
@@ -1197,7 +1273,7 @@ class DeckOverview extends StatelessWidget {
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      m.title,
+                                      m.localizedTitle(context),
                                       style: TextStyle(
                                         color: colors.textPrimary,
                                         fontSize: 13.5,
@@ -1230,7 +1306,7 @@ class DeckOverview extends StatelessWidget {
 
                               // Description
                               Text(
-                                m.description,
+                                m.localizedDescription(context),
                                 style: TextStyle(
                                   color: colors.textMuted,
                                   fontSize: 11.5,

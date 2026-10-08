@@ -216,14 +216,14 @@ class _PlaylistQueueSheetState extends State<PlaylistQueueSheet>
   }) {
     final colors = context.vocaColors;
     final bg = isSuccess
-        ? colors.success.withOpacity(0.15)
+        ? colors.success.withValues(alpha: 0.15)
         : isActive
             ? colors.accentPrimarySoft
             : colors.bgSurface;
     final border = isSuccess
-        ? colors.success.withOpacity(0.35)
+        ? colors.success.withValues(alpha: 0.35)
         : isActive
-            ? colors.accentPrimary.withOpacity(0.3)
+            ? colors.accentPrimary.withValues(alpha: 0.3)
             : colors.borderColor;
     final iconColor = isSuccess
         ? colors.success
@@ -326,7 +326,7 @@ class _PlaylistQueueSheetState extends State<PlaylistQueueSheet>
                             ),
                             if (isCurrent)
                               Container(
-                                color: Colors.black.withOpacity(0.35),
+                                color: Colors.black.withValues(alpha: 0.35),
                               ),
                           ],
                         ),
@@ -423,7 +423,7 @@ class _PlaylistQueueSheetState extends State<PlaylistQueueSheet>
               width: 20,
               child: Text(
                 '${index + 1}',
-                style: TextStyle(color: colors.textMuted.withOpacity(0.5), fontSize: 12),
+                style: TextStyle(color: colors.textMuted.withValues(alpha: 0.5), fontSize: 12),
               ),
             ),
             const SizedBox(width: 10),

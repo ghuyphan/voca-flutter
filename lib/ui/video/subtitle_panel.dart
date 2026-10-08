@@ -160,6 +160,9 @@ class _SubtitlePanelState extends State<SubtitlePanel>
           duration: const Duration(milliseconds: 180),
           switchInCurve: Curves.easeOut,
           switchOutCurve: Curves.easeIn,
+          layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
+            return currentChild ?? const SizedBox.shrink();
+          },
           child: activeCue != null
               ? KeyedSubtree(
                   key: ValueKey(activeCue.start),
@@ -346,25 +349,25 @@ class _SubtitlePanelState extends State<SubtitlePanel>
 
     if (isGrammar) {
       textColor = colors.textPrimary;
-      chipBgColor = const Color(0xFF2DD4BF).withOpacity(0.18);
+      chipBgColor = colors.colorGrammar.withValues(alpha: 0.12);
       chipBorder = Border.all(
-        color: const Color(0xFF2DD4BF).withOpacity(0.55),
+        color: colors.colorGrammar.withValues(alpha: 0.35),
         width: 1.0,
       );
       textDecoration = TextDecoration.underline;
-      decorationColor = const Color(0xFF2DD4BF);
+      decorationColor = colors.colorGrammar;
     } else if (token.level == 'new') {
       textColor = colors.wordNewText;
       chipBgColor = colors.wordNewBg;
-      chipBorder = Border.all(color: colors.wordNewText.withOpacity(0.35));
+      chipBorder = Border.all(color: colors.wordNewText.withValues(alpha: 0.35));
     } else if (token.level == 'learning') {
       textColor = colors.wordLearningText;
       chipBgColor = colors.wordLearningBg;
-      chipBorder = Border.all(color: colors.wordLearningText.withOpacity(0.35));
+      chipBorder = Border.all(color: colors.wordLearningText.withValues(alpha: 0.35));
     } else if (token.level == 'known') {
       textColor = colors.wordKnownText;
       chipBgColor = colors.wordKnownBg;
-      chipBorder = Border.all(color: colors.wordKnownText.withOpacity(0.35));
+      chipBorder = Border.all(color: colors.wordKnownText.withValues(alpha: 0.35));
     } else if (token.isSaved) {
       textColor = colors.accentPrimary;
       textDecoration = TextDecoration.underline;
@@ -471,12 +474,12 @@ class _SubtitlePanelState extends State<SubtitlePanel>
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: (chipBorder != null || chipBgColor != null) ? 4.0 : 2.0,
-        vertical: (chipBorder != null || chipBgColor != null) ? 2.0 : 1.0,
+        vertical: 2.0,
       ),
       margin: const EdgeInsets.symmetric(horizontal: 1.0),
       decoration: BoxDecoration(
         color: chipBgColor,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(6),
         border: chipBorder,
       ),
       child: content,
@@ -545,7 +548,7 @@ class _SubtitlePanelState extends State<SubtitlePanel>
               width: 6,
               height: 6,
               decoration: BoxDecoration(
-                color: color.withOpacity(opacity.clamp(0.2, 1.0)),
+                color: color.withValues(alpha: opacity.clamp(0.2, 1.0)),
                 shape: BoxShape.circle,
               ),
             );
@@ -639,7 +642,7 @@ class _SubtitlePanelState extends State<SubtitlePanel>
                     border: Border.all(color: colors.borderColor),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.12),
+                        color: Colors.black.withValues(alpha: 0.12),
                         blurRadius: 6,
                         offset: const Offset(0, 2),
                       ),
@@ -681,8 +684,8 @@ class _SubtitlePanelState extends State<SubtitlePanel>
     required bool isDark,
   }) {
     final activeBg = isDark
-        ? colors.accentPrimary.withOpacity(0.12)
-        : colors.accentPrimary.withOpacity(0.07);
+        ? colors.accentPrimary.withValues(alpha: 0.12)
+        : colors.accentPrimary.withValues(alpha: 0.07);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -731,7 +734,7 @@ class _SubtitlePanelState extends State<SubtitlePanel>
                         fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                         color: isActive
                             ? colors.accentPrimary
-                            : colors.textMuted.withOpacity(isPast ? 0.55 : 0.85),
+                            : colors.textMuted.withValues(alpha: isPast ? 0.55 : 0.85),
                         fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
@@ -755,7 +758,7 @@ class _SubtitlePanelState extends State<SubtitlePanel>
                             fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
                             color: isActive
                                 ? colors.textPrimary
-                                : colors.textSecondary.withOpacity(isPast ? 0.45 : 0.9),
+                                : colors.textSecondary.withValues(alpha: isPast ? 0.45 : 0.9),
                             height: 1.25,
                           ),
                         ),
@@ -770,7 +773,7 @@ class _SubtitlePanelState extends State<SubtitlePanel>
                               fontWeight: FontWeight.w400,
                               color: isActive
                                   ? colors.textSecondary
-                                  : colors.textMuted.withOpacity(isPast ? 0.45 : 0.8),
+                                  : colors.textMuted.withValues(alpha: isPast ? 0.45 : 0.8),
                               height: 1.2,
                             ),
                           ),
@@ -809,40 +812,43 @@ class _SubtitlePanelState extends State<SubtitlePanel>
         children: [
           // 1. Loop Button: [🔁 Lặp câu]
           Expanded(
-            child: _buildPillBtn(
+            child: _buildM3ToolbarBtn(
               icon: isLooping ? Icons.repeat_one_rounded : Icons.repeat_rounded,
               label: context.t('subtitle.loop', null, 'Lặp câu'),
               isActive: isLooping,
-              badgeText: isLooping ? '1' : null,
               onTap: hasCues ? () => widget.controller.toggleLoopCurrentCue() : null,
               colors: colors,
             ),
           ),
           const SizedBox(width: 6),
 
-          // 2. Added Words Button: [🔖 2] (Label hidden on mobile when count > 0)
+          // 2. Added Words Button: [🔖 2]
           Expanded(
-            child: _buildPillBtn(
-              icon: Icons.bookmark_border_rounded,
-              label: savedCount > 0 ? '' : context.t('nav.added', null, 'Đã lưu'),
-              badgeText: savedCount > 0 ? '$savedCount' : null,
+            child: _buildM3ToolbarBtn(
+              icon: savedCount > 0 ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+              iconColor: savedCount > 0 ? colors.accentPrimary : null,
+              label: context.t('nav.added', null, 'Đã lưu'),
+              badgeCount: savedCount > 0 ? savedCount : null,
               isActive: false,
-              onTap: () {
-                SavedWordsSheet.show(
+              onTap: () async {
+                await SavedWordsSheet.show(
                   context,
                   videoId: widget.controller.videoId,
                   language: widget.controller.activeLanguage.value,
                 );
+                if (mounted) {
+                  _loadSavedWordsCount();
+                }
               },
               colors: colors,
             ),
           ),
           const SizedBox(width: 6),
 
-          // 3. Quiz Button: [⚔️ Luyện tập]
+          // 3. Quiz Button: [🧠 Luyện tập]
           Expanded(
-            child: _buildPillBtn(
-              icon: Icons.sports_kabaddi_rounded,
+            child: _buildM3ToolbarBtn(
+              icon: Icons.quiz_rounded,
               label: context.t('quiz.short', null, 'Luyện tập'),
               isActive: isQuizActive,
               onTap: () {
@@ -857,10 +863,10 @@ class _SubtitlePanelState extends State<SubtitlePanel>
           ),
           const SizedBox(width: 6),
 
-          // 4. Options Button: [⚙️ Tùy chọn] (Opens SubtitleOptionsSheet with quick toggles & link to settings)
+          // 4. Options Button: [⚙️ Tùy chọn]
           Expanded(
-            child: _buildPillBtn(
-              icon: Icons.settings_outlined,
+            child: _buildM3ToolbarBtn(
+              icon: Icons.tune_rounded,
               label: context.t('vocab.options', null, 'Tùy chọn'),
               isActive: false,
               onTap: () {
@@ -878,95 +884,99 @@ class _SubtitlePanelState extends State<SubtitlePanel>
     );
   }
 
-  Widget _buildPillBtn({
+  Widget _buildM3ToolbarBtn({
     required IconData icon,
     required String label,
     required bool isActive,
+    Color? iconColor,
     String? badgeText,
+    int? badgeCount,
     VoidCallback? onTap,
     required VocaColorPalette colors,
   }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOutCubic,
-          height: 38,
-          padding: const EdgeInsets.symmetric(horizontal: 6),
-          decoration: BoxDecoration(
-            color: isActive ? colors.accentPrimary : colors.bgSurface,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: isActive ? colors.accentPrimary : colors.borderColor,
-              width: 1.0,
-            ),
-            boxShadow: isActive
-                ? [
-                    BoxShadow(
-                      color: colors.accentPrimary.withOpacity(0.25),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 15,
-                color: isActive ? Colors.white : colors.textSecondary,
+    final effectiveIconColor = iconColor ?? (isActive ? Colors.white : colors.textSecondary);
+    final iconWidget = Icon(icon, size: 16, color: effectiveIconColor);
+
+    final btnContent = Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        iconWidget,
+        if (label.isNotEmpty) ...[
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: isActive
+                    ? Colors.white
+                    : (iconColor != null ? colors.textPrimary : colors.textSecondary),
               ),
-              if (label.isNotEmpty) ...[
-                const SizedBox(width: 4),
-                Flexible(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: isActive ? Colors.white : colors.textSecondary,
-                    ),
-                  ),
-                ),
-              ],
-              if (badgeText != null) ...[
-                const SizedBox(width: 4),
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                  decoration: BoxDecoration(
-                    color: isActive
-                        ? Colors.white.withOpacity(0.25)
-                        : colors.bgHover,
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: isActive
-                          ? Colors.white.withOpacity(0.4)
-                          : colors.borderColor,
-                    ),
-                  ),
-                  child: Text(
-                    badgeText,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: isActive ? Colors.white : colors.textPrimary,
-                    ),
-                  ),
-                ),
-              ],
-            ],
+            ),
           ),
+        ],
+        if (badgeCount != null && badgeCount > 0) ...[
+          const SizedBox(width: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+            decoration: BoxDecoration(
+              color: colors.accentPrimary,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              '$badgeCount',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                height: 1.0,
+              ),
+            ),
+          ),
+        ] else if (badgeText != null) ...[
+          const SizedBox(width: 4),
+          Badge(
+            label: Text(badgeText),
+            backgroundColor: isActive
+                ? Colors.white.withValues(alpha: 0.25)
+                : colors.bgHover,
+            textColor: isActive ? Colors.white : colors.textPrimary,
+          ),
+        ],
+      ],
+    );
+
+    if (isActive) {
+      return FilledButton(
+        onPressed: onTap,
+        style: FilledButton.styleFrom(
+          backgroundColor: colors.accentPrimary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          minimumSize: const Size(0, 38),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          shape: const StadiumBorder(),
         ),
+        child: btnContent,
+      );
+    }
+
+    return FilledButton.tonal(
+      onPressed: onTap,
+      style: FilledButton.styleFrom(
+        backgroundColor: colors.bgSurface,
+        foregroundColor: colors.textSecondary,
+        side: BorderSide(color: colors.borderColor, width: 1.0),
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        minimumSize: const Size(0, 38),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        shape: const StadiumBorder(),
       ),
+      child: btnContent,
     );
   }
 
@@ -978,13 +988,14 @@ class _SubtitlePanelState extends State<SubtitlePanel>
     final colors = context.vocaColors;
     final isDark = context.isDarkMode;
 
-    return Container(
+    return Card(
+      elevation: 0,
       margin: const EdgeInsets.fromLTRB(14, 2, 14, 10),
-      decoration: BoxDecoration(
-        color: colors.bgCard,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colors.borderColor, width: 1.0),
+        side: BorderSide(color: colors.borderColor, width: 1.0),
       ),
+      color: colors.bgCard,
       clipBehavior: Clip.antiAlias,
       child: Column(
         mainAxisSize: widget.isCompact ? MainAxisSize.min : MainAxisSize.max,

@@ -157,7 +157,7 @@ class SubtitleTracksSheet extends StatelessWidget {
               height: 30,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: colors.colorDiamond.withOpacity(0.16),
+                color: colors.colorDiamond.withValues(alpha: 0.16),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(Icons.auto_awesome_rounded, size: 16, color: colors.colorDiamond),
@@ -204,7 +204,7 @@ class SubtitleTracksSheet extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        color: isSelected ? colors.accentPrimarySoft.withOpacity(0.08) : Colors.transparent,
+        color: isSelected ? colors.accentPrimarySoft.withValues(alpha: 0.08) : Colors.transparent,
         child: Row(
           children: [
             leading,
@@ -228,7 +228,7 @@ class SubtitleTracksSheet extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                           decoration: BoxDecoration(
-                            color: (badgeColor ?? colors.colorDiamond).withOpacity(0.15),
+                            color: (badgeColor ?? colors.colorDiamond).withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(

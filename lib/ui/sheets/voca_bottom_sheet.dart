@@ -50,7 +50,7 @@ Future<T?> showVocaBottomSheet<T>({
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(colors.isDark ? 0.45 : 0.08),
+                color: Colors.black.withValues(alpha: colors.isDark ? 0.45 : 0.08),
                 blurRadius: 24,
                 offset: const Offset(0, -4),
               ),
@@ -138,7 +138,6 @@ Future<T?> showVocaBottomSheet<T>({
                     right: 10,
                     child: IconButton(
                       icon: Icon(Icons.close_rounded, color: colors.textMuted, size: 20),
-                      splashRadius: 20,
                       visualDensity: VisualDensity.compact,
                       onPressed: () => Navigator.of(ctx).pop(),
                       tooltip: ctx.t('common.close', null, 'Close'),

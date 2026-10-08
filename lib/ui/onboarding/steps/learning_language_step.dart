@@ -3,28 +3,20 @@
 import 'package:flutter/material.dart';
 import '../../../config/voca_theme.dart';
 import '../../../services/i18n_service.dart';
-import '../../widgets/voca_switch.dart';
 import '../models/onboarding_models.dart';
 import '../widgets/onboarding_primitives.dart';
 import '../widgets/pressable_scale.dart';
 
-/// Step 1: Choose target learning language & configure UI locale / subtitles (1:1 with lingua-tube).
+/// Step 1: Choose target learning language.
+/// Focused, uncluttered native card selector for the 4 supported immersion realms.
 class LearningLanguageStep extends StatelessWidget {
   final String selectedLanguage;
   final ValueChanged<String> onSelect;
-  final String nativeLanguage;
-  final ValueChanged<String> onSelectNativeLanguage;
-  final bool showDualSubtitles;
-  final ValueChanged<bool> onToggleDualSubtitles;
 
   const LearningLanguageStep({
     super.key,
     required this.selectedLanguage,
     required this.onSelect,
-    required this.nativeLanguage,
-    required this.onSelectNativeLanguage,
-    required this.showDualSubtitles,
-    required this.onToggleDualSubtitles,
   });
 
   @override
@@ -32,7 +24,7 @@ class LearningLanguageStep extends StatelessWidget {
     final colors = context.colors;
 
     return OnboardingStepLayout(
-      title: context.t('onboarding.realmTitle', null, 'Choose Your Language Realm'),
+      title: context.t('onboarding.learningLanguageTitle', null, 'I want to learn...'),
       subtitle: context.t(
         'onboarding.learningLanguageSubtitle',
         null,
@@ -49,185 +41,7 @@ class LearningLanguageStep extends StatelessWidget {
               colors: colors,
             ),
           ),
-        const SizedBox(height: 10),
-        _buildNativeLanguageCard(context, colors),
       ],
-    );
-  }
-
-  Widget _buildNativeLanguageCard(BuildContext context, VocaColorPalette colors) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: colors.bgSurface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: colors.borderColor, width: 1.5),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                context.t('onboarding.myLanguage', null, 'My Language'),
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  color: colors.textPrimary,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  context.t('onboarding.myLanguageHint', null, 'Interface & subtitles'),
-                  style: TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w500,
-                    color: colors.textMuted,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.end,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // 5-Column UI Language Selector Row
-          Row(
-            children: [
-              for (final opt in NativeLanguageOption.all)
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 3),
-                    child: _UiLangChip(
-                      option: opt,
-                      isSelected: nativeLanguage == opt.code,
-                      onTap: () => onSelectNativeLanguage(opt.code),
-                      colors: colors,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 14),
-
-          // Toggle Row
-          Container(
-            padding: const EdgeInsets.only(top: 12),
-            decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(color: colors.borderColor),
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        context.t('onboarding.dualSubtitlesToggle', null, 'Translate subtitles'),
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                          color: colors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        context.t(
-                          'onboarding.dualSubtitlesHint',
-                          null,
-                          'Show translations below video captions',
-                        ),
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w500,
-                          color: colors.textMuted,
-                          height: 1.25,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                VocaSwitch(
-                  value: showDualSubtitles,
-                  onChanged: onToggleDualSubtitles,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _UiLangChip extends StatelessWidget {
-  final NativeLanguageOption option;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final VocaColorPalette colors;
-
-  const _UiLangChip({
-    required this.option,
-    required this.isSelected,
-    required this.onTap,
-    required this.colors,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return PressableScale(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOut,
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? colors.accentPrimary.withValues(alpha: colors.isDark ? 0.14 : 0.08)
-              : colors.bgCard,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? colors.accentPrimary : colors.borderColor,
-            width: isSelected ? 1.6 : 1.2,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: colors.accentPrimary.withValues(alpha: 0.20),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            RoundFlag(asset: option.flagAsset, size: 20),
-            const SizedBox(height: 5),
-            Text(
-              option.nativeName,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                color: isSelected ? colors.accentPrimary : colors.textSecondary,
-                height: 1.15,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -263,25 +77,27 @@ class _LanguageOptionCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             color: isSelected
-                ? colors.accentPrimary.withValues(alpha: colors.isDark ? 0.12 : 0.06)
+                ? colors.accentPrimary
+                    .withValues(alpha: colors.isDark ? 0.12 : 0.06)
                 : colors.bgCard,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isSelected ? colors.accentPrimary : colors.borderColor,
-              width: isSelected ? 1.8 : 1.0,
+              width: isSelected ? 1.6 : 1.0,
             ),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
                       color: colors.accentPrimary
-                          .withValues(alpha: colors.isDark ? 0.18 : 0.10),
-                      blurRadius: 14,
+                          .withValues(alpha: colors.isDark ? 0.20 : 0.10),
+                      blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
                   ]
                 : [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: colors.isDark ? 0.20 : 0.02),
+                      color: Colors.black
+                          .withValues(alpha: colors.isDark ? 0.20 : 0.02),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
@@ -289,28 +105,10 @@ class _LanguageOptionCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // Circular Flag with depth & subtle border
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: colors.bgSurface,
-                  border: Border.all(
-                    color: isSelected ? colors.accentPrimary.withValues(alpha: 0.4) : colors.borderColor,
-                    width: 1.2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: colors.isDark ? 0.25 : 0.06),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: RoundFlag(asset: option.flagAsset, size: 36),
-                ),
+              // Seamless Flag
+              RoundFlag(
+                asset: option.flagAsset,
+                size: 40,
               ),
               const SizedBox(width: 14),
 
@@ -325,8 +123,10 @@ class _LanguageOptionCard extends StatelessWidget {
                           child: Text(
                             localizedName,
                             style: TextStyle(
-                              color: isSelected ? colors.accentPrimary : colors.textPrimary,
-                              fontSize: 16.5,
+                              color: isSelected
+                                  ? colors.accentPrimary
+                                  : colors.textPrimary,
+                              fontSize: 16,
                               fontWeight: FontWeight.w700,
                               letterSpacing: -0.2,
                             ),
@@ -335,7 +135,8 @@ class _LanguageOptionCard extends StatelessWidget {
                         const SizedBox(width: 8),
                         // Native script pill
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 7, vertical: 2),
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? colors.accentPrimary.withValues(alpha: 0.14)
@@ -343,7 +144,8 @@ class _LanguageOptionCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(
                               color: isSelected
-                                  ? colors.accentPrimary.withValues(alpha: 0.3)
+                                  ? colors.accentPrimary
+                                      .withValues(alpha: 0.3)
                                   : colors.borderColorLight,
                               width: 1.0,
                             ),
@@ -351,7 +153,9 @@ class _LanguageOptionCard extends StatelessWidget {
                           child: Text(
                             option.nativeName,
                             style: TextStyle(
-                              color: isSelected ? colors.accentPrimary : colors.textSecondary,
+                              color: isSelected
+                                  ? colors.accentPrimary
+                                  : colors.textSecondary,
                               fontSize: 11.5,
                               fontWeight: FontWeight.w700,
                             ),
@@ -360,7 +164,8 @@ class _LanguageOptionCard extends StatelessWidget {
                         const SizedBox(width: 6),
                         // Exam scale pill (JLPT N5-N1, TOPIK 1-6, etc.)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: colors.bgSurface,
                             borderRadius: BorderRadius.circular(6),
@@ -398,7 +203,8 @@ class _LanguageOptionCard extends StatelessWidget {
                               vibe,
                               style: TextStyle(
                                 color: isSelected
-                                    ? colors.accentPrimary.withValues(alpha: 0.85)
+                                    ? colors.accentPrimary
+                                        .withValues(alpha: 0.85)
                                     : colors.textSecondary,
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w500,

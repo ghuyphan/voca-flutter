@@ -1,96 +1,82 @@
 # Voca Flutter — AI Agent Instructions & Architectural Guide (doc/agents.md)
 
-This document is the mirror of `AGENTS.md` located in the root of `voca_flutter`. All AI coding assistants working in this repository MUST follow these rules without exception.
+This document is the mirror of `AGENTS.md` located in the root of `voca_flutter`.
+
+Critical invariants, architectural rules, and development workflows for AI coding assistants working in **Voca Flutter** (`voca_flutter`).
 
 ---
 
-## 1. Executive Summary & Purpose
+## 1. Executive Summary & Design Reference
 
-**Voca Flutter** is the official cross-platform mobile application (Android & iOS) for Voca (formerly LinguaTube). It provides language learners (specifically **Japanese**, **Chinese**, **Korean**, and **English**) with an interactive immersion experience using authentic YouTube videos:
-- Synchronized interactive subtitles with Ruby/Furigana (Japanese), Pinyin with tone marks (Chinese), and Romaji (Japanese & Korean).
-- Morphological tokenization via Edge Cloudflare Functions.
-- Client-side grammar pattern detection (JLPT N5–N1, HSK 1–6, TOPIK 1–6, CEFR A1–C2).
-- Multi-source dictionary lookups (Mazii, Jotoba, Naver, MDBG, FreeDict).
-- SM-2 Spaced Repetition (SRS) vocabulary deck with deterministic offline-first sync.
-- Dual backend architecture: Cloudflare Edge (`https://voca.study`) for public linguistics/video APIs, and Supabase for cloud user persistence.
+**Voca Flutter** is the cross-platform mobile immersion application (Android, iOS, macOS) for Japanese, Chinese, Korean, and English learners using authentic YouTube videos.
 
-### 📌 Canonical Source-of-Truth: The Original Web App (`../lingua-tube`)
-The original web application is located at `../lingua-tube` (`/Users/huyphan/Downloads/web-app/lingua-tube`).
-- **Design & UX Authority**: Whenever in doubt regarding visual design, color tokens, layout hierarchy, gestures, audio cues, bottom sheet behaviors, or edge API integrations, **always inspect and follow `../lingua-tube`**.
-- **Shared Data & API Contracts**: Both apps share identical Cloudflare Edge APIs (`https://voca.study`), Supabase schemas (`https://edbkvzviqeulwzcnrrlb.supabase.co`), and grammar database structures.
+- **Design Reference (`../lingua-tube`)**: The original web application (`../lingua-tube`) serves as the visual identity, UX flow, and feature reference. Inspect its Angular components (`.component.html`, `.component.scss`) when building or styling features.
+- **Material 3 (M3) Mobile Framework**: Build with Google Material 3 (`ThemeData(useMaterial3: true)`), translating web concepts into native mobile M3 components ([Flutter Material Widgets](https://docs.flutter.dev/ui/widgets/material): `NavigationBar`, `FilledButton`, `SegmentedButton`, `FilterChip`, `Card`, `showModalBottomSheet`), styled with Voca design tokens. Do **not** create an inflexible 1:1 web DOM clone.
+- **Shared Backends**: Cloudflare Edge (`https://voca.study`) for linguistics/video APIs; Supabase (`https://edbkvzviqeulwzcnrrlb.supabase.co`) for auth and cloud sync.
 
-### Key Technologies
-- **Framework**: Flutter 3.47.x / Dart 3.13.x
-- **State Management**: `signals_flutter` (directly matching the Angular 19 Signal-first reactivity model)
-- **Networking**: `dio` (with mandatory anti-bot `User-Agent` and tokenization payload shaping)
-- **Video Playback**: `youtube_player_flutter: ^10.0.1` (backed by `youtube_player_iframe: ^6.0.2` and `webview_flutter`)
-- **Backend & Cloud Persistence**: Supabase (`https://edbkvzviqeulwzcnrrlb.supabase.co`) for Auth, Flashcards, Streaks, Playlists, and Watch History
-- **Offline Storage**: `hive_ce` / `hive_ce_flutter` for local caching and deterministic ID resolution
+### Key Tech Stack
+- **Framework**: Flutter 3.47.x / Dart 3.13.x | **UI**: Material 3 (`lib/config/voca_theme.dart`)
+- **State**: `signals_flutter` (matching Angular 19 Signals) | **HTTP**: `dio`
+- **Video**: `youtube_player_iframe: ^6.0.2` | **Storage**: `hive_ce` & Supabase
 
 ---
 
 ## 2. Critical Invariants (Non-Negotiable Rules)
 
-### ⚠️ RULE 1: Mandatory Anti-Bot User-Agent Header
-- The Cloudflare Pages edge (`https://voca.study`) strictly enforces Cloudflare bot protection. Generic Dart/HTTP scraper headers return HTTP 403 `{"error":"Access denied: automated requests not allowed","code":"BOT_DETECTED"}`.
-- Every outgoing HTTP request from `VocaApiClient` MUST include a valid mobile client User-Agent:
+### ⚠️ RULE 1: Follow Original App Design with Material 3 (M3)
+- Use standard Flutter M3 widgets (`NavigationBar`, `FilledButton`, `FilledButton.tonal`, `OutlinedButton`, `SegmentedButton`, `FilterChip`, `Card`, `showModalBottomSheet`, `SearchBar`).
+- Style components using Voca tokens in `lib/config/voca_theme.dart` (Radiant Coral `#FF6B82`, Rich Obsidian dark / Crisp Porcelain light, Nunito font, 5-tier level badges). Avoid generic unthemed purple defaults.
+- Adhere to mobile ergonomics: min 48x48dp touch targets, M3 state layers (ink ripples), and native sheets with drag handles.
+
+### ⚠️ RULE 2: Mandatory Anti-Bot User-Agent Header
+- Cloudflare Pages (`https://voca.study`) returns HTTP 403 `BOT_DETECTED` on generic/scraper headers.
+- Every outgoing request in `VocaApiClient` MUST include:
   ```dart
   'User-Agent': 'VocaMobile/1.0.0 (Android; Mobile)' // or iOS equivalent
   ```
 
-### ⚠️ RULE 2: YouTube Player Initialization & Embed Recovery
-- **No Hardcoded `key` in Controller**: Do NOT use `YoutubePlayerController.fromVideoId(videoId: ...)` or supply a non-null `key`. Doing so activates the internal `_PlayerLoadingOverlay` in `youtube_player_iframe`, which forces a static thumbnail image over the player at `opacity: 1.0` during `unStarted` states and blocks all user touch input.
-- **Always Initialize via Standard Controller**:
+### ⚠️ RULE 3: YouTube Player Initialization & Embed Recovery
+- **No hardcoded `key` in Controller**: Never pass a non-null `key` or use `YoutubePlayerController.fromVideoId()`. It activates `_PlayerLoadingOverlay`, trapping thumbnail opacity at 1.0 and blocking user touch input.
+- Always use the standard controller initialization:
   ```dart
   _ytController = YoutubePlayerController(
     params: const YoutubePlayerParams(
-      showControls: true,
-      showFullscreenButton: true,
-      mute: false,
-      enableCaption: false,
-      origin: 'https://www.youtube-nocookie.com',
+      showControls: true, showFullscreenButton: true, mute: false,
+      enableCaption: false, origin: 'https://www.youtube-nocookie.com',
       privacyEnhancedMode: true,
       userAgent: 'Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
     ),
   );
   _ytController.loadVideoById(videoId: widget.videoId);
   ```
-- **Error 150/152/101 Fallback**: Certain official music videos (e.g. Sony, Stone Music, avex) have syndication blocks that prevent third-party embedding. Always listen to `_ytController.listen((value) { ... })` and render a fallback banner with a **"Watch on YouTube"** button (`url_launcher`) so learners can study the transcript and vocabulary in Voca while watching externally.
+- **Error 150/152/101 Fallback**: For blocked music videos (syndication blocks), listen to controller events and render a fallback banner with a **"Watch on YouTube"** button (`url_launcher`).
 
-### ⚠️ RULE 3: Flexible Dictionary Model Deserialization
-- Upstream dictionary providers format example sentences differently:
-  - **Mazii (JA-VI)** returns string arrays: `examples: ["例文 (Dịch nghĩa)"]`.
-  - **Jotoba (JA-EN)** returns map arrays: `examples: [{"sentence": "...", "translation": "..."}]`.
-- In `lib/models/voca_models.dart`, `DictionaryEntry.fromJson` MUST handle both `e is Map` and `e is String`. Never cast `e as Map<String, dynamic>` unconditionally.
+### ⚠️ RULE 4: Flexible Dictionary Deserialization
+- Upstream providers format examples differently (`Mazii` returns `List<String>`, `Jotoba` returns `List<Map>`).
+- In `DictionaryEntry.fromJson`, inspect `e is Map` vs `e is String`. Never cast `e as Map<String, dynamic>` unconditionally.
 
-### ⚠️ RULE 4: Signal-First Reactivity with `signals_flutter`
-- Match the Angular 19 Signal architecture from `lingua-tube` using `signal()`, `computed()`, `effect()`, and `Watch((context) => ...)`.
-- Keep widgets clean, isolated, and reactive without unnecessary `setState()` cascades across global scope.
+### ⚠️ RULE 5: Signal-First Reactivity (`signals_flutter`)
+- Match Angular Signals using `signal()`, `computed()`, `effect()`, and `Watch((context) => ...)`.
+- Keep widgets granular and reactive; avoid sweeping global `setState()` cascades.
 
-### ⚠️ RULE 5: Deterministic Offline IDs (Cyrb53 Base36)
-- Client-side offline records (vocabulary cards, study logs) MUST generate deterministic remote IDs using Cyrb53 Base36:
+### ⚠️ RULE 6: Deterministic Offline IDs (Cyrb53 Base36)
+- Client-side offline records MUST generate deterministic remote IDs to prevent duplicate inserts:
   ```dart
   generateDeterministicRecordId([userId, word.toLowerCase(), language]);
-  // Cyrb53 Base36: base36(userId + '|' + word + '|' + lang).slice(0, 15)
   ```
-- This prevents duplicate records when syncing back to Supabase upon reconnection.
 
-### ⚠️ RULE 6: Sticky Subtitle Display Rule
-- Do NOT clear active subtitles immediately on brief timestamp gaps (< 3.0 seconds).
-- Subtitles must remain visible on screen until the next cue starts to ensure comfortable reading for learners.
+### ⚠️ RULE 7: Sticky Subtitle Display Rule
+- Maintain subtitle display across short gaps (< 3.0s). Do not blank the screen between rapid subtitle cues.
 
-### ⚠️ RULE 7: Two-Tier Dual Subtitle Streaming (< 200ms Seek Latency)
-- When seeking or starting playback, DO NOT block the UI waiting for whole-video translations.
-- **Tier 1 (Urgent seek micro-batch)**: Dispatch active cue + 2 lookahead cues (`cues[i..i+2]`) to `POST /api/translate/batch` (< 200ms display).
-- **Tier 2 (Progressive background stream)**: Stream remaining cues in batches of 40–60 items with exponential backoff on HTTP 429.
+### ⚠️ RULE 8: Two-Tier Dual Subtitle Streaming (< 200ms Seek)
+- On seek/start: immediately dispatch active cue + 2 lookahead cues to `POST /api/translate/batch` (< 200ms display).
+- Progressively stream remaining cues in 40–60 item background batches with exponential backoff on HTTP 429.
 
-### ⚠️ RULE 8: Subtitle Track Selection & Language Mismatch Handling
-- When `languageMismatch === true` (video captions exist only in an alternate language), present the Subtitle Track Picker sheet offering:
-  1. *Switch Target Language*: View captions in one of `availableLanguages.native`.
-  2. *Generate with AI*: Trigger Gladia ASR with `preferAI: true` and Turnstile CAPTCHA to transcribe audio into target learning language.
+### ⚠️ RULE 9: Subtitle Track Selection & Mismatch
+- If `languageMismatch == true`, present the Subtitle Track Picker: switch target language or generate with Gladia AI ASR (`preferAI: true` + Turnstile CAPTCHA).
 
-### ⚠️ RULE 9: Atomic Gamification & Streaks via Supabase RPC
-- For streak updates, NEVER do a client-side read-modify-write. Always call the atomic Postgres RPC:
+### ⚠️ RULE 10: Atomic Gamification & Streaks via Supabase RPC
+- Never read-modify-write streaks client-side. Always call the atomic Postgres RPC:
   ```dart
   await supabase.rpc('record_streak_activity', params: {
     'p_user_id': userId,
@@ -98,14 +84,51 @@ The original web application is located at `../lingua-tube` (`/Users/huyphan/Dow
   });
   ```
 
-### ⚠️ RULE 10: NO Autonomous Git Commits
-- AI agents **MUST NOT** run `git commit` autonomously unless the USER explicitly directs you to commit.
-- Keep all modifications in the working tree for review.
+### ⚠️ RULE 11: NO Autonomous Git Commits
+- AI agents **MUST NOT** run `git commit` autonomously unless the user explicitly directs it. Keep all changes in the working tree.
+
+### ⚠️ RULE 12: Modern Material 3 Packages & Dependency Compatibility
+- Use modern Material 3 APIs (`WidgetStateProperty` not deprecated `MaterialStateProperty`, `Color.withValues(alpha: ...)` not `withOpacity()`).
+- Keep `pubspec.yaml` dependencies updated and mutually compatible with Flutter 3.24+ / 3.47+ and Dart 3.x.
+- Verify with `flutter pub get` and `flutter analyze` (0 errors, 0 deprecations).
 
 ---
 
-## 3. Fast Verification Checklist
-Before completing any task in `voca_flutter`:
-1. Run `flutter analyze` $\rightarrow$ must report **0 issues**.
-2. Run `flutter test` $\rightarrow$ all tests must pass.
-3. Check `git status` $\rightarrow$ ensure no unintended files or binaries were generated.
+## 3. Design System & Component Guidelines
+
+All design tokens are centralized in `lib/config/voca_theme.dart`:
+- **Color Palette**: Obsidian Dark (`#0D0F14`) & Crisp Porcelain Light (`#F3F4F7`), Radiant Coral accent (`#FF6B82`), Mint grammar (`#10B981`), Flame streak (`#EA580C`), Sky AI diamond (`#38BDF8`).
+- **Typography Scale**: `Nunito` for UI text; `Kosugi Maru` / `Noto Sans JP` (JA), `Noto Sans SC` (ZH), `Noto Sans KR` (KO) for CJK.
+- **Educational Badges**: 5-tier level badges (Beginner, Elementary, Intermediate, Upper, Advanced) via `LevelColorInfo.forLevel(level, isDark: ...)`.
+- **Key M3 Component Patterns**:
+  - **Search**: `SearchBar` or pill container (`StadiumBorder`, `44px` height).
+  - **Player & Controls**: `AspectRatio(16/9)`, overlay gestures (double-tap `±5s/10s` seek), M3 `IconButton`.
+  - **Interactive Subtitles**: Ruby furigana/pinyin above tokens, tappable words with M3 touch ripples, grammar highlights.
+  - **Sheets (Dict/Grammar)**: `showModalBottomSheet` (`showDragHandle: true`, `20dp` top radius, `bgCard` surface).
+  - **Study Deck**: Perspective 3D flip card (`Transform` with `Matrix4`), SM-2 4-button grading dock (`Again`, `Hard`, `Good`, `Easy`).
+  - **Bottom Navigation**: M3 `NavigationBar` (`80dp` height, stadium pill active indicator).
+
+---
+
+## 4. Key References & Documentation Map
+
+- **Flutter Material 3 Catalog**: [docs.flutter.dev/ui/widgets/material](https://docs.flutter.dev/ui/widgets/material) (Official M3 component reference)
+- **Detailed Architecture & Signals**: [doc/architecture.md](./doc/architecture.md)
+- **Edge API & Supabase Specs**: [doc/api-integration.md](./doc/api-integration.md) & [lib/services/voca_api_client.dart](./lib/services/voca_api_client.dart)
+- **Features (Subtitles, Grammar, SRS)**: [doc/features.md](./doc/features.md)
+- **Design Tokens & Theme Source**: [lib/config/voca_theme.dart](./lib/config/voca_theme.dart)
+- **Development & Emulator Setup**: [doc/development-guide.md](./doc/development-guide.md)
+
+---
+
+## 5. Development & Verification Workflow
+
+1. **Review**: Inspect matching Angular component in `../lingua-tube` for layout and UX intent.
+2. **Implement**: Build idiomatic Material 3 Flutter widgets using `package:flutter/material.dart` styled with `voca_theme.dart`.
+3. **Reactivity**: Bind state using `signals_flutter` (`signal()`, `computed()`, `Watch`).
+4. **Verify**:
+   ```bash
+   flutter pub get
+   flutter analyze   # Must report 0 issues
+   flutter test      # All tests must pass
+   ```

@@ -5,7 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../config/voca_theme.dart';
 import 'staggered_entrance.dart';
 
-/// Circular flag from `assets/flags/*.svg`.
+/// Circular flag from `assets/flags/*.svg` rendered seamlessly without outer borders.
 class RoundFlag extends StatelessWidget {
   final String asset;
   final double size;
@@ -15,20 +15,19 @@ class RoundFlag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    return Container(
+    return SizedBox(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: colors.borderColor, width: 1),
-      ),
       child: ClipOval(
         child: SvgPicture.asset(
           asset,
           width: size,
           height: size,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => ColoredBox(color: colors.bgSurface),
+          errorBuilder: (_, __, ___) => ColoredBox(
+            color: colors.bgSurface,
+            child: Icon(Icons.language_rounded, size: size * 0.55, color: colors.textMuted),
+          ),
         ),
       ),
     );

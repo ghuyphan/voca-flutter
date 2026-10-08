@@ -80,12 +80,13 @@ class _StudyDeckScreenState extends State<StudyDeckScreen> {
               }
 
               // 2. Session Complete State (Celebration & Recap)
-              if (_controller.isFinished) {
+              if (_controller.isSessionActive.value && _controller.isFinished) {
                 return SessionRecap(
                   stats: _controller.sessionStats.value,
-                  onFinish: () {
-                    _controller.exitToOverview();
-                  },
+                  onDone: () => _controller.exitToOverview(),
+                  onFinish: () => _controller.exitToOverview(),
+                  onClose: () => _controller.exitToOverview(),
+                  onKeepGoing: () => _controller.startNextBatch(),
                   onReviewAgain: _controller.sessionStats.value.againOrHardCount > 0
                       ? () => _controller.restartFailedCards()
                       : null,
@@ -97,7 +98,9 @@ class _StudyDeckScreenState extends State<StudyDeckScreen> {
               if (!_controller.isSessionActive.value || currentCard == null || _controller.sessionCards.value.isEmpty) {
                 return DeckOverview(
                   controller: _controller,
-                  onStartSession: () => _controller.startSession(),
+                  onStartSession: () => _controller.startSession(
+                    practiceAnyway: _controller.sessionCardsCount == 0,
+                  ),
                   onStartDueOnlySession: () => _controller.startSession(dueOnlyMode: true),
                   onExploreVideos: widget.onNavigateToExplore,
                 );
@@ -107,36 +110,22 @@ class _StudyDeckScreenState extends State<StudyDeckScreen> {
 
               return Column(
                 children: [
-                  // Top Anki HUD Row with Exit to Overview Button
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4, right: 8, top: 4),
-                    child: Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.close_rounded, size: 22),
-                          color: colors.textSecondary,
-                          tooltip: 'Exit to Overview',
-                          onPressed: () => _controller.exitToOverview(),
-                        ),
-                        Expanded(
-                          child: AnkiHudHeader(
-                            activeLanguage: activeLang,
-                            subDeck: _controller.subDeck.value,
-                            newCount: _controller.newCount.value,
-                            learningCount: _controller.learningCount.value,
-                            dueCount: _controller.dueCount.value,
-                            currentIndex: _controller.currentIndex.value,
-                            totalInSession: _controller.sessionCards.value.length,
-                            combo: _controller.currentCombo.value,
-                            onOpenDeckSettings: _openDeckSettings,
-                          ),
-                        ),
-                      ],
-                    ),
+                  // Top Anki HUD with integrated Exit and Undo Buttons
+                  AnkiHudHeader(
+                    activeLanguage: activeLang,
+                    subDeck: _controller.subDeck.value,
+                    newCount: _controller.newCount.value,
+                    learningCount: _controller.learningCount.value,
+                    dueCount: _controller.dueCount.value,
+                    currentIndex: _controller.currentIndex.value,
+                    totalInSession: _controller.initialQueueSize.value > 0
+                        ? _controller.initialQueueSize.value
+                        : _controller.sessionCards.value.length,
+                    combo: _controller.currentCombo.value,
+                    onOpenDeckSettings: _openDeckSettings,
+                    onExit: () => _controller.exitToOverview(),
+                    onUndo: _controller.canUndo ? () => _controller.undoLastRating() : null,
                   ),
-
-                  // Transient Feedback Pill (e.g. GOOD · KNOWN · 3d)
-                  _buildTransientFeedbackPill(colors),
 
                   // Center Tinder Multi-Card Stack
                   Expanded(
@@ -149,30 +138,25 @@ class _StudyDeckScreenState extends State<StudyDeckScreen> {
                         cardAfterNext: _controller.cardAfterNext,
                         isRevealed: _controller.isCardRevealed.value,
                         isReadingPeeked: _controller.isReadingPeeked.value,
-                        againInterval: '<10m',
+                        againInterval: '<1 min',
                         hardInterval: intervals.hard,
                         goodInterval: intervals.good,
                         easyInterval: intervals.easy,
                         onSwipe: (rating) => _controller.rateCurrentCard(rating),
                         onToggleFlip: () => _controller.toggleReveal(),
                         onTogglePeekReading: () => _controller.toggleReadingPeek(),
-                        onMarkAsKnown: () => _controller.markCurrentCardAsKnown(),
                       ),
                     ),
                   ),
 
-                  // Bottom Tinder Action Dock
+                  // Bottom 4-Button SRS Action Dock matching screenshot
                   TinderActionDock(
-                    canUndo: _controller.canUndo,
-                    isRevealed: _controller.isCardRevealed.value,
-                    againInterval: '<10m',
+                    againInterval: '<1 min',
                     hardInterval: intervals.hard,
                     goodInterval: intervals.good,
                     easyInterval: intervals.easy,
-                    onUndo: () => _controller.undoLastRating(),
                     onAgain: () => _stackController.swipeLeft(),
                     onHard: () => _stackController.swipeDown(),
-                    onFlip: () => _stackController.flipCard(),
                     onGood: () => _stackController.swipeRight(),
                     onEasy: () => _stackController.swipeUp(),
                   ),
@@ -212,46 +196,6 @@ class _StudyDeckScreenState extends State<StudyDeckScreen> {
       hard: SpacedRepetitionService.formatInterval(resHard.interval),
       good: SpacedRepetitionService.formatInterval(resGood.interval),
       easy: SpacedRepetitionService.formatInterval(resEasy.interval),
-    );
-  }
-
-  Widget _buildTransientFeedbackPill(VocaColorPalette colors) {
-    final feedback = _controller.lastRatingFeedback.value;
-    final color = feedback != null
-        ? switch (feedback.rating) {
-            SRSReviewRating.again => colors.error,
-            SRSReviewRating.hard => colors.warning,
-            SRSReviewRating.good => colors.colorGrammar,
-            SRSReviewRating.easy => colors.accentSecondary,
-          }
-        : null;
-
-    return SizedBox(
-      height: 22,
-      child: Center(
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 180),
-          child: feedback != null && color != null
-              ? Container(
-                  key: ValueKey('${feedback.rating.name}_${feedback.interval}'),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.15),
-                    borderRadius: VocaRadius.roundedPill,
-                    border: Border.all(color: color.withValues(alpha: 0.4), width: 1),
-                  ),
-                  child: Text(
-                    '${feedback.label}  •  ${feedback.newLevel} (${feedback.interval})',
-                    style: TextStyle(
-                      color: color,
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                )
-              : const SizedBox.shrink(),
-        ),
-      ),
     );
   }
 }

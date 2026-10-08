@@ -502,9 +502,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.black.withOpacity(0.75),
+                        Colors.black.withValues(alpha: 0.75),
                         Colors.transparent,
-                        Colors.black.withOpacity(0.85),
+                        Colors.black.withValues(alpha: 0.85),
                       ],
                       stops: const [0.0, 0.45, 1.0],
                     ),
@@ -757,7 +757,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         },
         onVerticalDragCancel: () => _accumulatedDragDown = 0.0,
         child: Container(
-          color: colors.bgCard,
+          color: const Color(0xFF0D0F14),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           child: Stack(
             children: [
@@ -767,7 +767,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                 child: IconButton(
                   icon: Icon(
                     isFullscreen ? Icons.arrow_back_rounded : Icons.keyboard_arrow_down_rounded,
-                    color: colors.textPrimary,
+                    color: Colors.white,
                     size: isFullscreen ? 24 : 28,
                   ),
                   tooltip: isFullscreen
@@ -784,14 +784,14 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                   children: [
                     Icon(
                       icon,
-                      color: colors.accentTertiary,
+                      color: colors.accentPrimary,
                       size: 32,
                     ),
                     const SizedBox(height: 6),
                     Text(
                       title,
-                      style: TextStyle(
-                        color: colors.textPrimary,
+                      style: const TextStyle(
+                        color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 13.5,
                       ),
@@ -800,8 +800,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                     const SizedBox(height: 4),
                     Text(
                       description,
-                      style: TextStyle(
-                        color: colors.textSecondary,
+                      style: const TextStyle(
+                        color: Colors.white70,
                         fontSize: 11,
                         height: 1.3,
                       ),
@@ -816,77 +816,39 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                       alignment: WrapAlignment.center,
                       children: [
                         if (!isRestricted && !isUnavailable)
-                          Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: () {
-                                setState(() {
-                                  _playerError = null;
-                                });
-                                _ytController.loadVideoById(videoId: widget.videoId);
-                              },
-                              borderRadius: VocaRadius.roundedSm,
-                              child: Ink(
-                                height: 32,
-                                padding: const EdgeInsets.symmetric(horizontal: 12),
-                                decoration: BoxDecoration(
-                                  color: colors.accentPrimary,
-                                  borderRadius: VocaRadius.roundedSm,
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.refresh_rounded, size: 14, color: Colors.white),
-                                    const SizedBox(width: 5),
-                                    Text(
-                                      context.t('player.retry', null, 'Retry'),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                          FilledButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                _playerError = null;
+                              });
+                              _ytController.loadVideoById(videoId: widget.videoId);
+                            },
+                            icon: const Icon(Icons.refresh_rounded, size: 14),
+                            label: Text(context.t('player.retry', null, 'Thử lại')),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: colors.accentPrimary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              minimumSize: const Size(0, 34),
+                              shape: const StadiumBorder(),
+                              textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                             ),
                           ),
-                        Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () => launchUrl(
-                              Uri.parse('https://www.youtube.com/watch?v=${widget.videoId}'),
-                              mode: LaunchMode.externalApplication,
-                            ),
-                            borderRadius: VocaRadius.roundedSm,
-                            child: Ink(
-                              height: 32,
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
-                              decoration: BoxDecoration(
-                                color: isRestricted ? colors.accentPrimary : colors.bgHover,
-                                borderRadius: VocaRadius.roundedSm,
-                                border: isRestricted ? null : Border.all(color: colors.borderColor),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.open_in_new_rounded,
-                                    size: 13,
-                                    color: isRestricted ? Colors.white : colors.textPrimary,
-                                  ),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    context.t('player.watchOnYouTube', null, 'Watch on YouTube'),
-                                    style: TextStyle(
-                                      color: isRestricted ? Colors.white : colors.textPrimary,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                        OutlinedButton.icon(
+                          onPressed: () => launchUrl(
+                            Uri.parse('https://www.youtube.com/watch?v=${widget.videoId}'),
+                            mode: LaunchMode.externalApplication,
+                          ),
+                          icon: const Icon(Icons.open_in_new_rounded, size: 14, color: Colors.white),
+                          label: Text(
+                            context.t('player.watchOnYouTube', null, 'Xem trên YouTube'),
+                            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Colors.white38),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            minimumSize: const Size(0, 34),
+                            shape: const StadiumBorder(),
                           ),
                         ),
                       ],

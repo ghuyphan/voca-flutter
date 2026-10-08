@@ -734,7 +734,29 @@
     "less": "Ít",
     "more": "Nhiều",
     "tapDayToView": "Nhấn vào ngày để xem chi tiết",
-    "stageMastered": "Thành thạo"
+    "stageMastered": "Thành thạo",
+    "allDone": "Đã hoàn thành tất cả thẻ hôm nay! 🎉",
+    "startReview": "Bắt đầu ôn tập",
+    "exploreVideos": "Khám phá video để thêm từ mới",
+    "items": "thẻ",
+    "heatmapReviewed": "Đã ôn tập",
+    "heatmapRestDay": "Ngày nghỉ",
+    "markKnownShort": "Đã thuộc",
+    "memory": "Ghi nhớ",
+    "settingsTitle": "Cấu hình bộ thẻ",
+    "exitToOverview": "Thoát ra tổng quan",
+    "deckSettings": "Cài đặt bộ thẻ",
+    "flip": "Lật",
+    "contentType": "LOẠI NỘI DUNG",
+    "allTypes": "Tất cả",
+    "wordsOnly": "Chỉ từ vựng",
+    "grammarOnly": "Chỉ ngữ pháp",
+    "batchSize": "SỐ LƯỢNG MỖI ĐỢT",
+    "cardsCount": "{{count}} thẻ",
+    "reviewDueOnly": "Chỉ ôn thẻ đến hạn",
+    "reviewDueOnlyDesc": "Chỉ học chính xác các thẻ được thuật toán SM-2 lên lịch hôm nay",
+    "deckMasteryStatus": "TRẠNG THÁI THÀNH THẠO BỘ THẺ (TỔNG {{total}})",
+    "applyAndStart": "Áp dụng & Bắt đầu"
   },
   "streak": {
     "dayStreak": "Chuỗi ngày học",
@@ -981,7 +1003,8 @@
     "save": "Lưu",
     "remove": "Xóa",
     "delete": "Xóa",
-    "apply": "Áp dụng"
+    "apply": "Áp dụng",
+    "next": "Câu tiếp theo"
   },
   "onboarding": {
     "welcomeTitle": "Chào mừng đến với Voca",
@@ -1166,7 +1189,10 @@
         "text": "Let's master languages together",
         "translation": "Cùng nhau chinh phục ngôn ngữ nào!"
       }
-    }
+    },
+    "perkSovereign": "Bá Vương Ngôn Ngữ: Kích hoạt đồng thời Phụ Đề Song Ngữ và Phân Tích Ngữ Pháp!",
+    "passivePerk": "Nội Tại Đặc Biệt",
+    "companionPerksGuide": "Đặc Quyền Đồng Hành"
   },
   "quiz": {
     "dictation": "Nghe chép chính tả",
@@ -1346,7 +1372,8 @@
     "diamond": "Kim cương",
     "streak": "Chuỗi ngày",
     "polyglotScholar": "Học giả đa ngôn ngữ",
-    "totalXp": "Tổng XP"
+    "totalXp": "Tổng XP",
+    "earnedXp": "Điểm kinh nghiệm ôn tập"
   },
   "leaderboard": {
     "title": "Bảng xếp hạng toàn cầu",
@@ -1698,7 +1725,8 @@
     "savedToBookmarks": "Đã lưu \"{{title}}\" vào dấu trang",
     "searchOnYouTube": "Tìm trên YouTube",
     "noSearchVideosDesc": "Không tìm thấy video nào cho \"{{query}}\" trong thư viện học. Bạn có thể tìm trên YouTube hoặc dán link YouTube bất kỳ để học ngay.",
-    "noFilterVideosDesc": "Không có video nào phù hợp với bộ lọc hiện tại."
+    "noFilterVideosDesc": "Không có video nào phù hợp với bộ lọc hiện tại.",
+    "applyFilters": "Áp dụng"
   },
   "flashcards": {
     "again": "Chưa nhớ",

@@ -716,7 +716,42 @@
     "less": "少",
     "more": "多",
     "tapDayToView": "点击查看详情",
-    "stageMastered": "已掌握"
+    "stageMastered": "已掌握",
+    "allDone": "今日卡片已全部完成！🎉",
+    "startReview": "开始复习",
+    "exploreVideos": "浏览视频获取新词",
+    "items": "项",
+    "heatmapReviewed": "已复习",
+    "heatmapRestDay": "休息日",
+    "due": "待复习",
+    "selectMode": "选择学习模式",
+    "allCaughtUpDesc": "当前没有待复习的卡片。",
+    "practiceAnyway": "提前复习",
+    "undo": "撤销",
+    "tapToFlip": "点击翻转",
+    "markKnown": "标记为已掌握",
+    "markedKnownSuccess": "已标记为已掌握！",
+    "overview": "卡组概览",
+    "listenPronunciation": "听发音",
+    "repetitionCount": "第{{count}}次复习",
+    "clozeRevealedHint": "请在下方评价记忆程度",
+    "clozeTapHint": "点击卡片查看单词与语境",
+    "markKnownShort": "已掌握",
+    "memory": "记忆保留",
+    "settingsTitle": "卡组配置",
+    "exitToOverview": "退出至概览",
+    "deckSettings": "卡组设置",
+    "flip": "翻面",
+    "contentType": "内容类型",
+    "allTypes": "全部",
+    "wordsOnly": "仅生词",
+    "grammarOnly": "仅语法",
+    "batchSize": "每组卡片数",
+    "cardsCount": "{{count}}张",
+    "reviewDueOnly": "仅复习到期卡片",
+    "reviewDueOnlyDesc": "严格按 SM-2 算法复习今天到期的卡片",
+    "deckMasteryStatus": "卡片掌握状态 (共{{total}}张)",
+    "applyAndStart": "应用并开始"
   },
   "streak": {
     "dayStreak": "连续打卡",
@@ -963,7 +998,8 @@
     "save": "保存",
     "remove": "移除",
     "delete": "删除",
-    "apply": "应用"
+    "apply": "应用",
+    "next": "下一题"
   },
   "onboarding": {
     "welcomeTitle": "欢迎使用 Voca",
@@ -1133,7 +1169,27 @@
         "text": "Let's master languages together",
         "translation": "让我们一起精通多门语言！"
       }
-    }
+    },
+    "companionGuide": "伴学导师: {{name}}",
+    "dualSubtitlesOff": "单语字幕",
+    "dualSubtitlesOn": "双语字幕",
+    "minutesPerDay": "{{minutes}}分钟/天",
+    "starterBonusTitle": "新手学习礼包",
+    "updatePlanTitle": "查看并保存目标",
+    "updatePlanSubtitle": "更新后的学习偏好",
+    "recalibrationTitle": "已更新偏好设置",
+    "recalibration": {
+      "level": "已更新等级",
+      "levelDesc": "重新校准视频推荐难度",
+      "subtitles": "字幕模式",
+      "subtitlesDesc": "已应用字幕翻译偏好",
+      "goal": "每日习惯",
+      "goalDesc": "已更新每日学习目标",
+      "companion": "伴学导师",
+      "companionDesc": "已校准伴学助手"
+    },
+    "passivePerk": "专属被动特性",
+    "companionPerksGuide": "导师特性指南"
   },
   "quiz": {
     "dictation": "听写",
@@ -1313,7 +1369,8 @@
     "diamond": "钻石",
     "streak": "连续学习",
     "polyglotScholar": "博学语言学者",
-    "totalXp": "总经验值 XP"
+    "totalXp": "总经验值 XP",
+    "earnedXp": "获得学习奖励"
   },
   "leaderboard": {
     "title": "全球排行榜",
@@ -1665,7 +1722,8 @@
     "savedToBookmarks": "已将\"{{title}}\"保存到书签",
     "searchOnYouTube": "在 YouTube 搜索",
     "noSearchVideosDesc": "未在曲库中找到与“{{query}}”匹配的沉浸视频。你可以在 YouTube 上搜索或直接粘贴任意 YouTube 链接。",
-    "noFilterVideosDesc": "所选筛选条件下未找到视频。"
+    "noFilterVideosDesc": "所选筛选条件下未找到视频。",
+    "applyFilters": "应用筛选"
   },
   "flashcards": {
     "again": "没记住",
@@ -1698,7 +1756,10 @@
       "flashcard": "闪卡",
       "cloze": "填空题",
       "quiz": "测验"
-    }
+    },
+    "reviewAgainCount": "再次复习 ({{count}})",
+    "clozeTest": "填空测验",
+    "quizMode": "测验模式"
   },
   "practice": {
     "title": "沉浸式练习",

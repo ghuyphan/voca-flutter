@@ -7,7 +7,7 @@ import '../models/onboarding_models.dart';
 import '../widgets/onboarding_primitives.dart';
 import '../widgets/pressable_scale.dart';
 
-/// Step 3: Difficulty ladder & daily study habit commitment.
+/// Step 2: Difficulty ladder & daily study habit commitment.
 class LevelGoalStep extends StatelessWidget {
   final String learningLanguage;
   final String selectedLevel;
@@ -30,7 +30,7 @@ class LevelGoalStep extends StatelessWidget {
     final isDark = context.isDark;
 
     return OnboardingStepLayout(
-      title: context.t('onboarding.chooseLevel', null, 'Calibrate Your Rank'),
+      title: context.t('onboarding.chooseLevel', null, 'Choose your level'),
       subtitle: context.t(
         'onboarding.levelSubtitle',
         null,
@@ -51,7 +51,7 @@ class LevelGoalStep extends StatelessWidget {
             ),
           ),
 
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
 
         // Section: Daily Habit Pact
         SectionLabel(
@@ -122,7 +122,7 @@ class _LevelRungTile extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isSelected ? levelColors.border : colors.borderColor,
-              width: isSelected ? 1.8 : 1.0,
+              width: isSelected ? 1.6 : 1.0,
             ),
           ),
           child: Row(
@@ -208,10 +208,16 @@ class _DailyGoalPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizedLabel = context.t(
+      'onboarding.minutesPerDay',
+      {'minutes': option.minutes},
+      '${option.minutes} min/day',
+    );
+
     return Semantics(
       button: true,
       selected: isSelected,
-      label: '${option.minutes} minutes per day',
+      label: localizedLabel,
       child: PressableScale(
         onTap: onTap,
         pressedScale: 0.95,
@@ -259,7 +265,9 @@ class _DailyGoalPill extends StatelessWidget {
                 style: TextStyle(
                   color: isSelected
                       ? colors.colorFire
-                      : (option.isRecommended ? colors.accentPrimary : colors.textTertiary),
+                      : (option.isRecommended
+                          ? colors.accentPrimary
+                          : colors.textTertiary),
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.4,

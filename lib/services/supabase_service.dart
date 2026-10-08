@@ -101,25 +101,36 @@ class SupabaseService {
   /// 1. Vocabulary / Flashcards Sync
   Future<List<Flashcard>> getVocabularyCards({String? language}) async {
     final user = currentUser;
+    final targetLang = language?.trim().toLowerCase();
     if (user != null) {
       try {
         var query = client.from('vocabulary').select().eq('user_id', user.id);
-        if (language != null) {
-          query = query.eq('language', language);
+        if (targetLang != null) {
+          query = query.eq('language', targetLang);
         }
         final data = await query.order('next_review_date', ascending: true);
-        final list = (data as List).map((row) => Flashcard.fromJson(Map<String, dynamic>.from(row as Map))).toList();
-        if (list.isNotEmpty) {
-          if (language != null) {
-            _localCards.removeWhere((c) => c.language == language);
-            _localCards.addAll(list);
-          } else {
-            _localCards.clear();
-            _localCards.addAll(list);
-          }
-          await _saveCardsToLocal(_localCards);
-          return list;
+        final rawList = (data as List).map((row) => Flashcard.fromJson(Map<String, dynamic>.from(row as Map))).toList();
+        final list = deduplicateCards(rawList).where((c) {
+          if (targetLang == null) return true;
+          final l = c.language.trim().toLowerCase();
+          return l == targetLang || l.startsWith('$targetLang-') || targetLang.startsWith('$l-');
+        }).toList();
+
+        if (targetLang != null) {
+          _localCards.removeWhere((c) {
+            final l = c.language.trim().toLowerCase();
+            return l == targetLang || l.startsWith('$targetLang-') || targetLang.startsWith('$l-');
+          });
+          _localCards.addAll(list);
+        } else {
+          _localCards.clear();
+          _localCards.addAll(list);
         }
+        final cleanLocal = deduplicateCards(_localCards);
+        _localCards.clear();
+        _localCards.addAll(cleanLocal);
+        await _saveCardsToLocal(_localCards);
+        return list;
       } catch (e) {
         debugPrint('[SupabaseService] Remote fetch error, falling back to local: $e');
       }
@@ -132,8 +143,17 @@ class SupabaseService {
         _localCards.addAll(cached);
       }
     }
-    if (language != null) {
-      return _localCards.where((c) => c.language == language).toList();
+    final cleanLocal = deduplicateCards(_localCards);
+    if (cleanLocal.length != _localCards.length) {
+      _localCards.clear();
+      _localCards.addAll(cleanLocal);
+      await _saveCardsToLocal(_localCards);
+    }
+    if (targetLang != null) {
+      return _localCards.where((c) {
+        final l = c.language.trim().toLowerCase();
+        return l == targetLang || l.startsWith('$targetLang-') || targetLang.startsWith('$l-');
+      }).toList();
     }
     return List.from(_localCards);
   }
@@ -159,13 +179,21 @@ class SupabaseService {
   }
 
   Future<void> upsertVocabularyCard(Flashcard card) async {
-    // 1. Update local cache
-    final idx = _localCards.indexWhere((c) => c.id == card.id);
+    // 1. Update local cache (match by ID or word+language to prevent duplicate cards)
+    final cleanWord = card.word.trim().toLowerCase();
+    final cleanLang = card.language.trim().toLowerCase();
+    final idx = _localCards.indexWhere((c) =>
+        c.id == card.id ||
+        (c.word.trim().toLowerCase() == cleanWord &&
+            c.language.trim().toLowerCase() == cleanLang));
     if (idx >= 0) {
       _localCards[idx] = card;
     } else {
       _localCards.add(card);
     }
+    final cleanLocal = deduplicateCards(_localCards);
+    _localCards.clear();
+    _localCards.addAll(cleanLocal);
     await _saveCardsToLocal(_localCards);
 
     final user = currentUser;
@@ -199,7 +227,7 @@ class SupabaseService {
 
   Future<void> replaceLocalCards(List<Flashcard> cards) async {
     _localCards.clear();
-    _localCards.addAll(cards);
+    _localCards.addAll(deduplicateCards(cards));
     await _saveCardsToLocal(_localCards);
   }
 
@@ -219,19 +247,47 @@ class SupabaseService {
       final jsonStr = prefs.getString('voca_local_flashcards');
       if (jsonStr == null) return [];
       final List<dynamic> list = jsonDecode(jsonStr);
+      final currentUserId = currentUser?.id ?? 'guest';
       final rawCards = list
           .map((e) => Flashcard.fromJson(Map<String, dynamic>.from(e as Map)))
+          .where((c) => c.userId == currentUserId && !c.id.startsWith('sample_') && !c.id.startsWith('mock_'))
           .toList();
-      final cleanCards = rawCards
-          .where((c) => !c.id.startsWith('sample_'))
-          .toList();
-      if (cleanCards.length != rawCards.length) {
+
+      final cleanCards = deduplicateCards(rawCards);
+      if (cleanCards.length != list.length) {
         await _saveCardsToLocal(cleanCards);
       }
       return cleanCards;
     } catch (_) {
       return [];
     }
+  }
+
+  static List<Flashcard> deduplicateCards(List<Flashcard> cards) {
+    final Map<String, Flashcard> deduped = {};
+    for (final c in cards) {
+      final key = '${c.language.trim().toLowerCase()}:${c.word.trim().toLowerCase()}';
+      final existing = deduped[key];
+      if (existing == null) {
+        deduped[key] = c;
+      } else {
+        final cRank = levelRank(c.level);
+        final existRank = levelRank(existing.level);
+        if (cRank > existRank || (cRank == existRank && c.srsRepetition > existing.srsRepetition)) {
+          deduped[key] = c;
+        }
+      }
+    }
+    return deduped.values.toList();
+  }
+
+  static int levelRank(String level) {
+    return switch (level.toLowerCase().trim()) {
+      'mastered' => 3,
+      'known' => 2,
+      'learning' => 1,
+      _ => 0,
+    };
   }
 
   /// 2. Atomic Streak Recording via RPC

@@ -716,7 +716,42 @@
     "less": "적음",
     "more": "많음",
     "tapDayToView": "탭하여 세부정보 확인",
-    "stageMastered": "마스터"
+    "stageMastered": "마스터",
+    "allDone": "오늘의 카드를 모두 완료했습니다! 🎉",
+    "startReview": "복습 시작",
+    "exploreVideos": "동영상에서 새로운 단어 찾기",
+    "items": "개",
+    "heatmapReviewed": "복습 완료",
+    "heatmapRestDay": "휴식일",
+    "due": "복습 대기",
+    "selectMode": "학습 모드 선택",
+    "allCaughtUpDesc": "지금 복습할 카드가 없습니다.",
+    "practiceAnyway": "미리 복습하기",
+    "undo": "실행 취소",
+    "tapToFlip": "탭하여 뒤집기",
+    "markKnown": "학습 완료로 표시",
+    "markedKnownSuccess": "학습 완료로 등록되었습니다!",
+    "overview": "덱 개요",
+    "listenPronunciation": "발음 듣기",
+    "repetitionCount": "복습 {{count}}회차",
+    "clozeRevealedHint": "기억도를 평가해 주세요",
+    "clozeTapHint": "탭하여 단어와 문맥 확인",
+    "markKnownShort": "알고 있음",
+    "memory": "기억도",
+    "settingsTitle": "덱 설정",
+    "exitToOverview": "개요로 나가기",
+    "deckSettings": "덱 설정",
+    "flip": "뒤집기",
+    "contentType": "콘텐츠 유형",
+    "allTypes": "모두",
+    "wordsOnly": "단어만",
+    "grammarOnly": "문법만",
+    "batchSize": "배치 크기",
+    "cardsCount": "{{count}}장",
+    "reviewDueOnly": "오늘 복습할 카드만",
+    "reviewDueOnlyDesc": "오늘 SM-2 알고리즘으로 예약된 카드만 학습합니다",
+    "deckMasteryStatus": "덱 숙련도 현황 (총 {{total}}개)",
+    "applyAndStart": "적용 및 시작"
   },
   "streak": {
     "dayStreak": "일 연속 학습",
@@ -963,7 +998,8 @@
     "save": "저장",
     "remove": "삭제",
     "delete": "삭제",
-    "apply": "적용"
+    "apply": "적용",
+    "next": "다음 문제"
   },
   "onboarding": {
     "welcomeTitle": "Voca에 오신 것을 환영합니다",
@@ -1133,7 +1169,27 @@
         "text": "Let's master languages together",
         "translation": "함께 언어를 마스터해요!"
       }
-    }
+    },
+    "companionGuide": "가이드: {{name}}",
+    "dualSubtitlesOff": "단일 자막",
+    "dualSubtitlesOn": "이중 자막",
+    "minutesPerDay": "{{minutes}}분/일",
+    "starterBonusTitle": "신규 학습자 스타터 팩",
+    "updatePlanTitle": "학습 목표 확인 및 저장",
+    "updatePlanSubtitle": "업데이트된 맞춤 설정",
+    "recalibrationTitle": "설정 업데이트",
+    "recalibration": {
+      "level": "업데이트된 레벨",
+      "levelDesc": "수준에 맞는 영상 추천",
+      "subtitles": "자막 모드",
+      "subtitlesDesc": "자막 번역 설정 적용",
+      "goal": "일일 학습 목표",
+      "goalDesc": "학습 목표 시간 업데이트",
+      "companion": "동반자 가이드",
+      "companionDesc": "학습 파트너 설정 완료"
+    },
+    "passivePerk": "패시브 특성",
+    "companionPerksGuide": "동반자 특성 안내"
   },
   "quiz": {
     "dictation": "받아쓰기",
@@ -1313,7 +1369,8 @@
     "diamond": "다이아몬드",
     "streak": "연속 학습",
     "polyglotScholar": "다국어 학자",
-    "totalXp": "총 XP"
+    "totalXp": "총 XP",
+    "earnedXp": "학습 보너스 획득"
   },
   "leaderboard": {
     "title": "글로벌 랭킹",
@@ -1665,7 +1722,8 @@
     "savedToBookmarks": "\"{{title}}\" 북마크에 저장되었습니다",
     "searchOnYouTube": "YouTube에서 검색",
     "noSearchVideosDesc": "\"{{query}}\"에 대한 동영상을 찾을 수 없습니다. YouTube에서 검색하거나 YouTube 링크를 직접 붙여넣어 보세요.",
-    "noFilterVideosDesc": "선택한 필터와 일치하는 동영상이 없습니다."
+    "noFilterVideosDesc": "선택한 필터와 일치하는 동영상이 없습니다.",
+    "applyFilters": "필터 적용"
   },
   "flashcards": {
     "again": "다시",
@@ -1698,7 +1756,10 @@
       "flashcard": "플래시카드",
       "cloze": "빈칸 채우기",
       "quiz": "퀴즈"
-    }
+    },
+    "reviewAgainCount": "다시 복습 ({{count}})",
+    "clozeTest": "빈칸 채우기 퀴즈",
+    "quizMode": "퀴즈 모드"
   },
   "practice": {
     "title": "몰입 학습 연습",

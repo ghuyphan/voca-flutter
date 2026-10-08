@@ -150,7 +150,7 @@ class VideoLevelSheet extends StatelessWidget {
               border: Border.all(color: colorInfo.border, width: 1.5),
               boxShadow: [
                 BoxShadow(
-                  color: colorInfo.bg.withOpacity(0.5),
+                  color: colorInfo.bg.withValues(alpha: 0.5),
                   blurRadius: 16,
                   spreadRadius: 2,
                 ),
@@ -189,7 +189,7 @@ class VideoLevelSheet extends StatelessWidget {
               borderRadius: BorderRadius.circular(999),
               border: Border.all(
                 color: _isLinguistic
-                    ? colors.accentSecondary.withOpacity(0.3)
+                    ? colors.accentSecondary.withValues(alpha: 0.3)
                     : colors.borderColor,
               ),
             ),
@@ -404,14 +404,15 @@ class VideoLevelSheet extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             height: 44,
-            child: ElevatedButton(
+            child: FilledButton(
               onPressed: () => Navigator.pop(context),
-              style: ElevatedButton.styleFrom(
+              style: FilledButton.styleFrom(
                 backgroundColor: colors.accentPrimary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
+                elevation: 0,
               ),
               child: Text(
                 context.t('common.gotIt', null, 'Got it'),

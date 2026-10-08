@@ -717,7 +717,42 @@
     "less": "少",
     "more": "多",
     "tapDayToView": "タップして詳細を表示",
-    "stageMastered": "習得済み"
+    "stageMastered": "習得済み",
+    "allDone": "今日のカードはすべて完了しました！🎉",
+    "startReview": "復習を開始",
+    "exploreVideos": "動画から新しい単語を探す",
+    "items": "項目",
+    "heatmapReviewed": "復習済み",
+    "heatmapRestDay": "休養日",
+    "due": "復習待ち",
+    "selectMode": "学習モードを選択",
+    "allCaughtUpDesc": "現在、復習待ちのカードはありません。",
+    "practiceAnyway": "前倒しで復習する",
+    "undo": "元に戻す",
+    "tapToFlip": "タップして裏返す",
+    "markKnown": "習得済みにする",
+    "markedKnownSuccess": "習得済みに登録しました！",
+    "overview": "デッキ一覧",
+    "listenPronunciation": "発音を聴く",
+    "repetitionCount": "復習第{{count}}回",
+    "clozeRevealedHint": "記憶度を評価してください",
+    "clozeTapHint": "タップして単語と文脈を表示",
+    "markKnownShort": "習得済み",
+    "memory": "記憶",
+    "settingsTitle": "デッキ設定",
+    "exitToOverview": "概要に戻る",
+    "deckSettings": "デッキ設定",
+    "flip": "めくる",
+    "contentType": "コンテンツの種類",
+    "allTypes": "すべて",
+    "wordsOnly": "単語のみ",
+    "grammarOnly": "文法のみ",
+    "batchSize": "バッチサイズ",
+    "cardsCount": "{{count}}枚",
+    "reviewDueOnly": "期日のカードのみ復習",
+    "reviewDueOnlyDesc": "SM-2アルゴリズムで本日予定されたカードのみ学習",
+    "deckMasteryStatus": "デッキ習得状況 (計{{total}}枚)",
+    "applyAndStart": "適用して開始"
   },
   "streak": {
     "dayStreak": "連続記録",
@@ -964,7 +999,8 @@
     "save": "保存",
     "remove": "削除",
     "delete": "削除",
-    "apply": "適用"
+    "apply": "適用",
+    "next": "次の問題"
   },
   "onboarding": {
     "welcomeTitle": "Vocaへようこそ",
@@ -1134,7 +1170,27 @@
         "text": "Let's master languages together",
         "translation": "一緒に言語を極めましょう！"
       }
-    }
+    },
+    "companionGuide": "ガイド: {{name}}",
+    "dualSubtitlesOff": "単一字幕",
+    "dualSubtitlesOn": "2言語字幕",
+    "minutesPerDay": "{{minutes}}分/日",
+    "starterBonusTitle": "新規学習者スターターパック",
+    "updatePlanTitle": "学習目標の確認と保存",
+    "updatePlanSubtitle": "更新された学習設定",
+    "recalibrationTitle": "更新された設定",
+    "recalibration": {
+      "level": "更新されたレベル",
+      "levelDesc": "レベルに応じた動画をおすすめします",
+      "subtitles": "字幕モード",
+      "subtitlesDesc": "字幕の翻訳設定を適用しました",
+      "goal": "毎日の学習目標",
+      "goalDesc": "学習ペースを更新しました",
+      "companion": "パートナーガイド",
+      "companionDesc": "学習パートナーを設定しました"
+    },
+    "passivePerk": "パッシブスキル",
+    "companionPerksGuide": "パートナー特性一覧"
   },
   "quiz": {
     "dictation": "書き取り",
@@ -1314,7 +1370,8 @@
     "diamond": "ダイヤ",
     "streak": "連続日数",
     "polyglotScholar": "マルチリンガル学者",
-    "totalXp": "総獲得XP"
+    "totalXp": "総獲得XP",
+    "earnedXp": "学習ボーナス獲得"
   },
   "leaderboard": {
     "title": "グローバルランキング",
@@ -1666,7 +1723,8 @@
     "savedToBookmarks": "「{{title}}」をブックマークに保存しました",
     "searchOnYouTube": "YouTubeで検索",
     "noSearchVideosDesc": "「{{query}}」に一致する動画が見つかりませんでした。YouTubeで検索するか、YouTubeリンクを直接貼り付けてください。",
-    "noFilterVideosDesc": "選択したフィルターに一致する動画がありません。"
+    "noFilterVideosDesc": "選択したフィルターに一致する動画がありません。",
+    "applyFilters": "フィルターを適用"
   },
   "flashcards": {
     "again": "もう一度",
@@ -1699,7 +1757,10 @@
       "flashcard": "フラッシュカード",
       "cloze": "穴埋め問題",
       "quiz": "クイズ"
-    }
+    },
+    "reviewAgainCount": "もう一度復習 ({{count}})",
+    "clozeTest": "穴埋めテスト",
+    "quizMode": "クイズモード"
   },
   "practice": {
     "title": "イマージョン練習",

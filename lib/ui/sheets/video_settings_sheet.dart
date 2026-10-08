@@ -725,7 +725,7 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
       onTap: isDisabled ? null : onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
-        color: isSelected ? colors.accentPrimarySoft.withOpacity(0.08) : Colors.transparent,
+        color: isSelected ? colors.accentPrimarySoft.withValues(alpha: 0.08) : Colors.transparent,
         child: Row(
           children: [
             if (leading != null) ...[

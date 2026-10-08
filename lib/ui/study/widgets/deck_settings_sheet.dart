@@ -42,10 +42,17 @@ class _DeckSettingsSheetState extends State<DeckSettingsSheet> {
   }
 
   void _handleApply() {
+    final changed = _subDeck != widget.controller.subDeck.value ||
+        _sessionSize != widget.controller.sessionSize.value ||
+        _dueOnly != widget.controller.dueOnly.value;
+
     widget.controller.setSubDeck(_subDeck);
     widget.controller.setSessionSize(_sessionSize);
     widget.controller.dueOnly.value = _dueOnly;
-    widget.controller.startSession();
+
+    if (!widget.controller.isSessionActive.value || changed) {
+      widget.controller.startSession(dueOnlyMode: _dueOnly);
+    }
     Navigator.of(context).pop();
     widget.onApply();
   }
@@ -115,7 +122,7 @@ class _DeckSettingsSheetState extends State<DeckSettingsSheet> {
 
           // 1. Sub-Deck Filter (All / Words / Grammar)
           Text(
-            'CONTENT TYPE',
+            context.t('study.contentType', null, 'CONTENT TYPE'),
             style: TextStyle(
               color: colors.textMuted,
               fontSize: 11,
@@ -126,18 +133,18 @@ class _DeckSettingsSheetState extends State<DeckSettingsSheet> {
           const SizedBox(height: 8),
           Row(
             children: [
-              _buildTypeChip('all', 'All Items', Icons.layers_outlined, colors),
+              _buildTypeChip('all', context.t('study.allTypes', null, 'All Items'), Icons.layers_outlined, colors),
               const SizedBox(width: 8),
-              _buildTypeChip('words', 'Words Only', Icons.text_fields_rounded, colors),
+              _buildTypeChip('words', context.t('study.wordsOnly', null, 'Words Only'), Icons.text_fields_rounded, colors),
               const SizedBox(width: 8),
-              _buildTypeChip('grammar', 'Grammar Only', Icons.menu_book_rounded, colors),
+              _buildTypeChip('grammar', context.t('study.grammarOnly', null, 'Grammar Only'), Icons.menu_book_rounded, colors),
             ],
           ),
           const SizedBox(height: 18),
 
           // 2. Session Batch Size
           Text(
-            'BATCH SIZE',
+            context.t('study.batchSize', null, 'BATCH SIZE'),
             style: TextStyle(
               color: colors.textMuted,
               fontSize: 11,
@@ -148,13 +155,13 @@ class _DeckSettingsSheetState extends State<DeckSettingsSheet> {
           const SizedBox(height: 8),
           Row(
             children: [
-              _buildSizeChip(5, '5 cards', colors),
+              _buildSizeChip(5, context.t('study.cardsCount', {'count': 5}, '5 cards'), colors),
               const SizedBox(width: 8),
-              _buildSizeChip(10, '10 cards', colors),
+              _buildSizeChip(10, context.t('study.cardsCount', {'count': 10}, '10 cards'), colors),
               const SizedBox(width: 8),
-              _buildSizeChip(20, '20 cards', colors),
+              _buildSizeChip(20, context.t('study.cardsCount', {'count': 20}, '20 cards'), colors),
               const SizedBox(width: 8),
-              _buildSizeChip(null, 'All', colors),
+              _buildSizeChip(null, context.t('study.allCards', null, 'All'), colors),
             ],
           ),
           const SizedBox(height: 18),
@@ -175,7 +182,7 @@ class _DeckSettingsSheetState extends State<DeckSettingsSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Review Due Cards Only',
+                        context.t('study.reviewDueOnly', null, 'Review Due Cards Only'),
                         style: TextStyle(
                           color: colors.textPrimary,
                           fontSize: 14,
@@ -184,7 +191,7 @@ class _DeckSettingsSheetState extends State<DeckSettingsSheet> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Study strictly what SM-2 scheduled for today',
+                        context.t('study.reviewDueOnlyDesc', null, 'Study strictly what SM-2 scheduled for today'),
                         style: TextStyle(
                           color: colors.textMuted,
                           fontSize: 12,
@@ -205,7 +212,7 @@ class _DeckSettingsSheetState extends State<DeckSettingsSheet> {
 
           // 4. Anki Deck Distribution Forecast
           Text(
-            'DECK MASTERY STATUS ($totalCards TOTAL)',
+            context.t('study.deckMasteryStatus', {'total': totalCards}, 'DECK MASTERY STATUS ($totalCards TOTAL)'),
             style: TextStyle(
               color: colors.textMuted,
               fontSize: 11,
@@ -224,10 +231,10 @@ class _DeckSettingsSheetState extends State<DeckSettingsSheet> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildStatPill('New', fresh, const Color(0xFF3B82F6), colors),
-                _buildStatPill('Learning', learning, const Color(0xFFF97316), colors),
-                _buildStatPill('Due', due, const Color(0xFF10B981), colors),
-                _buildStatPill('Known', known, colors.accentSecondary, colors),
+                _buildStatPill(context.t('study.new', null, 'New'), fresh, const Color(0xFF3B82F6), colors),
+                _buildStatPill(context.t('study.learning', null, 'Learning'), learning, const Color(0xFFF97316), colors),
+                _buildStatPill(context.t('study.due', null, 'Due'), due, const Color(0xFF10B981), colors),
+                _buildStatPill(context.t('study.known', null, 'Known'), known, colors.accentSecondary, colors),
               ],
             ),
           ),
@@ -242,9 +249,9 @@ class _DeckSettingsSheetState extends State<DeckSettingsSheet> {
                 backgroundColor: colors.accentPrimary,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
-              child: const Text(
-                'Apply & Start Deck',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              child: Text(
+                context.t('study.applyAndStart', null, 'Apply & Start Deck'),
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
               ),
             ),
           ),

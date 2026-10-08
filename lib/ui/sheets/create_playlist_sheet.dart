@@ -344,9 +344,9 @@ class _CreatePlaylistSheetState extends State<CreatePlaylistSheet> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: ElevatedButton(
+                child: FilledButton(
                   onPressed: _isSubmitting ? null : _submit,
-                  style: ElevatedButton.styleFrom(
+                  style: FilledButton.styleFrom(
                     backgroundColor: colors.accentPrimary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),

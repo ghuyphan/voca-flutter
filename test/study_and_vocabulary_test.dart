@@ -364,12 +364,12 @@ void main() {
       expect(find.text('食べる'), findsAtLeastNWidgets(1));
 
       // Tinder Action Dock buttons and intervals
-      expect(find.text('<10m'), findsOneWidget); // Again interval
-      expect(find.text('Undo'), findsOneWidget);
-      expect(find.text('Flip'), findsOneWidget);
+      expect(find.text('<1 min'), findsOneWidget); // Again interval
+      expect(find.text('Again'), findsOneWidget);
+      expect(find.text('Good'), findsOneWidget);
 
-      // Tap Flip button in Tinder dock
-      await tester.tap(find.text('Flip'));
+      // Tap card body to flip
+      await tester.tap(find.text('食べる').first);
       await tester.pumpAndSettle();
 
       // Back of card reveals meaning

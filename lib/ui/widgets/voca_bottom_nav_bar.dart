@@ -48,59 +48,55 @@ class VocaBottomNavBar extends StatelessWidget {
       final vocabLabel = context.t('nav.vocab', null, 'Vocab');
       final libraryLabel = context.t('nav.library', null, 'Library');
 
-      return Container(
-        decoration: BoxDecoration(
-          border: Border(
-            top: BorderSide(
-              color: colors.borderColorLight,
-              width: 0.8,
-            ),
+      return NavigationBar(
+        selectedIndex: currentIndex.clamp(0, 3),
+        onDestinationSelected: (index) {
+          onTabSelected(index);
+          if (index == 3) {
+            onMorePressed?.call();
+          }
+        },
+        destinations: [
+          // 1. Watch
+          NavigationDestination(
+            icon: const Icon(Icons.play_circle_outline_rounded),
+            selectedIcon: const Icon(Icons.play_circle_rounded),
+            label: watchLabel,
           ),
-        ),
-        child: NavigationBar(
-          selectedIndex: currentIndex.clamp(0, 3),
-          onDestinationSelected: (index) {
-            onTabSelected(index);
-            if (index == 3) {
-              onMorePressed?.call();
-            }
-          },
-          destinations: [
-            // 1. Watch
-            NavigationDestination(
-              icon: const Icon(Icons.play_circle_outline_rounded),
-              selectedIcon: const Icon(Icons.play_circle_rounded),
-              label: watchLabel,
-            ),
 
-            // 2. Review
-            NavigationDestination(
-              icon: const Icon(Icons.school_outlined),
-              selectedIcon: const Icon(Icons.school_rounded),
-              label: reviewLabel,
-            ),
+          // 2. Review
+          NavigationDestination(
+            icon: const Icon(Icons.school_outlined),
+            selectedIcon: const Icon(Icons.school_rounded),
+            label: reviewLabel,
+          ),
 
-            // 3. Vocab
-            NavigationDestination(
-              icon: const Icon(Icons.menu_book_outlined),
-              selectedIcon: const Icon(Icons.menu_book_rounded),
-              label: vocabLabel,
-            ),
+          // 3. Vocab
+          NavigationDestination(
+            icon: const Icon(Icons.menu_book_outlined),
+            selectedIcon: const Icon(Icons.menu_book_rounded),
+            label: vocabLabel,
+          ),
 
-            // 4. Library
-            NavigationDestination(
-              icon: hasRewards
-                  ? Badge(
-                      smallSize: 7,
-                      backgroundColor: colors.accentTertiary,
-                      child: const Icon(Icons.video_library_outlined),
-                    )
-                  : const Icon(Icons.video_library_outlined),
-              selectedIcon: const Icon(Icons.video_library_rounded),
-              label: libraryLabel,
-            ),
-          ],
-        ),
+          // 4. Library
+          NavigationDestination(
+            icon: hasRewards
+                ? Badge(
+                    smallSize: 6,
+                    backgroundColor: colors.colorFire,
+                    child: const Icon(Icons.video_library_outlined),
+                  )
+                : const Icon(Icons.video_library_outlined),
+            selectedIcon: hasRewards
+                ? Badge(
+                    smallSize: 6,
+                    backgroundColor: colors.colorFire,
+                    child: const Icon(Icons.video_library_rounded),
+                  )
+                : const Icon(Icons.video_library_rounded),
+            label: libraryLabel,
+          ),
+        ],
       );
     });
   }

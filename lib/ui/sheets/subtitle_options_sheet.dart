@@ -370,7 +370,7 @@ class _SubtitleOptionsSheetState extends State<SubtitleOptionsSheet> {
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: colors.accentPrimary.withOpacity(0.3),
+                      color: colors.accentPrimary.withValues(alpha: 0.3),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),

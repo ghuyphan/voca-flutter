@@ -14,8 +14,9 @@ class FlashcardFace extends StatelessWidget {
   final bool isBack;
   final bool isReadingPeeked;
   final VoidCallback? onTogglePeekReading;
-  final VoidCallback? onMarkAsKnown;
   final bool isInteractive;
+  final String againInterval;
+  final String goodInterval;
 
   const FlashcardFace({
     super.key,
@@ -23,8 +24,9 @@ class FlashcardFace extends StatelessWidget {
     required this.isBack,
     this.isReadingPeeked = false,
     this.onTogglePeekReading,
-    this.onMarkAsKnown,
     this.isInteractive = true,
+    this.againInterval = '<1 min',
+    this.goodInterval = '1 d',
   });
 
   @override
@@ -42,7 +44,7 @@ class FlashcardFace extends StatelessWidget {
       width: double.infinity,
       decoration: BoxDecoration(
         color: colors.bgCard,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: colors.borderColor,
           width: 1.2,
@@ -50,80 +52,28 @@ class FlashcardFace extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: isDark
-                ? Colors.black.withValues(alpha: 0.45)
-                : Colors.black.withValues(alpha: 0.06),
+                ? Colors.black.withValues(alpha: 0.35)
+                : Colors.black.withValues(alpha: 0.05),
             blurRadius: 18,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 1. Top Badges & Actions Header
+          // 1. Top Row: Stage Dots (Left) and Audio Speaker Button (Right) matching reference UI
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Left: POS tag & Stage badge
-              Flexible(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (card.partOfSpeech != null &&
-                        card.partOfSpeech!.trim().isNotEmpty) ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 5, vertical: 2.5),
-                        decoration: BoxDecoration(
-                          color: colors.bgSurface,
-                          borderRadius: BorderRadius.circular(5),
-                          border: Border.all(color: colors.borderColorLight),
-                        ),
-                        child: Text(
-                          _formatPartOfSpeech(card.partOfSpeech!),
-                          style: TextStyle(
-                            color: colors.textSecondary,
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                    ],
-                    Flexible(child: _buildStageBadge(context, card, colors)),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 6),
-
-              // Right Actions: Watch Scene, Mark Known, Audio Speaker
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Video Scene Clip Button (Canonical lingua-tube top-action parity)
-                  if (card.sourceVideoId != null &&
-                      card.sourceVideoId!.isNotEmpty) ...[
-                    _buildWatchSceneButton(context, card, colors),
-                    const SizedBox(width: 5),
-                  ],
-
-                  // Mark Known Action (Quick graduation on both front and back)
-                  if (onMarkAsKnown != null) ...[
-                    _buildMarkKnownButton(context, card, colors),
-                    const SizedBox(width: 5),
-                  ],
-
-                  // Audio Pronunciation Button with reactive soundwave animation
-                  _buildAudioButton(card, colors),
-                ],
-              ),
+              Flexible(child: _buildStageDots(context, card, colors)),
+              _buildAudioButton(card, colors),
             ],
           ),
 
-          // 2. Center Headword & Meaning Section (Generous breathing room)
+          // 2. Center Headword & Bold Meaning Area
           Expanded(
             child: Center(
               child: SingleChildScrollView(
@@ -133,87 +83,59 @@ class FlashcardFace extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // --- FRONT FACE: Active Recall ---
-                    if (!isBack) ...[
-                      // Headword (large, bold, CJK typography)
+                    // Furigana / Reading if peeked or revealed
+                    if (hasReading && (isBack || isReadingPeeked)) ...[
                       Text(
-                        card.word,
-                        textAlign: TextAlign.center,
+                        reading,
                         style: TextStyle(
-                          color: colors.textPrimary,
-                          fontSize: 38,
-                          fontWeight: FontWeight.w800,
+                          color: colors.accentPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
                           letterSpacing: 0.5,
-                          height: 1.2,
-                          fontFamily: card.language == 'ja' ? 'Kosugi Maru' : null,
                         ),
                       ),
-                      const SizedBox(height: 12),
-
-                      // Peek Reading Button
-                      if (hasReading) ...[
-                        _buildPeekReadingButton(context, reading, colors),
-                      ],
+                      const SizedBox(height: 4),
                     ],
 
-                    // --- BACK FACE: Revealed Answer & Pronunciation ---
+                    // Headword (large, bold, CJK typography)
+                    Text(
+                      card.word,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: colors.textPrimary,
+                        fontSize: 40,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
+                        height: 1.2,
+                        fontFamily: card.language == 'ja' ? 'Kosugi Maru' : null,
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    // Meaning (prominent bold coral text, exactly like the screenshot!)
                     if (isBack) ...[
-                      if (hasReading) ...[
-                        Text(
-                          reading,
-                          style: TextStyle(
-                            color: colors.accentPrimary,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                      ],
                       Text(
-                        card.word,
+                        card.meaning,
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: colors.textPrimary,
-                          fontSize: 34,
+                          color: colors.accentPrimary,
+                          fontSize: 19,
                           fontWeight: FontWeight.w800,
-                          letterSpacing: 0.5,
-                          height: 1.2,
-                          fontFamily: card.language == 'ja' ? 'Kosugi Maru' : null,
+                          letterSpacing: -0.3,
+                          height: 1.3,
                         ),
                       ),
-                      const SizedBox(height: 12),
-
-                      // Clean Meaning Container
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: colors.bgSurface,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: colors.borderColorLight),
-                        ),
-                        child: Text(
-                          card.meaning,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: colors.accentPrimary,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            height: 1.35,
-                          ),
-                        ),
-                      ),
-                      if (card.notes != null &&
-                          card.notes!.trim().isNotEmpty) ...[
-                        const SizedBox(height: 8),
+                    ] else ...[
+                      if (hasReading && !isReadingPeeked) ...[
+                        _buildPeekReadingButton(context, reading, colors),
+                      ] else ...[
                         Text(
-                          card.notes!,
-                          textAlign: TextAlign.center,
+                          context.t('study.tapToFlip', null, 'Tap card to flip'),
                           style: TextStyle(
                             color: colors.textMuted,
-                            fontSize: 12,
-                            fontStyle: FontStyle.italic,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
@@ -224,228 +146,151 @@ class FlashcardFace extends StatelessWidget {
             ),
           ),
 
-          // 3. Sentence Quote at bottom (Authentic YouTube Subtitle Context)
+          // 3. Sentence Quote & Authentic Immersion Clip Box
           if (hasContext) ...[
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
                 color: colors.bgSurface,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: colors.borderColorLight),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (!isBack)
+                  // Japanese sentence with highlighted word in coral
+                  RichText(
+                    textAlign: TextAlign.center,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    text: _buildHighlightedSentence(
+                      card.contextSentence!,
+                      card.word,
+                      colors,
+                    ),
+                  ),
+
+                  // Translation below
+                  if (card.contextTranslation != null &&
+                      card.contextTranslation!.trim().isNotEmpty) ...[
+                    const SizedBox(height: 6),
                     Text(
-                      _buildMaskedSentence(card.contextSentence!, card.word),
+                      card.contextTranslation!,
                       textAlign: TextAlign.center,
-                      maxLines: 3,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: colors.textSecondary,
-                        fontSize: 13,
+                        fontSize: 12.5,
                         fontWeight: FontWeight.w500,
-                        height: 1.4,
-                      ),
-                    )
-                  else ...[
-                    RichText(
-                      textAlign: TextAlign.center,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      text: _buildHighlightedSentence(
-                        card.contextSentence!,
-                        card.word,
-                        colors,
+                        height: 1.35,
                       ),
                     ),
-                    if (card.contextTranslation != null &&
-                        card.contextTranslation!.trim().isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        card.contextTranslation!,
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: colors.textMuted,
-                          fontSize: 11.5,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ],
                   ],
+
+                  const SizedBox(height: 10),
+
+                  // '▶ Replay this clip' Button
+                  _PressableScale(
+                    onTap: () {
+                      if (card.sourceVideoId != null &&
+                          card.sourceVideoId!.isNotEmpty) {
+                        PlayerCoordinator.instance.openVideo(
+                          context,
+                          videoId: card.sourceVideoId!,
+                          title: card.word,
+                          startSeconds: card.sourceTimestamp,
+                        );
+                      } else {
+                        AudioService.instance.playWord(
+                          card.word,
+                          language: card.language,
+                          fallbackAudioUrl: card.audio,
+                        );
+                      }
+                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.play_circle_fill_rounded,
+                          size: 16,
+                          color: colors.accentPrimary,
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          context.t('study.replayClip', null, 'Replay this clip'),
+                          style: TextStyle(
+                            color: colors.accentPrimary,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
           ],
 
-          // 4. Subtle Bottom Gestures Hint
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                isBack ? Icons.swipe_rounded : Icons.touch_app_outlined,
-                size: 13,
-                color: colors.textMuted,
-              ),
-              const SizedBox(width: 5),
-              Flexible(
-                child: Text(
-                  isBack
-                      ? context.t('study.swipeHintShort', null,
-                          'Swipe right: Good · left: Again')
-                      : context.t('study.tapToFlip', null, 'Tap card to flip'),
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: colors.textMuted,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          // 4. Memory SRS Progress Section
+          _buildMemoryProgressSection(context, card, colors),
         ],
       ),
     );
   }
 
-  /// Interactive peek reading button with tactile press feedback
-  Widget _buildPeekReadingButton(
+  /// 4 Stage Dots + Stage Label matching the top left of the screenshot
+  Widget _buildStageDots(
     BuildContext context,
-    String reading,
+    Flashcard card,
     VocaColorPalette colors,
   ) {
-    return _PressableScale(
-      onTap: onTogglePeekReading,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        decoration: BoxDecoration(
-          color: colors.bgSurface,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: isReadingPeeked
-                ? colors.accentPrimary.withValues(alpha: 0.4)
-                : colors.borderColorLight,
+    final normLevel = card.level.toLowerCase().trim();
+    final (dotsFilled, label, activeColor) = switch (normLevel) {
+      'mastered' => (4, context.t('study.mastered', null, 'Mastered'), const Color(0xFFA78BFA)),
+      'known' => (3, context.t('study.known', null, 'Known'), const Color(0xFF60A5FA)),
+      'learning' => (2, context.t('study.learning', null, 'Learning'), const Color(0xFFFBBF24)),
+      _ => (1, context.t('study.new', null, 'New'), const Color(0xFF2DD4BF)),
+    };
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        for (int i = 0; i < 4; i++) ...[
+          Container(
+            width: 6.0,
+            height: 6.0,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: i < dotsFilled ? activeColor : colors.borderColorLight,
+            ),
+          ),
+          if (i < 3) const SizedBox(width: 3.0),
+        ],
+        const SizedBox(width: 6.0),
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: activeColor,
+              fontSize: 12.0,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.2,
+            ),
           ),
         ),
-        child: isReadingPeeked
-            ? Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    reading,
-                    style: TextStyle(
-                      color: colors.accentPrimary,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Icon(Icons.visibility_off_outlined,
-                      size: 14, color: colors.textMuted),
-                ],
-              )
-            : Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.visibility_outlined,
-                      size: 13, color: colors.textMuted),
-                  const SizedBox(width: 5),
-                  Text(
-                    context.t('study.peekReading', null, 'Xem cách đọc'),
-                    style: TextStyle(
-                      color: colors.textMuted,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-      ),
+      ],
     );
   }
 
-  Widget _buildWatchSceneButton(
-    BuildContext context,
-    Flashcard card,
-    VocaColorPalette colors,
-  ) {
-    return _PressableScale(
-      onTap: () {
-        PlayerCoordinator.instance.openVideo(
-          context,
-          videoId: card.sourceVideoId!,
-          title: card.word,
-          startSeconds: card.sourceTimestamp,
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-        decoration: BoxDecoration(
-          color: colors.accentPrimary.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-              color: colors.accentPrimary.withValues(alpha: 0.35)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.play_circle_fill_rounded,
-                size: 12, color: colors.accentPrimary),
-            const SizedBox(width: 3.5),
-            Text(
-              context.t('study.watchScene', null, 'Scene'),
-              style: TextStyle(
-                color: colors.accentPrimary,
-                fontSize: 9.5,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMarkKnownButton(
-    BuildContext context,
-    Flashcard card,
-    VocaColorPalette colors,
-  ) {
-    return _PressableScale(
-      onTap: onMarkAsKnown,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-        decoration: BoxDecoration(
-          color: colors.bgSurface,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: colors.borderColorLight),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.check_rounded, size: 12, color: colors.wordKnownText),
-            const SizedBox(width: 3),
-            Text(
-              context.t('study.markKnownShort', null, 'Known'),
-              style: TextStyle(
-                color: colors.wordKnownText,
-                fontSize: 9.5,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
+  /// Circular speaker button matching the top right of the screenshot
   Widget _buildAudioButton(Flashcard card, VocaColorPalette colors) {
     return ValueListenableBuilder<String?>(
       valueListenable: AudioService.instance.currentPlaying,
@@ -460,33 +305,25 @@ class FlashcardFace extends StatelessWidget {
               fallbackAudioUrl: card.audio,
             );
           },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            width: 28,
-            height: 28,
+          child: Container(
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
-              color: isPlaying
-                  ? colors.accentPrimary.withValues(alpha: 0.18)
-                  : colors.bgSurface,
               shape: BoxShape.circle,
+              color: colors.bgSurface,
               border: Border.all(
-                color: isPlaying
-                    ? colors.accentPrimary
-                    : colors.borderColorLight,
-                width: isPlaying ? 1.5 : 1.0,
+                color: isPlaying ? colors.accentPrimary : colors.borderColorLight,
+                width: 1.2,
               ),
-              boxShadow: [
-                if (isPlaying)
-                  BoxShadow(
-                    color: colors.accentPrimary.withValues(alpha: 0.35),
-                    blurRadius: 8,
-                  ),
-              ],
             ),
-            child: Icon(
-              isPlaying ? Icons.graphic_eq_rounded : Icons.volume_up_rounded,
-              size: 15,
-              color: colors.accentPrimary,
+            child: Center(
+              child: isPlaying
+                  ? const _AudioWaveIndicator(color: Color(0xFF2DD4BF))
+                  : const Icon(
+                      Icons.volume_up_rounded,
+                      size: 19,
+                      color: Color(0xFF2DD4BF),
+                    ),
             ),
           ),
         );
@@ -494,105 +331,148 @@ class FlashcardFace extends StatelessWidget {
     );
   }
 
-  String _buildMaskedSentence(String sentence, String word) {
-    if (sentence.contains(word)) {
-      return sentence.replaceAll(word, '[ _____ ]');
-    }
-    return sentence;
-  }
-
-  Widget _buildStageBadge(
+  /// Memory SRS Progress Section matching the bottom of the screenshot card
+  Widget _buildMemoryProgressSection(
     BuildContext context,
     Flashcard card,
     VocaColorPalette colors,
   ) {
     final normLevel = card.level.toLowerCase().trim();
-    if (normLevel == 'known' || normLevel == 'mastered') {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
-        decoration: BoxDecoration(
-          color: colors.wordKnownBg,
-          borderRadius: BorderRadius.circular(999),
-          border:
-              Border.all(color: colors.wordKnownText.withValues(alpha: 0.3)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+    final stageIndex = switch (normLevel) {
+      'mastered' => 3,
+      'known' => 2,
+      'learning' => 1,
+      _ => 0,
+    };
+
+    final stages = [
+      context.t('study.new', null, 'New'),
+      context.t('study.learning', null, 'Learning'),
+      context.t('study.known', null, 'Known'),
+      context.t('study.mastered', null, 'Mastered'),
+    ];
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Header: 'Memory' on left, '< 1 min → 1 d' on right
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Icon(Icons.check_circle_rounded,
-                size: 10.5, color: colors.wordKnownText),
-            const SizedBox(width: 3.5),
-            Flexible(
-              child: Text(
-                context.t('study.known', null, 'Known'),
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: colors.wordKnownText,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
+            Text(
+              context.t('study.memory', null, 'Memory'),
+              style: TextStyle(
+                color: colors.textSecondary,
+                fontSize: 11.5,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            Text(
+              '$againInterval → $goodInterval',
+              style: TextStyle(
+                color: colors.accentPrimary,
+                fontSize: 11.5,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.2,
               ),
             ),
           ],
         ),
-      );
-    }
 
-    if (normLevel == 'learning') {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+        const SizedBox(height: 8),
+
+        // 4-Segment Progress Bar Track
+        Row(
+          children: List.generate(4, (i) {
+            final isFilled = i <= stageIndex;
+            return Expanded(
+              child: Container(
+                margin: EdgeInsets.only(
+                  right: i < 3 ? 3 : 0,
+                  left: i > 0 ? 3 : 0,
+                ),
+                height: 7,
+                decoration: BoxDecoration(
+                  color: isFilled
+                      ? const Color(0xFFFB923C)
+                      : colors.borderColorLight,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+            );
+          }),
+        ),
+
+        const SizedBox(height: 6),
+
+        // Stage labels below each segment
+        Row(
+          children: List.generate(4, (i) {
+            return Expanded(
+              child: Text(
+                stages[i],
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: i == stageIndex ? colors.textSecondary : colors.textMuted,
+                  fontSize: 10,
+                  fontWeight: i == stageIndex ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
+            );
+          }),
+        ),
+      ],
+    );
+  }
+
+  /// Interactive peek reading button with tactile press feedback matching DeckOverview filter pills
+  Widget _buildPeekReadingButton(
+    BuildContext context,
+    String reading,
+    VocaColorPalette colors,
+  ) {
+    return _PressableScale(
+      onTap: onTogglePeekReading,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        height: 36,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
-          color: colors.wordLearningBg,
+          color: isReadingPeeked
+              ? colors.accentPrimary.withValues(alpha: 0.12)
+              : colors.bgSurface,
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-              color: colors.wordLearningText.withValues(alpha: 0.3)),
+            color: isReadingPeeked
+                ? colors.accentPrimary.withValues(alpha: 0.45)
+                : colors.borderColorLight,
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.school_rounded,
-                size: 10.5, color: colors.wordLearningText),
-            const SizedBox(width: 3.5),
-            Flexible(
-              child: Text(
-                context.t('study.learning', null, 'Learning'),
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: colors.wordLearningText,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
+            Icon(
+              isReadingPeeked
+                  ? Icons.visibility_off_outlined
+                  : Icons.visibility_outlined,
+              size: 15,
+              color: isReadingPeeked ? colors.accentPrimary : colors.textMuted,
+            ),
+            const SizedBox(width: 7),
+            Text(
+              isReadingPeeked
+                  ? reading
+                  : context.t('study.peekReading', null, 'Peek Reading'),
+              style: TextStyle(
+                color: isReadingPeeked ? colors.accentPrimary : colors.textMuted,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.3,
               ),
             ),
           ],
         ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
-      decoration: BoxDecoration(
-        color: colors.wordNewBg,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: colors.wordNewText.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.eco_rounded, size: 10.5, color: colors.wordNewText),
-          const SizedBox(width: 3.5),
-          Flexible(
-            child: Text(
-              context.t('study.new', null, 'New'),
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: colors.wordNewText,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -640,14 +520,6 @@ class FlashcardFace extends StatelessWidget {
 
     return TextSpan(children: spans);
   }
-
-  String _formatPartOfSpeech(String pos) {
-    final clean = pos.replaceAll(RegExp(r'[\[\]]'), '').trim();
-    if (clean.length > 12) {
-      return clean.substring(0, 12).toUpperCase();
-    }
-    return clean.toUpperCase();
-  }
 }
 
 /// Lightweight pressable wrapper providing subtle tactile spring scale-down feedback on tap
@@ -682,6 +554,67 @@ class _PressableScaleState extends State<_PressableScale> {
         duration: const Duration(milliseconds: 100),
         curve: Curves.easeOutCubic,
         child: widget.child,
+      ),
+    );
+  }
+}
+
+class _AudioWaveIndicator extends StatefulWidget {
+  final Color color;
+  const _AudioWaveIndicator({required this.color});
+
+  @override
+  State<_AudioWaveIndicator> createState() => _AudioWaveIndicatorState();
+}
+
+class _AudioWaveIndicatorState extends State<_AudioWaveIndicator>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _anim = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 650),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _anim.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, __) {
+        final t = _anim.value;
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            _bar(4.0 + (t * 7.0)),
+            const SizedBox(width: 2),
+            _bar(11.0 - (t * 6.0)),
+            const SizedBox(width: 2),
+            _bar(5.0 + (t * 8.0)),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _bar(double height) {
+    return Container(
+      width: 2.2,
+      height: height.clamp(3.0, 14.0),
+      decoration: BoxDecoration(
+        color: widget.color,
+        borderRadius: BorderRadius.circular(1.5),
       ),
     );
   }

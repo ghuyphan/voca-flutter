@@ -8,14 +8,15 @@ import 'models/onboarding_models.dart';
 
 /// Signal-backed state for the onboarding flow.
 ///
-/// Steps: 0 Welcome · 1 Learning language & Locale ·
-/// 2 Level & daily goal · 3 Companion & Theme.
+/// Steps:
+/// 0 Welcome · 1 Learning language · 2 Level & Daily goal ·
+/// 3 Companion · 4 Ready & Starter Loot.
 class OnboardingController {
   static const int welcomeStep = 0;
-  static const int lastStep = 3;
+  static const int lastStep = 4;
 
   /// Number of steps shown in the progress bar (Welcome is excluded).
-  static const int progressSteps = lastStep;
+  static const int progressSteps = 4;
 
   final bool isReplay;
 

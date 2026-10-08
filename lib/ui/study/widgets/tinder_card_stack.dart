@@ -37,7 +37,6 @@ class TinderCardStack extends StatefulWidget {
   final ValueChanged<SRSReviewRating> onSwipe;
   final VoidCallback onToggleFlip;
   final VoidCallback onTogglePeekReading;
-  final VoidCallback onMarkAsKnown;
   final String againInterval;
   final String hardInterval;
   final String goodInterval;
@@ -54,7 +53,6 @@ class TinderCardStack extends StatefulWidget {
     required this.onSwipe,
     required this.onToggleFlip,
     required this.onTogglePeekReading,
-    required this.onMarkAsKnown,
     this.againInterval = '<10m',
     this.hardInterval = '1d',
     this.goodInterval = '3d',
@@ -405,16 +403,18 @@ class _TinderCardStackState extends State<TinderCardStack>
                               ? FlashcardFace(
                                   card: widget.currentCard,
                                   isBack: true,
-                                  onMarkAsKnown: widget.onMarkAsKnown,
                                   isInteractive: true,
+                                  againInterval: widget.againInterval,
+                                  goodInterval: widget.goodInterval,
                                 )
                               : FlashcardFace(
                                   card: widget.currentCard,
                                   isBack: false,
                                   isReadingPeeked: widget.isReadingPeeked,
                                   onTogglePeekReading: widget.onTogglePeekReading,
-                                  onMarkAsKnown: widget.onMarkAsKnown,
                                   isInteractive: true,
+                                  againInterval: widget.againInterval,
+                                  goodInterval: widget.goodInterval,
                                 ),
                         ),
 
@@ -431,8 +431,6 @@ class _TinderCardStackState extends State<TinderCardStack>
                             ),
                           ),
 
-                        // Tinder Directional Overlay Stamps (pure visual overlay)
-                        _buildTinderStamps(currentOffset),
                       ],
                     ),
                   ),
@@ -444,238 +442,4 @@ class _TinderCardStackState extends State<TinderCardStack>
       ],
     );
   }
-
-  Widget _buildTinderStamps(Offset offset) {
-    final dx = offset.dx;
-    final dy = offset.dy;
-
-    // Right Drag Stamp: GOOD
-    final goodOpacity = (dx / 85.0).clamp(0.0, 1.0);
-    final goodScale = 0.85 + (0.15 * goodOpacity);
-
-    // Left Drag Stamp: AGAIN
-    final againOpacity = ((-dx) / 85.0).clamp(0.0, 1.0);
-    final againScale = 0.85 + (0.15 * againOpacity);
-
-    // Up Drag Stamp: EASY
-    final easyOpacity = ((-dy) / 85.0).clamp(0.0, 1.0);
-
-    // Down Drag Stamp: HARD
-    final hardOpacity = ((dy) / 85.0).clamp(0.0, 1.0);
-
-    return IgnorePointer(
-      ignoring: true,
-      child: Stack(
-      children: [
-        // GOOD Stamp (Top Left, Tilted -12deg with pop scale)
-        if (goodOpacity > 0.05)
-          Positioned(
-            top: 26,
-            left: 20,
-            child: Opacity(
-              opacity: goodOpacity,
-              child: Transform.scale(
-                scale: goodScale,
-                child: Transform.rotate(
-                  angle: -0.22,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF22C55E).withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFF22C55E), width: 3.2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF22C55E).withValues(alpha: 0.38),
-                          blurRadius: 16,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.check_rounded, color: Color(0xFF22C55E), size: 22),
-                        const SizedBox(width: 5),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text(
-                              'GOOD',
-                              style: TextStyle(
-                                color: Color(0xFF22C55E),
-                                fontSize: 18,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                            Text(
-                              widget.goodInterval,
-                              style: const TextStyle(
-                                color: Color(0xFF22C55E),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-        // AGAIN Stamp (Top Right, Tilted +12deg with pop scale)
-        if (againOpacity > 0.05)
-          Positioned(
-            top: 26,
-            right: 20,
-            child: Opacity(
-              opacity: againOpacity,
-              child: Transform.scale(
-                scale: againScale,
-                child: Transform.rotate(
-                  angle: 0.22,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEF4444).withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFEF4444), width: 3.2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFEF4444).withValues(alpha: 0.38),
-                          blurRadius: 16,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.close_rounded, color: Color(0xFFEF4444), size: 22),
-                        const SizedBox(width: 5),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text(
-                              'AGAIN',
-                              style: TextStyle(
-                                color: Color(0xFFEF4444),
-                                fontSize: 18,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                            Text(
-                              widget.againInterval,
-                              style: const TextStyle(
-                                color: Color(0xFFEF4444),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-        // EASY Stamp (Top Center, when dragged upwards)
-        if (easyOpacity > 0.12 && dx.abs() < 70)
-          Positioned(
-            top: 18,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Opacity(
-                opacity: easyOpacity,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF8B5CF6).withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFF8B5CF6), width: 3),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF8B5CF6).withValues(alpha: 0.38),
-                        blurRadius: 16,
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.star_rounded, color: Color(0xFF8B5CF6), size: 20),
-                      const SizedBox(width: 5),
-                      Text(
-                        'EASY • ${widget.easyInterval}',
-                        style: const TextStyle(
-                          color: Color(0xFF8B5CF6),
-                          fontSize: 15,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-        // HARD Stamp (Bottom Center, when dragged downwards)
-        if (hardOpacity > 0.12 && dx.abs() < 70)
-          Positioned(
-            bottom: 22,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Opacity(
-                opacity: hardOpacity,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF59E0B).withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFF59E0B), width: 3),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFF59E0B).withValues(alpha: 0.38),
-                        blurRadius: 16,
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.timelapse_rounded, color: Color(0xFFF59E0B), size: 19),
-                      const SizedBox(width: 5),
-                      Text(
-                        'HARD • ${widget.hardInterval}',
-                        style: const TextStyle(
-                          color: Color(0xFFF59E0B),
-                          fontSize: 15,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-      ],
-    ),
-  );
-}
 }

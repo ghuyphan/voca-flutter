@@ -139,12 +139,12 @@ class _ExploreScreenState extends State<ExploreScreen>
       }
       _accumulatedDelta += delta;
 
-      if (_accumulatedDelta > 15 && notification.metrics.pixels > 30) {
+      if (_accumulatedDelta > 45 && notification.metrics.pixels > 80) {
         if (_isSearchBarVisible) {
           _isSearchBarVisible = false;
           _searchBarAnimController.reverse();
         }
-      } else if (_accumulatedDelta < -12) {
+      } else if (_accumulatedDelta < -20) {
         if (!_isSearchBarVisible) {
           _isSearchBarVisible = true;
           _searchBarAnimController.forward();
@@ -408,7 +408,7 @@ class _ExploreScreenState extends State<ExploreScreen>
           decoration: BoxDecoration(
             color: colors.accentPrimarySoft,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: colors.accentPrimary.withOpacity(0.4)),
+            border: Border.all(color: colors.accentPrimary.withValues(alpha: 0.4)),
           ),
           child: Row(
             children: [
@@ -476,6 +476,7 @@ class _ExploreScreenState extends State<ExploreScreen>
       body: SafeArea(
         child: Column(
           children: [
+            const SizedBox(height: 4),
             // 1. Collapsing Spotlight Search Bar with animated direct video detection banner
             SizeTransition(
               sizeFactor: _searchBarAnimation,
@@ -571,7 +572,8 @@ class _ExploreScreenState extends State<ExploreScreen>
                   final videos = _videos.value;
                   final playlists = _playlists.value;
 
-                  const feedBottomPadding = 20.0;
+                  final hasMini = PlayerCoordinator.instance.hasActiveVideo && PlayerCoordinator.instance.isMiniplayer.value;
+                  final feedBottomPadding = hasMini ? 84.0 : 24.0;
 
                   Widget feedContent;
 
@@ -693,7 +695,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                                         ),
                                       ),
-                                      ElevatedButton.icon(
+                                      FilledButton.icon(
                                         onPressed: () async {
                                           final uri = Uri.parse(
                                             'https://www.youtube.com/results?search_query=${Uri.encodeComponent(searchQuery)}',
@@ -702,7 +704,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                                         },
                                         icon: const Icon(Icons.open_in_new_rounded, size: 14, color: Colors.white),
                                         label: Text(context.t('explore.searchOnYouTube', null, 'Search on YouTube')),
-                                        style: ElevatedButton.styleFrom(
+                                        style: FilledButton.styleFrom(
                                           backgroundColor: colors.accentPrimary,
                                           foregroundColor: Colors.white,
                                           elevation: 0,
@@ -771,6 +773,23 @@ class _ExploreScreenState extends State<ExploreScreen>
                   // Smooth crossfade transition between loading, error, empty, and feed states
                   return AnimatedSwitcher(
                     duration: const Duration(milliseconds: 220),
+                    layoutBuilder: (currentChild, previousChildren) {
+                      final seenKeys = <Key>{};
+                      if (currentChild?.key != null) seenKeys.add(currentChild!.key!);
+                      final uniquePrevious = <Widget>[];
+                      for (final child in previousChildren) {
+                        if (child.key == null || seenKeys.add(child.key!)) {
+                          uniquePrevious.add(child);
+                        }
+                      }
+                      return Stack(
+                        alignment: Alignment.topCenter,
+                        children: [
+                          ...uniquePrevious,
+                          if (currentChild != null) currentChild,
+                        ],
+                      );
+                    },
                     child: feedContent,
                   );
                 }),

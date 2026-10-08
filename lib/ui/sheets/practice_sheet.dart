@@ -317,7 +317,7 @@ class _PracticeSheetState extends State<PracticeSheet> {
                 // 1. Primary Loop / Stop Loop Button
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton.icon(
+                  child: FilledButton.icon(
                     onPressed: () {
                       widget.controller.toggleLoopCurrentCue();
                       setState(() {});
@@ -338,7 +338,7 @@ class _PracticeSheetState extends State<PracticeSheet> {
                           : context.t('practice.loopCue', null, 'Loop Sentence'),
                       style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
                     ),
-                    style: ElevatedButton.styleFrom(
+                    style: FilledButton.styleFrom(
                       backgroundColor: widget.controller.isLoopingCue.value
                           ? colors.error
                           : colors.accentPrimary,
@@ -347,7 +347,7 @@ class _PracticeSheetState extends State<PracticeSheet> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      elevation: widget.controller.isLoopingCue.value ? 0 : 2,
+                      elevation: 0,
                     ),
                   ),
                 ),
@@ -401,7 +401,7 @@ class _PracticeSheetState extends State<PracticeSheet> {
                                     boxShadow: isSelected
                                         ? [
                                             BoxShadow(
-                                              color: colors.accentPrimary.withOpacity(0.3),
+                                              color: colors.accentPrimary.withValues(alpha: 0.3),
                                               blurRadius: 6,
                                               offset: const Offset(0, 2),
                                             ),
@@ -456,11 +456,11 @@ class _PracticeSheetState extends State<PracticeSheet> {
 
                     if (_selectedOptionIndex != null) {
                       if (isCorrectAnswer) {
-                        bg = colors.success.withOpacity(0.2);
+                        bg = colors.success.withValues(alpha: 0.2);
                         border = colors.success;
                         textCol = colors.success;
                       } else if (isSelected) {
-                        bg = colors.error.withOpacity(0.2);
+                        bg = colors.error.withValues(alpha: 0.2);
                         border = colors.error;
                         textCol = colors.error;
                       }

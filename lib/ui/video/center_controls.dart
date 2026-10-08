@@ -217,7 +217,7 @@ class _CenterControlsState extends State<CenterControls>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.5),
+            color: Colors.black.withValues(alpha: 0.5),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -244,7 +244,7 @@ class _CenterControlsState extends State<CenterControls>
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
@@ -283,7 +283,7 @@ class _CenterControlsState extends State<CenterControls>
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.4),
+                  color: Colors.black.withValues(alpha: 0.4),
                   blurRadius: 16,
                   offset: const Offset(0, 4),
                 ),
@@ -364,7 +364,7 @@ class _CenterControlsState extends State<CenterControls>
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.6),
+                  color: Colors.black.withValues(alpha: 0.6),
                   blurRadius: 24,
                   offset: const Offset(0, 4),
                 ),
@@ -414,7 +414,7 @@ class _CenterControlsState extends State<CenterControls>
             boxShadow: isEnabled
                 ? [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.4),
+                      color: Colors.black.withValues(alpha: 0.4),
                       blurRadius: 12,
                       offset: const Offset(0, 2),
                     ),
@@ -427,7 +427,7 @@ class _CenterControlsState extends State<CenterControls>
               size: 24,
               color: isEnabled
                   ? Colors.white
-                  : Colors.white.withOpacity(0.35),
+                  : Colors.white.withValues(alpha: 0.35),
             ),
           ),
         ),

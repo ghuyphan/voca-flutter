@@ -262,24 +262,24 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: isDragging
-                      ? colors.accentPrimary.withOpacity(0.45)
-                      : Colors.white.withOpacity(0.08),
+                      ? colors.accentPrimary.withValues(alpha: 0.45)
+                      : Colors.white.withValues(alpha: 0.08),
                   width: 1.0,
                 ),
                 boxShadow: [
                   if (isDragging) ...[
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.8),
+                      color: Colors.black.withValues(alpha: 0.8),
                       blurRadius: 48,
                       offset: const Offset(0, 16),
                     ),
                     BoxShadow(
-                      color: colors.accentPrimary.withOpacity(0.3),
+                      color: colors.accentPrimary.withValues(alpha: 0.3),
                       blurRadius: 10,
                     ),
                   ] else
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.4),
+                      color: Colors.black.withValues(alpha: 0.4),
                       blurRadius: 18,
                       offset: const Offset(0, 4),
                     ),
@@ -322,7 +322,7 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
                                     child: Text(
                                       token.surface,
                                       style: TextStyle(
-                                        color: Colors.white.withOpacity(0.9),
+                                        color: Colors.white.withValues(alpha: 0.9),
                                         fontSize: surfaceFontSize,
                                         fontWeight: FontWeight.w400,
                                       ),
@@ -340,8 +340,8 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
                                       cue: cue,
                                     ),
                                     borderRadius: BorderRadius.circular(5),
-                                    splashColor: Colors.white.withOpacity(0.2),
-                                    highlightColor: Colors.white.withOpacity(0.12),
+                                    splashColor: Colors.white.withValues(alpha: 0.2),
+                                    highlightColor: Colors.white.withValues(alpha: 0.12),
                                     child: _buildTokenChip(
                                       token: token,
                                       grammarPattern: grammarPattern,
@@ -387,7 +387,7 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
                                               (cue.translation == null || cue.translation!.isEmpty))
                                           ? Padding(
                                               padding: const EdgeInsets.symmetric(vertical: 2.0),
-                                              child: _buildAnimatedDots(Colors.white.withOpacity(0.7)),
+                                              child: _buildAnimatedDots(Colors.white.withValues(alpha: 0.7)),
                                             )
                                           : (cue.translation != null &&
                                                   cue.translation!.trim().isNotEmpty &&
@@ -396,7 +396,7 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
                                                   cue.translation!,
                                                   textAlign: TextAlign.center,
                                                   style: TextStyle(
-                                                    color: Colors.white.withOpacity(0.85),
+                                                    color: Colors.white.withValues(alpha: 0.85),
                                                     fontSize: translationFontSize,
                                                     fontWeight: FontWeight.w400,
                                                     height: 1.35,
@@ -444,17 +444,17 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
             decoration: BoxDecoration(
               color: isDragging
                   ? colors.accentPrimary
-                  : Colors.white.withOpacity(0.45),
+                  : Colors.white.withValues(alpha: 0.45),
               borderRadius: BorderRadius.circular(999),
               boxShadow: [
                 if (isDragging)
                   BoxShadow(
-                    color: colors.accentPrimary.withOpacity(0.6),
+                    color: colors.accentPrimary.withValues(alpha: 0.6),
                     blurRadius: 8,
                   )
                 else
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.4),
+                    color: Colors.black.withValues(alpha: 0.4),
                     blurRadius: 3,
                     offset: const Offset(0, 1),
                   ),
@@ -483,9 +483,9 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
 
     if (isGrammar) {
       textColor = Colors.white;
-      chipBgColor = const Color(0xFF2DD4BF).withOpacity(0.18);
+      chipBgColor = const Color(0xFF2DD4BF).withValues(alpha: 0.18);
       chipBorder = Border.all(
-        color: const Color(0xFF2DD4BF).withOpacity(0.55),
+        color: const Color(0xFF2DD4BF).withValues(alpha: 0.55),
         width: 1.0,
       );
       textDecoration = TextDecoration.underline;
@@ -494,28 +494,28 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
       textColor = colors.wordNewText;
       chipBgColor = colors.wordNewBg;
       chipBorder = Border.all(
-        color: colors.wordNewText.withOpacity(0.35),
+        color: colors.wordNewText.withValues(alpha: 0.35),
         width: 1.0,
       );
     } else if (token.level == 'learning') {
       textColor = colors.wordLearningText;
       chipBgColor = colors.wordLearningBg;
       chipBorder = Border.all(
-        color: colors.wordLearningText.withOpacity(0.35),
+        color: colors.wordLearningText.withValues(alpha: 0.35),
         width: 1.0,
       );
     } else if (token.level == 'known') {
       textColor = colors.wordKnownText;
       chipBgColor = colors.wordKnownBg;
       chipBorder = Border.all(
-        color: colors.wordKnownText.withOpacity(0.35),
+        color: colors.wordKnownText.withValues(alpha: 0.35),
         width: 1.0,
       );
     } else if (token.isSaved) {
       textColor = colors.accentPrimary;
-      chipBgColor = colors.accentPrimary.withOpacity(0.22);
+      chipBgColor = colors.accentPrimary.withValues(alpha: 0.22);
       chipBorder = Border.all(
-        color: colors.accentPrimary.withOpacity(0.4),
+        color: colors.accentPrimary.withValues(alpha: 0.4),
         width: 1.0,
       );
       textDecoration = TextDecoration.underline;
@@ -543,7 +543,7 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
                   child: Text(
                     part.reading!,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.88),
+                      color: Colors.white.withValues(alpha: 0.88),
                       fontSize: rubyFontSize,
                       fontWeight: FontWeight.w500,
                       letterSpacing: -0.2,
@@ -595,7 +595,7 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
             child: Text(
               tokenReading,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.88),
+                color: Colors.white.withValues(alpha: 0.88),
                 fontSize: rubyFontSize,
                 fontWeight: FontWeight.w500,
                 letterSpacing: -0.2,
@@ -717,7 +717,7 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
               width: 5.5,
               height: 5.5,
               decoration: BoxDecoration(
-                color: color.withOpacity(opacity.clamp(0.2, 1.0)),
+                color: color.withValues(alpha: opacity.clamp(0.2, 1.0)),
                 shape: BoxShape.circle,
               ),
             );

@@ -66,7 +66,7 @@ class SavedWordsSheet extends StatelessWidget {
                   Icon(
                     Icons.bookmark_border_rounded,
                     size: 48,
-                    color: colors.textMuted.withOpacity(0.5),
+                    color: colors.textMuted.withValues(alpha: 0.5),
                   ),
                   const SizedBox(height: 12),
                   Text(

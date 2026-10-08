@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 ///
 /// Renders an authentic curved semi-circular ripple arc covering the tapped half of the
 /// video player with:
-/// - A smooth inward-curving translucent arc (`Colors.white.withOpacity(0.18)`).
+/// - A smooth inward-curving translucent arc (`Colors.white.withValues(alpha: 0.18)`).
 /// - 3 animated flashing chevron arrows (<<< for rewind, >>> for forward).
 /// - Accumulator count label ("10s", "20s", "30s" etc.).
 /// - Spring pop scale animation on every tap and smooth fade out.
@@ -76,7 +76,7 @@ class _DoubleTapSeekRippleState extends State<DoubleTapSeekRipple>
 
         return Icon(
           widget.isLeft ? Icons.play_arrow_rounded : Icons.play_arrow_rounded,
-          color: Colors.white.withOpacity(opacity),
+          color: Colors.white.withValues(alpha: opacity),
           size: 20,
         );
       },
@@ -94,7 +94,7 @@ class _DoubleTapSeekRippleState extends State<DoubleTapSeekRipple>
 
         return Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.18),
+            color: Colors.white.withValues(alpha: 0.18),
             borderRadius: borderRadius,
           ),
           child: Center(

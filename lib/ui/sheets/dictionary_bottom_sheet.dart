@@ -8,6 +8,7 @@ import '../../services/i18n_service.dart';
 import '../../services/srs_service.dart';
 import '../../services/toast_service.dart';
 import '../../state/app_state.dart';
+import '../../state/player_coordinator.dart';
 import '../../utils/cyrb53_hasher.dart';
 import '../../utils/pos_utils.dart';
 import '../widgets/voca_empty_state.dart';
@@ -344,6 +345,11 @@ class _DictionaryBottomSheetState extends State<DictionaryBottomSheet> {
       );
 
       await supabase.upsertVocabularyCard(card);
+
+      final playerCtrl = PlayerCoordinator.instance.playerController;
+      if (playerCtrl != null) {
+        playerCtrl.savedWordCount.value++;
+      }
 
       if (mounted) {
         setState(() {
@@ -866,7 +872,7 @@ class _DictionaryBottomSheetState extends State<DictionaryBottomSheet> {
                         decoration: BoxDecoration(
                           color: colors.bgSurface,
                           borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: colors.borderColor.withOpacity(0.5)),
+                          border: Border.all(color: colors.borderColor.withValues(alpha: 0.5)),
                         ),
                         child: Text(
                           translated,
@@ -1023,38 +1029,32 @@ class _DictionaryBottomSheetState extends State<DictionaryBottomSheet> {
     return SizedBox(
       width: double.infinity,
       height: 48,
-      child: ElevatedButton(
+      child: FilledButton.icon(
         onPressed: _isSaving ? null : _saveWord,
-        style: ElevatedButton.styleFrom(
+        style: FilledButton.styleFrom(
           backgroundColor: colors.accentPrimary,
           foregroundColor: Colors.white,
-          disabledBackgroundColor: colors.accentPrimary.withOpacity(0.5),
+          disabledBackgroundColor: colors.accentPrimary.withValues(alpha: 0.5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
           elevation: 0,
         ),
-        child: _isSaving
+        icon: _isSaving
             ? const SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
               )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.add_rounded, size: 20),
-                  const SizedBox(width: 6),
-                  Text(
-                    context.t('popup.saveWord', null, 'Save Word'),
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                ],
-              ),
+            : const Icon(Icons.add_rounded, size: 20),
+        label: Text(
+          context.t('popup.saveWord', null, 'Save Word'),
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.2,
+          ),
+        ),
       ),
     );
   }

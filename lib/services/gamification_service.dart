@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import '../ui/gamification/widgets/rpg_shield_crest.dart';
+import 'i18n_service.dart';
 import 'voca_api_client.dart';
 import 'supabase_service.dart';
 
@@ -159,6 +160,34 @@ class DailyMission {
   });
 
   double get progressRatio => target > 0 ? (progress / target).clamp(0.0, 1.0) : 0.0;
+
+  String localizedTitle(BuildContext context) {
+    final key = switch (id) {
+      'daily_watch_1' => 'watch1',
+      'daily_watch_2' => 'watch2',
+      'daily_save_3' => 'save3',
+      'daily_save_5' => 'save5',
+      'daily_dict_3' => 'dict3',
+      'daily_srs_10' => 'srs10',
+      'daily_quiz_1' => 'quiz1',
+      _ => id.replaceAll('daily_', ''),
+    };
+    return context.t('missions.$key.title', null, title);
+  }
+
+  String localizedDescription(BuildContext context) {
+    final key = switch (id) {
+      'daily_watch_1' => 'watch1',
+      'daily_watch_2' => 'watch2',
+      'daily_save_3' => 'save3',
+      'daily_save_5' => 'save5',
+      'daily_dict_3' => 'dict3',
+      'daily_srs_10' => 'srs10',
+      'daily_quiz_1' => 'quiz1',
+      _ => id.replaceAll('daily_', ''),
+    };
+    return context.t('missions.$key.desc', null, description);
+  }
 
   DailyMission copyWith({
     int? progress,

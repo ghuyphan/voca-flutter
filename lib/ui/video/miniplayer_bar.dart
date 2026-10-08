@@ -96,7 +96,7 @@ class _MiniplayerBarState extends State<MiniplayerBar> {
                   border: Border.all(color: colors.borderColor),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(colors.isDark ? 0.40 : 0.12),
+                      color: Colors.black.withValues(alpha: colors.isDark ? 0.40 : 0.12),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),

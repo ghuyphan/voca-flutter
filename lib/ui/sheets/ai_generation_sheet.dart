@@ -128,7 +128,7 @@ class _AiGenerationSheetState extends State<AiGenerationSheet> {
                 height: 36,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: colors.colorDiamond.withOpacity(0.16),
+                  color: colors.colorDiamond.withValues(alpha: 0.16),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(Icons.auto_awesome_rounded, color: colors.colorDiamond, size: 20),
@@ -257,7 +257,7 @@ class _AiGenerationSheetState extends State<AiGenerationSheet> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.12),
+                color: Colors.red.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -287,7 +287,7 @@ class _AiGenerationSheetState extends State<AiGenerationSheet> {
               const SizedBox(width: 12),
               Expanded(
                 flex: 2,
-                child: ElevatedButton.icon(
+                child: FilledButton.icon(
                   onPressed: _isGenerating ? null : _handleConfirm,
                   icon: _isGenerating
                       ? const SizedBox(
@@ -305,11 +305,12 @@ class _AiGenerationSheetState extends State<AiGenerationSheet> {
                         : context.t('subtitle.generate', null, 'Generate'),
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  style: ElevatedButton.styleFrom(
+                  style: FilledButton.styleFrom(
                     backgroundColor: colors.accentPrimary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     padding: const EdgeInsets.symmetric(vertical: 12),
+                    elevation: 0,
                   ),
                 ),
               ),

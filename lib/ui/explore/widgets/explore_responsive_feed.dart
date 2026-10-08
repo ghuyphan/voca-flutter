@@ -40,7 +40,6 @@ class ExploreResponsiveFeed extends StatelessWidget {
             itemBuilder: (_, __) => const FeedSkeletonCard(),
           );
         }
-
         final crossAxisCount = width >= 1100 ? 3 : 2;
         const double spacing = 20.0;
         const double horizontalPadding = 16.0 * 2;

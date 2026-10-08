@@ -341,7 +341,7 @@ class VideoMoreFeedState extends State<VideoMoreFeed> {
                   style: TextStyle(color: colors.textSecondary, fontSize: 13),
                 ),
                 const SizedBox(height: 12),
-                TextButton.icon(
+                OutlinedButton.icon(
                   onPressed: () => _loadVideos(refresh: true),
                   icon: const Icon(Icons.refresh_rounded, size: 16),
                   label: Text(context.t('common.retry', null, 'Retry')),

@@ -7,6 +7,7 @@ import '../../models/voca_models.dart';
 import '../../services/i18n_service.dart';
 import '../../services/toast_service.dart';
 import '../../state/app_state.dart';
+import '../../state/player_coordinator.dart';
 import '../../utils/cyrb53_hasher.dart';
 import '../widgets/voca_level_badge.dart';
 import 'dictionary_bottom_sheet.dart';
@@ -104,6 +105,11 @@ class _GrammarBottomSheetState extends State<GrammarBottomSheet> {
       );
 
       await supabase.upsertVocabularyCard(card);
+
+      final playerCtrl = PlayerCoordinator.instance.playerController;
+      if (playerCtrl != null) {
+        playerCtrl.savedWordCount.value++;
+      }
 
       if (mounted) {
         setState(() {
@@ -429,7 +435,7 @@ class _GrammarBottomSheetState extends State<GrammarBottomSheet> {
                               ],
                             ),
                           )
-                        : ElevatedButton.icon(
+                        : FilledButton.icon(
                             onPressed: _isSaving ? null : _saveGrammar,
                             icon: _isSaving
                                 ? const SizedBox(
@@ -442,7 +448,7 @@ class _GrammarBottomSheetState extends State<GrammarBottomSheet> {
                               context.t('grammar.savePattern', null, 'Save Grammar'),
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                             ),
-                            style: ElevatedButton.styleFrom(
+                            style: FilledButton.styleFrom(
                               backgroundColor: colors.accentPrimary,
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(

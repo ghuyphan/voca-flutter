@@ -128,7 +128,7 @@ class _NewVideoSheetState extends State<NewVideoSheet> {
                       color: VocaTokens.accentPrimarySoft,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: VocaTokens.accentPrimary.withOpacity(0.3),
+                        color: VocaTokens.accentPrimary.withValues(alpha: 0.3),
                       ),
                     ),
                     child: const Icon(
@@ -251,7 +251,7 @@ class _NewVideoSheetState extends State<NewVideoSheet> {
               SizedBox(
                 width: double.infinity,
                 height: 48,
-                child: ElevatedButton.icon(
+                child: FilledButton.icon(
                   onPressed: _startLearning,
                   icon: const Icon(Icons.play_arrow_rounded, size: 22),
                   label: const Text(
@@ -262,11 +262,10 @@ class _NewVideoSheetState extends State<NewVideoSheet> {
                       letterSpacing: 0.3,
                     ),
                   ),
-                  style: ElevatedButton.styleFrom(
+                  style: FilledButton.styleFrom(
                     backgroundColor: VocaTokens.accentPrimary,
                     foregroundColor: Colors.white,
-                    elevation: 2,
-                    shadowColor: VocaTokens.accentPrimary.withOpacity(0.4),
+                    elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),

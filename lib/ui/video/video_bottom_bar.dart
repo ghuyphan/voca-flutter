@@ -192,7 +192,7 @@ class VideoBottomBar extends StatelessWidget {
             child: Text(
               '/',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.40),
+                color: Colors.white.withValues(alpha: 0.40),
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
                 shadows: const [
@@ -210,7 +210,7 @@ class VideoBottomBar extends StatelessWidget {
           Text(
             _effectiveDuration,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.65),
+              color: Colors.white.withValues(alpha: 0.65),
               fontSize: 13,
               fontWeight: FontWeight.w500,
               fontFeatures: const [FontFeature.tabularFigures()],
@@ -229,46 +229,35 @@ class VideoBottomBar extends StatelessWidget {
     );
   }
 
-  /// Subtitles CC button with active indicator bar and AI icon if AI subtitle
-
-
   /// Dual subtitles toggle button
   Widget _buildDualSubsButton(BuildContext context, Color accent) {
-    return Tooltip(
-      message: context.t('subtitle.dualSubtitles', null, 'Dual Subtitles'),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onToggleDualSubtitles,
-          customBorder: const CircleBorder(),
-          child: Container(
-            width: 36,
-            height: 36,
-            alignment: Alignment.center,
-            child: Icon(
-              Icons.translate_rounded,
-              size: 19,
-              color: showDualSubtitles
-                  ? accent
-                  : Colors.white.withOpacity(0.65),
-              shadows: showDualSubtitles
-                  ? [
-                      Shadow(
-                        color: accent.withOpacity(0.6),
-                        blurRadius: 4,
-                      ),
-                    ]
-                  : const [
-                      Shadow(
-                        color: Color.fromRGBO(0, 0, 0, 0.85),
-                        blurRadius: 2,
-                        offset: Offset(0, 1),
-                      ),
-                    ],
-            ),
-          ),
-        ),
+    return IconButton(
+      tooltip: context.t('subtitle.dualSubtitles', null, 'Dual Subtitles'),
+      visualDensity: VisualDensity.compact,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+      icon: Icon(
+        Icons.translate_rounded,
+        size: 19,
+        color: showDualSubtitles
+            ? accent
+            : Colors.white.withValues(alpha: 0.65),
+        shadows: showDualSubtitles
+            ? [
+                Shadow(
+                  color: accent.withValues(alpha: 0.6),
+                  blurRadius: 4,
+                ),
+              ]
+            : const [
+                Shadow(
+                  color: Color.fromRGBO(0, 0, 0, 0.85),
+                  blurRadius: 2,
+                  offset: Offset(0, 1),
+                ),
+              ],
       ),
+      onPressed: onToggleDualSubtitles,
     );
   }
 
@@ -278,32 +267,25 @@ class VideoBottomBar extends StatelessWidget {
     required String tooltip,
     required VoidCallback? onTap,
   }) {
-    return Tooltip(
-      message: tooltip,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          customBorder: const CircleBorder(),
-          child: Container(
-            width: 36,
-            height: 36,
-            alignment: Alignment.center,
-            child: Icon(
-              icon,
-              size: iconSize,
-              color: Colors.white.withOpacity(0.9),
-              shadows: const [
-                Shadow(
-                  color: Color.fromRGBO(0, 0, 0, 0.85),
-                  blurRadius: 2,
-                  offset: Offset(0, 1),
-                ),
-              ],
-            ),
+    return IconButton(
+      tooltip: tooltip,
+      iconSize: iconSize,
+      visualDensity: VisualDensity.compact,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+      icon: Icon(
+        icon,
+        size: iconSize,
+        color: Colors.white.withValues(alpha: 0.9),
+        shadows: const [
+          Shadow(
+            color: Color.fromRGBO(0, 0, 0, 0.85),
+            blurRadius: 2,
+            offset: Offset(0, 1),
           ),
-        ),
+        ],
       ),
+      onPressed: onTap,
     );
   }
 }

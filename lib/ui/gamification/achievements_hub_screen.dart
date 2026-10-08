@@ -553,7 +553,7 @@ class _AchievementsHubScreenState extends State<AchievementsHubScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      mission.title,
+                      mission.localizedTitle(context),
                       style: TextStyle(
                         color: colors.textPrimary,
                         fontSize: 13.5,
@@ -572,7 +572,7 @@ class _AchievementsHubScreenState extends State<AchievementsHubScreen> {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  mission.description,
+                  mission.localizedDescription(context),
                   style: TextStyle(color: colors.textMuted, fontSize: 11.5),
                 ),
                 const SizedBox(height: 8),

@@ -148,15 +148,45 @@ void main() {
       expect(controller.knownCount.value, equals(initialKnown + 1));
       expect(fakeSupabase.savedCards.any((c) => c.level == 'known' && c.srsInterval >= 21), isTrue);
     });
+
+    test('Multiple Again reviews on 1 card tracks uniqueCardsCount as 1', () async {
+      final fakeSupabase = _FakeSupabaseForStudy();
+      AppState.instance.supabaseService = fakeSupabase;
+      AppState.instance.apiClient = _FakeApiForStudy();
+      AppState.instance.activeLanguage.value = 'ja';
+      AppState.instance.grammarEngine = GrammarEngine();
+
+      final controller = StudySessionController();
+      await controller.loadDeck();
+      controller.startSession();
+
+      expect(controller.sessionCards.value.length, equals(1));
+      expect(controller.initialQueueSize.value, equals(1));
+
+      // Review Again twice
+      await controller.rateCurrentCard(SRSReviewRating.again);
+      await controller.rateCurrentCard(SRSReviewRating.again);
+      // Finally rate Good to complete
+      await controller.rateCurrentCard(SRSReviewRating.good);
+
+      expect(controller.sessionStats.value.totalReviewed, equals(3));
+      expect(controller.sessionStats.value.uniqueCardsCount, equals(1));
+      expect(controller.isFinished, isTrue);
+
+      // Verify exitToOverview clears session and resets isFinished
+      controller.exitToOverview();
+      expect(controller.isFinished, isFalse);
+      expect(controller.isSessionActive.value, isFalse);
+      expect(controller.sessionCards.value, isEmpty);
+    });
   });
 
-  group('FlashcardFace UI Parity & Mark As Known Button Tests', () {
-    testWidgets('FlashcardFace displays POS, Stage badge, and Mark Known action without overflow', (tester) async {
+  group('FlashcardFace UI Parity & Design Parity Tests', () {
+    testWidgets('FlashcardFace displays Word, Reading, Stage label, and Memory section without overflow', (tester) async {
       tester.view.physicalSize = const Size(360, 640);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      bool markedKnown = false;
       final testCard = Flashcard(
         id: 'fc_test',
         userId: 'u1',
@@ -186,7 +216,6 @@ void main() {
                   card: testCard,
                   isBack: false,
                   isReadingPeeked: true,
-                  onMarkAsKnown: () => markedKnown = true,
                 ),
               ),
             ),
@@ -196,26 +225,20 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Check POS tag and Word
-      expect(find.text('VERB'), findsOneWidget);
+      // Check Word and Reading
       expect(find.text('食べる'), findsOneWidget);
       expect(find.text('たべる'), findsOneWidget);
 
-      // Check Mark as Known button
-      final markKnownBtn = find.text('Known');
-      expect(markKnownBtn, findsWidgets);
-
-      await tester.tap(markKnownBtn.first);
-      await tester.pump();
-      expect(markedKnown, isTrue);
+      // Check Stage label & Memory header
+      expect(find.text('Learning'), findsWidgets);
+      expect(find.text('Memory'), findsOneWidget);
     });
 
-    testWidgets('FlashcardFace back face displays meaning and Mark Known button responds on tap', (tester) async {
+    testWidgets('FlashcardFace back face displays meaning, replay clip button, and memory progress', (tester) async {
       tester.view.physicalSize = const Size(360, 640);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      bool markedKnown = false;
       final testCard = Flashcard(
         id: 'fc_back_test',
         userId: 'u1',
@@ -243,7 +266,6 @@ void main() {
                 child: FlashcardFace(
                   card: testCard,
                   isBack: true,
-                  onMarkAsKnown: () => markedKnown = true,
                 ),
               ),
             ),
@@ -255,24 +277,17 @@ void main() {
 
       // Meaning should be visible on back face
       expect(find.text('to drink'), findsOneWidget);
-      expect(find.text('Scene'), findsOneWidget);
-
-      final markKnownBtn = find.text('Known');
-      expect(markKnownBtn, findsWidgets);
-
-      await tester.tap(markKnownBtn.first);
-      await tester.pump();
-      expect(markedKnown, isTrue);
+      expect(find.text('Replay this clip'), findsOneWidget);
+      expect(find.text('Memory'), findsOneWidget);
     });
 
-    testWidgets('TinderCardStack front and back faces handle Peek, Known, and Flip reliably', (tester) async {
+    testWidgets('TinderCardStack front and back faces handle Peek and Flip reliably', (tester) async {
       tester.view.physicalSize = const Size(360, 640);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
       bool flipped = false;
       bool peeked = false;
-      bool markedKnown = false;
 
       final testCard = Flashcard(
         id: 'fc_stack_test',
@@ -300,7 +315,6 @@ void main() {
                   onSwipe: (_) {},
                   onToggleFlip: () => flipped = true,
                   onTogglePeekReading: () => peeked = true,
-                  onMarkAsKnown: () => markedKnown = true,
                 ),
               ),
             ),
@@ -312,7 +326,7 @@ void main() {
 
       // Front face shows word and peek reading button
       expect(find.text('歩く'), findsOneWidget);
-      final peekBtn = find.text('Xem cách đọc');
+      final peekBtn = find.text('Peek Reading');
       expect(peekBtn, findsOneWidget);
 
       await tester.tap(peekBtn);
@@ -323,32 +337,22 @@ void main() {
       await tester.tap(find.text('歩く'));
       await tester.pump();
       expect(flipped, isTrue);
-
-      // Tap Mark Known on front face
-      final markKnownBtn = find.text('Known');
-      expect(markKnownBtn, findsWidgets);
-
-      await tester.tap(markKnownBtn.first);
-      await tester.pump();
-      expect(markedKnown, isTrue);
     });
 
-    testWidgets('TinderActionDock dispatches callbacks on Again, Good, Flip, and Undo', (tester) async {
+    testWidgets('TinderActionDock dispatches callbacks on Again, Hard, Good, and Easy', (tester) async {
       SRSReviewRating? swipedRating;
-      bool flipped = false;
-      bool undid = false;
 
       await tester.pumpWidget(
         MaterialApp(
           theme: VocaTheme.darkTheme,
           home: Scaffold(
             body: TinderActionDock(
-              canUndo: true,
-              isRevealed: true,
-              onUndo: () => undid = true,
+              againInterval: '<10m',
+              hardInterval: '1d',
+              goodInterval: '3d',
+              easyInterval: '5d',
               onAgain: () => swipedRating = SRSReviewRating.again,
               onHard: () => swipedRating = SRSReviewRating.hard,
-              onFlip: () => flipped = true,
               onGood: () => swipedRating = SRSReviewRating.good,
               onEasy: () => swipedRating = SRSReviewRating.easy,
             ),
@@ -358,18 +362,13 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Tap Undo
-      await tester.tap(find.text('Undo'));
+      // Tap Again
+      await tester.tap(find.text('Again'));
       await tester.pump();
-      expect(undid, isTrue);
-
-      // Tap Flip
-      await tester.tap(find.text('Flip'));
-      await tester.pump();
-      expect(flipped, isTrue);
+      expect(swipedRating, equals(SRSReviewRating.again));
 
       // Tap Good
-      await tester.tap(find.text('3d'));
+      await tester.tap(find.text('Good'));
       await tester.pump();
       expect(swipedRating, equals(SRSReviewRating.good));
     });

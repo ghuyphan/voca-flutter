@@ -136,7 +136,7 @@ class _AddToPlaylistSheetState extends State<AddToPlaylistSheet> {
               decoration: BoxDecoration(
                 color: colors.accentPrimarySoft,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: colors.accentPrimary.withOpacity(0.3)),
+                border: Border.all(color: colors.accentPrimary.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
@@ -207,7 +207,7 @@ class _AddToPlaylistSheetState extends State<AddToPlaylistSheet> {
                       color: isSaved ? colors.accentPrimarySoft : colors.bgSurface,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: isSaved ? colors.accentPrimary.withOpacity(0.4) : colors.borderColor,
+                        color: isSaved ? colors.accentPrimary.withValues(alpha: 0.4) : colors.borderColor,
                       ),
                     ),
                     child: Row(

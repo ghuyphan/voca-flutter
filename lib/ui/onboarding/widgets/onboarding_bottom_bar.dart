@@ -46,20 +46,24 @@ class OnboardingBottomBar extends StatelessWidget {
           colors: [colors.bgPrimary.withValues(alpha: 0), colors.bgPrimary],
         ),
       ),
-      padding: EdgeInsets.fromLTRB(20, 12, 20, bottomInset > 0 ? bottomInset : 16),
+      padding: EdgeInsets.fromLTRB(20, 10, 20, bottomInset > 0 ? bottomInset : 16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Optional Legal Consent Line (Above button, matching reference screenshot)
+          // Optional Legal Consent Line
           if (showConsent) ...[
             Padding(
-              padding: const EdgeInsets.only(bottom: 14),
+              padding: const EdgeInsets.only(bottom: 12),
               child: Text.rich(
                 TextSpan(
-                  text: context.t('auth.landingPolicyConsentPrefix', null, 'By continuing you agree to our\n'),
+                  text: context.t(
+                    'auth.landingPolicyConsentPrefix',
+                    null,
+                    'By continuing, you agree to our ',
+                  ),
                   style: TextStyle(
                     color: colors.textSecondary.withValues(alpha: 0.85),
-                    fontSize: 12.5,
+                    fontSize: 12,
                     height: 1.35,
                   ),
                   children: [
@@ -69,10 +73,10 @@ class OnboardingBottomBar extends StatelessWidget {
                       child: GestureDetector(
                         onTap: onTermsTap,
                         child: Text(
-                          context.t('settings.terms', null, 'terms of service'),
+                          context.t('settings.terms', null, 'Terms of Service'),
                           style: TextStyle(
                             color: colors.accentPrimary,
-                            fontSize: 12.5,
+                            fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -82,7 +86,7 @@ class OnboardingBottomBar extends StatelessWidget {
                       text: context.t('auth.landingPolicyConsentJoiner', null, ' and '),
                       style: TextStyle(
                         color: colors.textSecondary.withValues(alpha: 0.85),
-                        fontSize: 12.5,
+                        fontSize: 12,
                       ),
                     ),
                     WidgetSpan(
@@ -91,10 +95,10 @@ class OnboardingBottomBar extends StatelessWidget {
                       child: GestureDetector(
                         onTap: onPrivacyTap,
                         child: Text(
-                          context.t('settings.privacy', null, 'privacy policy'),
+                          context.t('settings.privacyPolicy', null, 'Privacy Policy'),
                           style: TextStyle(
                             color: colors.accentPrimary,
-                            fontSize: 12.5,
+                            fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -185,13 +189,13 @@ class OnboardingBottomBar extends StatelessWidget {
                     padding: const EdgeInsets.only(top: 6),
                     child: SizedBox(
                       width: double.infinity,
-                      height: 44,
+                      height: 40,
                       child: TextButton(
                         onPressed: onSecondary,
                         style: TextButton.styleFrom(
                           foregroundColor: colors.textSecondary,
                           textStyle: const TextStyle(
-                            fontSize: 14.5,
+                            fontSize: 14,
                             fontWeight: FontWeight.w600,
                           ),
                         ),

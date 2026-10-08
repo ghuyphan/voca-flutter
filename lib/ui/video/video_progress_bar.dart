@@ -209,7 +209,7 @@ class _VideoProgressBarState extends State<VideoProgressBar> {
                       height: currentTrackHeight,
                       width: totalWidth,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.30),
+                        color: Colors.white.withValues(alpha: 0.30),
                         borderRadius: BorderRadius.circular(999),
                         boxShadow: const [
                           BoxShadow(
@@ -231,7 +231,7 @@ class _VideoProgressBarState extends State<VideoProgressBar> {
                         width: (totalWidth * _bufferedFractionClamped)
                             .clamp(0.0, totalWidth),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.35),
+                          color: Colors.white.withValues(alpha: 0.35),
                           borderRadius: BorderRadius.circular(999),
                         ),
                       ),
@@ -273,12 +273,12 @@ class _VideoProgressBarState extends State<VideoProgressBar> {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.4),
+                                color: Colors.black.withValues(alpha: 0.4),
                                 blurRadius: 6,
                                 offset: const Offset(0, 2),
                               ),
                               BoxShadow(
-                                color: effectiveAccent.withOpacity(0.5),
+                                color: effectiveAccent.withValues(alpha: 0.5),
                                 blurRadius: 8,
                                 spreadRadius: 1,
                               ),
@@ -304,12 +304,12 @@ class _VideoProgressBarState extends State<VideoProgressBar> {
                             color: const Color.fromRGBO(0, 0, 0, 0.85),
                             borderRadius: BorderRadius.circular(4),
                             border: Border.all(
-                              color: Colors.white.withOpacity(0.15),
+                              color: Colors.white.withValues(alpha: 0.15),
                               width: 1,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.4),
+                                color: Colors.black.withValues(alpha: 0.4),
                                 blurRadius: 6,
                                 offset: const Offset(0, 2),
                               ),

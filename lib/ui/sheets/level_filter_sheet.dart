@@ -71,24 +71,30 @@ class _LevelFilterSheetState extends State<LevelFilterSheet> {
                 avatar: Icon(
                   Icons.all_inclusive_rounded,
                   size: 15,
-                  color: _level == 'All' ? colors.textInverse : colors.textSecondary,
+                  color: _level == 'All' ? colors.accentPrimary : colors.textSecondary,
                 ),
                 label: Text(
-                  context.t('level.allLevels', null, 'All Levels'),
+                  context.t('level.allLevels', null, 'Tất cả cấp độ'),
                   style: TextStyle(
-                    color: _level == 'All' ? colors.textInverse : colors.textSecondary,
+                    color: _level == 'All' ? colors.accentPrimary : colors.textSecondary,
                     fontSize: 13,
                     fontWeight: _level == 'All' ? FontWeight.w700 : FontWeight.w500,
                   ),
                 ),
-                backgroundColor: colors.bgCard,
-                selectedColor: colors.textPrimary,
-                side: BorderSide(
-                  color: _level == 'All' ? colors.textPrimary : colors.borderColor,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
+                color: WidgetStateProperty.resolveWith((states) {
+                  if (states.contains(WidgetState.selected)) {
+                    return colors.accentPrimarySoft;
+                  }
+                  return colors.bgCard;
+                }),
+                surfaceTintColor: Colors.transparent,
+                side: WidgetStateBorderSide.resolveWith((states) {
+                  if (states.contains(WidgetState.selected)) {
+                    return BorderSide(color: colors.accentPrimary, width: 1.5);
+                  }
+                  return BorderSide(color: colors.borderColor, width: 1.0);
+                }),
+                shape: const StadiumBorder(),
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 visualDensity: VisualDensity.compact,
@@ -104,33 +110,36 @@ class _LevelFilterSheetState extends State<LevelFilterSheet> {
                 return FilterChip(
                   selected: isSelected,
                   showCheckmark: false,
-                  avatar: isSelected
-                      ? Container(
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: info.text,
-                            shape: BoxShape.circle,
-                          ),
-                        )
-                      : null,
+                  avatar: Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: isSelected ? info.text : info.text.withValues(alpha: 0.75),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
                   label: Text(
                     lvl,
                     style: TextStyle(
-                      color: isSelected ? info.text : colors.textSecondary,
+                      color: isSelected ? info.text : colors.textPrimary,
                       fontSize: 13,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                     ),
                   ),
-                  backgroundColor: colors.bgCard,
-                  selectedColor: info.bg,
-                  side: BorderSide(
-                    color: isSelected ? info.border : colors.borderColor,
-                    width: isSelected ? 1.5 : 1.0,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
+                  color: WidgetStateProperty.resolveWith((states) {
+                    if (states.contains(WidgetState.selected)) {
+                      return info.bg;
+                    }
+                    return colors.bgCard;
+                  }),
+                  surfaceTintColor: Colors.transparent,
+                  side: WidgetStateBorderSide.resolveWith((states) {
+                    if (states.contains(WidgetState.selected)) {
+                      return BorderSide(color: info.border, width: 1.5);
+                    }
+                    return BorderSide(color: colors.borderColor, width: 1.0);
+                  }),
+                  shape: const StadiumBorder(),
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   visualDensity: VisualDensity.compact,
@@ -144,7 +153,7 @@ class _LevelFilterSheetState extends State<LevelFilterSheet> {
 
           const SizedBox(height: 24),
 
-          // Action Footer: Reset & Apply Filters
+          // Action Footer: Reset & Apply Filters (M3 Buttons)
           Row(
             children: [
               Expanded(
@@ -157,9 +166,7 @@ class _LevelFilterSheetState extends State<LevelFilterSheet> {
                     foregroundColor: colors.textSecondary,
                     side: BorderSide(color: colors.borderColor),
                     padding: const EdgeInsets.symmetric(vertical: 13),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    shape: const StadiumBorder(),
                   ),
                   child: Text(
                     context.t('common.reset', null, 'Reset'),
@@ -170,21 +177,19 @@ class _LevelFilterSheetState extends State<LevelFilterSheet> {
               const SizedBox(width: 12),
               Expanded(
                 flex: 2,
-                child: ElevatedButton(
+                child: FilledButton(
                   onPressed: () {
                     Navigator.of(context).pop();
                     widget.onApply(_level);
                   },
-                  style: ElevatedButton.styleFrom(
+                  style: FilledButton.styleFrom(
                     backgroundColor: colors.accentPrimary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 13),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    shape: const StadiumBorder(),
                   ),
                   child: Text(
-                    context.t('common.apply', null, 'Apply Filters'),
+                    context.t('explore.applyFilters', null, 'Apply Filters'),
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
