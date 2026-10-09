@@ -407,11 +407,11 @@ class _LibraryPlaylistDetailSheetState extends State<LibraryPlaylistDetailSheet>
         if (_videoIds.isNotEmpty) ...[
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton.icon(
+            child: FilledButton.icon(
               onPressed: _playAll,
               icon: const Icon(Icons.play_arrow_rounded, size: 20),
               label: Text('${context.t('playlist.playAll', null, 'Play All')} (${_videoIds.length})'),
-              style: ElevatedButton.styleFrom(
+              style: FilledButton.styleFrom(
                 backgroundColor: colors.accentPrimary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 12),

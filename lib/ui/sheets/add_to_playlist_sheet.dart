@@ -198,47 +198,52 @@ class _AddToPlaylistSheetState extends State<AddToPlaylistSheet> {
                 final pl = _playlists[index];
                 final isSaved = _isSavedInPlaylist(pl);
 
-                return InkWell(
-                  onTap: () => _togglePlaylist(pl),
-                  borderRadius: BorderRadius.circular(10),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: isSaved ? colors.accentPrimarySoft : colors.bgSurface,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: isSaved ? colors.accentPrimary.withValues(alpha: 0.4) : colors.borderColor,
+                return Semantics(
+                  button: true,
+                  checked: isSaved,
+                  label: pl.title,
+                  child: InkWell(
+                    onTap: () => _togglePlaylist(pl),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: isSaved ? colors.accentPrimarySoft : colors.bgSurface,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isSaved ? colors.accentPrimary.withValues(alpha: 0.4) : colors.borderColor,
+                        ),
                       ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          isSaved ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
-                          color: isSaved ? colors.accentPrimary : colors.textMuted,
-                          size: 22,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                pl.title,
-                                style: TextStyle(
-                                  color: colors.textPrimary,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                '${pl.videoCount} ${context.t('playlist.videoCountSuffix', null, 'videos')} • ${pl.language.toUpperCase()}',
-                                style: TextStyle(color: colors.textMuted, fontSize: 11.5),
-                              ),
-                            ],
+                      child: Row(
+                        children: [
+                          Icon(
+                            isSaved ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                            color: isSaved ? colors.accentPrimary : colors.textMuted,
+                            size: 22,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  pl.title,
+                                  style: TextStyle(
+                                    color: colors.textPrimary,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${pl.videoCount} ${context.t('playlist.videoCountSuffix', null, 'videos')} • ${pl.language.toUpperCase()}',
+                                  style: TextStyle(color: colors.textMuted, fontSize: 11.5),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );

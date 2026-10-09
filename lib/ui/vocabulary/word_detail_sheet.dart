@@ -154,9 +154,9 @@ class _WordDetailSheetState extends State<WordDetailSheet> {
                 onPressed: () => Navigator.pop(dialogContext),
                 child: Text(context.t('common.cancel', null, 'Cancel'), style: TextStyle(color: colors.textSecondary)),
               ),
-              ElevatedButton(
+              FilledButton(
                 onPressed: () => Navigator.pop(dialogContext, controller.text.trim()),
-                style: ElevatedButton.styleFrom(
+                style: FilledButton.styleFrom(
                   backgroundColor: colors.accentPrimary,
                   foregroundColor: Colors.white,
                 ),

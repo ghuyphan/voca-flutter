@@ -12,13 +12,15 @@ import 'services/grammar_engine.dart';
 import 'services/gamification_service.dart';
 import 'services/i18n_service.dart';
 import 'services/toast_service.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'state/app_state.dart';
 import 'ui/shell/main_shell.dart';
 import 'ui/splash/splash_screen.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
   // Initialize Supabase Backend-as-a-Service
   await Supabase.initialize(
@@ -48,6 +50,9 @@ Future<void> main() async {
     appState.grammarEngine.loadTranslation('ja', uiLang);
   }
   await appState.refreshDiamonds();
+
+  // Remove native splash screen once async bootstrapping is complete
+  FlutterNativeSplash.remove();
 
   runApp(const VocaApp());
 }

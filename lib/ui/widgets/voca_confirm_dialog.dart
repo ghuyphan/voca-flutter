@@ -97,9 +97,9 @@ Future<bool> showVocaConfirmDialog({
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: ElevatedButton(
+                child: FilledButton(
                   onPressed: () => Navigator.of(ctx).pop(true),
-                  style: ElevatedButton.styleFrom(
+                  style: FilledButton.styleFrom(
                     backgroundColor: isDanger ? colors.error : colors.accentPrimary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),

@@ -45,7 +45,7 @@ Future<T?> showVocaBottomSheet<T>({
           ),
           decoration: BoxDecoration(
             color: colors.bgCard,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             border: Border(
               top: BorderSide(color: colors.borderColor, width: 1),
               left: BorderSide(color: colors.borderColor, width: 1),
@@ -138,11 +138,12 @@ Future<T?> showVocaBottomSheet<T>({
                 // Absolute-positioned Close button matching lingua-tube's sheet-close-btn
                 if (showCloseButton)
                   Positioned(
-                    top: 8,
-                    right: 10,
+                    top: 6,
+                    right: 8,
                     child: IconButton(
                       icon: Icon(Icons.close_rounded, color: colors.textMuted, size: 20),
-                      visualDensity: VisualDensity.compact,
+                      constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                      padding: const EdgeInsets.all(10),
                       onPressed: () => Navigator.of(ctx).pop(),
                       tooltip: ctx.t('common.close', null, 'Close'),
                     ),

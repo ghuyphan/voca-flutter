@@ -255,21 +255,29 @@ class _PlaylistQueueSheetState extends State<PlaylistQueueSheet>
             ? colors.accentPrimary
             : colors.textSecondary;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: Container(
-          width: 34,
-          height: 34,
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: border),
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(999),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+            child: Center(
+              child: Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: bg,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: border),
+                ),
+                alignment: Alignment.center,
+                child: Icon(icon, size: 16, color: iconColor),
+              ),
+            ),
           ),
-          alignment: Alignment.center,
-          child: Icon(icon, size: 16, color: iconColor),
         ),
       ),
     );

@@ -308,17 +308,17 @@ class _PracticeSheetState extends State<PracticeSheet> {
                       if (activeIndex > 0) ...[
                         IconButton(
                           icon: Icon(Icons.skip_previous_rounded, size: 20, color: colors.textSecondary),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
+                          padding: const EdgeInsets.all(8),
+                          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                           tooltip: context.t('practice.prevCue', null, 'Previous sentence'),
                           onPressed: () => _goToCue(activeIndex - 1),
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 4),
                       ],
                       IconButton(
                         icon: Icon(Icons.replay_rounded, size: 18, color: colors.textSecondary),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.all(8),
+                        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                         tooltip: context.t('practice.replayCue', null, 'Replay cue'),
                         onPressed: () {
                           widget.ytController.seekTo(seconds: activeCue.start, allowSeekAhead: true);
@@ -326,11 +326,11 @@ class _PracticeSheetState extends State<PracticeSheet> {
                         },
                       ),
                       if (activeIndex != -1 && activeIndex < cues.length - 1) ...[
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 4),
                         IconButton(
                           icon: Icon(Icons.skip_next_rounded, size: 20, color: colors.textSecondary),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
+                          padding: const EdgeInsets.all(8),
+                          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                           tooltip: context.t('practice.nextCue', null, 'Next sentence'),
                           onPressed: () => _goToCue(activeIndex + 1),
                         ),

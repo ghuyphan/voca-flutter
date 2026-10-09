@@ -43,6 +43,7 @@ dependencies:
 
   # On-Device Translation (Google ML Kit)
   google_mlkit_translation: ^0.15.1
+  flutter_native_splash: ^2.4.8
 
 dev_dependencies:
   flutter_test:
@@ -64,3 +65,18 @@ flutter:
     - assets/avatars/
     - assets/flags/
     - assets/illustrations/
+
+flutter_native_splash:
+  color: "#F3F4F7"
+  color_dark: "#0D0F14"
+  image: assets/images/splash_logo.png
+  image_dark: assets/images/splash_logo.png
+  android_12:
+    color: "#F3F4F7"
+    color_dark: "#0D0F14"
+    image: assets/images/splash_logo.png
+    image_dark: assets/images/splash_logo.png
+    icon_background_color: "#F3F4F7"
+    icon_background_color_dark: "#0D0F14"
+  web: false
+

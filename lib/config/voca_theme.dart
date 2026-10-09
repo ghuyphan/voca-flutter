@@ -487,7 +487,7 @@ class VocaTheme {
         surfaceTintColor: Colors.transparent,
         modalBackgroundColor: VocaColorPalette.dark.bgCard,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
@@ -763,7 +763,7 @@ class VocaTheme {
         surfaceTintColor: Colors.transparent,
         modalBackgroundColor: VocaColorPalette.light.bgCard,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(

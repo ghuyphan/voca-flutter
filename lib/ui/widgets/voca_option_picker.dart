@@ -54,9 +54,13 @@ Future<String?> showVocaOptionPicker({
           final item = options[index];
           final isSelected = item.value == selectedValue;
 
-          return Material(
-            color: isSelected ? colors.accentPrimarySoft : Colors.transparent,
-            child: InkWell(
+          return Semantics(
+            button: true,
+            selected: isSelected,
+            label: item.label,
+            child: Material(
+              color: isSelected ? colors.accentPrimarySoft : Colors.transparent,
+              child: InkWell(
               onTap: () async {
                 if (onSelect != null) {
                   onSelect(item.value);
@@ -158,8 +162,9 @@ Future<String?> showVocaOptionPicker({
                 ),
               ),
             ),
-          );
-        },
+          ),
+        );
+      },
       );
     },
   );

@@ -28,7 +28,7 @@ class AchievementsSheet extends StatefulWidget {
   }) {
     return showVocaBottomSheet(
       context: context,
-      showCloseButton: false,
+      showCloseButton: true,
       maxHeightFactor: 0.90,
       contentPadding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
       builder: (_) => AchievementsSheet(initialCategory: initialCategory),
@@ -254,6 +254,27 @@ class _AchievementsSheetState extends State<AchievementsSheet> {
                 ),
               ),
             ),
+            const SizedBox(height: 12),
+
+            // 9. Close / Done Button (M3 accessible dismiss)
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: FilledButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: FilledButton.styleFrom(
+                  backgroundColor: colors.accentPrimary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  elevation: 0,
+                ),
+                child: Text(
+                  context.t('common.done', null, 'Done'),
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
           ],
         ),
       );

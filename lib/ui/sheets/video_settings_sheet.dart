@@ -158,23 +158,20 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
   }) {
     final colors = context.vocaColors;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: colors.borderColor)),
       ),
       child: Row(
         children: [
-          InkWell(
-            onTap: () => setState(() => _currentView = 'main'),
-            borderRadius: BorderRadius.circular(20),
-            child: Container(
-              width: 32,
-              height: 32,
-              alignment: Alignment.center,
-              child: Icon(Icons.arrow_back_rounded, size: 20, color: colors.textPrimary),
-            ),
+          IconButton(
+            onPressed: () => setState(() => _currentView = 'main'),
+            icon: Icon(Icons.arrow_back_rounded, size: 20, color: colors.textPrimary),
+            constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+            padding: const EdgeInsets.all(10),
+            tooltip: context.t('common.back', null, 'Back'),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
           if (icon != null) ...[
             Icon(icon, size: 18, color: colors.accentPrimary),
             const SizedBox(width: 8),
