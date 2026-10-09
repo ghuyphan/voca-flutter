@@ -66,21 +66,22 @@ class ActivityHeatmapCard extends StatelessWidget {
                 children: [
                   Text(
                     context.t('study.less', null, 'Less'),
-                    style: TextStyle(color: colors.textMuted, fontSize: 11),
+                    style: TextStyle(color: colors.textSecondary, fontSize: 11, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(width: 4),
                   Container(
-                    width: 8,
-                    height: 8,
+                    width: 9,
+                    height: 9,
                     decoration: BoxDecoration(
-                      color: colors.bgSurface,
+                      color: colors.isDark ? colors.bgSurface : colors.bgSecondary,
                       borderRadius: BorderRadius.circular(2),
+                      border: Border.all(color: colors.borderColor, width: 0.6),
                     ),
                   ),
                   const SizedBox(width: 3),
                   Container(
-                    width: 8,
-                    height: 8,
+                    width: 9,
+                    height: 9,
                     decoration: BoxDecoration(
                       color: colors.colorGrammar.withValues(alpha: 0.45),
                       borderRadius: BorderRadius.circular(2),
@@ -88,8 +89,8 @@ class ActivityHeatmapCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 3),
                   Container(
-                    width: 8,
-                    height: 8,
+                    width: 9,
+                    height: 9,
                     decoration: BoxDecoration(
                       color: colors.colorGrammar,
                       borderRadius: BorderRadius.circular(2),
@@ -98,7 +99,7 @@ class ActivityHeatmapCard extends StatelessWidget {
                   const SizedBox(width: 4),
                   Text(
                     context.t('study.more', null, 'More'),
-                    style: TextStyle(color: colors.textMuted, fontSize: 11),
+                    style: TextStyle(color: colors.textSecondary, fontSize: 11, fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
@@ -139,9 +140,9 @@ class ActivityHeatmapCard extends StatelessWidget {
               Text(
                 context.t('study.tapDayToView', null, 'Tap a day to view'),
                 style: TextStyle(
-                  color: colors.textMuted,
+                  color: colors.textSecondary,
                   fontSize: 11,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -224,11 +225,13 @@ class ActivityHeatmapCard extends StatelessWidget {
                 ),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: dayInfo.isActive ? colors.colorGrammar : colors.bgSurface,
+                    color: dayInfo.isActive
+                        ? colors.colorGrammar
+                        : (colors.isDark ? colors.bgSurface : colors.bgSecondary),
                     borderRadius: BorderRadius.circular(3.5),
                     border: dayInfo.isToday
                         ? Border.all(color: colors.accentPrimary, width: 1.5)
-                        : Border.all(color: colors.borderColorLight, width: 0.5),
+                        : Border.all(color: colors.borderColor, width: 0.8),
                   ),
                 ),
               ),

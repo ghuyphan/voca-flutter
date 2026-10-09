@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import '../../config/voca_theme.dart';
 import '../../services/i18n_service.dart';
+import '../../state/player_coordinator.dart';
 import '../../state/player_state.dart';
 import '../sheets/video_level_sheet.dart';
 import '../widgets/voca_level_badge.dart';
@@ -69,14 +70,18 @@ class VideoHeader extends StatelessWidget {
     final colors = context.vocaColors;
     final effectiveLevel = level ?? controller?.difficultyLevel.value;
     final effectiveIsLevelLoading = isLevelLoading;
-    final hasTitleAndChannel = title != null &&
-        title!.isNotEmpty &&
-        title != 'YouTube Video' &&
-        channel != null &&
-        channel!.isNotEmpty;
+    final isTitlePlaceholder = title == null ||
+        title!.trim().isEmpty ||
+        title == 'Loading...' ||
+        title == 'YouTube Video' ||
+        PlayerCoordinator.instance.isPlaceholderTitle(title);
+    final hasLoadedHeader = !isTitlePlaceholder;
+    final effectiveChannel = (channel != null && channel!.trim().isNotEmpty)
+        ? channel!
+        : 'YouTube';
 
     double accumulatedHeaderDrag = 0.0;
-    final Widget headerContent = hasTitleAndChannel
+    final Widget headerContent = hasLoadedHeader
         ? Padding(
             key: const ValueKey('loaded_header'),
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
@@ -86,9 +91,9 @@ class VideoHeader extends StatelessWidget {
               children: [
                 // 1. Video Title (clamped 2 lines with tooltip)
                 Tooltip(
-                  message: title!,
+                  message: title ?? '',
                   child: Text(
-                    title!,
+                    title ?? '',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -123,9 +128,9 @@ class VideoHeader extends StatelessWidget {
                     ],
                     Flexible(
                       child: Tooltip(
-                        message: channel!,
+                        message: effectiveChannel,
                         child: Text(
-                          channel!,
+                          effectiveChannel,
                           style: TextStyle(
                             fontSize: 13,
                             color: colors.textMuted,

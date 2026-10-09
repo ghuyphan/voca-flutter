@@ -297,11 +297,27 @@ class LibraryPlaylistDetailSheet extends StatefulWidget {
 
 class _LibraryPlaylistDetailSheetState extends State<LibraryPlaylistDetailSheet> {
   late List<String> _videoIds;
+  final Map<String, String> _videoTitles = {};
 
   @override
   void initState() {
     super.initState();
     _videoIds = List.from(widget.playlist.videoIds);
+    _loadVideoTitles();
+  }
+
+  void _loadVideoTitles() async {
+    for (final vid in _videoIds) {
+      try {
+        final info = await AppState.instance.apiClient.getVideoInfo(videoId: vid);
+        final title = (info['title'] as String?)?.trim();
+        if (title != null && title.isNotEmpty && mounted) {
+          setState(() {
+            _videoTitles[vid] = title;
+          });
+        }
+      } catch (_) {}
+    }
   }
 
   void _playAll() {
@@ -312,7 +328,7 @@ class _LibraryPlaylistDetailSheetState extends State<LibraryPlaylistDetailSheet>
       final v = entry.value;
       return PlaylistVideo(
         videoId: v,
-        title: '${p.title} #${i + 1}',
+        title: _videoTitles[v] ?? 'Video #${i + 1}',
         thumbnail: 'https://img.youtube.com/vi/$v/hqdefault.jpg',
         level: p.level,
         position: i,
@@ -322,7 +338,7 @@ class _LibraryPlaylistDetailSheetState extends State<LibraryPlaylistDetailSheet>
     PlayerCoordinator.instance.openVideo(
       context,
       videoId: _videoIds.first,
-      title: p.title,
+      title: _videoTitles[_videoIds.first] ?? '',
       level: p.level,
       playlistTitle: p.title,
       playlistIndex: 0,
@@ -340,7 +356,7 @@ class _LibraryPlaylistDetailSheetState extends State<LibraryPlaylistDetailSheet>
       final v = entry.value;
       return PlaylistVideo(
         videoId: v,
-        title: '${p.title} #${i + 1}',
+        title: _videoTitles[v] ?? 'Video #${i + 1}',
         thumbnail: 'https://img.youtube.com/vi/$v/hqdefault.jpg',
         level: p.level,
         position: i,
@@ -350,7 +366,7 @@ class _LibraryPlaylistDetailSheetState extends State<LibraryPlaylistDetailSheet>
     PlayerCoordinator.instance.openVideo(
       context,
       videoId: vid,
-      title: '${p.title} #${index + 1}',
+      title: _videoTitles[vid] ?? '',
       level: p.level,
       playlistTitle: p.title,
       playlistIndex: index,
@@ -464,7 +480,7 @@ class _LibraryPlaylistDetailSheetState extends State<LibraryPlaylistDetailSheet>
                       ),
                     ),
                     title: Text(
-                      'Video ${idx + 1}',
+                      _videoTitles[vid] ?? 'Video ${idx + 1}',
                       style: TextStyle(color: colors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

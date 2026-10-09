@@ -162,13 +162,13 @@ class _ExploreSpotlightBarState extends State<ExploreSpotlightBar>
             IconButton(
               onPressed: widget.onClear,
               tooltip: context.t('common.clear', null, 'Clear'),
-              iconSize: 16,
+              iconSize: 17,
               visualDensity: VisualDensity.compact,
               style: IconButton.styleFrom(
                 backgroundColor: colors.bgSurface,
                 foregroundColor: colors.textMuted,
                 padding: EdgeInsets.zero,
-                minimumSize: const Size(28, 28),
+                minimumSize: const Size(34, 34),
               ),
               icon: const Icon(Icons.close_rounded),
             )
@@ -176,13 +176,13 @@ class _ExploreSpotlightBarState extends State<ExploreSpotlightBar>
             IconButton(
               onPressed: _handlePasteFromClipboard,
               tooltip: context.t('commandPalette.paste', null, 'Paste from clipboard'),
-              iconSize: 16,
+              iconSize: 17,
               visualDensity: VisualDensity.compact,
               style: IconButton.styleFrom(
                 backgroundColor: colors.bgSurface,
                 foregroundColor: colors.textSecondary,
                 padding: EdgeInsets.zero,
-                minimumSize: const Size(28, 28),
+                minimumSize: const Size(34, 34),
               ),
               icon: const Icon(Icons.content_paste_rounded),
             ),

@@ -41,6 +41,9 @@ dependencies:
   audioplayers: ^6.8.1
   flutter_svg: ^2.0.17
 
+  # On-Device Translation (Google ML Kit)
+  google_mlkit_translation: ^0.15.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

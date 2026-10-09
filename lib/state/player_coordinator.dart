@@ -80,6 +80,57 @@ class PlayerCoordinator {
     return 'Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36';
   }
 
+  int _playlistHydrationSessionId = 0;
+
+  /// Check if a given title is empty or a placeholder that should be replaced with real YouTube metadata.
+  bool isPlaceholderTitle(String? t, [String? explicitPlaylistTitle]) {
+    if (t == null || t.trim().isEmpty) return true;
+    final trimmed = t.trim();
+    if (trimmed == 'YouTube Video' || trimmed == 'Loading...' || trimmed == 'Video') return true;
+    if (trimmed.startsWith('Video #')) return true;
+    final pTitle = explicitPlaylistTitle ?? activePlaylistTitle.value;
+    if (pTitle != null && pTitle.trim().isNotEmpty) {
+      final pTrim = pTitle.trim();
+      if (trimmed == pTrim || trimmed.startsWith('$pTrim #')) return true;
+    }
+    return false;
+  }
+
+  void _hydratePlaylistMetadata(List<PlaylistVideo> videos, int sessionId) async {
+    for (int i = 0; i < videos.length; i++) {
+      if (_playlistHydrationSessionId != sessionId || !hasPlaylist) return;
+      final v = videos[i];
+      if (!isPlaceholderTitle(v.title)) continue;
+
+      try {
+        final info = await AppState.instance.apiClient.getVideoInfo(videoId: v.videoId);
+        if (_playlistHydrationSessionId != sessionId || !hasPlaylist) return;
+        final title = (info['title'] as String?)?.trim();
+        final channel = (info['channel'] as String? ?? info['author'] as String?)?.trim();
+        if (title != null && title.isNotEmpty) {
+          final curList = List<PlaylistVideo>.from(playlistVideos.value);
+          final idx = curList.indexWhere((item) => item.videoId == v.videoId);
+          if (idx != -1) {
+            curList[idx] = curList[idx].copyWith(
+              title: title,
+              channel: channel ?? curList[idx].channel,
+            );
+            playlistVideos.value = curList;
+          }
+          if (activeVideoId.value == v.videoId && isPlaceholderTitle(activeTitle.value)) {
+            activeTitle.value = title;
+            playerController?.videoTitle.value = title;
+            if (channel != null && channel.isNotEmpty) {
+              activeChannel.value = channel;
+            }
+          }
+        }
+      } catch (_) {
+        // Silently skip failed fetch for individual item
+      }
+    }
+  }
+
   /// Open and play a video.
   /// If the requested video is already the active video and is in miniplayer mode,
   /// this seamlessly expands the player back to full screen.
@@ -101,11 +152,17 @@ class PlayerCoordinator {
     _hasAwardedVideoCompletion = false;
     _needsDurationReport = initialDuration == null || initialDuration <= 0;
 
+    if (playlistTitle != null) {
+      activePlaylistTitle.value = playlistTitle;
+    }
+
     if (playlist != null && playlist.isNotEmpty) {
       playlistVideos.value = List.from(playlist);
       _unshuffledVideos = List.from(playlist);
       activePlaylistTitle.value = playlistTitle ?? 'Playlist';
       activePlaylistIndex.value = playlistIndex ?? 0;
+      _playlistHydrationSessionId++;
+      _hydratePlaylistMetadata(playlist, _playlistHydrationSessionId);
     } else if (playlistIndex != null) {
       activePlaylistIndex.value = playlistIndex;
     } else {
@@ -163,8 +220,10 @@ class PlayerCoordinator {
 
     // Set new active session metadata AFTER controllers are created
     // so any Watch / Signal reaction has valid controllers immediately
-    activeTitle.value = title;
-    activeChannel.value = channel ?? 'YouTube';
+    activeTitle.value = isPlaceholderTitle(title, playlistTitle)
+        ? ''
+        : title;
+    activeChannel.value = (channel != null && channel.isNotEmpty && channel != 'YouTube') ? channel : '';
     activeLevel.value = level;
     activeThumbnail.value = thumbnail ?? 'https://i.ytimg.com/vi/$videoId/hqdefault.jpg';
     if (playlistTitle != null) {
@@ -174,6 +233,33 @@ class PlayerCoordinator {
     currentTime.value = startSeconds ?? 0.0;
     duration.value = (initialDuration != null && initialDuration > 0) ? initialDuration.toDouble() : 0.0;
     activeVideoId.value = videoId;
+
+    void maybeUpdateMetadata(String rawTitle, String rawAuthor) {
+      final metaTitle = rawTitle.trim();
+      final metaAuthor = rawAuthor.trim();
+
+      if (metaTitle.isNotEmpty && isPlaceholderTitle(activeTitle.value)) {
+        activeTitle.value = metaTitle;
+        newPlayerController.videoTitle.value = metaTitle;
+
+        final curIdx = activePlaylistIndex.value;
+        if (curIdx != null && curIdx >= 0 && curIdx < playlistVideos.value.length) {
+          final curList = List<PlaylistVideo>.from(playlistVideos.value);
+          final currentItem = curList[curIdx];
+          if (isPlaceholderTitle(currentItem.title)) {
+            curList[curIdx] = currentItem.copyWith(
+              title: metaTitle,
+              channel: metaAuthor.isNotEmpty ? metaAuthor : currentItem.channel,
+            );
+            playlistVideos.value = curList;
+          }
+        }
+      }
+
+      if (metaAuthor.isNotEmpty && (activeChannel.value == null || activeChannel.value == 'YouTube' || activeChannel.value!.isEmpty)) {
+        activeChannel.value = metaAuthor;
+      }
+    }
 
     // Load video immediately
     if (startSeconds != null && startSeconds > 0) {
@@ -232,6 +318,11 @@ class PlayerCoordinator {
       currentTime.value = time;
       bufferedFraction.value = state.loadedFraction;
 
+      final ytMeta = newYtController.metadata;
+      if (ytMeta.title.isNotEmpty || ytMeta.author.isNotEmpty) {
+        maybeUpdateMetadata(ytMeta.title, ytMeta.author);
+      }
+
       final metaDur = newYtController.metadata.duration.inSeconds.toDouble();
       if (metaDur > 0) {
         maybeResolveAndReportDuration(metaDur);
@@ -265,19 +356,18 @@ class PlayerCoordinator {
         }).catchError((_) {});
       }
 
+      final meta = value.metaData;
+      final t = meta.title.isNotEmpty ? meta.title : newYtController.metadata.title;
+      final a = meta.author.isNotEmpty ? meta.author : newYtController.metadata.author;
+      if (t.isNotEmpty || a.isNotEmpty) {
+        maybeUpdateMetadata(t, a);
+      }
+
       if (value.playerState == PlayerState.playing) {
         isPlaying.value = true;
         isEnded.value = false;
         newPlayerController.isPlaying.value = true;
         disableNativeCaptions(newYtController);
-        if (activeTitle.value.isEmpty || activeTitle.value == 'YouTube Video') {
-          final metaTitle = newYtController.metadata.title;
-          if (metaTitle.isNotEmpty) activeTitle.value = metaTitle;
-        }
-        if (activeChannel.value == null || activeChannel.value == 'YouTube') {
-          final metaAuthor = newYtController.metadata.author;
-          if (metaAuthor.isNotEmpty) activeChannel.value = metaAuthor;
-        }
       } else if (value.playerState == PlayerState.paused) {
         isPlaying.value = false;
         newPlayerController.isPlaying.value = false;
@@ -368,6 +458,7 @@ class PlayerCoordinator {
       title: nextVideo.title,
       channel: nextVideo.channel,
       level: nextVideo.level,
+      playlistTitle: activePlaylistTitle.value,
       playlistIndex: nextIdx,
     );
   }
@@ -392,6 +483,7 @@ class PlayerCoordinator {
       title: prevVideo.title,
       channel: prevVideo.channel,
       level: prevVideo.level,
+      playlistTitle: activePlaylistTitle.value,
       playlistIndex: prevIdx,
     );
   }
@@ -408,6 +500,7 @@ class PlayerCoordinator {
       title: video.title,
       channel: video.channel,
       level: video.level,
+      playlistTitle: activePlaylistTitle.value,
       playlistIndex: index,
     );
   }
@@ -507,10 +600,15 @@ class PlayerCoordinator {
       final dur = duration.value.round();
       final cur = currentTime.value;
       final progress = dur > 0 ? ((cur / dur) * 100).clamp(0.0, 100.0) : 0.0;
+      final resolvedTitle = !isPlaceholderTitle(activeTitle.value)
+          ? activeTitle.value
+          : ((ytController?.metadata.title.isNotEmpty ?? false)
+              ? ytController!.metadata.title
+              : (activeTitle.value.isNotEmpty ? activeTitle.value : 'YouTube Video'));
       await AppState.instance.supabaseService.saveHistory(
         id: id,
         videoId: vId,
-        title: activeTitle.value.isNotEmpty ? activeTitle.value : 'YouTube Video',
+        title: resolvedTitle,
         thumbnail: 'https://img.youtube.com/vi/$vId/hqdefault.jpg',
         channel: activeChannel.value ?? 'YouTube',
         duration: dur,

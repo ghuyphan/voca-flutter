@@ -983,6 +983,26 @@ class PlaylistVideo {
     'position': position,
     'level': level,
   };
+
+  PlaylistVideo copyWith({
+    String? videoId,
+    String? title,
+    String? thumbnail,
+    String? channel,
+    double? duration,
+    int? position,
+    String? level,
+  }) {
+    return PlaylistVideo(
+      videoId: videoId ?? this.videoId,
+      title: title ?? this.title,
+      thumbnail: thumbnail ?? this.thumbnail,
+      channel: channel ?? this.channel,
+      duration: duration ?? this.duration,
+      position: position ?? this.position,
+      level: level ?? this.level,
+    );
+  }
 }
 
 enum ProficiencyLevelTier {
@@ -1074,6 +1094,8 @@ class UserSettings {
   final String preferredLevel; // 'beginner' | 'elementary' | 'intermediate' | 'upper_intermediate' | 'advanced'
   final String companionClass; // 'wizard' | 'knight' | 'shinobi' | 'ranger' | 'miner' | 'alchemist' | 'bard' | 'sovereign'
   final int dailyGoalMinutes; // 5 | 10 | 15 | 25
+  final bool offlineTranslationEnabled;
+  final bool offlineTranslationWifiOnly;
 
   UserSettings({
     this.rubyMode = RubyDisplayMode.always,
@@ -1091,6 +1113,8 @@ class UserSettings {
     this.preferredLevel = 'beginner',
     this.companionClass = 'wizard',
     this.dailyGoalMinutes = 10,
+    this.offlineTranslationEnabled = true,
+    this.offlineTranslationWifiOnly = true,
   });
 
   UserSettings copyWith({
@@ -1109,6 +1133,8 @@ class UserSettings {
     String? preferredLevel,
     String? companionClass,
     int? dailyGoalMinutes,
+    bool? offlineTranslationEnabled,
+    bool? offlineTranslationWifiOnly,
   }) {
     return UserSettings(
       rubyMode: rubyMode ?? this.rubyMode,
@@ -1126,6 +1152,8 @@ class UserSettings {
       preferredLevel: preferredLevel ?? this.preferredLevel,
       companionClass: companionClass ?? this.companionClass,
       dailyGoalMinutes: dailyGoalMinutes ?? this.dailyGoalMinutes,
+      offlineTranslationEnabled: offlineTranslationEnabled ?? this.offlineTranslationEnabled,
+      offlineTranslationWifiOnly: offlineTranslationWifiOnly ?? this.offlineTranslationWifiOnly,
     );
   }
 
@@ -1145,6 +1173,8 @@ class UserSettings {
     'preferredLevel': preferredLevel,
     'companionClass': companionClass,
     'dailyGoalMinutes': dailyGoalMinutes,
+    'offlineTranslationEnabled': offlineTranslationEnabled,
+    'offlineTranslationWifiOnly': offlineTranslationWifiOnly,
   };
 
   factory UserSettings.fromJson(Map<String, dynamic> json) {
@@ -1170,6 +1200,8 @@ class UserSettings {
       preferredLevel: json['preferredLevel'] as String? ?? 'beginner',
       companionClass: json['companionClass'] as String? ?? 'wizard',
       dailyGoalMinutes: json['dailyGoalMinutes'] as int? ?? 10,
+      offlineTranslationEnabled: json['offlineTranslationEnabled'] as bool? ?? true,
+      offlineTranslationWifiOnly: json['offlineTranslationWifiOnly'] as bool? ?? true,
     );
   }
 }

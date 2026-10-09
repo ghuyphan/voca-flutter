@@ -188,20 +188,38 @@ class _VideoProgressBarState extends State<VideoProgressBar> {
               });
             }
           },
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onHorizontalDragStart: (d) => _handleDragStart(d, totalWidth),
-            onHorizontalDragUpdate: (d) => _handleDragUpdate(d, totalWidth),
-            onHorizontalDragEnd: _handleDragEnd,
-            onHorizontalDragCancel: _handleDragCancel,
-            onTapDown: (d) => _handleTapDown(d, totalWidth),
-            onTapUp: _handleTapUp,
-            child: SizedBox(
-              height: widget.hitAreaHeight,
-              width: double.infinity,
-              child: Stack(
-                clipBehavior: Clip.none,
-                alignment: Alignment.centerLeft,
+          child: Semantics(
+            slider: true,
+            label: 'Video seek bar',
+            value: '${formatVideoTime(_displayTime)} of ${formatVideoTime(widget.duration)}',
+            increasedValue: '${formatVideoTime((_displayTime + 10).clamp(0.0, widget.duration))} of ${formatVideoTime(widget.duration)}',
+            decreasedValue: '${formatVideoTime((_displayTime - 10).clamp(0.0, widget.duration))} of ${formatVideoTime(widget.duration)}',
+            onIncrease: widget.duration > 0
+                ? () {
+                    final target = (_displayTime + 10).clamp(0.0, widget.duration);
+                    widget.onSeekEnded?.call(target);
+                  }
+                : null,
+            onDecrease: widget.duration > 0
+                ? () {
+                    final target = (_displayTime - 10).clamp(0.0, widget.duration);
+                    widget.onSeekEnded?.call(target);
+                  }
+                : null,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onHorizontalDragStart: (d) => _handleDragStart(d, totalWidth),
+              onHorizontalDragUpdate: (d) => _handleDragUpdate(d, totalWidth),
+              onHorizontalDragEnd: _handleDragEnd,
+              onHorizontalDragCancel: _handleDragCancel,
+              onTapDown: (d) => _handleTapDown(d, totalWidth),
+              onTapUp: _handleTapUp,
+              child: SizedBox(
+                height: widget.hitAreaHeight,
+                width: double.infinity,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  alignment: Alignment.centerLeft,
                 children: [
                   // 1. Base Track (30% white)
                   Center(
@@ -331,7 +349,8 @@ class _VideoProgressBarState extends State<VideoProgressBar> {
               ),
             ),
           ),
-        );
+        ),
+      );
       },
     );
   }

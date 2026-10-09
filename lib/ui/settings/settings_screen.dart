@@ -13,6 +13,7 @@ import '../auth/auth_screen.dart';
 import '../onboarding/onboarding_screen.dart';
 import '../profile/edit_profile_screen.dart';
 import '../sheets/voca_bottom_sheet.dart';
+import 'offline_translation_screen.dart';
 import '../widgets/kikyou_logo.dart';
 import '../widgets/voca_back_button.dart';
 import '../widgets/voca_confirm_dialog.dart';
@@ -75,57 +76,62 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       body: SafeArea(
         top: false,
-        child: Watch((context) {
-          final settings = AppState.instance.userSettings.value;
-          final userProfile = AppState.instance.userProfile.value;
-          dynamic currentUser;
-          try {
-            currentUser = AppState.instance.supabaseService.currentUser;
-          } catch (_) {}
-          final targetLang = AppState.instance.activeLanguage.value;
-          final isDarkMode = AppState.instance.isDarkMode;
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 680),
+            child: Watch((context) {
+              final settings = AppState.instance.userSettings.value;
+              final userProfile = AppState.instance.userProfile.value;
+              dynamic currentUser;
+              try {
+                currentUser = AppState.instance.supabaseService.currentUser;
+              } catch (_) {}
+              final targetLang = AppState.instance.activeLanguage.value;
+              final isDarkMode = AppState.instance.isDarkMode;
 
-          return ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.only(top: 8, bottom: 48),
-            children: [
-              // 1. TOP ACCOUNT HERO CARD
-              _buildAccountCard(context, colors, currentUser, userProfile),
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.only(top: 8, bottom: 48),
+                children: [
+                  // 1. TOP ACCOUNT HERO CARD
+                  _buildAccountCard(context, colors, currentUser, userProfile),
 
-              // 2. LEARNING & DISPLAY GROUP
-              _buildSectionHeader(
-                context.t('settings.learningSection', null, 'Learning & Display'),
-                colors,
-              ),
-              _buildLearningDisplayGroup(context, colors, settings, targetLang),
+                  // 2. LEARNING & DISPLAY GROUP
+                  _buildSectionHeader(
+                    context.t('settings.learningSection', null, 'Learning & Display'),
+                    colors,
+                  ),
+                  _buildLearningDisplayGroup(context, colors, settings, targetLang),
 
-              // 3. APPEARANCE GROUP
-              _buildSectionHeader(
-                context.t('settings.appearance', null, 'Appearance'),
-                colors,
-              ),
-              _buildAppearanceGroup(context, colors, settings, isDarkMode),
+                  // 3. APPEARANCE GROUP
+                  _buildSectionHeader(
+                    context.t('settings.appearance', null, 'Appearance'),
+                    colors,
+                  ),
+                  _buildAppearanceGroup(context, colors, settings, isDarkMode),
 
-              // 4. ABOUT & UPDATES GROUP
-              _buildSectionHeader(
-                context.t('settings.about', null, 'About & Updates'),
-                colors,
-              ),
-              _buildAboutGroup(context, colors),
+                  // 4. ABOUT & UPDATES GROUP
+                  _buildSectionHeader(
+                    context.t('settings.about', null, 'About & Updates'),
+                    colors,
+                  ),
+                  _buildAboutGroup(context, colors),
 
-              // 5. SIGN OUT ACTION (When authenticated)
-              if (currentUser != null) ...[
-                const SizedBox(height: 16),
-                _buildSignOutTile(context, colors),
-              ],
+                  // 5. SIGN OUT ACTION (When authenticated)
+                  if (currentUser != null) ...[
+                    const SizedBox(height: 16),
+                    _buildSignOutTile(context, colors),
+                  ],
 
-              const SizedBox(height: 32),
+                  const SizedBox(height: 32),
 
-              // 6. SIMPLIFIED CLEAN FOOTER
-              _buildAppFooter(colors),
-            ],
-          );
-        }),
+                  // 6. SIMPLIFIED CLEAN FOOTER
+                  _buildAppFooter(colors),
+                ],
+              );
+            }),
+          ),
+        ),
       ),
     );
   }
@@ -205,7 +211,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
-                  height: 44,
+                  height: 48,
                   child: OutlinedButton(
                     onPressed: () {
                       Navigator.of(context).push(
@@ -341,10 +347,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
                 ),
-                IconButton(
-                  icon: Icon(Icons.logout_rounded, color: colors.error, size: 20),
-                  tooltip: context.t('header.signOut', null, 'Sign Out'),
-                  onPressed: () => _showSignOutDialog(context, colors),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: colors.textMuted,
+                  size: 20,
                 ),
               ],
             ),
@@ -375,7 +381,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
       decoration: BoxDecoration(
         color: chipBg,
         borderRadius: BorderRadius.circular(6),
@@ -384,7 +390,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Text(
         tier,
         style: TextStyle(
-          fontSize: 9,
+          fontSize: 10.5,
           fontWeight: FontWeight.w800,
           color: chipText,
           letterSpacing: 0.5,
@@ -469,7 +475,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
         _buildDivider(colors),
 
-        // 4. Onboarding & Setup (allows checking/replaying onboarding without clearing app state)
+        // 4. Offline Subtitle Translation (Google ML Kit on-device models)
+        _buildSettingTile(
+          context: context,
+          leading: _buildM3IconBox(Icons.download_for_offline_outlined, colors),
+          title: context.t('settings.offlineTranslation', null, 'Offline Translation'),
+          subtitle: settings.offlineTranslationEnabled
+              ? context.t('settings.onDeviceActive', null, 'On-Device ML Kit Active')
+              : context.t('settings.cloudOnly', null, 'Cloud Only'),
+          colors: colors,
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const OfflineTranslationScreen()),
+            );
+          },
+        ),
+
+        _buildDivider(colors),
+
+        // 5. Onboarding & Setup (allows checking/replaying onboarding without clearing app state)
         _buildSettingTile(
           context: context,
           leading: _buildM3IconBox(Icons.explore_outlined, colors),
@@ -719,24 +743,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _buildDivider(colors),
 
         // 2. Real Live Check for Updates (Queries Cloudflare API)
-        _buildSettingTile(
-          context: context,
-          leading: _buildM3IconBox(
-            _isCheckingUpdate ? Icons.hourglass_top_rounded : Icons.refresh_rounded,
-            colors,
+        Semantics(
+          liveRegion: true,
+          child: _buildSettingTile(
+            context: context,
+            leading: _buildM3IconBox(
+              _isCheckingUpdate ? Icons.hourglass_top_rounded : Icons.refresh_rounded,
+              colors,
+            ),
+            title: context.t('settings.checkForUpdates', null, 'Check for Updates'),
+            subtitle: _isCheckingUpdate ? context.t('settings.checkingUpdates', null, 'Checking...') : _updateStatusText,
+            trailingWidget: _isCheckingUpdate
+                ? SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: colors.accentPrimary),
+                  )
+                : null,
+            showChevron: false,
+            colors: colors,
+            onTap: _isCheckingUpdate ? null : _handleCheckForUpdates,
           ),
-          title: context.t('settings.checkForUpdates', null, 'Check for Updates'),
-          subtitle: _isCheckingUpdate ? context.t('settings.checkingUpdates', null, 'Checking...') : _updateStatusText,
-          trailingWidget: _isCheckingUpdate
-              ? SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: colors.accentPrimary),
-                )
-              : null,
-          showChevron: false,
-          colors: colors,
-          onTap: _isCheckingUpdate ? null : _handleCheckForUpdates,
         ),
 
         _buildDivider(colors),
@@ -838,14 +865,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
-                height: 42,
+                height: 48,
                 child: FilledButton(
                   onPressed: () => Navigator.of(ctx).pop(),
                   style: FilledButton.styleFrom(
                     backgroundColor: colors.accentPrimary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                   ),
                   child: Text(
@@ -938,7 +965,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               fontSize: 13,
             ),
           ),
-          trailing: Icon(Icons.chevron_right_rounded, size: 20, color: colors.error.withValues(alpha: 0.7)),
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
           onTap: () => _showSignOutDialog(context, colors),
         ),
@@ -981,7 +1007,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Text(
         title.toUpperCase(),
         style: TextStyle(
-          color: colors.accentPrimary,
+          color: colors.textSecondary,
           fontSize: 12,
           fontWeight: FontWeight.w700,
           letterSpacing: 0.6,
@@ -1063,7 +1089,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             )
           : null,
@@ -1122,7 +1148,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Text(
             'VOCA MOBILE • v$kAppVersion',
             style: TextStyle(
-              color: colors.textTertiary,
+              color: colors.textMuted,
               fontSize: 12,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.5,

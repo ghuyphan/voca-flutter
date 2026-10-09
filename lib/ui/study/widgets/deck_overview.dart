@@ -37,7 +37,7 @@ class DeckOverview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.vocaColors;
-    final isTablet = MediaQuery.of(context).size.width >= VocaTokens.tabletBreakpoint;
+    final isTablet = MediaQuery.sizeOf(context).width >= 600.0;
     final gamification = AppState.instance.gamificationService;
 
     return Align(
@@ -152,42 +152,51 @@ class DeckOverview extends StatelessWidget {
 
           const SizedBox(width: 10),
 
-          // Tappable Streak Flame Pill with Tooltip -> Opens StreakSheet
+          // Tappable Streak Flame Pill with Tooltip -> Opens StreakSheet (48x48dp minimum target)
           Tooltip(
             message: context.t('streak.viewStreakDetails', null, 'View streak calendar & shields'),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  StreakSheet.show(context);
-                },
-                borderRadius: BorderRadius.circular(999),
-                child: Container(
-                  height: 38,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: colors.colorFire.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: colors.colorFire.withValues(alpha: 0.32),
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.local_fire_department_rounded, size: 20, color: colors.colorFire),
-                      const SizedBox(width: 6),
-                      Text(
-                        '$streak',
-                        style: TextStyle(
-                          color: colors.colorFire,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
+            child: Semantics(
+              button: true,
+              label: context.t('streak.viewStreakDetails', null, 'Streak: $streak days. View streak calendar and shields'),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                child: Center(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        StreakSheet.show(context);
+                      },
+                      borderRadius: BorderRadius.circular(999),
+                      child: Container(
+                        height: 38,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: colors.colorFire.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: colors.colorFire.withValues(alpha: 0.32),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.local_fire_department_rounded, size: 20, color: colors.colorFire),
+                            const SizedBox(width: 6),
+                            Text(
+                              '$streak',
+                              style: TextStyle(
+                                color: colors.colorFire,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -215,7 +224,9 @@ class DeckOverview extends StatelessWidget {
       final goalFraction = dailyTarget > 0 ? (dailyProgress / dailyTarget).clamp(0.0, 1.0) : 0.0;
 
       return Material(
-        color: Colors.transparent,
+        color: colors.bgCard,
+        borderRadius: BorderRadius.circular(20),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: () {
             HapticFeedback.mediumImpact();
@@ -236,19 +247,10 @@ class DeckOverview extends StatelessWidget {
               onExploreVideos?.call();
             }
           },
-          borderRadius: BorderRadius.circular(20),
           child: Container(
             decoration: BoxDecoration(
-              color: colors.bgCard,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: colors.borderColor),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: colors.isDark ? 0.35 : 0.05),
-                  blurRadius: 14,
-                  offset: const Offset(0, 4),
-                ),
-              ],
             ),
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
             child: Column(
@@ -484,52 +486,66 @@ class DeckOverview extends StatelessWidget {
   }) {
     return Tooltip(
       message: '$label: $count (${isActive ? "Active" : "Filtered out"})',
-      child: InkWell(
-        onTap: () {
-          HapticFeedback.selectionClick();
-          onTap();
-        },
-        borderRadius: BorderRadius.circular(999),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          height: 36,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          decoration: BoxDecoration(
-            color: colors.bgCard,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: isActive ? colors.borderColorHover : colors.borderColorLight,
-            ),
-          ),
-          child: Opacity(
-            opacity: isActive ? 1.0 : 0.45,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: colors.textPrimary,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
+      child: Semantics(
+        button: true,
+        selected: isActive,
+        label: '$label: $count',
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Center(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  onTap();
+                },
+                borderRadius: BorderRadius.circular(999),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
+                  height: 36,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: colors.bgCard,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: isActive ? colors.borderColorHover : colors.borderColorLight,
+                      width: isActive ? 1.2 : 1.0,
+                    ),
+                  ),
+                  child: Opacity(
+                    opacity: isActive ? 1.0 : 0.45,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          label,
+                          style: TextStyle(
+                            color: colors.textPrimary,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          '$count',
+                          style: TextStyle(
+                            color: colors.textSecondary,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(width: 5),
-                Text(
-                  '$count',
-                  style: TextStyle(
-                    color: colors.textSecondary,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -568,55 +584,68 @@ class DeckOverview extends StatelessWidget {
 
           const SizedBox(width: 10),
 
-          // Due Only Filter / Toggle Pill (height 38 matching sliding bar)
+          // Due Only Filter / Toggle Pill (48x48dp minimum hit target with crisp styling)
           Tooltip(
             message: dueOnly
                 ? context.t('study.dueOnlyActiveHint', null, 'Only showing cards due for review')
                 : context.t('study.dueOnlyInactiveHint', null, 'Reviewing cards ahead of schedule'),
-            child: InkWell(
-              onTap: () {
-                HapticFeedback.selectionClick();
-                controller.toggleDueOnly();
-                if (controller.dueOnly.value && controller.dueCount.value == 0) {
-                  ToastService.info(
-                    context,
-                    context.t('study.allDone', null, 'All cards cleared for today! 🎉 Turn off "Due Only" to practice ahead.'),
-                  );
-                }
-              },
-              borderRadius: BorderRadius.circular(999),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 160),
-                height: 38,
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                decoration: BoxDecoration(
-                  color: dueOnly
-                      ? colors.accentPrimary.withValues(alpha: 0.14)
-                      : colors.bgSurface,
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(
-                    color: dueOnly ? colors.accentPrimary : colors.borderColor,
-                    width: dueOnly ? 1.2 : 1.0,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      dueOnly ? Icons.alarm_on_rounded : Icons.alarm_rounded,
-                      size: 16,
-                      color: dueOnly ? colors.accentPrimary : colors.textSecondary,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      context.t('study.dueOnly', null, 'Due Only'),
-                      style: TextStyle(
-                        color: dueOnly ? colors.accentPrimary : colors.textSecondary,
-                        fontSize: 12.5,
-                        fontWeight: dueOnly ? FontWeight.w700 : FontWeight.w600,
+            child: Semantics(
+              button: true,
+              selected: dueOnly,
+              label: context.t('study.dueOnly', null, 'Due Only'),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 48),
+                child: Center(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        controller.toggleDueOnly();
+                        if (controller.dueOnly.value && controller.dueCount.value == 0) {
+                          ToastService.info(
+                            context,
+                            context.t('study.allDone', null, 'All cards cleared for today! 🎉 Turn off "Due Only" to practice ahead.'),
+                          );
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(999),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 160),
+                        height: 38,
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        decoration: BoxDecoration(
+                          color: dueOnly
+                              ? colors.accentPrimary.withValues(alpha: 0.14)
+                              : colors.bgSurface,
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: dueOnly ? colors.accentPrimary : colors.borderColor,
+                            width: dueOnly ? 1.2 : 1.0,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              dueOnly ? Icons.alarm_on_rounded : Icons.alarm_rounded,
+                              size: 16,
+                              color: dueOnly ? colors.accentPrimary : colors.textSecondary,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              context.t('study.dueOnly', null, 'Due Only'),
+                              style: TextStyle(
+                                color: dueOnly ? colors.accentPrimary : colors.textSecondary,
+                                fontSize: 12.5,
+                                fontWeight: dueOnly ? FontWeight.w700 : FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -1201,36 +1230,45 @@ class DeckOverview extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                // Interactive Achievements badge button opening AchievementsSheet (Icon with number only)
-                InkWell(
-                  onTap: () => AchievementsSheet.show(context),
-                  borderRadius: BorderRadius.circular(999),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
-                    decoration: BoxDecoration(
-                      color: colors.bgSurface,
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: colors.borderColorLight),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.emoji_events_rounded,
-                          size: 14,
-                          color: colors.colorFire,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${gamification.achievements.value.where((a) => a.isUnlocked).length}/${gamification.achievements.value.length}',
-                          style: TextStyle(
-                            color: colors.textPrimary,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            fontFeatures: const [FontFeature.tabularFigures()],
+                // Interactive Achievements badge button opening AchievementsSheet (min 48x48 hit target)
+                Semantics(
+                  button: true,
+                  label: context.t('achievements.title', null, 'Achievements'),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                    child: Center(
+                      child: InkWell(
+                        onTap: () => AchievementsSheet.show(context),
+                        borderRadius: BorderRadius.circular(999),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4.5),
+                          decoration: BoxDecoration(
+                            color: colors.bgSurface,
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(color: colors.borderColorLight),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.emoji_events_rounded,
+                                size: 14,
+                                color: colors.colorFire,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${gamification.achievements.value.where((a) => a.isUnlocked).length}/${gamification.achievements.value.length}',
+                                style: TextStyle(
+                                  color: colors.textPrimary,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  fontFeatures: const [FontFeature.tabularFigures()],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -1477,9 +1515,9 @@ class DeckOverview extends StatelessWidget {
         style: FilledButton.styleFrom(
           backgroundColor: colors.accentPrimary,
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-          minimumSize: const Size(0, 30),
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          minimumSize: const Size(0, 36),
+          tapTargetSize: MaterialTapTargetSize.padded,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
         ),
         child: Text(
@@ -1651,9 +1689,9 @@ class DeckOverview extends StatelessWidget {
               style: FilledButton.styleFrom(
                 backgroundColor: colors.accentPrimary,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                minimumSize: const Size(0, 30),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                minimumSize: const Size(0, 36),
+                tapTargetSize: MaterialTapTargetSize.padded,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
               ),
               child: Text(

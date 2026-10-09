@@ -72,9 +72,10 @@ class _CompanionStepState extends State<CompanionStep> {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: colors.bgCard,
+      showDragHandle: true,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (ctx) {
         return DraggableScrollableSheet(
@@ -86,17 +87,6 @@ class _CompanionStepState extends State<CompanionStep> {
             return SafeArea(
               child: Column(
                 children: [
-                  // Drag Handle
-                  Container(
-                    width: 36,
-                    height: 4,
-                    margin: const EdgeInsets.only(top: 12, bottom: 12),
-                    decoration: BoxDecoration(
-                      color: colors.borderColorHover,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-
                   // Sheet Header
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),

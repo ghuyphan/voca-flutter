@@ -59,8 +59,10 @@ class VideoFeedCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.vocaColors;
     final videoId = video['videoId'] as String? ?? '';
-    final title = video['title'] as String? ?? 'YouTube Video';
-    final channel = video['channel'] as String? ?? 'YouTube Creator';
+    final rawTitle = (video['title'] as String?)?.trim();
+    final title = (rawTitle != null && rawTitle.isNotEmpty) ? rawTitle : 'YouTube Video';
+    final rawChannel = (video['channel'] as String?)?.trim();
+    final channel = (rawChannel != null && rawChannel.isNotEmpty) ? rawChannel : 'YouTube Creator';
     final channelAvatar = video['channelAvatar'] as String?;
     final duration = (video['duration'] as num?)?.toInt() ?? 0;
     final durationStr = duration > 0 ? formatVideoTime(duration) : '';

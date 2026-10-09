@@ -259,7 +259,7 @@ class _DeckClozeQuizSheetState extends State<DeckClozeQuizSheet> {
           physics: const NeverScrollableScrollPhysics(),
           mainAxisSpacing: 10,
           crossAxisSpacing: 10,
-          childAspectRatio: 2.8,
+          mainAxisExtent: 52,
           children: List.generate(_currentOptions.length, (idx) {
             final opt = _currentOptions[idx];
             final isSelected = _selectedOptionIndex == idx;
@@ -281,30 +281,39 @@ class _DeckClozeQuizSheetState extends State<DeckClozeQuizSheet> {
               }
             }
 
-            return InkWell(
-              onTap: _selectedOptionIndex != null ? null : () => _handleOptionSelect(idx, opt),
-              borderRadius: BorderRadius.circular(12),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 160),
-                decoration: BoxDecoration(
-                  color: bg,
+            return Semantics(
+              button: true,
+              enabled: _selectedOptionIndex == null,
+              selected: isSelected,
+              label: opt,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _selectedOptionIndex != null ? null : () => _handleOptionSelect(idx, opt),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: border,
-                    width: isSelected || (_selectedOptionIndex != null && isCorrectAnswer) ? 1.5 : 1.0,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    decoration: BoxDecoration(
+                      color: bg,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: border,
+                        width: isSelected || (_selectedOptionIndex != null && isCorrectAnswer) ? 1.5 : 1.0,
+                      ),
+                    ),
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Text(
+                      opt,
+                      style: TextStyle(
+                        color: textCol,
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
-                alignment: Alignment.center,
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Text(
-                  opt,
-                  style: TextStyle(
-                    color: textCol,
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             );
@@ -471,7 +480,7 @@ class _DeckClozeQuizSheetState extends State<DeckClozeQuizSheet> {
         const SizedBox(height: 22),
         SizedBox(
           width: double.infinity,
-          height: 46,
+          height: 48,
           child: FilledButton(
             onPressed: () => Navigator.of(context).pop(),
             style: FilledButton.styleFrom(

@@ -118,11 +118,22 @@ class SpacedRepetitionService {
     );
   }
 
-  /// Format an interval in days into a clean, human-readable compact badge (e.g. "<10m", "1d", "6d", "1mo")
+  /// Format an interval in days into a clean, human-readable compact badge matching lingua-tube (e.g. "<10m", "1d", "3d", "2w", "1mo", "1.2y")
   static String formatInterval(int days, {bool isAgain = false}) {
     if (isAgain || days <= 0) return '<10m';
-    if (days >= 30) return '${(days / 30).round()}mo';
-    return '${days}d';
+    if (days == 1) return '1d';
+    if (days < 7) return '${days}d';
+    if (days < 30) {
+      final weeks = (days / 7).round();
+      return '${weeks}w';
+    }
+    if (days < 365) {
+      final months = (days / 30).round();
+      if (months >= 12) return '1y';
+      return '${months}mo';
+    }
+    final years = (days / 365).toStringAsFixed(1).replaceAll('.0', '');
+    return '${years}y';
   }
 
   /// Seeds appropriate SRS scheduling parameters when a card level is manually altered in the UI

@@ -649,7 +649,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                                     final vid = entry.value;
                                     return PlaylistVideo(
                                       videoId: vid,
-                                      title: idx == 0 ? item.title : '${item.title} #${idx + 1}',
+                                      title: 'Video #${idx + 1}',
                                       thumbnail: 'https://i.ytimg.com/vi/$vid/hqdefault.jpg',
                                       level: item.level,
                                       position: idx,
@@ -659,7 +659,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                                   PlayerCoordinator.instance.openVideo(
                                     context,
                                     videoId: item.videoIds.first,
-                                    title: item.title,
+                                    title: '',
                                     thumbnail: 'https://i.ytimg.com/vi/${item.videoIds.first}/hqdefault.jpg',
                                     level: item.level,
                                     playlistTitle: item.title,
@@ -756,8 +756,10 @@ class _ExploreScreenState extends State<ExploreScreen>
                           itemBuilder: (context, index) {
                             final item = videos[index];
                             final videoId = item['videoId'] as String? ?? '';
-                            final title = item['title'] as String? ?? 'YouTube Video';
-                            final channel = item['channel'] as String? ?? 'YouTube Creator';
+                            final rawTitle = (item['title'] as String?)?.trim();
+                            final title = (rawTitle != null && rawTitle.isNotEmpty) ? rawTitle : 'YouTube Video';
+                            final rawChannel = (item['channel'] as String?)?.trim();
+                            final channel = (rawChannel != null && rawChannel.isNotEmpty) ? rawChannel : 'YouTube Creator';
                             final levelTag = VideoFeedCard.resolveVideoLevel(item, currentLang);
                             final thumbnail = item['thumbnail'] as String?;
                             final duration = (item['duration'] as num?)?.toInt();

@@ -87,7 +87,7 @@ class VideoBottomBar extends StatelessWidget {
     final showDualSubsButton = showDualSubtitlesToggle && isCJKLanguage;
 
     return Container(
-      height: 44,
+      height: 48,
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -235,7 +235,7 @@ class VideoBottomBar extends StatelessWidget {
       tooltip: context.t('subtitle.dualSubtitles', null, 'Dual Subtitles'),
       visualDensity: VisualDensity.compact,
       padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
       icon: Icon(
         Icons.translate_rounded,
         size: 19,
@@ -272,7 +272,7 @@ class VideoBottomBar extends StatelessWidget {
       iconSize: iconSize,
       visualDensity: VisualDensity.compact,
       padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
       icon: Icon(
         icon,
         size: iconSize,

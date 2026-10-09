@@ -7,7 +7,10 @@ import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import '../../config/voca_theme.dart';
 import '../../models/voca_models.dart';
 import '../../services/i18n_service.dart';
+import '../../state/app_state.dart';
 import '../../state/player_state.dart';
+import '../../utils/language_utils.dart';
+import '../settings/offline_translation_screen.dart';
 import 'add_to_playlist_sheet.dart';
 import 'voca_bottom_sheet.dart';
 import '../widgets/circle_flag.dart';
@@ -63,17 +66,6 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
     0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0
   ];
 
-  static const List<Map<String, String>> _dualSubLanguages = [
-    {'code': 'vi', 'name': 'Tiếng Việt'},
-    {'code': 'en', 'name': 'English'},
-    {'code': 'ja', 'name': '日本語'},
-    {'code': 'zh', 'name': '中文'},
-    {'code': 'ko', 'name': '한국어'},
-    {'code': 'es', 'name': 'Español'},
-    {'code': 'fr', 'name': 'Français'},
-    {'code': 'de', 'name': 'Deutsch'},
-  ];
-
   String _getReadingScriptIcon(String lang) {
     switch (lang.toLowerCase()) {
       case 'ja':
@@ -112,11 +104,8 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
   }
 
   String _getTargetLangName(String langCode) {
-    final found = _dualSubLanguages.firstWhere(
-      (l) => l['code'] == langCode,
-      orElse: () => {'code': langCode, 'name': langCode.toUpperCase()},
-    );
-    return found['name']!;
+    final found = SubtitleLanguageOption.findByCode(langCode);
+    return found?.name ?? langCode.toUpperCase();
   }
 
   void _handleSaveToPlaylist() {
@@ -511,25 +500,105 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
           ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: _dualSubLanguages.length,
+            itemCount: kSupportedSubtitleLanguages.length,
             itemBuilder: (context, index) {
-              final item = _dualSubLanguages[index];
-              final code = item['code']!;
-              final name = item['name']!;
+              final item = kSupportedSubtitleLanguages[index];
+              final code = item.code;
+              final locName = item.getLocalizedName(context);
+              final displayName = locName == item.name ? item.name : '$locName (${item.name})';
               final isLearningLang = code == activeLearningLang;
               final isSelected = showDual && currentTarget == code;
 
+              final onDeviceService = AppState.instance.onDeviceTranslationService;
+              final isDownloaded = onDeviceService.downloadedLanguages.value.contains(code);
+              final isDownloading = onDeviceService.downloadingLanguages.value.contains(code);
+
+              Widget? trailing;
+              if (item.isBuiltIn) {
+                trailing = Text(
+                  context.t('settings.builtIn', null, 'Built-in'),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: colors.textMuted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                );
+              } else if (isDownloading) {
+                trailing = SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: colors.accentPrimary,
+                  ),
+                );
+              } else if (isDownloaded) {
+                trailing = Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.offline_pin_outlined, size: 15, color: colors.colorGrammar),
+                    const SizedBox(width: 4),
+                    Text(
+                      context.t('settings.offlineBadge', null, 'Offline'),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: colors.colorGrammar,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                );
+              } else {
+                trailing = IconButton(
+                  icon: Icon(Icons.cloud_download_outlined, size: 18, color: colors.textMuted),
+                  tooltip: context.t(
+                    'settings.downloadModelTooltip',
+                    {'name': locName},
+                    'Download $locName model (~30 MB)',
+                  ),
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  padding: EdgeInsets.zero,
+                  onPressed: () {
+                    onDeviceService.downloadModel(code);
+                  },
+                );
+              }
+
               return _buildOptionRow(
                 context: context,
-                label: name,
+                label: displayName,
                 isSelected: isSelected,
                 isDisabled: isLearningLang,
                 leading: CircleFlag(code: code, size: 20),
+                trailing: trailing,
                 onTap: () {
-                  widget.controller.dualSubLanguage.value = code;
+                  widget.controller.setDualSubLanguage(code);
                   widget.controller.showTranslation.value = true;
                   setState(() => _currentView = 'main');
                 },
+              );
+            },
+          ),
+          Divider(height: 1, color: colors.borderColor),
+          ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
+            leading: Icon(Icons.download_for_offline_outlined, color: colors.accentPrimary, size: 22),
+            title: Text(
+              context.t('settings.manageOfflineModels', null, 'Manage Offline Models'),
+              style: TextStyle(
+                color: colors.textPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            subtitle: Text(
+              context.t('settings.offlineDescSub', null, 'Download language models for instant subtitles'),
+              style: TextStyle(color: colors.textSecondary, fontSize: 12),
+            ),
+            trailing: Icon(Icons.chevron_right_rounded, color: colors.textMuted, size: 20),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const OfflineTranslationScreen()),
               );
             },
           ),
@@ -735,6 +804,7 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
     required bool isSelected,
     bool isDisabled = false,
     Widget? leading,
+    Widget? trailing,
     required VoidCallback onTap,
   }) {
     final colors = context.vocaColors;
@@ -761,6 +831,10 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
                 ),
               ),
             ),
+            if (trailing != null) ...[
+              trailing,
+              const SizedBox(width: 8),
+            ],
             if (isSelected)
               Icon(Icons.check_rounded, size: 20, color: colors.accentPrimary),
           ],

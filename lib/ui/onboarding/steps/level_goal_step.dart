@@ -58,7 +58,7 @@ class LevelGoalStep extends StatelessWidget {
           context.t('onboarding.dailyGoalLabel', null, 'Daily Habit Pact'),
         ),
 
-        // 4 Horizontal segmented goal pills
+        // 4 Horizontal segmented goal cards
         Row(
           children: [
             for (var i = 0; i < DailyGoalOption.all.length; i++) ...[
@@ -227,9 +227,9 @@ class _DailyGoalPill extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
           decoration: BoxDecoration(
             color: isSelected
-                ? colors.colorFire.withValues(alpha: colors.isDark ? 0.20 : 0.12)
+                ? colors.colorFire.withValues(alpha: colors.isDark ? 0.20 : 0.10)
                 : colors.bgCard,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isSelected ? colors.colorFire : colors.borderColor,
               width: isSelected ? 1.6 : 1.0,

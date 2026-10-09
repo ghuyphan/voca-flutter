@@ -157,9 +157,8 @@ class _DeckSettingsSheetState extends State<DeckSettingsSheet> {
                     ],
                   ),
                 ),
-                Switch.adaptive(
+                Switch(
                   value: _dueOnly,
-                  activeColor: colors.accentPrimary,
                   onChanged: (val) => setState(() => _dueOnly = val),
                 ),
               ],
@@ -220,43 +219,54 @@ class _DeckSettingsSheetState extends State<DeckSettingsSheet> {
   Widget _buildTypeChip(String type, String label, IconData icon, VocaColorPalette colors) {
     final isSelected = _subDeck == type;
     return Expanded(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(10),
-          onTap: () {
-            HapticFeedback.selectionClick();
-            setState(() => _subDeck = type);
-          },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 160),
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            decoration: BoxDecoration(
-              color: isSelected ? colors.accentPrimary.withValues(alpha: 0.12) : colors.bgSurface,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: isSelected ? colors.accentPrimary : colors.borderColorLight,
-                width: isSelected ? 1.5 : 1.0,
-              ),
-            ),
-            child: Column(
-              children: [
-                Icon(
-                  icon,
-                  size: 16,
-                  color: isSelected ? colors.accentPrimary : colors.textSecondary,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: isSelected ? colors.accentPrimary : colors.textSecondary,
-                    fontSize: 11,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+      child: Semantics(
+        button: true,
+        selected: isSelected,
+        label: label,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: () {
+              HapticFeedback.selectionClick();
+              setState(() => _subDeck = type);
+            },
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? colors.accentPrimary.withValues(alpha: 0.12) : colors.bgSurface,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isSelected ? colors.accentPrimary : colors.borderColorLight,
+                    width: isSelected ? 1.5 : 1.0,
                   ),
                 ),
-              ],
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      icon,
+                      size: 16,
+                      color: isSelected ? colors.accentPrimary : colors.textSecondary,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: isSelected ? colors.accentPrimary : colors.textSecondary,
+                        fontSize: 11,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
@@ -267,32 +277,41 @@ class _DeckSettingsSheetState extends State<DeckSettingsSheet> {
   Widget _buildSizeChip(int? size, String label, VocaColorPalette colors) {
     final isSelected = _sessionSize == size;
     return Expanded(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(10),
-          onTap: () {
-            HapticFeedback.selectionClick();
-            setState(() => _sessionSize = size);
-          },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 160),
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            decoration: BoxDecoration(
-              color: isSelected ? colors.accentPrimary.withValues(alpha: 0.12) : colors.bgSurface,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: isSelected ? colors.accentPrimary : colors.borderColorLight,
-                width: isSelected ? 1.5 : 1.0,
-              ),
-            ),
-            child: Text(
-              label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: isSelected ? colors.accentPrimary : colors.textSecondary,
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+      child: Semantics(
+        button: true,
+        selected: isSelected,
+        label: label,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: () {
+              HapticFeedback.selectionClick();
+              setState(() => _sessionSize = size);
+            },
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? colors.accentPrimary.withValues(alpha: 0.12) : colors.bgSurface,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isSelected ? colors.accentPrimary : colors.borderColorLight,
+                    width: isSelected ? 1.5 : 1.0,
+                  ),
+                ),
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: isSelected ? colors.accentPrimary : colors.textSecondary,
+                    fontSize: 12,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  ),
+                ),
               ),
             ),
           ),

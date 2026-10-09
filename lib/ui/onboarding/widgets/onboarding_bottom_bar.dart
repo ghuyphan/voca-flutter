@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../config/voca_theme.dart';
 import '../../../services/i18n_service.dart';
-import 'pressable_scale.dart';
 
 /// Thumb-zone primary CTA pill button with optional legal consent above
 /// and optional secondary text link below.
@@ -111,75 +110,72 @@ class OnboardingBottomBar extends StatelessWidget {
             ),
           ],
 
-          // Primary Full-Width Pill CTA Button
-          Semantics(
-            button: true,
-            label: label,
-            child: PressableScale(
-              haptic: false,
-              onTap: isLoading
+          // Primary Full-Width CTA Button (M3 FilledButton with 16dp rounded shape)
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: FilledButton(
+              onPressed: isLoading
                   ? null
                   : () {
                       HapticFeedback.lightImpact();
                       onPressed();
                     },
-              child: Container(
-                height: 52,
-                decoration: BoxDecoration(
-                  color: colors.accentPrimary,
-                  borderRadius: BorderRadius.circular(999),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colors.accentPrimary
-                          .withValues(alpha: context.isDark ? 0.28 : 0.24),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
+              style: FilledButton.styleFrom(
+                backgroundColor: colors.accentPrimary,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: colors.accentPrimary.withValues(alpha: 0.55),
+                disabledForegroundColor: Colors.white.withValues(alpha: 0.55),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                alignment: Alignment.center,
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 180),
-                  child: isLoading
-                      ? const SizedBox(
-                          key: ValueKey('loading'),
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.4,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Row(
-                          key: ValueKey(label),
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Flexible(
-                              child: Text(
-                                label,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.1,
-                                ),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+              ),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 180),
+                child: isLoading
+                    ? const SizedBox(
+                        key: ValueKey('loading'),
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.4,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Row(
+                        key: ValueKey(label),
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.1,
                               ),
                             ),
-                            if (icon != null) ...[
-                              const SizedBox(width: 8),
-                              Icon(icon, size: 20, color: Colors.white),
-                            ],
+                          ),
+                          if (icon != null) ...[
+                            const SizedBox(width: 8),
+                            Icon(
+                              icon,
+                              size: 20,
+                              color: Colors.white,
+                            ),
                           ],
-                        ),
-                ),
+                        ],
+                      ),
               ),
             ),
           ),
 
-          // Optional Secondary Action Link Below
+          // Optional Secondary Action Link Below (M3 min 48dp touch target)
           AnimatedSize(
             duration: const Duration(milliseconds: 220),
             curve: Curves.easeOut,
@@ -189,7 +185,7 @@ class OnboardingBottomBar extends StatelessWidget {
                     padding: const EdgeInsets.only(top: 6),
                     child: SizedBox(
                       width: double.infinity,
-                      height: 40,
+                      height: 48,
                       child: TextButton(
                         onPressed: onSecondary,
                         style: TextButton.styleFrom(

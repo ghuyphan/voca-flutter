@@ -1,7 +1,9 @@
 // lib/utils/language_utils.dart
 // 1:1 port of ../lingua-tube/src/app/shared/utils/language.utils.ts
 
+import 'package:flutter/widgets.dart';
 import '../models/voca_models.dart';
+import '../services/i18n_service.dart';
 
 /// Unicode ranges for language detection
 class UnicodeRanges {
@@ -89,3 +91,68 @@ bool isPunctuation(String text) {
   if (text.isEmpty) return false;
   return punctuationRegex.hasMatch(text);
 }
+
+/// Unified descriptor for supported subtitle and on-device translation languages
+class SubtitleLanguageOption {
+  final String code;
+  final String name;
+  final String flag;
+  final bool isBuiltIn;
+
+  const SubtitleLanguageOption({
+    required this.code,
+    required this.name,
+    required this.flag,
+    this.isBuiltIn = false,
+  });
+
+  /// Returns localized language name according to current app locale,
+  /// falling back to endonym [name].
+  String getLocalizedName(BuildContext context) {
+    switch (code) {
+      case 'en':
+        return context.t('settings.english', null, name);
+      case 'vi':
+        return context.t('settings.vietnamese', null, name);
+      case 'ja':
+        return context.t('settings.japanese', null, name);
+      case 'zh':
+        return context.t('settings.chinese', null, name);
+      case 'ko':
+        return context.t('settings.korean', null, name);
+      case 'es':
+        return context.t('settings.spanish', null, name);
+      case 'fr':
+        return context.t('settings.french', null, name);
+      case 'de':
+        return context.t('settings.german', null, name);
+      default:
+        return name;
+    }
+  }
+
+  static SubtitleLanguageOption? findByCode(String? code) {
+    if (code == null) return null;
+    final normalized = normalizeLanguageCode(code);
+    return kSupportedSubtitleLanguages.firstWhere(
+      (opt) => opt.code == normalized || opt.code == code,
+      orElse: () => SubtitleLanguageOption(
+        code: code,
+        name: code.toUpperCase(),
+        flag: '🌐',
+      ),
+    );
+  }
+}
+
+/// Single immutable source of truth for supported dual subtitle languages across the entire app
+const List<SubtitleLanguageOption> kSupportedSubtitleLanguages = [
+  SubtitleLanguageOption(code: 'en', name: 'English', flag: '🇺🇸', isBuiltIn: true),
+  SubtitleLanguageOption(code: 'vi', name: 'Tiếng Việt', flag: '🇻🇳'),
+  SubtitleLanguageOption(code: 'ja', name: '日本語', flag: '🇯🇵'),
+  SubtitleLanguageOption(code: 'zh', name: '中文', flag: '🇨🇳'),
+  SubtitleLanguageOption(code: 'ko', name: '한국어', flag: '🇰🇷'),
+  SubtitleLanguageOption(code: 'es', name: 'Español', flag: '🇪🇸'),
+  SubtitleLanguageOption(code: 'fr', name: 'Français', flag: '🇫🇷'),
+  SubtitleLanguageOption(code: 'de', name: 'Deutsch', flag: '🇩🇪'),
+];

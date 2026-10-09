@@ -55,53 +55,53 @@ class TinderActionDock extends StatelessWidget {
           // Row of 4 Material 3 Action Buttons [ Again | Hard | Good | Easy ]
           Row(
             children: [
-              // 1. Again
+              // 1. Again (Coral)
               Expanded(
                 child: _SrsActionButton(
                   title: context.t('study.again', null, 'Again'),
                   interval: againInterval,
                   semanticColor: colors.accentPrimary,
-                  borderColor: isDark ? colors.accentPrimary.withValues(alpha: 0.35) : colors.borderColorLight,
-                  bgColor: isDark ? colors.accentPrimary.withValues(alpha: 0.10) : colors.bgSurface,
+                  borderColor: colors.accentPrimary.withValues(alpha: isDark ? 0.35 : 0.28),
+                  bgColor: colors.accentPrimary.withValues(alpha: isDark ? 0.12 : 0.08),
                   onTap: onAgain,
                 ),
               ),
               const SizedBox(width: 8),
 
-              // 2. Hard
+              // 2. Hard (Orange Flame)
               Expanded(
                 child: _SrsActionButton(
                   title: context.t('study.hard', null, 'Hard'),
                   interval: hardInterval,
                   semanticColor: colors.colorFire,
-                  borderColor: isDark ? colors.colorFire.withValues(alpha: 0.35) : colors.borderColorLight,
-                  bgColor: isDark ? colors.colorFire.withValues(alpha: 0.10) : colors.bgSurface,
+                  borderColor: colors.colorFire.withValues(alpha: isDark ? 0.35 : 0.28),
+                  bgColor: colors.colorFire.withValues(alpha: isDark ? 0.12 : 0.08),
                   onTap: onHard,
                 ),
               ),
               const SizedBox(width: 8),
 
-              // 3. Good (Mint Green - Fixed semantic color bug)
+              // 3. Good (Mint Green)
               Expanded(
                 child: _SrsActionButton(
                   title: context.t('study.good', null, 'Good'),
                   interval: goodInterval,
-                  semanticColor: colors.colorGrammar,
-                  borderColor: isDark ? colors.colorGrammar.withValues(alpha: 0.35) : colors.borderColorLight,
-                  bgColor: isDark ? colors.colorGrammar.withValues(alpha: 0.10) : colors.bgSurface,
+                  semanticColor: colors.success,
+                  borderColor: colors.success.withValues(alpha: isDark ? 0.35 : 0.28),
+                  bgColor: colors.success.withValues(alpha: isDark ? 0.12 : 0.08),
                   onTap: onGood,
                 ),
               ),
               const SizedBox(width: 8),
 
-              // 4. Easy
+              // 4. Easy (Iris / Violet)
               Expanded(
                 child: _SrsActionButton(
                   title: context.t('study.easy', null, 'Easy'),
                   interval: easyInterval,
                   semanticColor: colors.accentSecondary,
-                  borderColor: isDark ? colors.accentSecondary.withValues(alpha: 0.35) : colors.borderColorLight,
-                  bgColor: isDark ? colors.accentSecondary.withValues(alpha: 0.10) : colors.bgSurface,
+                  borderColor: colors.accentSecondary.withValues(alpha: isDark ? 0.35 : 0.28),
+                  bgColor: colors.accentSecondary.withValues(alpha: isDark ? 0.12 : 0.08),
                   onTap: onEasy,
                 ),
               ),
@@ -146,59 +146,75 @@ class _SrsActionButtonState extends State<_SrsActionButton> {
       scale: _isPressed ? 0.94 : 1.0,
       duration: const Duration(milliseconds: 100),
       curve: Curves.easeOutCubic,
-      child: Material(
-        color: widget.bgColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: widget.borderColor, width: 1.0),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTapDown: (_) => setState(() => _isPressed = true),
-          onTapUp: (_) => setState(() => _isPressed = false),
-          onTapCancel: () => setState(() => _isPressed = false),
-          onTap: () {
-            HapticFeedback.lightImpact();
-            widget.onTap();
-          },
-          splashColor: widget.semanticColor.withValues(alpha: 0.16),
-          highlightColor: widget.semanticColor.withValues(alpha: 0.08),
-          child: Container(
-            height: 60,
-            alignment: Alignment.center,
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  widget.title,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: widget.semanticColor,
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.2,
+      child: Semantics(
+        button: true,
+        label: '${widget.title}, interval ${widget.interval}',
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: widget.semanticColor.withValues(alpha: 0.08),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Material(
+            color: widget.bgColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: widget.borderColor, width: 1.2),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTapDown: (_) => setState(() => _isPressed = true),
+              onTapUp: (_) => setState(() => _isPressed = false),
+              onTapCancel: () => setState(() => _isPressed = false),
+              onTap: () {
+                HapticFeedback.lightImpact();
+                widget.onTap();
+              },
+              splashColor: widget.semanticColor.withValues(alpha: 0.16),
+              highlightColor: widget.semanticColor.withValues(alpha: 0.08),
+              child: Container(
+                height: 60,
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    widget.title,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: widget.semanticColor,
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.2,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  widget.interval,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: colors.textMuted,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
+                  const SizedBox(height: 3),
+                  Text(
+                    widget.interval,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: colors.textMuted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }

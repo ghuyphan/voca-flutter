@@ -1,7 +1,6 @@
 // lib/ui/onboarding/steps/ready_step.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../../config/voca_theme.dart';
 import '../../../services/i18n_service.dart';
 import '../models/onboarding_models.dart';
@@ -470,45 +469,52 @@ class _ThemeOptionTile extends StatelessWidget {
     final iconColor = isSelected ? colors.accentPrimary : colors.textSecondary;
 
     return Expanded(
-      child: PressableScale(
-        haptic: true,
-        onTap: () {
-          HapticFeedback.selectionClick();
-          onTap();
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOut,
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(14),
-            border: border,
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 20, color: iconColor),
-              const SizedBox(height: 3),
-              Text(
-                label,
-                style: TextStyle(
-                  color: textColor,
-                  fontSize: 12.5,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+      child: Semantics(
+        button: true,
+        selected: isSelected,
+        label: '$label, $subtitle',
+        child: PressableScale(
+          haptic: true,
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(16),
+              border: border,
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 22, color: iconColor),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 13,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                  ),
                 ),
-              ),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  color: isSelected
-                      ? colors.accentPrimary.withValues(alpha: 0.8)
-                      : colors.textMuted,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w400,
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: isSelected
+                        ? colors.accentPrimary.withValues(alpha: 0.85)
+                        : colors.textMuted,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

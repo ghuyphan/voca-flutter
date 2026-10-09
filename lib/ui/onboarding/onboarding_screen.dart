@@ -219,95 +219,100 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
             child: SafeArea(
               bottom: false,
-              child: Column(
-              children: [
-                // Top Header with Back, Segmented Bar, Locale Picker & Skip
-                OnboardingHeader(
-                  progress: currentStep,
-                  totalSegments: OnboardingController.progressSteps,
-                  showBack: canGoBack || Navigator.of(context).canPop(),
-                  showSkip: currentStep < OnboardingController.lastStep,
-                  onBack: _prevStep,
-                  onSkip: _skipOnboarding,
-                  currentLanguage: nativeLang,
-                  onLanguageChanged: _controller.selectNativeLanguage,
-                ),
-
-                // Page Content (5 Steps)
-                Expanded(
-                  child: PageView(
-                    controller: _pageController,
-                    physics: const ClampingScrollPhysics(),
-                    onPageChanged: (page) {
-                      _controller.step.value = page;
-                    },
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 520),
+                  child: Column(
                     children: [
-                      // Step 0: Welcome & Core Values
-                      WelcomeStep(demoLanguage: learningLang),
-
-                      // Step 1: Target Learning Language
-                      LearningLanguageStep(
-                        selectedLanguage: learningLang,
-                        onSelect: _controller.selectLearningLanguage,
+                      // Top Header with Back, Segmented Bar, Locale Picker & Skip
+                      OnboardingHeader(
+                        progress: currentStep,
+                        totalSegments: OnboardingController.progressSteps,
+                        showBack: canGoBack || Navigator.of(context).canPop(),
+                        showSkip: currentStep < OnboardingController.lastStep,
+                        onBack: _prevStep,
+                        onSkip: _skipOnboarding,
+                        currentLanguage: nativeLang,
+                        onLanguageChanged: _controller.selectNativeLanguage,
                       ),
 
-                      // Step 2: Difficulty Ladder & Habit Pact
-                      LevelGoalStep(
-                        learningLanguage: learningLang,
-                        selectedLevel: selectedLevel,
-                        onSelectLevel: (lvl) {
-                          _controller.level.value = lvl;
-                        },
-                        selectedDailyGoal: selectedDailyGoal,
-                        onSelectDailyGoal: (goal) {
-                          _controller.dailyGoal.value = goal;
-                        },
+                      // Page Content (5 Steps)
+                      Expanded(
+                        child: PageView(
+                          controller: _pageController,
+                          physics: const ClampingScrollPhysics(),
+                          onPageChanged: (page) {
+                            _controller.step.value = page;
+                          },
+                          children: [
+                            // Step 0: Welcome & Core Values
+                            WelcomeStep(demoLanguage: learningLang),
+
+                            // Step 1: Target Learning Language
+                            LearningLanguageStep(
+                              selectedLanguage: learningLang,
+                              onSelect: _controller.selectLearningLanguage,
+                            ),
+
+                            // Step 2: Difficulty Ladder & Habit Pact
+                            LevelGoalStep(
+                              learningLanguage: learningLang,
+                              selectedLevel: selectedLevel,
+                              onSelectLevel: (lvl) {
+                                _controller.level.value = lvl;
+                              },
+                              selectedDailyGoal: selectedDailyGoal,
+                              onSelectDailyGoal: (goal) {
+                                _controller.dailyGoal.value = goal;
+                              },
+                            ),
+
+                            // Step 3: Companion Spirit Guide
+                            CompanionStep(
+                              selectedCompanion: selectedCompanion,
+                              onCompanionChanged: (comp) {
+                                _controller.companion.value = comp;
+                              },
+                            ),
+
+                            // Step 4: Plan Summary, Starter Loot & Appearance
+                            ReadyStep(
+                              learningLanguage: learningLang,
+                              selectedLevel: selectedLevel,
+                              selectedCompanion: selectedCompanion,
+                              dailyGoal: selectedDailyGoal,
+                              themeMode: selectedThemeMode,
+                              onThemeChanged: _controller.setThemeMode,
+                            ),
+                          ],
+                        ),
                       ),
 
-                      // Step 3: Companion Spirit Guide
-                      CompanionStep(
-                        selectedCompanion: selectedCompanion,
-                        onCompanionChanged: (comp) {
-                          _controller.companion.value = comp;
-                        },
-                      ),
-
-                      // Step 4: Plan Summary, Starter Loot & Appearance
-                      ReadyStep(
-                        learningLanguage: learningLang,
-                        selectedLevel: selectedLevel,
-                        selectedCompanion: selectedCompanion,
-                        dailyGoal: selectedDailyGoal,
-                        themeMode: selectedThemeMode,
-                        onThemeChanged: _controller.setThemeMode,
+                      // Sticky Bottom Action Bar with Optional Consent & Secondary Link on Step 0
+                      OnboardingBottomBar(
+                        label: _getBottomBarLabel(currentStep),
+                        icon: _getBottomBarIcon(currentStep),
+                        onPressed: _nextStep,
+                        isLoading: isCompleting,
+                        showConsent: currentStep == OnboardingController.welcomeStep,
+                        onTermsTap: () => _openLegalUrl('https://voca.study/terms'),
+                        onPrivacyTap: () => _openLegalUrl('https://voca.study/privacy'),
+                        secondaryLabel: currentStep == OnboardingController.welcomeStep
+                            ? context.t(
+                                'auth.alreadyHaveAccount',
+                                null,
+                                'Already have an account? Sign in',
+                              )
+                            : null,
+                        onSecondary: currentStep == OnboardingController.welcomeStep
+                            ? _openAuth
+                            : null,
                       ),
                     ],
                   ),
                 ),
-
-                // Sticky Bottom Action Bar with Optional Consent & Secondary Link on Step 0
-                OnboardingBottomBar(
-                  label: _getBottomBarLabel(currentStep),
-                  icon: _getBottomBarIcon(currentStep),
-                  onPressed: _nextStep,
-                  isLoading: isCompleting,
-                  showConsent: currentStep == OnboardingController.welcomeStep,
-                  onTermsTap: () => _openLegalUrl('https://voca.study/terms'),
-                  onPrivacyTap: () => _openLegalUrl('https://voca.study/privacy'),
-                  secondaryLabel: currentStep == OnboardingController.welcomeStep
-                      ? context.t(
-                          'auth.alreadyHaveAccount',
-                          null,
-                          'Already have an account? Sign in',
-                        )
-                      : null,
-                  onSecondary: currentStep == OnboardingController.welcomeStep
-                      ? _openAuth
-                      : null,
-                ),
-              ],
+              ),
             ),
-          ),
         ),
       ),
     );

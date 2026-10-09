@@ -1,6 +1,7 @@
 // lib/ui/gamification/widgets/rpg_shield_crest.dart
 
 import 'package:flutter/material.dart';
+import '../../../config/voca_theme.dart';
 
 /// Custom clipper that traces the authentic RPG Heater Shield silhouette:
 /// polygon(50% 100%, 0 78%, 0 8%, 15% 0, 85% 0, 100% 8%, 100% 78%)
@@ -411,6 +412,39 @@ enum RpgCrestStyle {
         return const Color(0xFFF0FDF4);
       case RpgCrestStyle.quest:
         return const Color(0xFFECFDF5);
+    }
+  }
+
+  /// Returns high-contrast semantic accent color directly from active VocaColorPalette.
+  /// Zero hardcoded colors — fully theme-driven and WCAG AAA/AA compliant.
+  Color accentColor(VocaColorPalette colors) {
+    switch (this) {
+      case RpgCrestStyle.stone:
+      case RpgCrestStyle.flameCold:
+        return colors.isDark ? colors.textSecondary : colors.textPrimary;
+      case RpgCrestStyle.bronze:
+        return colors.warning;
+      case RpgCrestStyle.silver:
+        return colors.isDark ? colors.accentSecondary : colors.textPrimary;
+      case RpgCrestStyle.gold:
+        return colors.accentTertiary;
+      case RpgCrestStyle.platinum:
+        return colors.colorDiamond;
+      case RpgCrestStyle.emerald:
+      case RpgCrestStyle.quest:
+        return colors.colorGrammar;
+      case RpgCrestStyle.diamond:
+      case RpgCrestStyle.flameBeacon:
+        return colors.colorDiamond;
+      case RpgCrestStyle.master:
+        return colors.accentSecondary;
+      case RpgCrestStyle.grandmaster:
+        return colors.error;
+      case RpgCrestStyle.mythic:
+        return colors.accentPrimary;
+      case RpgCrestStyle.flameEmber:
+      case RpgCrestStyle.flameBlaze:
+        return colors.colorFire;
     }
   }
 }

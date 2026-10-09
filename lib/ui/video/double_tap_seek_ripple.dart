@@ -1,6 +1,7 @@
 // lib/ui/video/double_tap_seek_ripple.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 /// YouTube Mobile-style Double-Tap Seek Ripple Overlay
 ///
@@ -33,6 +34,7 @@ class _DoubleTapSeekRippleState extends State<DoubleTapSeekRipple>
   @override
   void initState() {
     super.initState();
+    _announceSeek();
     _scaleController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 200),
@@ -48,10 +50,16 @@ class _DoubleTapSeekRippleState extends State<DoubleTapSeekRipple>
     )..repeat();
   }
 
+  void _announceSeek() {
+    final direction = widget.isLeft ? 'Rewind' : 'Fast forward';
+    SemanticsService.announce('$direction ${widget.seconds} seconds', TextDirection.ltr);
+  }
+
   @override
   void didUpdateWidget(covariant DoubleTapSeekRipple oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.seconds != widget.seconds) {
+      _announceSeek();
       _scaleController.forward(from: 0.8);
     }
   }

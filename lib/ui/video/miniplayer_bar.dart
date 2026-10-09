@@ -5,6 +5,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 import '../../config/voca_theme.dart';
 import '../../services/i18n_service.dart';
 import '../../state/player_coordinator.dart';
+import '../widgets/voca_shimmer.dart';
 
 /// Floating docked Miniplayer Bar matching YouTube Mobile and VOCA M3:
 /// - Fixed above bottom navigation bar or docked at bottom
@@ -106,19 +107,29 @@ class _MiniplayerBarState extends State<MiniplayerBar> with SingleTickerProvider
     });
   }
 
-  String _resolveTitle(String activeT, BuildContext context) {
-    if (widget.title.isNotEmpty && widget.title != 'YouTube Video') return widget.title;
-    if (activeT.isNotEmpty && activeT != 'YouTube Video') return activeT;
-    if (widget.title.isNotEmpty) return widget.title;
-    if (activeT.isNotEmpty) return activeT;
-    return context.t('player.loadingVideo', null, 'Loading...');
+  bool _isPlaceholder(String? t) {
+    if (t == null || t.trim().isEmpty) return true;
+    final trimmed = t.trim();
+    if (trimmed == 'YouTube Video' || trimmed == 'Loading...' || trimmed == 'Video') return true;
+    if (trimmed.startsWith('Video #')) return true;
+    final pTitle = PlayerCoordinator.instance.activePlaylistTitle.value;
+    if (pTitle != null && pTitle.trim().isNotEmpty) {
+      final pTrim = pTitle.trim();
+      if (trimmed == pTrim || trimmed.startsWith('$pTrim #')) return true;
+    }
+    return false;
+  }
+
+  String _resolveTitle(String activeT) {
+    if (!_isPlaceholder(activeT)) return activeT;
+    if (!_isPlaceholder(widget.title)) return widget.title;
+    return '';
   }
 
   String _resolveChannel(String? activeC) {
-    if (widget.channel.isNotEmpty && widget.channel != 'YouTube') return widget.channel;
     if (activeC != null && activeC.isNotEmpty && activeC != 'YouTube') return activeC;
-    if (widget.channel.isNotEmpty) return widget.channel;
-    return activeC ?? 'YouTube';
+    if (widget.channel.isNotEmpty && widget.channel != 'YouTube') return widget.channel;
+    return (activeC != null && activeC.isNotEmpty) ? activeC : widget.channel;
   }
 
   @override
@@ -311,34 +322,50 @@ class _MiniplayerBarState extends State<MiniplayerBar> with SingleTickerProvider
                                 Expanded(
                                   child: Watch((context) {
                                     final coord = PlayerCoordinator.instance;
-                                    final displayTitle = _resolveTitle(coord.activeTitle.value, context);
+                                    final displayTitle = _resolveTitle(coord.activeTitle.value);
                                     final displayChannel = _resolveChannel(coord.activeChannel.value);
+                                    final isTitleLoading = displayTitle.isEmpty;
 
-                                    return Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          displayTitle,
-                                          style: TextStyle(
-                                            color: colors.textPrimary,
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          displayChannel,
-                                          style: TextStyle(
-                                            color: colors.textMuted,
-                                            fontSize: 11.5,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
+                                    return AnimatedSwitcher(
+                                      duration: const Duration(milliseconds: 220),
+                                      child: isTitleLoading
+                                          ? Column(
+                                              key: const ValueKey('miniplayer_skeleton'),
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                VocaShimmer.line(width: 140, height: 13),
+                                                const SizedBox(height: 5),
+                                                VocaShimmer.line(width: 80, height: 11),
+                                              ],
+                                            )
+                                          : Column(
+                                              key: const ValueKey('miniplayer_meta'),
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  displayTitle,
+                                                  style: TextStyle(
+                                                    color: colors.textPrimary,
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  displayChannel.isNotEmpty ? displayChannel : 'YouTube',
+                                                  style: TextStyle(
+                                                    color: colors.textMuted,
+                                                    fontSize: 11.5,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ],
+                                            ),
                                     );
                                   }),
                                 ),

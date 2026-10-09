@@ -28,9 +28,9 @@ class AchievementsSheet extends StatefulWidget {
   }) {
     return showVocaBottomSheet(
       context: context,
-      showCloseButton: true,
+      showCloseButton: false,
       maxHeightFactor: 0.90,
-      contentPadding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
+      contentPadding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
       builder: (_) => AchievementsSheet(initialCategory: initialCategory),
     );
   }
@@ -68,43 +68,48 @@ class _AchievementsSheetState extends State<AchievementsSheet> {
           ? allAchievements
           : allAchievements.where((a) => a.category == _selectedCategory).toList();
 
+      final crestSolidColor = crestTier.accentColor(colors);
+
       return SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
 
-            // 1. Centered Hero Shield Crest (Matching Session Recap style)
+            // 1. Centered Hero Shield Crest (Proportionate M3 layout)
             Center(
               child: RpgShieldCrest(
-                width: 76,
-                height: 86,
+                width: 68,
+                height: 76,
                 style: crestTier,
                 icon: Icons.emoji_events_rounded,
-                iconSize: 38,
+                iconSize: 34,
                 showGlow: true,
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 10),
 
-            // 2. Rank Pill Badge (e.g. [ ★ Cấp độ 12 · Chiến binh Vàng ])
+            // 2. Rank Pill Badge (High-contrast, accessible)
             Center(
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
                 decoration: BoxDecoration(
-                  color: crestTier.glowColor.withValues(alpha: 0.12),
+                  color: crestSolidColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: crestTier.glowColor.withValues(alpha: 0.35), width: 1.2),
+                  border: Border.all(
+                    color: crestSolidColor.withValues(alpha: 0.35),
+                    width: 1.2,
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.star_rounded, size: 14, color: crestTier.glowColor),
+                    Icon(Icons.star_rounded, size: 14, color: crestSolidColor),
                     const SizedBox(width: 5),
                     Text(
                       '${context.t('gamification.level', null, 'Level')} $userLvl · ${crestTier.displayName}',
                       style: TextStyle(
-                        color: crestTier.glowColor,
+                        color: crestSolidColor,
                         fontSize: 12.5,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.3,
@@ -114,7 +119,7 @@ class _AchievementsSheetState extends State<AchievementsSheet> {
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
 
             // 3. Centered Large Bold Title
             Text(
@@ -122,12 +127,12 @@ class _AchievementsSheetState extends State<AchievementsSheet> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: colors.textPrimary,
-                fontSize: 24,
+                fontSize: 22,
                 fontWeight: FontWeight.w800,
-                letterSpacing: -0.4,
+                letterSpacing: -0.3,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
 
             // 4. Centered Subtitle
             Text(
@@ -135,11 +140,11 @@ class _AchievementsSheetState extends State<AchievementsSheet> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: colors.textSecondary,
-                fontSize: 13,
-                height: 1.35,
+                fontSize: 12.5,
+                height: 1.3,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
 
             // 5. XP Progress Card Dock
             Container(
@@ -147,7 +152,7 @@ class _AchievementsSheetState extends State<AchievementsSheet> {
               decoration: BoxDecoration(
                 color: colors.bgSurface,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: colors.borderColorLight),
+                border: Border.all(color: colors.borderColor),
               ),
               child: Column(
                 children: [
@@ -170,14 +175,14 @@ class _AchievementsSheetState extends State<AchievementsSheet> {
                     child: LinearProgressIndicator(
                       value: levelProgress,
                       minHeight: 5,
-                      backgroundColor: colors.bgCard,
-                      valueColor: AlwaysStoppedAnimation<Color>(crestTier.rimGradient.colors.first),
+                      backgroundColor: colors.bgSecondary,
+                      valueColor: AlwaysStoppedAnimation<Color>(crestSolidColor),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
 
             // 6. Category Filter Pills
             SingleChildScrollView(
@@ -279,53 +284,72 @@ class _AchievementsSheetState extends State<AchievementsSheet> {
   }) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6.5),
-          decoration: BoxDecoration(
-            color: isSelected ? colors.accentPrimary : colors.bgSurface,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: isSelected ? colors.accentPrimary : colors.borderColorLight,
+      child: FilterChip(
+        selected: isSelected,
+        showCheckmark: false,
+        label: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? colors.accentPrimary : colors.textSecondary,
+                fontSize: 12.5,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+              ),
             ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label,
+            const SizedBox(width: 5),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? colors.accentPrimary.withValues(alpha: 0.16)
+                    : colors.bgSecondary,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                count,
                 style: TextStyle(
-                  color: isSelected ? Colors.white : colors.textSecondary,
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                  color: isSelected ? colors.accentPrimary : colors.textSecondary,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? Colors.white.withValues(alpha: 0.22)
-                      : colors.bgCard,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  count,
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : colors.textMuted,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
+        onSelected: (_) => onTap(),
+        color: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return colors.accentPrimarySoft;
+          }
+          return colors.bgCard;
+        }),
+        surfaceTintColor: Colors.transparent,
+        side: WidgetStateBorderSide.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return BorderSide(color: colors.accentPrimary, width: 1.5);
+          }
+          return BorderSide(color: colors.borderColor, width: 1.0);
+        }),
+        shape: const StadiumBorder(),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
     );
+  }
+
+  Color _getTierColor(AchievementTier tier, VocaColorPalette colors) {
+    switch (tier) {
+      case AchievementTier.bronze:
+        return colors.warning;
+      case AchievementTier.silver:
+        return colors.isDark ? colors.accentSecondary : colors.textPrimary;
+      case AchievementTier.gold:
+        return colors.accentTertiary;
+      case AchievementTier.diamond:
+        return colors.colorDiamond;
+    }
   }
 
   Widget _buildAchievementCard({
@@ -352,18 +376,19 @@ class _AchievementsSheetState extends State<AchievementsSheet> {
     final isUnlocked = achievement.isUnlocked;
     final title = achievement.localizedTitle(context);
     final desc = achievement.localizedDescription(context);
+    final tierColor = _getTierColor(achievement.tier, colors);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(13),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: colors.bgCard,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: canClaim
-              ? colors.accentTertiary.withValues(alpha: 0.6)
+              ? colors.accentTertiary
               : (isUnlocked
-                  ? colors.accentTertiary.withValues(alpha: 0.25)
+                  ? colors.accentTertiary.withValues(alpha: 0.35)
                   : colors.borderColor),
           width: canClaim ? 1.5 : 1,
         ),
@@ -400,7 +425,7 @@ class _AchievementsSheetState extends State<AchievementsSheet> {
                     child: Icon(
                       isUnlocked ? Icons.check : Icons.lock_outline_rounded,
                       size: 9,
-                      color: isUnlocked ? Colors.white : colors.textMuted,
+                      color: isUnlocked ? colors.textInverse : colors.textMuted,
                     ),
                   ),
                 ),
@@ -425,7 +450,7 @@ class _AchievementsSheetState extends State<AchievementsSheet> {
                               title,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                color: isUnlocked ? colors.textPrimary : colors.textMuted,
+                                color: isUnlocked ? colors.textPrimary : colors.textSecondary,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -433,17 +458,22 @@ class _AchievementsSheetState extends State<AchievementsSheet> {
                           ),
                           const SizedBox(width: 6),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                             decoration: BoxDecoration(
-                              color: crestStyle.rimGradient.colors.first.withValues(alpha: 0.14),
-                              borderRadius: BorderRadius.circular(4),
+                              color: tierColor.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(5),
+                              border: Border.all(
+                                color: tierColor.withValues(alpha: 0.35),
+                                width: 0.8,
+                              ),
                             ),
                             child: Text(
                               achievement.tier.name.toUpperCase(),
                               style: TextStyle(
-                                color: crestStyle.rimGradient.colors.first,
-                                fontSize: 9,
+                                color: tierColor,
+                                fontSize: 9.5,
                                 fontWeight: FontWeight.w800,
+                                letterSpacing: 0.3,
                               ),
                             ),
                           ),
@@ -452,7 +482,7 @@ class _AchievementsSheetState extends State<AchievementsSheet> {
                     ),
                     const SizedBox(width: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: colors.accentTertiary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(6),
@@ -473,7 +503,7 @@ class _AchievementsSheetState extends State<AchievementsSheet> {
                 // Description
                 Text(
                   desc,
-                  style: TextStyle(color: colors.textMuted, fontSize: 11),
+                  style: TextStyle(color: colors.textSecondary, fontSize: 11),
                 ),
                 const SizedBox(height: 8),
 
@@ -488,26 +518,27 @@ class _AchievementsSheetState extends State<AchievementsSheet> {
                           minHeight: 4.5,
                           backgroundColor: colors.bgSecondary,
                           valueColor: AlwaysStoppedAnimation<Color>(
-                            isUnlocked ? colors.accentTertiary : colors.textMuted,
+                            isUnlocked ? colors.accentTertiary : colors.borderColorHover,
                           ),
                         ),
                       ),
                     ),
                     const SizedBox(width: 10),
                     if (canClaim)
-                      FilledButton.tonal(
+                      FilledButton(
                         onPressed: onClaim,
                         style: FilledButton.styleFrom(
                           backgroundColor: colors.accentTertiary,
-                          foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                          foregroundColor: colors.textInverse,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                          minimumSize: const Size(64, 34),
+                          tapTargetSize: MaterialTapTargetSize.padded,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          elevation: 0,
                         ),
                         child: Text(
                           context.t('missions.claim', null, 'Claim'),
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+                          style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800),
                         ),
                       )
                     else if (achievement.isClaimed)
@@ -523,7 +554,7 @@ class _AchievementsSheetState extends State<AchievementsSheet> {
                       Text(
                         '${achievement.current}/${achievement.target}',
                         style: TextStyle(
-                          color: isUnlocked ? colors.accentTertiary : colors.textMuted,
+                          color: isUnlocked ? colors.accentTertiary : colors.textSecondary,
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                         ),

@@ -2,9 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:signals_flutter/signals_flutter.dart';
 import '../../config/voca_theme.dart';
 import '../../services/i18n_service.dart';
 import '../../state/app_state.dart';
+import '../../state/player_coordinator.dart';
 import '../widgets/voca_shimmer.dart';
 import 'voca_bottom_sheet.dart';
 
@@ -182,31 +184,48 @@ class _PlaylistQueueSheetState extends State<PlaylistQueueSheet>
 
         // 3. Playlist Items List
         Flexible(
-          child: widget.initialVideos != null && widget.initialVideos!.isNotEmpty
-              ? _buildVideoList(widget.initialVideos!, colors)
-              : FutureBuilder<List<Map<String, dynamic>>>(
-                  future: _recommendedVideosFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return _buildSkeletonList(colors);
-                    }
+          child: Watch((context) {
+            final coord = PlayerCoordinator.instance;
+            final videos = coord.hasPlaylist
+                ? coord.playlistVideos.value
+                    .map((v) => {
+                          'id': v.videoId,
+                          'videoId': v.videoId,
+                          'title': v.title,
+                          'channel': v.channel,
+                          'thumbnail': v.thumbnail,
+                        })
+                    .toList()
+                : widget.initialVideos;
 
-                    final videos = snapshot.data ?? [];
-                    if (videos.isEmpty) {
-                      return Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(32),
-                          child: Text(
-                            context.t('playlist.empty.noVideosTitle', null, 'No videos yet'),
-                            style: TextStyle(color: colors.textMuted, fontSize: 13),
-                          ),
-                        ),
-                      );
-                    }
+            if (videos != null && videos.isNotEmpty) {
+              return _buildVideoList(videos, colors);
+            }
 
-                    return _buildVideoList(videos, colors);
-                  },
-                ),
+            return FutureBuilder<List<Map<String, dynamic>>>(
+              future: _recommendedVideosFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return _buildSkeletonList(colors);
+                }
+
+                final recVideos = snapshot.data ?? [];
+                if (recVideos.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Text(
+                        context.t('playlist.empty.noVideosTitle', null, 'No videos yet'),
+                        style: TextStyle(color: colors.textMuted, fontSize: 13),
+                      ),
+                    ),
+                  );
+                }
+
+                return _buildVideoList(recVideos, colors);
+              },
+            );
+          }),
         ),
       ],
     );
@@ -264,9 +283,10 @@ class _PlaylistQueueSheetState extends State<PlaylistQueueSheet>
       itemBuilder: (context, index) {
         final item = videos[index];
         final vId = item['videoId'] as String? ?? item['id'] as String? ?? '';
-        final title = item['title'] as String? ?? 'Video';
-        final channel = item['channel'] as String? ?? 'YouTube';
+        final title = item['title'] as String? ?? '';
+        final channel = item['channel'] as String? ?? '';
         final isCurrent = vId == widget.currentVideoId;
+        final isTitleLoading = PlayerCoordinator.instance.isPlaceholderTitle(title, widget.playlistTitle);
 
         return Material(
           color: Colors.transparent,
@@ -274,7 +294,7 @@ class _PlaylistQueueSheetState extends State<PlaylistQueueSheet>
             onTap: () {
               Navigator.pop(context);
               if (!isCurrent) {
-                widget.onSelectVideo(vId, title, index);
+                widget.onSelectVideo(vId, isTitleLoading ? '' : title, index);
               }
             },
             borderRadius: BorderRadius.circular(12),
@@ -342,33 +362,48 @@ class _PlaylistQueueSheetState extends State<PlaylistQueueSheet>
 
                   // Slot 3: Video info (title + channel)
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          title,
-                          style: TextStyle(
-                            color: isCurrent ? colors.accentPrimary : colors.textPrimary,
-                            fontSize: 13,
-                            fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w500,
-                            height: 1.3,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          channel,
-                          style: TextStyle(
-                            color: colors.textSecondary,
-                            fontSize: 12,
-                            height: 1.2,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 220),
+                      child: isTitleLoading
+                          ? Column(
+                              key: ValueKey('queue_skeleton_$index'),
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                VocaShimmer.line(width: 150, height: 13),
+                                const SizedBox(height: 6),
+                                VocaShimmer.line(width: 90, height: 11),
+                              ],
+                            )
+                          : Column(
+                              key: ValueKey('queue_meta_$index'),
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  title,
+                                  style: TextStyle(
+                                    color: isCurrent ? colors.accentPrimary : colors.textPrimary,
+                                    fontSize: 13,
+                                    fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w500,
+                                    height: 1.3,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  channel.isNotEmpty ? channel : 'YouTube',
+                                  style: TextStyle(
+                                    color: colors.textSecondary,
+                                    fontSize: 12,
+                                    height: 1.2,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
                     ),
                   ),
                 ],

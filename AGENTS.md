@@ -22,7 +22,8 @@ Critical invariants, architectural rules, and development workflows for AI codin
 ## 2. Critical Invariants (Non-Negotiable Rules)
 
 ### ⚠️ RULE 1: Follow Original App Design with Material 3 (M3)
-- Use standard Flutter M3 widgets (`NavigationBar`, `FilledButton`, `FilledButton.tonal`, `OutlinedButton`, `SegmentedButton`, `FilterChip`, `Card`, `showModalBottomSheet`, `SearchBar`).
+- Use standard Flutter M3 widgets ([Flutter Material Widgets Catalog](https://docs.flutter.dev/ui/widgets/material): `NavigationBar`, `FilledButton`, `FilledButton.tonal`, `OutlinedButton`, `SegmentedButton`, `FilterChip`, `Card`, `showModalBottomSheet`, `SearchBar`).
+- Consult the `material-design-3-ui` skill (`~/.gemini/config/skills/material-design-3-ui/`) for component selection, surface tonal hierarchy (`surfaceContainer*`), and anti-patterns.
 - Style components using Voca tokens in `lib/config/voca_theme.dart` (Radiant Coral `#FF6B82`, Rich Obsidian dark / Crisp Porcelain light, Nunito font, 5-tier level badges). Avoid generic unthemed purple defaults.
 - Adhere to mobile ergonomics: min 48x48dp touch targets, M3 state layers (ink ripples), and native sheets with drag handles.
 
@@ -110,7 +111,8 @@ All design tokens are centralized in `lib/config/voca_theme.dart`:
 
 ## 4. Key References & Documentation Map
 
-- **Flutter Material 3 Catalog**: [docs.flutter.dev/ui/widgets/material](https://docs.flutter.dev/ui/widgets/material) (Official M3 component reference)
+- **Flutter Material 3 Catalog**: [docs.flutter.dev/ui/widgets/material](https://docs.flutter.dev/ui/widgets/material) (Official M3 component implementation reference)
+- **Material Design 3 UI Skill**: `~/.gemini/config/skills/material-design-3-ui/` (Decision engine covering semantic tokens, component selection, accessibility, and Flutter widget mapping in `references/flutter-material-widgets.md`)
 - **Detailed Architecture & Signals**: [doc/architecture.md](./doc/architecture.md)
 - **Edge API & Supabase Specs**: [doc/api-integration.md](./doc/api-integration.md) & [lib/services/voca_api_client.dart](./lib/services/voca_api_client.dart)
 - **Features (Subtitles, Grammar, SRS)**: [doc/features.md](./doc/features.md)

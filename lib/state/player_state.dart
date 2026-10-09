@@ -23,7 +23,10 @@ class VideoPlayerController {
     required this.apiClient,
     required this.grammarEngine,
   }) {
-    dualSubService = DualSubService(apiClient: apiClient);
+    dualSubService = DualSubService(
+      apiClient: apiClient,
+      onDeviceService: AppState.instance.onDeviceTranslationService,
+    );
 
     // Computed signal: Evaluates authentic language of subtitles (1:1 port of lingua-tube)
     activeLanguage = computed(() {

@@ -24,6 +24,7 @@ import 'video_header.dart';
 import 'video_more_feed.dart';
 import 'video_progress_bar.dart';
 import 'fullscreen_subtitle.dart';
+import '../widgets/voca_shimmer.dart';
 
 class VideoPlayerScreen extends StatefulWidget {
   final String videoId;
@@ -95,6 +96,40 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     _isTablet = MediaQuery.sizeOf(context).width >= VocaTokens.tabletBreakpoint;
   }
 
+  String _getDisplayTitle() {
+    final coord = PlayerCoordinator.instance;
+    final coordTitle = coord.activeTitle.value;
+    final ytTitle = _ytController.metadata.title;
+    final pTitle = widget.playlistTitle ?? coord.activePlaylistTitle.value;
+
+    bool isPlaceholder(String? t) {
+      if (t == null || t.trim().isEmpty) return true;
+      final trimmed = t.trim();
+      if (trimmed == 'YouTube Video' || trimmed == 'Loading...' || trimmed == 'Video') return true;
+      if (trimmed.startsWith('Video #')) return true;
+      if (pTitle != null && pTitle.isNotEmpty) {
+        final pTrim = pTitle.trim();
+        if (trimmed == pTrim || trimmed.startsWith('$pTrim #')) return true;
+      }
+      return false;
+    }
+
+    if (!isPlaceholder(coordTitle)) return coordTitle;
+    if (!isPlaceholder(_playerController.videoTitle.value)) return _playerController.videoTitle.value;
+    if (!isPlaceholder(ytTitle)) return ytTitle;
+    if (!isPlaceholder(widget.title)) return widget.title;
+    return '';
+  }
+
+  String _getDisplayChannel() {
+    final coordChan = PlayerCoordinator.instance.activeChannel.value;
+    final ytAuthor = _ytController.metadata.author;
+    if (coordChan != null && coordChan.isNotEmpty && coordChan != 'YouTube') return coordChan;
+    if (ytAuthor.isNotEmpty && ytAuthor != 'YouTube') return ytAuthor;
+    if (widget.channel != null && widget.channel!.isNotEmpty && widget.channel != 'YouTube') return widget.channel!;
+    return (coordChan != null && coordChan.isNotEmpty) ? coordChan : (widget.channel ?? '');
+  }
+
   @override
   void initState() {
     super.initState();
@@ -139,7 +174,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       if (!mounted) return;
       final time = state.position.inMilliseconds / 1000.0;
       _playerController.currentTime.value = time;
-      _bufferedFraction.value = state.loadedFraction;
+      final ytMetaTitle = _ytController.metadata.title;
+      if (ytMetaTitle.isNotEmpty && ytMetaTitle != 'YouTube Video' && _playerController.videoTitle.value != ytMetaTitle) {
+        _playerController.videoTitle.value = ytMetaTitle;
+      }
 
       // Sentence / Cue Looping with seek cooldown
       if (_playerController.isLoopingCue.value) {
@@ -187,6 +225,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           ]);
           SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
         }
+      }
+
+      final mTitle = value.metaData.title.isNotEmpty ? value.metaData.title : _ytController.metadata.title;
+      if (mTitle.isNotEmpty && mTitle != 'YouTube Video' && _playerController.videoTitle.value != mTitle) {
+        _playerController.videoTitle.value = mTitle;
       }
 
       if (value.playerState == PlayerState.playing) {
@@ -547,7 +590,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                               IconButton(
                                 icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white, size: 28),
                                 tooltip: context.t('player.minimize', null, 'Minimize'),
-                                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                                 padding: const EdgeInsets.all(8),
                                 onPressed: _handleMinimize,
                               ),
@@ -555,7 +598,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                               IconButton(
                                 icon: const Icon(Icons.subtitles_rounded, color: Colors.white, size: 20),
                                 tooltip: context.t('subtitle.tracksTitle', null, 'Subtitle Tracks'),
-                                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                                 padding: const EdgeInsets.all(8),
                                 onPressed: () => SubtitleTracksSheet.show(
                                   context,
@@ -566,7 +609,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                               IconButton(
                                 icon: const Icon(Icons.settings_rounded, color: Colors.white, size: 20),
                                 tooltip: context.t('player.settings', null, 'Settings'),
-                                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                                 padding: const EdgeInsets.all(8),
                                 onPressed: () => VideoSettingsSheet.show(
                                   context,
@@ -578,27 +621,42 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                               IconButton(
                                 icon: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 22),
                                 tooltip: 'Exit Fullscreen',
-                                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                                 padding: const EdgeInsets.all(8),
                                 onPressed: _toggleFullscreen,
                               ),
                               const SizedBox(width: 8),
                               Expanded(
-                                child: Text(
-                                  widget.title.isNotEmpty ? widget.title : _playerController.videoTitle.value,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
+                                child: Watch((context) {
+                                  final displayTitle = _getDisplayTitle();
+                                  final isPlaceholder = displayTitle.isEmpty ||
+                                      PlayerCoordinator.instance.isPlaceholderTitle(displayTitle);
+                                  return AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 220),
+                                    child: isPlaceholder
+                                        ? Align(
+                                            key: const ValueKey('fs_title_skeleton'),
+                                            alignment: Alignment.centerLeft,
+                                            child: VocaShimmer.line(width: 180, height: 14),
+                                          )
+                                        : Text(
+                                            displayTitle,
+                                            key: const ValueKey('fs_title_text'),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                  );
+                                }),
                               ),
                               IconButton(
                                 icon: const Icon(Icons.subtitles_rounded, color: Colors.white, size: 20),
                                 tooltip: context.t('subtitle.tracksTitle', null, 'Subtitle Tracks'),
-                                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                                 padding: const EdgeInsets.all(8),
                                 onPressed: () => SubtitleTracksSheet.show(
                                   context,
@@ -609,7 +667,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                               IconButton(
                                 icon: const Icon(Icons.settings_rounded, color: Colors.white, size: 20),
                                 tooltip: context.t('player.settings', null, 'Settings'),
-                                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                                 padding: const EdgeInsets.all(8),
                                 onPressed: () => VideoSettingsSheet.show(
                                   context,
@@ -802,7 +860,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                   tooltip: isFullscreen
                       ? 'Exit Fullscreen'
                       : context.t('player.minimize', null, 'Minimize'),
-                  constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                  constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                   padding: const EdgeInsets.all(8),
                   onPressed: isFullscreen ? _toggleFullscreen : _handleMinimize,
                 ),
@@ -998,10 +1056,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                   _buildVideoPlayerArea(isFullscreen: false),
                                   Watch((context) {
                                     return VideoHeader(
-                                      title: widget.title.isNotEmpty
-                                          ? widget.title
-                                          : _playerController.videoTitle.value,
-                                      channel: widget.channel ?? _ytController.metadata.author,
+                                      title: _getDisplayTitle(),
+                                      channel: _getDisplayChannel(),
                                       videoId: widget.videoId,
                                       level: widget.level ?? _playerController.difficultyLevel.value,
                                       controller: _playerController,
@@ -1063,10 +1119,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                     // VideoHeader (Title, channel, level badge, tracks [cc], share, close [x])
                                     Watch((context) {
                                       return VideoHeader(
-                                        title: widget.title.isNotEmpty
-                                            ? widget.title
-                                            : _playerController.videoTitle.value,
-                                        channel: widget.channel ?? _ytController.metadata.author,
+                                        title: _getDisplayTitle(),
+                                        channel: _getDisplayChannel(),
                                         videoId: widget.videoId,
                                         level: widget.level ?? _playerController.difficultyLevel.value,
                                         controller: _playerController,
@@ -1117,10 +1171,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                       return VideoMoreFeed(
                                         key: _moreFeedKey,
                                         currentVideoId: widget.videoId,
-                                        currentTitle: widget.title.isNotEmpty
-                                            ? widget.title
-                                            : _playerController.videoTitle.value,
-                                        currentChannel: widget.channel ?? _ytController.metadata.author,
+                                        currentTitle: _getDisplayTitle(),
+                                        currentChannel: _getDisplayChannel(),
                                         language: _playerController.activeLanguage.value,
                                         tier: widget.level ?? _playerController.difficultyLevel.value,
                                         onVideoTap: (vidId, title, channel, level) {

@@ -31,6 +31,7 @@ Future<T?> showVocaBottomSheet<T>({
     builder: (ctx) {
       final colors = ctx.vocaColors;
       final viewInsets = MediaQuery.of(ctx).viewInsets;
+      final bottomInset = MediaQuery.paddingOf(ctx).bottom;
       final screenHeight = MediaQuery.sizeOf(ctx).height;
       final availableHeight = (screenHeight - viewInsets.bottom).clamp(100.0, screenHeight);
 
@@ -126,7 +127,8 @@ Future<T?> showVocaBottomSheet<T>({
                     Flexible(
                       fit: FlexFit.loose,
                       child: Padding(
-                        padding: contentPadding ?? const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                        padding: (contentPadding ?? const EdgeInsets.symmetric(horizontal: 20, vertical: 16))
+                            .add(EdgeInsets.only(bottom: bottomInset > 0 ? bottomInset : 0)),
                         child: builder(ctx),
                       ),
                     ),

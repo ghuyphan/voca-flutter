@@ -12,6 +12,7 @@ import '../services/grammar_engine.dart';
 import '../services/gamification_service.dart';
 import '../services/i18n_service.dart';
 import '../services/vocabulary_service.dart';
+import '../services/on_device_translation_service.dart';
 
 class AppState {
   static final AppState instance = AppState._();
@@ -32,6 +33,14 @@ class AppState {
   late GrammarEngine grammarEngine;
   late GamificationService gamificationService;
   VocabularyService get vocabularyService => VocabularyService.instance;
+
+  OnDeviceTranslationService? _onDeviceTranslationService;
+  OnDeviceTranslationService get onDeviceTranslationService {
+    _onDeviceTranslationService ??= OnDeviceTranslationService();
+    return _onDeviceTranslationService!;
+  }
+  set onDeviceTranslationService(OnDeviceTranslationService s) =>
+      _onDeviceTranslationService = s;
 
   final activeLanguage = signal<String>('ja');
   final userSettings = signal<UserSettings>(UserSettings());

@@ -390,8 +390,10 @@ class VideoMoreFeedState extends State<VideoMoreFeed> {
 
             final item = videos[index];
             final vidId = item['videoId'] as String? ?? '';
-            final title = item['title'] as String? ?? 'YouTube Video';
-            final channel = item['channel'] as String? ?? 'YouTube Creator';
+            final rawTitle = (item['title'] as String?)?.trim();
+            final title = (rawTitle != null && rawTitle.isNotEmpty) ? rawTitle : 'YouTube Video';
+            final rawChannel = (item['channel'] as String?)?.trim();
+            final channel = (rawChannel != null && rawChannel.isNotEmpty) ? rawChannel : 'YouTube Creator';
             final levelTag = VideoFeedCard.resolveVideoLevel(item, widget.language);
 
             return RepaintBoundary(

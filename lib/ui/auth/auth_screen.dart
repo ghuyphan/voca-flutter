@@ -488,36 +488,39 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
 
   Widget _buildLandingContent(VocaColorPalette colors, bool isDark) {
     return SafeArea(
-      child: AnimatedBuilder(
-        animation: _sheetAnimation,
-        builder: (context, child) {
-          final translateY = -28.0 * _sheetAnimation.value;
-          final opacity = (1.0 - 0.12 * _sheetAnimation.value).clamp(0.0, 1.0);
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: AnimatedBuilder(
+            animation: _sheetAnimation,
+            builder: (context, child) {
+              final translateY = -28.0 * _sheetAnimation.value;
+              final opacity = (1.0 - 0.12 * _sheetAnimation.value).clamp(0.0, 1.0);
 
-          return Transform.translate(
-            offset: Offset(0, translateY),
-            child: Opacity(
-              opacity: opacity,
-              child: child,
-            ),
-          );
-        },
-        child: Column(
-          children: [
-            // Top App Bar with Back Button
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: VocaBackButton(
-                  onPressed: () => Navigator.of(context).pop(false),
+              return Transform.translate(
+                offset: Offset(0, translateY),
+                child: Opacity(
+                  opacity: opacity,
+                  child: child,
                 ),
-              ),
-            ),
+              );
+            },
+            child: Column(
+              children: [
+                // Top App Bar with Back Button
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: VocaBackButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                    ),
+                  ),
+                ),
 
-            // Hero Emblem, Title & Subtitle (Centered vertically)
-            Expanded(
-              child: Center(
+                // Hero Emblem, Title & Subtitle (Centered vertically)
+                Expanded(
+                  child: Center(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
                   padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -677,12 +680,12 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
 
                   const SizedBox(height: 10),
 
-                  // 4. Continue as Guest Link Button
+                  // 4. Continue as Guest Link Button (Min 48dp Touch Target)
                   InkWell(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(10),
                     onTap: _activeAction != null ? null : () => Navigator.of(context).pop(false),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       child: Text(
                         context.t('auth.continueLocal', null, 'Continue as Guest'),
                         style: TextStyle(
@@ -704,7 +707,9 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
           ],
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 
   // ===========================================================================
@@ -743,15 +748,15 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
         _activeAction == ActiveAuthAction.reset;
 
     return Container(
-      constraints: BoxConstraints(maxHeight: maxSheetHeight),
+      constraints: BoxConstraints(maxWidth: 560, maxHeight: maxSheetHeight),
       decoration: BoxDecoration(
-        color: colors.bgCard,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border(
-          top: BorderSide(color: colors.borderColor, width: 1.0),
-          left: BorderSide(color: colors.borderColor, width: 1.0),
-          right: BorderSide(color: colors.borderColor, width: 1.0),
-        ),
+            color: colors.bgCard,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border(
+              top: BorderSide(color: colors.borderColor, width: 1.0),
+              left: BorderSide(color: colors.borderColor, width: 1.0),
+              right: BorderSide(color: colors.borderColor, width: 1.0),
+            ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.45),
@@ -954,7 +959,6 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                                   size: 20,
                                   color: colors.textMuted,
                                 ),
-                                splashRadius: 20,
                                 onPressed: () => setState(() => _showPassword = !_showPassword),
                               ),
                               onSubmitted: () {
@@ -984,7 +988,6 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                                   size: 20,
                                   color: colors.textMuted,
                                 ),
-                                splashRadius: 20,
                                 onPressed: () => setState(() => _showConfirmPassword = !_showConfirmPassword),
                               ),
                               onSubmitted: _submitForm,
@@ -1011,6 +1014,9 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                                     _buildCheckbox(
                                       checked: _hasAcceptedPolicyConsent,
                                       colors: colors,
+                                      onChanged: (val) {
+                                        setState(() => _hasAcceptedPolicyConsent = val ?? false);
+                                      },
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
@@ -1046,16 +1052,15 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                             ),
                           ],
 
-                          // Forgot Password Link (Sign In only)
+                          // Forgot Password Link (Sign In only - Min 48dp Touch Target)
                           if (_screenMode == AuthScreenMode.signIn) ...[
                             Align(
                               alignment: Alignment.centerRight,
                               child: TextButton(
                                 onPressed: () => _openForm(AuthScreenMode.resetPassword),
                                 style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.only(top: 8, bottom: 4),
-                                  minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  minimumSize: const Size(48, 48),
                                 ),
                                 child: Text(
                                   context.t('auth.forgotPassword', null, 'Forgot password?'),
@@ -1110,18 +1115,21 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
 
                     const SizedBox(height: 12),
 
-                    // Bottom Legal Links (Privacy Policy & Support)
+                    // Bottom Legal Links (Privacy Policy & Support - min 48dp target)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        GestureDetector(
-                          onTap: () => _openLegalUrl('https://voca.study/privacy'),
-                          child: Text(
-                            context.t('settings.privacyPolicy', null, 'Privacy Policy'),
-                            style: TextStyle(
-                              color: colors.textMuted,
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w500,
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                          child: GestureDetector(
+                            onTap: () => _openLegalUrl('https://voca.study/privacy'),
+                            child: Text(
+                              context.t('settings.privacyPolicy', null, 'Privacy Policy'),
+                              style: TextStyle(
+                                color: colors.textMuted,
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                         ),
@@ -1129,14 +1137,17 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                           '  •  ',
                           style: TextStyle(color: colors.borderColorHover, fontSize: 12),
                         ),
-                        GestureDetector(
-                          onTap: () => _openLegalUrl('https://voca.study/terms'),
-                          child: Text(
-                            context.t('settings.support', null, 'Terms & Support'),
-                            style: TextStyle(
-                              color: colors.textMuted,
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w500,
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                          child: GestureDetector(
+                            onTap: () => _openLegalUrl('https://voca.study/terms'),
+                            child: Text(
+                              context.t('settings.support', null, 'Terms & Support'),
+                              style: TextStyle(
+                                color: colors.textMuted,
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                         ),
@@ -1162,35 +1173,27 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     );
   }
 
-  /// VOCA Signature Primary CTA Button (Radiant Coral with soft glow shadow)
+  /// VOCA Signature Primary CTA Button (Material 3 FilledButton with WCAG AA compliant contrast)
   Widget _buildPrimaryActionButton({
     required String label,
     required VoidCallback onPressed,
     required VocaColorPalette colors,
     bool isLoading = false,
   }) {
-    return Container(
+    const foregroundColor = Colors.white;
+
+    return SizedBox(
       height: 52,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: colors.accentPrimary.withValues(alpha: 0.35),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ElevatedButton(
+      width: double.infinity,
+      child: FilledButton(
         onPressed: isLoading ? null : onPressed,
-        style: ElevatedButton.styleFrom(
+        style: FilledButton.styleFrom(
           backgroundColor: colors.accentPrimary,
-          foregroundColor: Colors.white,
+          foregroundColor: foregroundColor,
           disabledBackgroundColor: colors.accentPrimary.withValues(alpha: 0.55),
-          disabledForegroundColor: Colors.white.withValues(alpha: 0.55),
-          elevation: 0,
+          disabledForegroundColor: foregroundColor.withValues(alpha: 0.55),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 20),
         ),
@@ -1216,7 +1219,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     );
   }
 
-  /// VOCA Elevated Secondary Card Button (Used for Google, Apple, and Email landing cards)
+  /// VOCA M3 Outlined Secondary Button (Used for Google, Apple, and Email landing cards)
   Widget _buildSecondaryButton({
     required String label,
     required VoidCallback onPressed,
@@ -1230,18 +1233,16 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     return SizedBox(
       width: double.infinity,
       height: 52,
-      child: ElevatedButton(
+      child: OutlinedButton(
         onPressed: isLoading ? null : onPressed,
-        style: ElevatedButton.styleFrom(
+        style: OutlinedButton.styleFrom(
           backgroundColor: backgroundColor,
           foregroundColor: textColor,
           disabledBackgroundColor: backgroundColor.withValues(alpha: 0.55),
           disabledForegroundColor: textColor.withValues(alpha: 0.55),
-          elevation: 0,
-          shadowColor: Colors.black.withValues(alpha: 0.06),
           side: borderColor != null ? BorderSide(color: borderColor, width: 1.2) : BorderSide.none,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 20),
         ),
@@ -1347,23 +1348,25 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   Widget _buildCheckbox({
     required bool checked,
     required VocaColorPalette colors,
+    required ValueChanged<bool?> onChanged,
   }) {
-    return Container(
-      width: 22,
-      height: 22,
-      decoration: BoxDecoration(
-        color: checked ? colors.accentPrimary : colors.bgSurface,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: checked ? colors.accentPrimary : colors.borderColor,
+    return SizedBox(
+      width: 24,
+      height: 24,
+      child: Checkbox(
+        value: checked,
+        onChanged: onChanged,
+        activeColor: colors.accentPrimary,
+        checkColor: Colors.white,
+        side: BorderSide(
+          color: checked ? colors.accentPrimary : colors.borderColorHover,
           width: 1.5,
         ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(6),
+        ),
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
-      child: checked
-          ? const Center(
-              child: Icon(Icons.check_rounded, size: 15, color: Colors.white),
-            )
-          : null,
     );
   }
 

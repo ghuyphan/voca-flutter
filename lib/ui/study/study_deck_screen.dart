@@ -2,6 +2,7 @@
 
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import '../../config/voca_theme.dart';
 import '../../models/voca_models.dart';
@@ -65,145 +66,189 @@ class _StudyDeckScreenState extends State<StudyDeckScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = context.vocaColors;
-    final isTablet = MediaQuery.of(context).size.width >= VocaTokens.tabletBreakpoint;
+    final isTablet = MediaQuery.sizeOf(context).width >= 600.0;
 
-    return Scaffold(
-      backgroundColor: colors.bgPrimary,
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: isTablet ? 560 : double.infinity),
-            child: Watch((context) {
-              // 1. Loading State
-              if (_controller.isLoading.value) {
-                return Center(
-                  child: CircularProgressIndicator(color: colors.accentPrimary),
-                );
-              }
-
-              // 2. Session Complete State (Celebration & Recap)
-              if (_controller.isSessionActive.value && _controller.isFinished) {
-                return SessionRecap(
-                  stats: _controller.sessionStats.value,
-                  onDone: () => _controller.exitToOverview(),
-                  onKeepGoing: () {
-                    _controller.startNextBatch();
-                    if (_controller.sessionCards.value.isEmpty) {
-                      ToastService.info(
-                        context,
-                        context.t('study.allDone', null, 'All cards cleared for today! 🎉'),
-                      );
-                    }
-                  },
-                  onReviewAgain: _controller.sessionStats.value.againOrHardCount > 0
-                      ? () => _controller.restartFailedCards()
-                      : null,
-                );
-              }
-
-              // 3. Default View: Deck Overview Dashboard or Inactive/Empty Session
-              final currentCard = _controller.currentCard;
-              if (!_controller.isSessionActive.value || currentCard == null || _controller.sessionCards.value.isEmpty) {
-                return DeckOverview(
-                  controller: _controller,
-                  onStartSession: () {
-                    if (_controller.allCards.value.isEmpty) {
-                      ToastService.info(
-                        context,
-                        context.t('study.noWordsHint', null, 'Save words while watching videos to build your review deck.'),
-                        actionLabel: widget.onNavigateToExplore != null ? context.t('study.exploreVideos', null, 'Explore') : null,
-                        onAction: widget.onNavigateToExplore,
-                      );
-                      widget.onNavigateToExplore?.call();
-                      return;
-                    }
-                    _controller.startSession(
-                      practiceAnyway: _controller.sessionCardsCount == 0,
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.space): () {
+          if (_controller.isSessionActive.value && !_controller.isFinished) {
+            _controller.toggleReveal();
+          }
+        },
+        const SingleActivator(LogicalKeyboardKey.digit1): () {
+          if (_controller.isSessionActive.value && !_controller.isFinished) {
+            _stackController.swipeLeft();
+          }
+        },
+        const SingleActivator(LogicalKeyboardKey.digit2): () {
+          if (_controller.isSessionActive.value && !_controller.isFinished) {
+            _stackController.swipeDown();
+          }
+        },
+        const SingleActivator(LogicalKeyboardKey.digit3): () {
+          if (_controller.isSessionActive.value && !_controller.isFinished) {
+            _stackController.swipeRight();
+          }
+        },
+        const SingleActivator(LogicalKeyboardKey.digit4): () {
+          if (_controller.isSessionActive.value && !_controller.isFinished) {
+            _stackController.swipeUp();
+          }
+        },
+        const SingleActivator(LogicalKeyboardKey.keyZ, meta: true): () {
+          if (_controller.canUndo) {
+            _controller.undoLastRating();
+          }
+        },
+        const SingleActivator(LogicalKeyboardKey.keyZ, control: true): () {
+          if (_controller.canUndo) {
+            _controller.undoLastRating();
+          }
+        },
+      },
+      child: Focus(
+        autofocus: true,
+        child: Scaffold(
+          backgroundColor: colors.bgPrimary,
+          body: SafeArea(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: isTablet ? 560 : double.infinity),
+                child: Watch((context) {
+                  // 1. Loading State
+                  if (_controller.isLoading.value) {
+                    return Center(
+                      child: CircularProgressIndicator(
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                     );
-                    if (_controller.sessionCards.value.isEmpty) {
-                      ToastService.info(
-                        context,
-                        context.t('study.allDone', null, 'All cards cleared for today! 🎉'),
-                      );
-                    }
-                  },
-                  onStartDueOnlySession: () {
-                    if (_controller.allCards.value.isEmpty) {
-                      ToastService.info(
-                        context,
-                        context.t('study.noWordsHint', null, 'Save words while watching videos to build your review deck.'),
-                        actionLabel: widget.onNavigateToExplore != null ? context.t('study.exploreVideos', null, 'Explore') : null,
-                        onAction: widget.onNavigateToExplore,
-                      );
-                      widget.onNavigateToExplore?.call();
-                      return;
-                    }
-                    if (_controller.dueCount.value == 0) {
-                      ToastService.info(
-                        context,
-                        context.t('study.allDone', null, 'All cards cleared for today! 🎉'),
-                      );
-                      return;
-                    }
-                    _controller.startSession(dueOnlyMode: true);
-                  },
-                  onExploreVideos: widget.onNavigateToExplore,
-                );
-              }
+                  }
 
-              final intervals = _calculateIntervals(currentCard);
+                  // 2. Session Complete State (Celebration & Recap)
+                  if (_controller.isSessionActive.value && _controller.isFinished) {
+                    return SessionRecap(
+                      stats: _controller.sessionStats.value,
+                      onDone: () => _controller.exitToOverview(),
+                      onKeepGoing: () {
+                        _controller.startNextBatch();
+                        if (_controller.sessionCards.value.isEmpty) {
+                          ToastService.info(
+                            context,
+                            context.t('study.allDone', null, 'All cards cleared for today! 🎉'),
+                          );
+                        }
+                      },
+                      onReviewAgain: _controller.sessionStats.value.againOrHardCount > 0
+                          ? () => _controller.restartFailedCards()
+                          : null,
+                    );
+                  }
 
-              return Column(
-                children: [
-                  // Top Anki HUD with integrated Exit and Undo Buttons
-                  AnkiHudHeader(
-                    currentIndex: _controller.currentIndex.value,
-                    totalInSession: math.max(
-                      _controller.initialQueueSize.value,
-                      _controller.sessionCards.value.length,
-                    ),
-                    onOpenDeckSettings: _openDeckSettings,
-                    onExit: () => _controller.exitToOverview(),
-                    onUndo: _controller.canUndo ? () => _controller.undoLastRating() : null,
-                  ),
+                  // 3. Default View: Deck Overview Dashboard or Inactive/Empty Session
+                  final currentCard = _controller.currentCard;
+                  if (!_controller.isSessionActive.value || currentCard == null || _controller.sessionCards.value.isEmpty) {
+                    return DeckOverview(
+                      controller: _controller,
+                      onStartSession: () {
+                        if (_controller.allCards.value.isEmpty) {
+                          ToastService.info(
+                            context,
+                            context.t('study.noWordsHint', null, 'Save words while watching videos to build your review deck.'),
+                            actionLabel: widget.onNavigateToExplore != null ? context.t('study.exploreVideos', null, 'Explore') : null,
+                            onAction: widget.onNavigateToExplore,
+                          );
+                          widget.onNavigateToExplore?.call();
+                          return;
+                        }
+                        _controller.startSession(
+                          practiceAnyway: _controller.sessionCardsCount == 0,
+                        );
+                        if (_controller.sessionCards.value.isEmpty) {
+                          ToastService.info(
+                            context,
+                            context.t('study.allDone', null, 'All cards cleared for today! 🎉'),
+                          );
+                        }
+                      },
+                      onStartDueOnlySession: () {
+                        if (_controller.allCards.value.isEmpty) {
+                          ToastService.info(
+                            context,
+                            context.t('study.noWordsHint', null, 'Save words while watching videos to build your review deck.'),
+                            actionLabel: widget.onNavigateToExplore != null ? context.t('study.exploreVideos', null, 'Explore') : null,
+                            onAction: widget.onNavigateToExplore,
+                          );
+                          widget.onNavigateToExplore?.call();
+                          return;
+                        }
+                        if (_controller.dueCount.value == 0) {
+                          ToastService.info(
+                            context,
+                            context.t('study.allDone', null, 'All cards cleared for today! 🎉'),
+                          );
+                          return;
+                        }
+                        _controller.startSession(dueOnlyMode: true);
+                      },
+                      onExploreVideos: widget.onNavigateToExplore,
+                    );
+                  }
 
-                  // Center Tinder Multi-Card Stack
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      child: TinderCardStack(
-                        controller: _stackController,
-                        cardIndex: _controller.currentIndex.value,
-                        currentCard: currentCard,
-                        nextCard: _controller.nextCard,
-                        cardAfterNext: _controller.cardAfterNext,
-                        isRevealed: _controller.isCardRevealed.value,
-                        isReadingPeeked: _controller.isReadingPeeked.value,
+                  final intervals = _calculateIntervals(currentCard);
+
+                  return Column(
+                    children: [
+                      // Top Anki HUD with integrated Exit and Undo Buttons
+                      AnkiHudHeader(
+                        currentIndex: _controller.currentIndex.value,
+                        totalInSession: math.max(
+                          _controller.initialQueueSize.value,
+                          _controller.sessionCards.value.length,
+                        ),
+                        onOpenDeckSettings: _openDeckSettings,
+                        onExit: () => _controller.exitToOverview(),
+                        onUndo: _controller.canUndo ? () => _controller.undoLastRating() : null,
+                      ),
+
+                      // Center Tinder Multi-Card Stack
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                          child: TinderCardStack(
+                            controller: _stackController,
+                            cardIndex: _controller.currentIndex.value,
+                            currentCard: currentCard,
+                            nextCard: _controller.nextCard,
+                            cardAfterNext: _controller.cardAfterNext,
+                            isRevealed: _controller.isCardRevealed.value,
+                            isReadingPeeked: _controller.isReadingPeeked.value,
+                            againInterval: '<1 min',
+                            hardInterval: intervals.hard,
+                            goodInterval: intervals.good,
+                            easyInterval: intervals.easy,
+                            onSwipe: (rating) => _controller.rateCurrentCard(rating),
+                            onToggleFlip: () => _controller.toggleReveal(),
+                            onTogglePeekReading: () => _controller.toggleReadingPeek(),
+                          ),
+                        ),
+                      ),
+
+                      // Bottom 4-Button SRS Action Dock matching screenshot
+                      TinderActionDock(
                         againInterval: '<1 min',
                         hardInterval: intervals.hard,
                         goodInterval: intervals.good,
                         easyInterval: intervals.easy,
-                        onSwipe: (rating) => _controller.rateCurrentCard(rating),
-                        onToggleFlip: () => _controller.toggleReveal(),
-                        onTogglePeekReading: () => _controller.toggleReadingPeek(),
+                        onAgain: () => _stackController.swipeLeft(),
+                        onHard: () => _stackController.swipeDown(),
+                        onGood: () => _stackController.swipeRight(),
+                        onEasy: () => _stackController.swipeUp(),
                       ),
-                    ),
-                  ),
-
-                  // Bottom 4-Button SRS Action Dock matching screenshot
-                  TinderActionDock(
-                    againInterval: '<1 min',
-                    hardInterval: intervals.hard,
-                    goodInterval: intervals.good,
-                    easyInterval: intervals.easy,
-                    onAgain: () => _stackController.swipeLeft(),
-                    onHard: () => _stackController.swipeDown(),
-                    onGood: () => _stackController.swipeRight(),
-                    onEasy: () => _stackController.swipeUp(),
-                  ),
-                ],
-              );
-            }),
+                    ],
+                  );
+                }),
+              ),
+            ),
           ),
         ),
       ),
@@ -233,10 +278,14 @@ class _StudyDeckScreenState extends State<StudyDeckScreen> {
       currentLevel: card.level,
     );
 
+    final hardDays = resHard.interval;
+    final goodDays = math.max(hardDays + 1, resGood.interval);
+    final easyDays = math.max(goodDays + 1, resEasy.interval);
+
     return (
-      hard: SpacedRepetitionService.formatInterval(resHard.interval),
-      good: SpacedRepetitionService.formatInterval(resGood.interval),
-      easy: SpacedRepetitionService.formatInterval(resEasy.interval),
+      hard: SpacedRepetitionService.formatInterval(hardDays),
+      good: SpacedRepetitionService.formatInterval(goodDays),
+      easy: SpacedRepetitionService.formatInterval(easyDays),
     );
   }
 }

@@ -39,10 +39,10 @@ class OnboardingHeader extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Row(
           children: [
-            // Back
+            // Back (M3 48x48 min touch target)
             SizedBox(
-              width: 40,
-              height: 40,
+              width: 48,
+              height: 48,
               child: AnimatedOpacity(
                 opacity: showBack ? 1 : 0,
                 duration: const Duration(milliseconds: 180),
@@ -166,28 +166,18 @@ class _LanguagePickerPill extends StatelessWidget {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: colors.bgCard,
+      showDragHandle: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (ctx) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: colors.borderColor,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                   child: Text(
@@ -260,38 +250,43 @@ class _LanguagePickerPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final opt = NativeLanguageOption.byCode(currentCode);
 
-    return InkWell(
-      onTap: () => _showLanguageSheet(context),
-      borderRadius: BorderRadius.circular(999),
-      child: Container(
-        height: 32,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        decoration: BoxDecoration(
-          color: colors.bgSurface,
+    return SizedBox(
+      height: 48,
+      child: Center(
+        child: InkWell(
+          onTap: () => _showLanguageSheet(context),
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: colors.borderColorLight, width: 1.2),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            RoundFlag(asset: opt.flagAsset, size: 16),
-            const SizedBox(width: 6),
-            Text(
-              opt.code.toUpperCase(),
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: colors.textPrimary,
-                letterSpacing: 0.2,
-              ),
+          child: Container(
+            height: 34,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            decoration: BoxDecoration(
+              color: colors.bgSurface,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: colors.borderColorLight, width: 1.2),
             ),
-            const SizedBox(width: 2),
-            Icon(
-              Icons.keyboard_arrow_down_rounded,
-              size: 16,
-              color: colors.textMuted,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                RoundFlag(asset: opt.flagAsset, size: 16),
+                const SizedBox(width: 6),
+                Text(
+                  opt.code.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: colors.textPrimary,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+                const SizedBox(width: 2),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: 16,
+                  color: colors.textMuted,
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

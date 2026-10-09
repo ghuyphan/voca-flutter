@@ -87,7 +87,7 @@ class _SessionRecapState extends State<SessionRecap>
     final accuracy = widget.stats.totalReviewed > 0
         ? widget.stats.accuracyRate.round()
         : 100;
-    final isTablet = MediaQuery.of(context).size.width >= VocaTokens.tabletBreakpoint;
+    final isTablet = MediaQuery.sizeOf(context).width >= 600.0;
     final displayCardsCount = widget.stats.uniqueCardsCount > 0
         ? widget.stats.uniqueCardsCount
         : widget.stats.totalReviewed;
@@ -440,17 +440,17 @@ class _SessionRecapState extends State<SessionRecap>
                   // 5. Action Buttons Row/Column
                   Column(
                     children: [
-                      // Review Missed Cards Button (if any)
+                      // Review Missed Cards Button (M3 FilledButton.tonal secondary recovery CTA)
                       if (widget.onReviewAgain != null && widget.stats.againOrHardCount > 0) ...[
                         SizedBox(
                           width: double.infinity,
                           height: 50,
-                          child: OutlinedButton.icon(
+                          child: FilledButton.tonalIcon(
                             onPressed: () {
                               HapticFeedback.mediumImpact();
                               widget.onReviewAgain?.call();
                             },
-                            icon: const Icon(Icons.refresh_rounded, size: 19),
+                            icon: const Icon(Icons.refresh_rounded, size: 20),
                             label: Text(
                               context.t(
                                 'study.reviewMissedCards',
@@ -459,9 +459,10 @@ class _SessionRecapState extends State<SessionRecap>
                               ),
                               style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold),
                             ),
-                            style: OutlinedButton.styleFrom(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: colors.accentPrimary.withValues(alpha: 0.16),
                               foregroundColor: colors.accentPrimary,
-                              side: BorderSide(color: colors.accentPrimary, width: 1.5),
+                              elevation: 0,
                               shape: RoundedRectangleBorder(borderRadius: VocaRadius.roundedPill),
                             ),
                           ),

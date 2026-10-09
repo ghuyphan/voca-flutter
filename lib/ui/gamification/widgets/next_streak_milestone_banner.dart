@@ -33,6 +33,7 @@ class NextStreakMilestoneBanner extends StatelessWidget {
 
       return InkWell(
         onTap: () {
+          Navigator.of(context).pop();
           AchievementsSheet.show(
             context,
             initialCategory: AchievementCategory.streak,

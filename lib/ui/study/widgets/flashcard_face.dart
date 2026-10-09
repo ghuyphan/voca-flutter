@@ -38,7 +38,12 @@ class FlashcardFace extends StatelessWidget {
         card.contextSentence!.trim().isNotEmpty;
     final isDark = context.isDarkMode;
 
-    return Container(
+    return Semantics(
+      button: true,
+      label: isBack
+          ? '${card.word}, ${card.meaning}.'
+          : '${card.word}. ${context.t('study.tapToFlip', null, 'Tap card to flip')}.',
+      child: Container(
       width: double.infinity,
       decoration: BoxDecoration(
         color: colors.bgCard,
@@ -195,43 +200,55 @@ class FlashcardFace extends StatelessWidget {
 
                   const SizedBox(height: 10),
 
-                  // '▶ Replay this clip' Button
-                  _PressableScale(
-                    onTap: () {
-                      if (card.sourceVideoId != null &&
-                          card.sourceVideoId!.isNotEmpty) {
-                        PlayerCoordinator.instance.openVideo(
-                          context,
-                          videoId: card.sourceVideoId!,
-                          title: card.word,
-                          startSeconds: card.sourceTimestamp,
-                        );
-                      } else {
-                        AudioService.instance.playWord(
-                          card.word,
-                          language: card.language,
-                          fallbackAudioUrl: card.audio,
-                        );
-                      }
-                    },
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.play_circle_fill_rounded,
-                          size: 16,
-                          color: colors.accentPrimary,
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          context.t('study.replayClip', null, 'Replay this clip'),
-                          style: TextStyle(
-                            color: colors.accentPrimary,
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
+                  // '▶ Replay this clip' Button (with M3 semantics and 48dp touch target)
+                  Semantics(
+                    button: true,
+                    label: context.t('study.replayClip', null, 'Replay this clip'),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 48),
+                      child: Center(
+                        child: _PressableScale(
+                          onTap: () {
+                            if (card.sourceVideoId != null &&
+                                card.sourceVideoId!.isNotEmpty) {
+                              PlayerCoordinator.instance.openVideo(
+                                context,
+                                videoId: card.sourceVideoId!,
+                                title: card.word,
+                                startSeconds: card.sourceTimestamp,
+                              );
+                            } else {
+                              AudioService.instance.playWord(
+                                card.word,
+                                language: card.language,
+                                fallbackAudioUrl: card.audio,
+                              );
+                            }
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.play_circle_fill_rounded,
+                                  size: 16,
+                                  color: colors.accentPrimary,
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  context.t('study.replayClip', null, 'Replay this clip'),
+                                  style: TextStyle(
+                                    color: colors.accentPrimary,
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ],
@@ -244,7 +261,8 @@ class FlashcardFace extends StatelessWidget {
           _buildMemoryProgressSection(context, card, colors),
         ],
       ),
-    );
+    ),
+  );
   }
 
   /// 4 Stage Dots + Stage Label matching the top left of the screenshot
@@ -301,7 +319,10 @@ class FlashcardFace extends StatelessWidget {
       builder: (context, currentlyPlaying, _) {
         final isPlaying = currentlyPlaying == card.word.trim();
 
-        return _PressableScale(
+        return Semantics(
+          button: true,
+          label: context.t('study.playAudio', null, 'Play audio pronunciation for ${card.word}'),
+          child: _PressableScale(
           onTap: () {
             AudioService.instance.playWord(
               card.word,
@@ -336,8 +357,9 @@ class FlashcardFace extends StatelessWidget {
               ),
             ),
           ),
-        );
-      },
+        ),
+      );
+    },
     );
   }
 
@@ -442,46 +464,55 @@ class FlashcardFace extends StatelessWidget {
     String reading,
     VocaColorPalette colors,
   ) {
-    return _PressableScale(
-      onTap: onTogglePeekReading,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        height: 36,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        decoration: BoxDecoration(
-          color: isReadingPeeked
-              ? colors.accentPrimary.withValues(alpha: 0.12)
-              : colors.bgSurface,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: isReadingPeeked
-                ? colors.accentPrimary.withValues(alpha: 0.45)
-                : colors.borderColorLight,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isReadingPeeked
-                  ? Icons.visibility_off_outlined
-                  : Icons.visibility_outlined,
-              size: 15,
-              color: isReadingPeeked ? colors.accentPrimary : colors.textMuted,
-            ),
-            const SizedBox(width: 7),
-            Text(
-              isReadingPeeked
-                  ? reading
-                  : context.t('study.peekReading', null, 'Peek Reading'),
-              style: TextStyle(
-                color: isReadingPeeked ? colors.accentPrimary : colors.textMuted,
-                fontSize: 12.5,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.3,
+    return Semantics(
+      button: true,
+      label: isReadingPeeked ? reading : context.t('study.peekReading', null, 'Peek Reading'),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 48),
+        child: Center(
+          child: _PressableScale(
+            onTap: onTogglePeekReading,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
+              height: 36,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: isReadingPeeked
+                    ? colors.accentPrimary.withValues(alpha: 0.12)
+                    : colors.bgSurface,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: isReadingPeeked
+                      ? colors.accentPrimary.withValues(alpha: 0.45)
+                      : colors.borderColorLight,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isReadingPeeked
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    size: 15,
+                    color: isReadingPeeked ? colors.accentPrimary : colors.textMuted,
+                  ),
+                  const SizedBox(width: 7),
+                  Text(
+                    isReadingPeeked
+                        ? reading
+                        : context.t('study.peekReading', null, 'Peek Reading'),
+                    style: TextStyle(
+                      color: isReadingPeeked ? colors.accentPrimary : colors.textMuted,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );

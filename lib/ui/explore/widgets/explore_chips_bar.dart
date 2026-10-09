@@ -47,10 +47,10 @@ class ExploreChipsBar extends StatelessWidget {
     ];
 
     return SizedBox(
-      height: 40,
+      height: 44,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
         children: [
           // 1. Level Refinement Chip (Official M3 ActionChip)
           ActionChip(

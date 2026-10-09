@@ -20,9 +20,9 @@ class StreakSheet extends StatelessWidget {
   static Future<void> show(BuildContext context) {
     return showVocaBottomSheet(
       context: context,
-      showCloseButton: true,
+      showCloseButton: false,
       maxHeightFactor: 0.90,
-      contentPadding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
+      contentPadding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
       builder: (_) => const StreakSheet(),
     );
   }
@@ -45,15 +45,15 @@ class StreakSheet extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
 
             // 1. Hero Campfire Hearth RPG Crest (Clean shield, no background circle)
             _buildHeroHearthCrest(colors, crestStyle, freezes > 0),
-            const SizedBox(height: 14),
+            const SizedBox(height: 10),
 
             // 2. Stage Pill Tag (e.g. [ ★ Tàn Lửa ])
             _buildStagePill(context, colors, crestStyle),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
 
             // 3. Centered Title
             Text(
@@ -61,12 +61,12 @@ class StreakSheet extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: colors.textPrimary,
-                fontSize: 24,
+                fontSize: 22,
                 fontWeight: FontWeight.w800,
-                letterSpacing: -0.4,
+                letterSpacing: -0.3,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
 
             // 4. Centered Subtitle
             Text(
@@ -74,15 +74,15 @@ class StreakSheet extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: colors.textSecondary,
-                fontSize: 13,
-                height: 1.35,
+                fontSize: 12.5,
+                height: 1.3,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
 
             // 5. Motivation Status Banner
             _buildMotivationBanner(context, colors, practicedToday),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
 
             // 6. Stats Row: Best Streak & Freeze Shields
             Row(
@@ -92,9 +92,17 @@ class StreakSheet extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: colors.bgSurface,
+                      color: colors.isDark ? colors.bgSurface : Colors.white,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: colors.borderColor),
+                      border: Border.all(color: colors.borderColorLight),
+                      boxShadow: [
+                        if (!colors.isDark)
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.03),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          ),
+                      ],
                     ),
                     child: Row(
                       children: [
@@ -102,7 +110,7 @@ class StreakSheet extends StatelessWidget {
                           width: 36,
                           height: 36,
                           decoration: BoxDecoration(
-                            color: colors.accentTertiary.withValues(alpha: 0.12),
+                            color: colors.accentTertiary.withValues(alpha: colors.isDark ? 0.14 : 0.10),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Icon(Icons.emoji_events_rounded, color: colors.accentTertiary, size: 20),
@@ -113,15 +121,14 @@ class StreakSheet extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                context.t('streak.longestStreak', null, 'BEST RECORD'),
+                                context.t('streak.longestStreak', null, 'Longest Streak'),
                                 style: TextStyle(
-                                  color: colors.textMuted,
-                                  fontSize: 9.5,
+                                  color: colors.textSecondary,
+                                  fontSize: 11,
                                   fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.5,
                                 ),
                               ),
-                              const SizedBox(height: 1),
+                              const SizedBox(height: 2),
                               Text(
                                 '$longestStreak ${context.t('streak.daysShort', null, 'days')}',
                                 style: TextStyle(
@@ -144,9 +151,17 @@ class StreakSheet extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: colors.bgSurface,
+                      color: colors.isDark ? colors.bgSurface : Colors.white,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: colors.borderColor),
+                      border: Border.all(color: colors.borderColorLight),
+                      boxShadow: [
+                        if (!colors.isDark)
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.03),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          ),
+                      ],
                     ),
                     child: Row(
                       children: [
@@ -154,7 +169,7 @@ class StreakSheet extends StatelessWidget {
                           width: 36,
                           height: 36,
                           decoration: BoxDecoration(
-                            color: colors.colorDiamond.withValues(alpha: 0.12),
+                            color: colors.colorDiamond.withValues(alpha: colors.isDark ? 0.14 : 0.10),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Icon(Icons.shield_outlined, color: colors.colorDiamond, size: 20),
@@ -165,15 +180,14 @@ class StreakSheet extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                context.t('streak.freezesRemaining', null, 'FROST SHIELDS'),
+                                context.t('streak.freezesRemaining', null, 'Streak Freezes'),
                                 style: TextStyle(
-                                  color: colors.textMuted,
-                                  fontSize: 9.5,
+                                  color: colors.textSecondary,
+                                  fontSize: 11,
                                   fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.5,
                                 ),
                               ),
-                              const SizedBox(height: 1),
+                              const SizedBox(height: 2),
                               Text(
                                 '$freezes / 2',
                                 style: TextStyle(
@@ -253,7 +267,7 @@ class StreakSheet extends StatelessWidget {
             ActivityHeatmapCard(
               colors: colors,
               gamification: gamification,
-              customTitle: context.t('streak.activityLast7Days', null, 'Activity (Last 30 Days)'),
+              customTitle: '${context.t('common.activity', null, 'Activity')} (${context.t('study.last30Days', null, 'Last 30 Days')})',
               showOuterContainer: true,
             ),
             const SizedBox(height: 16),
@@ -282,11 +296,11 @@ class StreakSheet extends StatelessWidget {
       clipBehavior: Clip.none,
       children: [
         RpgShieldCrest(
-          width: 76,
-          height: 86,
+          width: 68,
+          height: 76,
           style: style,
           icon: getStageIcon(style),
-          iconSize: 38,
+          iconSize: 34,
           innerInset: 2.5,
           showGlow: true,
         ),
@@ -325,22 +339,24 @@ class StreakSheet extends StatelessWidget {
       _ => style.displayName,
     };
 
+    final stageColor = style.accentColor(colors);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
       decoration: BoxDecoration(
-        color: style.glowColor.withValues(alpha: 0.12),
+        color: stageColor.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: style.glowColor.withValues(alpha: 0.35), width: 1.2),
+        border: Border.all(color: stageColor.withValues(alpha: 0.35), width: 1.2),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.star_rounded, size: 14, color: style.glowColor),
+          Icon(Icons.star_rounded, size: 14, color: stageColor),
           const SizedBox(width: 5),
           Text(
             localizedName,
             style: TextStyle(
-              color: style.glowColor,
+              color: stageColor,
               fontSize: 12.5,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.3,
@@ -359,7 +375,7 @@ class StreakSheet extends StatelessWidget {
         decoration: BoxDecoration(
           color: colors.colorGrammar.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: colors.colorGrammar.withValues(alpha: 0.25)),
+          border: Border.all(color: colors.colorGrammar.withValues(alpha: 0.30)),
         ),
         child: Row(
           children: [
@@ -386,7 +402,7 @@ class StreakSheet extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.colorFire.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.colorFire.withValues(alpha: 0.25)),
+        border: Border.all(color: colors.colorFire.withValues(alpha: 0.30)),
       ),
       child: Row(
         children: [
@@ -430,7 +446,7 @@ class StreakSheet extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.bgSurface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colors.borderColorLight),
+        border: Border.all(color: colors.borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -453,7 +469,7 @@ class StreakSheet extends StatelessWidget {
           Text(
             desc,
             style: TextStyle(
-              color: colors.textMuted,
+              color: colors.textSecondary,
               fontSize: 12,
               height: 1.4,
             ),

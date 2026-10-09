@@ -5,19 +5,24 @@ import 'package:flutter/foundation.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import '../models/voca_models.dart';
 import 'voca_api_client.dart';
+import 'on_device_translation_service.dart';
 
 /// Two-Tier Dual Subtitle Streaming Service
 ///
 /// Ported from lingua-tube/src/app/features/video/subtitle.service.ts:
 /// - RULE 7 Invariant: Two-Tier Dual Subtitle Streaming (< 200ms Seek Latency)
 ///   - Tier 1 (Urgent seek micro-batch): Active cue + 2 lookahead cues (cues[i..i+2])
-///     dispatched to POST /api/translate/batch (< 200ms display latency).
+///     translated via ML Kit on-device (<50ms) with cloud fallback (< 200ms).
 ///   - Tier 2 (Progressive background stream): Streams remaining untranslated cues
 ///     in batches of 40-50 cues with exponential backoff on HTTP 429.
 /// - Checks Cloudflare R2 cache (GET /api/dual-subtitles) on initialization.
 /// - Persists completed bilingual segments back to Cloudflare R2 cache (POST /api/dual-subtitles).
 class DualSubService {
   final VocaApiClient apiClient;
+  final OnDeviceTranslationService? onDeviceService;
+
+  // In-memory translation cache (ported 1:1 from lingua-tube translationCache)
+  final Map<String, String> _translationMemoryCache = {};
 
   // Reactive State Signals
   final isTranslatingDual = signal<bool>(false);
@@ -39,8 +44,12 @@ class DualSubService {
   int _consecutiveFailures = 0;
   Timer? _backgroundStreamTimer;
   bool _hasSavedToCache = false;
+  bool _hasOnDeviceTranslations = false;
 
-  DualSubService({required this.apiClient});
+  DualSubService({
+    required this.apiClient,
+    this.onDeviceService,
+  });
 
   /// Initialize dual subtitle stream for a newly loaded video
   Future<void> initializeForVideo({
@@ -63,8 +72,12 @@ class DualSubService {
     _lastLookaheadIndex = -1;
     _consecutiveFailures = 0;
     _hasSavedToCache = false;
+    _hasOnDeviceTranslations = false;
     targetLanguage.value = targetLang;
     dualSubError.value = null;
+
+    // Warm up on-device translator for this language pair to eliminate cold-start latency
+    onDeviceService?.warmUp(sourceLang, targetLang);
 
     if (sourceLang == targetLang || cues.isEmpty) {
       isTranslatingDual.value = false;
@@ -212,7 +225,7 @@ class DualSubService {
 
     try {
       final texts = targetIndices.map((i) => _cues[i].text).toList();
-      final translations = await apiClient.translateBatch(
+      final translations = await _translateTexts(
         texts: texts,
         sourceLang: sourceLang,
         targetLang: targetLang,
@@ -296,7 +309,7 @@ class DualSubService {
 
     try {
       final texts = missingIndices.map((i) => _cues[i].text).toList();
-      final translations = await apiClient.translateBatch(
+      final translations = await _translateTexts(
         texts: texts,
         sourceLang: _sourceLang!,
         targetLang: _targetLang!,
@@ -333,9 +346,86 @@ class DualSubService {
     }
   }
 
+  /// Batch translate texts using memory cache -> on-device ML Kit -> Cloud API fallback
+  Future<List<String>> _translateTexts({
+    required List<String> texts,
+    required String sourceLang,
+    required String targetLang,
+  }) async {
+    if (texts.isEmpty) return [];
+    final results = List<String?>.filled(texts.length, null);
+    final missingIndices = <int>[];
+
+    // 1. Check in-memory translation cache (exact port of lingua-tube translationCache)
+    for (int i = 0; i < texts.length; i++) {
+      final key = '$sourceLang:$targetLang:${texts[i].trim()}';
+      if (_translationMemoryCache.containsKey(key)) {
+        results[i] = _translationMemoryCache[key];
+      } else {
+        missingIndices.add(i);
+      }
+    }
+
+    if (missingIndices.isEmpty) {
+      return results.map((r) => r ?? '').toList();
+    }
+
+    // 2. Try on-device translation first if ready
+    final unhandledIndices = <int>[];
+    if (onDeviceService != null && onDeviceService!.canTranslate(sourceLang, targetLang)) {
+      final toTranslateOnDevice = missingIndices.map((i) => texts[i]).toList();
+      final onDeviceResults = await onDeviceService!.translateBatch(
+        toTranslateOnDevice,
+        sourceLang,
+        targetLang,
+      );
+
+      for (int j = 0; j < missingIndices.length; j++) {
+        final origIdx = missingIndices[j];
+        final trans = j < onDeviceResults.length ? onDeviceResults[j] : null;
+        if (trans != null && trans.isNotEmpty) {
+          results[origIdx] = trans;
+          _hasOnDeviceTranslations = true;
+          final key = '$sourceLang:$targetLang:${texts[origIdx].trim()}';
+          _translationMemoryCache[key] = trans;
+        } else {
+          unhandledIndices.add(origIdx);
+        }
+      }
+    } else {
+      unhandledIndices.addAll(missingIndices);
+    }
+
+    // 3. Fall back to cloud translateBatch for any remaining texts
+    if (unhandledIndices.isNotEmpty) {
+      final cloudTexts = unhandledIndices.map((i) => texts[i]).toList();
+      final cloudTranslations = await apiClient.translateBatch(
+        texts: cloudTexts,
+        sourceLang: sourceLang,
+        targetLang: targetLang,
+      );
+
+      for (int k = 0; k < unhandledIndices.length && k < cloudTranslations.length; k++) {
+        final origIdx = unhandledIndices[k];
+        final trans = cloudTranslations[k].trim();
+        if (trans.isNotEmpty) {
+          results[origIdx] = trans;
+          final key = '$sourceLang:$targetLang:${texts[origIdx].trim()}';
+          _translationMemoryCache[key] = trans;
+        }
+      }
+    }
+
+    return results.map((r) => r ?? '').toList();
+  }
+
   /// Persist complete dual subtitles back to Cloudflare R2 / Server Cache
   Future<void> _persistToCloudflareCache() async {
     if (_currentVideoId == null || _sourceLang == null || _targetLang == null) return;
+    if (_hasOnDeviceTranslations) {
+      debugPrint('[DualSubService] Skipping R2 cache persistence (cues contain on-device translations)');
+      return;
+    }
     _hasSavedToCache = true;
 
     final segments = _cues.map((c) => {
