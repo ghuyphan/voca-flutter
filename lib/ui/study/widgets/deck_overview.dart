@@ -3,7 +3,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import '../../../config/voca_theme.dart';
 import '../../../models/voca_models.dart';
@@ -11,14 +10,16 @@ import '../../../services/gamification_service.dart';
 import '../../../services/i18n_service.dart';
 import '../../../services/toast_service.dart';
 import '../../../state/app_state.dart';
-import '../../gamification/streak_screen.dart';
-import '../../onboarding/models/onboarding_models.dart';
+import '../../gamification/widgets/activity_heatmap_card.dart';
+import '../../gamification/widgets/achievements_sheet.dart';
+import '../../gamification/widgets/streak_sheet.dart';
+import '../../widgets/voca_sliding_segmented_bar.dart';
 import '../study_session_controller.dart';
 import 'deck_cloze_quiz_sheet.dart';
 
 /// Clean, high-craft Deck Overview Dashboard.
-/// Features a native sliding capsule segmented bar, balanced hero card with radial goal indicator,
-/// non-truncating stage pills, compact session controls, and full-width launch CTA.
+/// Features native sliding segmented controls, interactive tooltips,
+/// and simplified StreakSheet modal.
 class DeckOverview extends StatelessWidget {
   final StudySessionController controller;
   final VoidCallback onStartSession;
@@ -49,7 +50,7 @@ class DeckOverview extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 1. Top Native Sliding Segmented Bar (Words | Grammar | All) + Streak Flame Button
+              // 1. Top Header (Title + Streak Badge) + Material 3 Secondary TabBar
               _buildTopBar(context, colors),
 
               const SizedBox(height: 18),
@@ -100,8 +101,9 @@ class DeckOverview extends StatelessWidget {
     );
   }
 
-  /// 1. Top Bar: Native Sliding Segmented Control + Circular Flame Button
+  /// 1. Top Bar: Native Sliding Segmented Bar + Streak Flame Pill Badge (38dp height)
   Widget _buildTopBar(BuildContext context, VocaColorPalette colors) {
+    final gamification = AppState.instance.gamificationService;
     final subDeckKeys = ['words', 'grammar', 'all'];
     final subDeckLabels = [
       context.t('study.deckWords', null, 'Words'),
@@ -109,73 +111,91 @@ class DeckOverview extends StatelessWidget {
       context.t('study.deckAll', null, 'All'),
     ];
 
-    return Row(
-      children: [
-        // Native sliding capsule segmented control
-        Expanded(
-          child: Watch((_) {
-            final selectedSubDeck = controller.subDeck.value;
-            return VocaSlidingSegmentedBar(
+    return Watch((_) {
+      final currentSubDeck = controller.subDeck.value;
+      final streak = gamification.currentStreak.value;
+
+      return Row(
+        children: [
+          // Sub-deck switcher (Words | Grammar | All)
+          Expanded(
+            child: VocaSlidingSegmentedBar(
               values: subDeckKeys,
               labels: subDeckLabels,
-              selectedValue: selectedSubDeck,
+              selectedValue: currentSubDeck,
+              colors: colors,
+              height: 38,
               onSelected: (val) {
-                controller.setSubDeck(val);
-                final cards = controller.allCards.value;
-                if (cards.isNotEmpty) {
-                  final inDeck = cards.where((c) {
-                    final isG = controller.isGrammarCard(c);
-                    if (val == 'words') return !isG;
-                    if (val == 'grammar') return isG;
-                    return true;
-                  }).length;
-                  if (inDeck == 0) {
-                    ToastService.info(
-                      context,
-                      val == 'grammar'
-                          ? context.t('study.noGrammarHint', null, 'No grammar patterns saved in this deck yet!')
-                          : context.t('study.noWordsHint', null, 'No vocabulary words saved in this deck yet!'),
-                    );
+                if (controller.subDeck.value != val) {
+                  controller.setSubDeck(val);
+                  final cards = controller.allCards.value;
+                  if (cards.isNotEmpty) {
+                    final inDeck = cards.where((c) {
+                      final isG = controller.isGrammarCard(c);
+                      if (val == 'words') return !isG;
+                      if (val == 'grammar') return isG;
+                      return true;
+                    }).length;
+                    if (inDeck == 0) {
+                      ToastService.info(
+                        context,
+                        val == 'grammar'
+                            ? context.t('study.noGrammarHint', null, 'No grammar patterns saved in this deck yet!')
+                            : context.t('study.noWordsHint', null, 'No vocabulary words saved in this deck yet!'),
+                      );
+                    }
                   }
                 }
               },
-              colors: colors,
-              height: 38,
-            );
-          }),
-        ),
+            ),
+          ),
 
-        const SizedBox(width: 10),
+          const SizedBox(width: 10),
 
-        // Circular Streak Flame Action Button (min 48x48 hit target)
-        SizedBox(
-          width: 48,
-          height: 48,
-          child: Center(
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: colors.bgSurface,
-                shape: BoxShape.circle,
-                border: Border.all(color: colors.borderColor),
-              ),
-              child: IconButton(
-                icon: Icon(Icons.local_fire_department_rounded, size: 20, color: colors.colorFire),
-                padding: EdgeInsets.zero,
-                tooltip: context.t('streak.title', null, 'Streak'),
-                onPressed: () {
+          // Tappable Streak Flame Pill with Tooltip -> Opens StreakSheet
+          Tooltip(
+            message: context.t('streak.viewStreakDetails', null, 'View streak calendar & shields'),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
                   HapticFeedback.selectionClick();
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const StreakScreen()),
-                  );
+                  StreakSheet.show(context);
                 },
+                borderRadius: BorderRadius.circular(999),
+                child: Container(
+                  height: 38,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: colors.colorFire.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: colors.colorFire.withValues(alpha: 0.32),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.local_fire_department_rounded, size: 20, color: colors.colorFire),
+                      const SizedBox(width: 6),
+                      Text(
+                        '$streak',
+                        style: TextStyle(
+                          color: colors.colorFire,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
-        ),
-      ],
-    );
+        ],
+      );
+    });
   }
 
   /// 2. Hero Due Card with Radial Progress Ring & Context (layout-shift free)
@@ -462,52 +482,55 @@ class DeckOverview extends StatelessWidget {
     required VoidCallback onTap,
     required VocaColorPalette colors,
   }) {
-    return InkWell(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        onTap();
-      },
-      borderRadius: BorderRadius.circular(999),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        height: 36,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        decoration: BoxDecoration(
-          color: colors.bgCard,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: isActive ? colors.borderColorHover : colors.borderColorLight,
+    return Tooltip(
+      message: '$label: $count (${isActive ? "Active" : "Filtered out"})',
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        borderRadius: BorderRadius.circular(999),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: colors.bgCard,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: isActive ? colors.borderColorHover : colors.borderColorLight,
+            ),
           ),
-        ),
-        child: Opacity(
-          opacity: isActive ? 1.0 : 0.45,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  color: colors.textPrimary,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
+          child: Opacity(
+            opacity: isActive ? 1.0 : 0.45,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
                 ),
-              ),
-              const SizedBox(width: 5),
-              Text(
-                '$count',
-                style: TextStyle(
-                  color: colors.textSecondary,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: colors.textPrimary,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 5),
+                Text(
+                  '$count',
+                  style: TextStyle(
+                    color: colors.textSecondary,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -516,9 +539,6 @@ class DeckOverview extends StatelessWidget {
 
   /// 4. Session Controls Row (Batch Size Selector + Due Only Toggle)
   Widget _buildSessionControlsRow(BuildContext context, VocaColorPalette colors) {
-    final sizeKeys = ['5', '10', '20', 'all'];
-    final sizeLabels = ['5', '10', '20', context.t('study.allCards', null, 'All')];
-
     return Watch((_) {
       final currentSize = controller.sessionSize.value;
       final dueOnly = controller.dueOnly.value;
@@ -526,55 +546,77 @@ class DeckOverview extends StatelessWidget {
 
       return Row(
         children: [
-          // Sliding batch size selector
+          // Batch size selector using VocaSlidingSegmentedBar
           Expanded(
             child: VocaSlidingSegmentedBar(
-              values: sizeKeys,
-              labels: sizeLabels,
+              values: const ['5', '10', '20', 'all'],
+              labels: [
+                '5',
+                '10',
+                '20',
+                context.t('study.deckAll', null, 'All'),
+              ],
               selectedValue: currentKey,
+              colors: colors,
+              height: 38,
               onSelected: (key) {
                 final size = key == 'all' ? null : int.tryParse(key);
                 controller.setSessionSize(size);
               },
-              colors: colors,
-              height: 38,
             ),
           ),
 
           const SizedBox(width: 10),
 
-          // Due Only Toggle Pill
-          InkWell(
-            onTap: () {
-              HapticFeedback.selectionClick();
-              controller.toggleDueOnly();
-              if (controller.dueOnly.value && controller.dueCount.value == 0) {
-                ToastService.info(
-                  context,
-                  context.t('study.allDone', null, 'All cards cleared for today! 🎉 Turn off "Due Only" to practice ahead.'),
-                );
-              }
-            },
-            borderRadius: BorderRadius.circular(999),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 160),
-              height: 38,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: dueOnly ? colors.accentPrimary.withValues(alpha: 0.15) : colors.bgSurface,
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(
-                  color: dueOnly ? colors.accentPrimary : colors.borderColor,
-                  width: dueOnly ? 1.2 : 1.0,
+          // Due Only Filter / Toggle Pill (height 38 matching sliding bar)
+          Tooltip(
+            message: dueOnly
+                ? context.t('study.dueOnlyActiveHint', null, 'Only showing cards due for review')
+                : context.t('study.dueOnlyInactiveHint', null, 'Reviewing cards ahead of schedule'),
+            child: InkWell(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                controller.toggleDueOnly();
+                if (controller.dueOnly.value && controller.dueCount.value == 0) {
+                  ToastService.info(
+                    context,
+                    context.t('study.allDone', null, 'All cards cleared for today! 🎉 Turn off "Due Only" to practice ahead.'),
+                  );
+                }
+              },
+              borderRadius: BorderRadius.circular(999),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                height: 38,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                decoration: BoxDecoration(
+                  color: dueOnly
+                      ? colors.accentPrimary.withValues(alpha: 0.14)
+                      : colors.bgSurface,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: dueOnly ? colors.accentPrimary : colors.borderColor,
+                    width: dueOnly ? 1.2 : 1.0,
+                  ),
                 ),
-              ),
-              child: Text(
-                context.t('study.dueOnly', null, 'Due Only'),
-                style: TextStyle(
-                  color: dueOnly ? colors.accentPrimary : colors.textSecondary,
-                  fontSize: 12.5,
-                  fontWeight: dueOnly ? FontWeight.w700 : FontWeight.w600,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      dueOnly ? Icons.alarm_on_rounded : Icons.alarm_rounded,
+                      size: 16,
+                      color: dueOnly ? colors.accentPrimary : colors.textSecondary,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      context.t('study.dueOnly', null, 'Due Only'),
+                      style: TextStyle(
+                        color: dueOnly ? colors.accentPrimary : colors.textSecondary,
+                        fontSize: 12.5,
+                        fontWeight: dueOnly ? FontWeight.w700 : FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -692,19 +734,25 @@ class DeckOverview extends StatelessWidget {
 
   /// Secondary explore action when user is caught up
   Widget _buildExploreVideosButton(BuildContext context, VocaColorPalette colors) {
-    return Center(
-      child: TextButton.icon(
+    return SizedBox(
+      height: 44,
+      child: FilledButton.tonalIcon(
         onPressed: () {
           HapticFeedback.selectionClick();
           onExploreVideos?.call();
         },
-        icon: Icon(Icons.movie_filter_outlined, size: 16, color: colors.textSecondary),
+        style: FilledButton.styleFrom(
+          backgroundColor: colors.accentPrimary.withValues(alpha: 0.12),
+          foregroundColor: colors.accentPrimary,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          elevation: 0,
+        ),
+        icon: const Icon(Icons.movie_filter_rounded, size: 18),
         label: Text(
-          context.t('study.exploreVideos', null, 'Explore videos for new words'),
-          style: TextStyle(
-            color: colors.textSecondary,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
+          context.t('study.exploreVideosAction', null, 'Explore videos to add words'),
+          style: const TextStyle(
+            fontSize: 13.5,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
@@ -856,63 +904,83 @@ class DeckOverview extends StatelessWidget {
     int dueCount = 0,
   }) {
     final double normalizedFraction = count > 0 ? (count / maxCount).clamp(0.08, 1.0) : 0.0;
-    final double barHeight = count > 0 ? (normalizedFraction * 48.0) : 4.0;
+    final double targetHeight = count > 0 ? (normalizedFraction * 50.0).clamp(6.0, 50.0) : 4.0;
     final bool hasItems = count > 0;
     final double dueFraction = (count > 0 && dueCount > 0) ? (dueCount / count).clamp(0.0, 1.0) : 0.0;
 
     return Expanded(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            '$count',
-            style: TextStyle(
-              color: hasItems ? color : colors.textMuted,
-              fontSize: 13,
-              fontWeight: hasItems ? FontWeight.w800 : FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Container(
-            height: barHeight,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: hasItems ? color.withValues(alpha: 0.18) : colors.bgSurface,
-              borderRadius: BorderRadius.circular(hasItems ? 8 : 999),
-              border: Border.all(
-                color: hasItems ? color.withValues(alpha: 0.4) : colors.borderColorLight,
-                width: hasItems ? 1.5 : 1.0,
+      child: Tooltip(
+        message: '$label: $count (${dueCount > 0 ? "$dueCount due today" : "Not due"})',
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '$count',
+              style: TextStyle(
+                color: hasItems ? color : colors.textMuted,
+                fontSize: 13,
+                fontWeight: hasItems ? FontWeight.w800 : FontWeight.w600,
               ),
             ),
-            child: hasItems && dueFraction > 0
-                ? Align(
-                    alignment: Alignment.bottomCenter,
-                    child: Container(
-                      height: (barHeight * dueFraction).clamp(3.0, barHeight),
+            const SizedBox(height: 6),
+            SizedBox(
+              height: 52,
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: TweenAnimationBuilder<double>(
+                  key: ValueKey('memory_col_${label}_$targetHeight'),
+                  tween: Tween<double>(begin: 0.0, end: targetHeight),
+                  duration: const Duration(milliseconds: 350),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, animatedBarHeight, _) {
+                    return Container(
+                      height: animatedBarHeight,
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color: color,
-                        borderRadius: BorderRadius.vertical(
-                          bottom: const Radius.circular(6.5),
-                          top: dueFraction >= 0.95 ? const Radius.circular(6.5) : Radius.zero,
+                        color: hasItems ? color.withValues(alpha: 0.18) : colors.bgSurface,
+                        borderRadius: BorderRadius.circular(hasItems ? 8 : 999),
+                        border: Border.all(
+                          color: hasItems ? color.withValues(alpha: 0.4) : colors.borderColorLight,
+                          width: hasItems ? 1.5 : 1.0,
                         ),
                       ),
-                    ),
-                  )
-                : null,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: TextStyle(
-              color: hasItems ? color : colors.textMuted,
-              fontSize: 11,
-              fontWeight: hasItems ? FontWeight.w700 : FontWeight.w500,
+                      child: hasItems && dueFraction > 0 && animatedBarHeight > 0
+                          ? Align(
+                              alignment: Alignment.bottomCenter,
+                              child: Container(
+                                height: (animatedBarHeight * dueFraction).clamp(
+                                  math.min(3.0, animatedBarHeight),
+                                  animatedBarHeight,
+                                ),
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: color,
+                                  borderRadius: BorderRadius.vertical(
+                                    bottom: const Radius.circular(6.5),
+                                    top: dueFraction >= 0.95 ? const Radius.circular(6.5) : Radius.zero,
+                                  ),
+                                ),
+                              ),
+                            )
+                          : null,
+                    );
+                  },
+                ),
+              ),
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: hasItems ? color : colors.textMuted,
+                fontSize: 11,
+                fontWeight: hasItems ? FontWeight.w700 : FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -922,7 +990,7 @@ class DeckOverview extends StatelessWidget {
     VocaColorPalette colors,
     GamificationService gamification,
   ) {
-    return _HeatmapCard(colors: colors, gamification: gamification);
+    return ActivityHeatmapCard(colors: colors, gamification: gamification);
   }
 
   /// 8. More Practice Section: Cloze Sentence Quiz
@@ -1010,20 +1078,28 @@ class DeckOverview extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: colors.accentPrimarySoft,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                '+15 XP',
-                                style: TextStyle(
-                                  color: colors.accentPrimary,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
+                            Builder(
+                              builder: (_) {
+                                final isCapReached = AppState.instance.gamificationService.isQuizCapReachedToday;
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: isCapReached ? colors.bgSecondary : colors.accentPrimarySoft,
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: isCapReached ? Border.all(color: colors.borderColorLight) : null,
+                                  ),
+                                  child: Text(
+                                    isCapReached
+                                        ? context.t('study.practiceMode', null, 'Practice')
+                                        : '+20 XP',
+                                    style: TextStyle(
+                                      color: isCapReached ? colors.textSecondary : colors.accentPrimary,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                           ],
                         ),
@@ -1066,13 +1142,6 @@ class DeckOverview extends StatelessWidget {
       final canClaimBonus = gamification.canClaimDailyBonus.value;
       final isBonusClaimed = missionsState.allCompletedBonusClaimed;
       final bonusXp = missionsState.bonusXp;
-
-      final userSettings = AppState.instance.userSettings.value;
-      final companionId = userSettings.companionClass.toLowerCase();
-      final compOpt = CompanionOption.all.firstWhere(
-        (c) => c.id == companionId,
-        orElse: () => CompanionOption.all.first,
-      );
 
       final isAllCompleted = totalMissions > 0 && completedCount >= totalMissions;
 
@@ -1132,28 +1201,37 @@ class DeckOverview extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                // Companion guide badge: subtle, refined neutral tag
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
-                  decoration: BoxDecoration(
-                    color: colors.bgSurface,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: colors.borderColorLight),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(compOpt.icon, size: 13, color: colors.textSecondary),
-                      const SizedBox(width: 4.5),
-                      Text(
-                        context.t(compOpt.nameKey, null, compOpt.id[0].toUpperCase() + compOpt.id.substring(1)),
-                        style: TextStyle(
-                          color: colors.textSecondary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
+                // Interactive Achievements badge button opening AchievementsSheet (Icon with number only)
+                InkWell(
+                  onTap: () => AchievementsSheet.show(context),
+                  borderRadius: BorderRadius.circular(999),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                    decoration: BoxDecoration(
+                      color: colors.bgSurface,
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: colors.borderColorLight),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.emoji_events_rounded,
+                          size: 14,
+                          color: colors.colorFire,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 4),
+                        Text(
+                          '${gamification.achievements.value.where((a) => a.isUnlocked).length}/${gamification.achievements.value.length}',
+                          style: TextStyle(
+                            color: colors.textPrimary,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -1220,152 +1298,128 @@ class DeckOverview extends StatelessWidget {
         ),
         child: Opacity(
           opacity: isClaimed ? 0.65 : 1.0,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Icon container with responsive state color
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: isCompleted
-                      ? (isClaimed
-                          ? colors.colorGrammar.withValues(alpha: 0.12)
-                          : colors.accentPrimary.withValues(alpha: 0.12))
-                      : colors.bgCard,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: isCompleted
-                        ? (isClaimed
-                            ? colors.colorGrammar.withValues(alpha: 0.3)
-                            : colors.accentPrimary.withValues(alpha: 0.3))
-                        : colors.borderColorLight,
-                  ),
-                ),
-                child: Icon(
-                  isCompleted ? Icons.check_circle_rounded : m.icon,
-                  size: 19,
-                  color: isCompleted
-                      ? (isClaimed ? colors.colorGrammar : colors.accentPrimary)
-                      : colors.textSecondary,
-                ),
-              ),
-              const SizedBox(width: 12),
-
-              // Center content: Title + description + animated progress bar
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Title + XP badge
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            m.localizedTitle(context),
-                            style: TextStyle(
-                              color: colors.textPrimary,
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w700,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                          decoration: BoxDecoration(
-                            color: colors.bgCard,
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(color: colors.borderColorLight),
-                          ),
-                          child: Text(
-                            '+${m.xpReward} XP',
-                            style: TextStyle(
-                              color: colors.textSecondary,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 3),
-
-                    // Description
-                    Text(
-                      m.localizedDescription(context),
-                      style: TextStyle(
-                        color: colors.textMuted,
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w500,
+              // Top Row: Icon + Title & Description + Action / Reward Slot
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Icon container with responsive state color
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: isCompleted
+                          ? (isClaimed
+                              ? colors.colorGrammar.withValues(alpha: 0.12)
+                              : colors.accentPrimary.withValues(alpha: 0.12))
+                          : colors.bgCard,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: isCompleted
+                            ? (isClaimed
+                                ? colors.colorGrammar.withValues(alpha: 0.3)
+                                : colors.accentPrimary.withValues(alpha: 0.3))
+                            : colors.borderColorLight,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 8),
+                    child: Icon(
+                      isCompleted ? Icons.check_circle_rounded : m.icon,
+                      size: 18,
+                      color: isCompleted
+                          ? (isClaimed ? colors.colorGrammar : colors.accentPrimary)
+                          : colors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
 
-                    // Fluid Animated Progress Bar + Tabular Count
-                    Row(
+                  // Center content: Title & Description (Full width without squeezing)
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(999),
-                            child: Container(
-                              height: 5,
-                              color: colors.bgCard,
-                              child: TweenAnimationBuilder<double>(
-                                tween: Tween<double>(begin: 0.0, end: fraction),
-                                duration: const Duration(milliseconds: 400),
-                                curve: Curves.easeOutCubic,
-                                builder: (context, animatedValue, _) {
-                                  return FractionallySizedBox(
-                                    alignment: Alignment.centerLeft,
-                                    widthFactor: animatedValue,
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: isCompleted ? colors.colorGrammar : colors.accentPrimary,
-                                        borderRadius: BorderRadius.circular(999),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
                         Text(
-                          '${m.progress}/${m.target}',
+                          m.localizedTitle(context),
                           style: TextStyle(
-                            color: isCompleted ? colors.colorGrammar : colors.textMuted,
-                            fontSize: 11,
+                            color: colors.textPrimary,
+                            fontSize: 13.5,
                             fontWeight: FontWeight.w700,
-                            fontFeatures: const [FontFeature.tabularFigures()],
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          m.localizedDescription(context),
+                          style: TextStyle(
+                            color: colors.textMuted,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 8),
+
+                  // Action Slot: XP Badge / Claim Button / Claimed Badge
+                  _buildMissionActionSlot(
+                    context: context,
+                    colors: colors,
+                    gamification: gamification,
+                    mission: m,
+                    isCompleted: isCompleted,
+                    isClaimed: isClaimed,
+                  ),
+                ],
               ),
 
-              const SizedBox(width: 10),
+              const SizedBox(height: 10),
 
-              // Fixed-Dimension Action Dock (Exactly 76dp wide x 32dp tall in all states -> ZERO layout shift!)
-              SizedBox(
-                width: 76,
-                height: 32,
-                child: _buildMissionActionSlot(
-                  context: context,
-                  colors: colors,
-                  gamification: gamification,
-                  mission: m,
-                  isCompleted: isCompleted,
-                  isClaimed: isClaimed,
-                ),
+              // Bottom Row: Linear Progress Bar + Numeric Count
+              Row(
+                children: [
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: Container(
+                        height: 5,
+                        color: colors.bgCard,
+                        child: TweenAnimationBuilder<double>(
+                          tween: Tween<double>(begin: 0.0, end: fraction),
+                          duration: const Duration(milliseconds: 400),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, animatedValue, _) {
+                            return FractionallySizedBox(
+                              alignment: Alignment.centerLeft,
+                              widthFactor: animatedValue,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: isCompleted ? colors.colorGrammar : colors.accentPrimary,
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${m.progress}/${m.target}',
+                    style: TextStyle(
+                      color: isCompleted ? colors.colorGrammar : colors.textMuted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -1384,16 +1438,16 @@ class DeckOverview extends StatelessWidget {
   }) {
     if (isClaimed) {
       return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
         decoration: BoxDecoration(
           color: colors.bgCard,
           borderRadius: BorderRadius.circular(999),
           border: Border.all(color: colors.borderColorLight),
         ),
-        alignment: Alignment.center,
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.check_rounded, size: 13, color: colors.colorGrammar),
+            Icon(Icons.check_rounded, size: 12, color: colors.colorGrammar),
             const SizedBox(width: 3),
             Text(
               context.t('missions.claimed', null, 'Claimed'),
@@ -1423,33 +1477,32 @@ class DeckOverview extends StatelessWidget {
         style: FilledButton.styleFrom(
           backgroundColor: colors.accentPrimary,
           foregroundColor: Colors.white,
-          padding: EdgeInsets.zero,
-          minimumSize: const Size(76, 32),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+          minimumSize: const Size(0, 30),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
         ),
         child: Text(
-          context.t('missions.claim', null, 'Claim'),
-          style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800),
+          '${context.t('missions.claim', null, 'Claim')} +${mission.xpReward} XP',
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
         ),
       );
     }
 
-    // In Progress State (matches 76x32 dimension with percentage or progress tag)
-    final percent = (mission.progressRatio * 100).toInt();
+    // In Progress State: Clean reward badge (+XX XP)
     return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
       decoration: BoxDecoration(
         color: colors.bgCard,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: colors.borderColorLight),
       ),
-      alignment: Alignment.center,
       child: Text(
-        '$percent%',
+        '+${mission.xpReward} XP',
         style: TextStyle(
-          color: colors.textMuted,
-          fontSize: 11,
+          color: colors.textSecondary,
+          fontSize: 10.5,
           fontWeight: FontWeight.w700,
-          fontFeatures: const [FontFeature.tabularFigures()],
         ),
       ),
     );
@@ -1471,7 +1524,7 @@ class DeckOverview extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeOutCubic,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
         color: isReadyToOpen
             ? colors.accentPrimary.withValues(alpha: 0.08)
@@ -1500,8 +1553,8 @@ class DeckOverview extends StatelessWidget {
         children: [
           // Chest Icon Badge
           Container(
-            width: 38,
-            height: 38,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
               color: isReadyToOpen
                   ? colors.accentPrimary.withValues(alpha: 0.18)
@@ -1524,10 +1577,10 @@ class DeckOverview extends StatelessWidget {
               color: isReadyToOpen
                   ? colors.accentPrimary
                   : (isBonusClaimed ? colors.colorGrammar : colors.textSecondary),
-              size: 20,
+              size: 19,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
 
           // Chest description & progress info
           Expanded(
@@ -1560,16 +1613,16 @@ class DeckOverview extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 2),
                 Text(
                   isBonusClaimed
                       ? context.t('missions.allDoneForToday', null, 'All daily quests finished! See you tomorrow. 🎉')
                       : (isReadyToOpen
                           ? context.t('missions.dailyChestReady', null, 'All 3 quests done! Tap to open your chest.')
-                          : context.t('missions.dailyChestProgress', {'done': completedCount, 'total': totalMissions}, 'Complete all $totalMissions missions to unlock ($completedCount/$totalMissions)')),
+                          : context.t('missions.dailyChestDesc', null, 'Complete all $totalMissions missions to unlock')),
                   style: TextStyle(
                     color: isReadyToOpen ? colors.accentPrimary : colors.textMuted,
-                    fontSize: 11,
+                    fontSize: 11.5,
                     fontWeight: isReadyToOpen ? FontWeight.w600 : FontWeight.w500,
                   ),
                   maxLines: 1,
@@ -1598,35 +1651,34 @@ class DeckOverview extends StatelessWidget {
               style: FilledButton.styleFrom(
                 backgroundColor: colors.accentPrimary,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                minimumSize: const Size(76, 34),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                minimumSize: const Size(0, 30),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
               ),
               child: Text(
                 context.t('missions.claim', null, 'Open'),
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800),
               ),
             )
           else if (isBonusClaimed)
             Container(
-              height: 32,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
               decoration: BoxDecoration(
                 color: colors.bgCard,
                 borderRadius: BorderRadius.circular(999),
                 border: Border.all(color: colors.colorGrammar.withValues(alpha: 0.3)),
               ),
-              alignment: Alignment.center,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.check_rounded, size: 13, color: colors.colorGrammar),
-                  const SizedBox(width: 4),
+                  Icon(Icons.check_rounded, size: 12, color: colors.colorGrammar),
+                  const SizedBox(width: 3),
                   Text(
                     context.t('missions.claimed', null, 'Claimed'),
                     style: TextStyle(
                       color: colors.colorGrammar,
-                      fontSize: 11,
+                      fontSize: 10.5,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -1634,25 +1686,29 @@ class DeckOverview extends StatelessWidget {
               ),
             )
           else
-            // In Progress 3-step Capsule indicators (matching totalMissions)
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: List.generate(totalMissions > 0 ? totalMissions : 3, (i) {
-                final isDone = i < completedCount;
-                return Container(
-                  margin: const EdgeInsets.only(left: 3),
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isDone ? colors.accentPrimary : colors.bgCard,
-                    border: Border.all(
-                      color: isDone ? colors.accentPrimary : colors.borderColorLight,
-                      width: 1,
+            // In Progress: Clear lock progress badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+              decoration: BoxDecoration(
+                color: colors.bgSurface,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: colors.borderColor),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.lock_outline_rounded, size: 12, color: colors.textTertiary),
+                  const SizedBox(width: 4),
+                  Text(
+                    '$completedCount/$totalMissions',
+                    style: TextStyle(
+                      color: colors.textSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                );
-              }),
+                ],
+              ),
             ),
         ],
       ),
@@ -1660,315 +1716,3 @@ class DeckOverview extends StatelessWidget {
   }
 }
 
-/// Native-feeling sliding segmented control with gliding thumb animation.
-class VocaSlidingSegmentedBar extends StatelessWidget {
-  final List<String> values;
-  final List<String> labels;
-  final String selectedValue;
-  final ValueChanged<String> onSelected;
-  final VocaColorPalette colors;
-  final double height;
-
-  const VocaSlidingSegmentedBar({
-    super.key,
-    required this.values,
-    required this.labels,
-    required this.selectedValue,
-    required this.onSelected,
-    required this.colors,
-    this.height = 38,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final selectedIndex = values.indexOf(selectedValue).clamp(0, values.length - 1);
-
-    return Container(
-      height: height,
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: colors.bgSurface,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: colors.borderColor),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final itemWidth = constraints.maxWidth / values.length;
-
-          return Stack(
-            children: [
-              // Gliding thumb indicator
-              AnimatedPositioned(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOutCubic,
-                left: selectedIndex * itemWidth,
-                top: 0,
-                bottom: 0,
-                width: itemWidth,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: colors.isDark ? colors.bgHover : colors.bgCard,
-                    borderRadius: BorderRadius.circular(999),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: colors.isDark ? 0.35 : 0.08),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Segment Labels & Gestures
-              Row(
-                children: List.generate(values.length, (i) {
-                  final isSelected = i == selectedIndex;
-                  return Expanded(
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        onSelected(values[i]);
-                      },
-                      child: Center(
-                        child: AnimatedDefaultTextStyle(
-                          duration: const Duration(milliseconds: 160),
-                          style: TextStyle(
-                            color: isSelected ? colors.textPrimary : colors.textMuted,
-                            fontSize: 12.5,
-                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                          ),
-                          child: Text(
-                            labels[i],
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-/// 7. Last 30 Days Activity Heatmap Section (with zero layout-shift Material 3 Tooltips)
-class _HeatmapCard extends StatelessWidget {
-  final VocaColorPalette colors;
-  final GamificationService gamification;
-
-  const _HeatmapCard({
-    required this.colors,
-    required this.gamification,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Watch((_) {
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      final activeDates = gamification.activeDates;
-      final df = DateFormat('yyyy-MM-dd');
-      final streak = gamification.currentStreak.value;
-
-      final days = List.generate(30, (i) {
-        final d = today.subtract(Duration(days: 29 - i));
-        final dStr = df.format(d);
-        final isActive = activeDates.contains(dStr);
-        final isToday = (i == 29);
-        return (date: d, isActive: isActive, isToday: isToday, index: i);
-      });
-
-      return Container(
-        decoration: BoxDecoration(
-          color: colors.bgCard,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: colors.borderColor),
-        ),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.calendar_month_rounded, size: 16, color: colors.colorFire),
-                    const SizedBox(width: 8),
-                    Text(
-                      context.t('study.last30Days', null, 'Last 30 days'),
-                      style: TextStyle(
-                        color: colors.textPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Text(
-                      context.t('study.less', null, 'Less'),
-                      style: TextStyle(color: colors.textMuted, fontSize: 11),
-                    ),
-                    const SizedBox(width: 4),
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: colors.bgSurface,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(width: 3),
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: colors.colorGrammar.withValues(alpha: 0.45),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(width: 3),
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: colors.colorGrammar,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      context.t('study.more', null, 'More'),
-                      style: TextStyle(color: colors.textMuted, fontSize: 11),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-
-            // 2 Rows of 15 tiles (0-layout shift, Material 3 floating tooltips on tap)
-            Column(
-              children: [
-                _buildRow(context, colors, days.sublist(0, 15)),
-                const SizedBox(height: 4),
-                _buildRow(context, colors, days.sublist(15, 30)),
-              ],
-            ),
-
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '🔥 $streak ${context.t('streak.dayStreak', null, 'days streak')}',
-                  style: TextStyle(
-                    color: colors.colorFire,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                Text(
-                  context.t('study.tapDayToView', null, 'Tap a day to view'),
-                  style: TextStyle(
-                    color: colors.textMuted,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      );
-    });
-  }
-
-  Widget _buildRow(
-    BuildContext context,
-    VocaColorPalette colors,
-    List<({DateTime date, bool isActive, bool isToday, int index})> rowDays,
-  ) {
-    return Row(
-      children: List.generate(rowDays.length, (col) {
-        final dayInfo = rowDays[col];
-
-        return Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2.0),
-            child: AspectRatio(
-              aspectRatio: 1.0,
-              child: Tooltip(
-                triggerMode: TooltipTriggerMode.tap,
-                preferBelow: false,
-                verticalOffset: 10,
-                showDuration: const Duration(milliseconds: 2500),
-                waitDuration: Duration.zero,
-                enableFeedback: true,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: colors.bgCard,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: dayInfo.isActive
-                        ? colors.colorGrammar.withValues(alpha: 0.5)
-                        : colors.borderColor,
-                    width: 1.2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: colors.isDark ? 0.35 : 0.12),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                richMessage: TextSpan(
-                  children: [
-                    TextSpan(
-                      text: '${DateFormat('EEEE, MMM d').format(dayInfo.date)}${dayInfo.isToday ? ' (Today)' : ''}\n',
-                      style: TextStyle(
-                        color: colors.textPrimary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        height: 1.35,
-                      ),
-                    ),
-                    TextSpan(
-                      text: dayInfo.isActive
-                          ? '✓ ${context.t('study.heatmapReviewed', null, 'Reviewed & Active')}'
-                          : '· ${context.t('study.heatmapRestDay', null, 'Rest day')}',
-                      style: TextStyle(
-                        color: dayInfo.isActive ? colors.colorGrammar : colors.textSecondary,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: dayInfo.isActive ? colors.colorGrammar : colors.bgSurface,
-                    borderRadius: BorderRadius.circular(3.5),
-                    border: dayInfo.isToday
-                        ? Border.all(color: colors.accentPrimary, width: 1.5)
-                        : Border.all(color: colors.borderColorLight, width: 0.5),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      }),
-    );
-  }
-}

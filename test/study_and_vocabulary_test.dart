@@ -24,7 +24,9 @@ class FakeVocaApiClient extends VocaApiClient {
 }
 
 class FakeSupabaseService extends SupabaseService {
-  FakeSupabaseService() : super(SupabaseClient('https://mock.supabase.co', 'mock_anon_key'));
+  FakeSupabaseService() : super(SupabaseClient('https://mock.supabase.co', 'mock_anon_key')) {
+    vocabularyCardsSignal.value = List.from(mockCards);
+  }
 
   final List<Flashcard> mockCards = [
     Flashcard(
@@ -109,11 +111,13 @@ class FakeSupabaseService extends SupabaseService {
     } else {
       mockCards.add(card);
     }
+    vocabularyCardsSignal.value = List.from(mockCards);
   }
 
   @override
   Future<void> deleteVocabularyCard(String id) async {
     mockCards.removeWhere((c) => c.id == id);
+    vocabularyCardsSignal.value = List.from(mockCards);
   }
 
   @override
@@ -518,7 +522,7 @@ void main() {
       expect(find.text('Repetitions'), findsOneWidget);
       expect(find.text('Current Interval'), findsOneWidget);
       expect(find.text('SET MASTERY STAGE'), findsOneWidget);
-      expect(find.text('Mark as Mastered'), findsOneWidget);
+      expect(find.text('Add Notes / Mnemonic'), findsOneWidget);
     });
   });
 }

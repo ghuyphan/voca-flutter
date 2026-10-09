@@ -187,6 +187,16 @@ class _DictionaryBottomSheetState extends State<DictionaryBottomSheet> {
         ? widget.token.baseForm!.trim()
         : widget.token.surface.trim();
 
+    if (word.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _result = null;
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
     try {
       final res = await AppState.instance.apiClient.lookupDictionary(
         word: word,
@@ -371,7 +381,7 @@ class _DictionaryBottomSheetState extends State<DictionaryBottomSheet> {
         createdAt: DateTime.now(),
       );
 
-      await supabase.upsertVocabularyCard(card);
+      await AppState.instance.vocabularyService.upsertCard(card, notifyGamification: true);
 
       final playerCtrl = PlayerCoordinator.instance.playerController;
       if (playerCtrl != null) {
@@ -406,7 +416,7 @@ class _DictionaryBottomSheetState extends State<DictionaryBottomSheet> {
         srsEaseFactor: seed.easeFactor,
         srsNextReviewAt: seed.nextReviewAt,
       );
-      await AppState.instance.supabaseService.upsertVocabularyCard(updated);
+      await AppState.instance.vocabularyService.upsertCard(updated);
       if (mounted) {
         setState(() {
           _currentLevel = newLevel;
@@ -594,9 +604,13 @@ class _DictionaryBottomSheetState extends State<DictionaryBottomSheet> {
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 24),
                     child: VocaEmptyState(
-                      icon: Icons.search_off_rounded,
-                      title: context.t('popup.noDictionaryEntry', null, 'No definition found'),
-                      description: context.t('popup.saveManually', null, 'You can still save it to your vocabulary'),
+                      icon: widget.token.surface.trim().isEmpty ? Icons.menu_book_rounded : Icons.search_off_rounded,
+                      title: widget.token.surface.trim().isEmpty
+                          ? context.t('vocab.search', null, 'Search Dictionary')
+                          : context.t('popup.noDictionaryEntry', null, 'No definition found'),
+                      description: widget.token.surface.trim().isEmpty
+                          ? 'Select or search a word to look up its definitions and example sentences.'
+                          : context.t('popup.saveManually', null, 'You can still save it to your vocabulary'),
                     ),
                   )
                 else ...[

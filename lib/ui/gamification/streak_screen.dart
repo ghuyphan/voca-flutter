@@ -1,7 +1,6 @@
 // lib/ui/gamification/streak_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import '../../config/voca_theme.dart';
 import '../../services/gamification_service.dart';
@@ -10,6 +9,8 @@ import '../../services/toast_service.dart';
 import '../../state/app_state.dart';
 import '../study/study_deck_screen.dart';
 import '../widgets/voca_back_button.dart';
+import 'widgets/activity_heatmap_card.dart';
+import 'widgets/next_streak_milestone_banner.dart';
 import 'widgets/rpg_shield_crest.dart';
 
 /// Dedicated Full-Screen Experience for Learning Streaks & Hearth Progression.
@@ -85,27 +86,10 @@ class _StreakScreenState extends State<StreakScreen>
           final longestStreak = gamification.longestStreak.value;
           final freezes = gamification.streakFreezes.value;
           final practicedToday = gamification.practicedToday;
-          final activityDates = gamification.activeDates;
           final totalXp = gamification.xp.value;
 
           // Determine hearth stage
           final crestStyle = RpgCrestStyle.forStreak(currentStreak);
-
-          // Generate 7-day strip (Monday to Sunday or last 7 days)
-          final now = DateTime.now();
-          final last7Days = List.generate(7, (i) {
-            final d = now.subtract(Duration(days: 6 - i));
-            final dateKey = DateFormat('yyyy-MM-dd').format(d);
-            final isToday = (i == 6);
-            final isActive = activityDates.contains(dateKey);
-            final dayName = DateFormat('E').format(d).substring(0, 1);
-            return {
-              'day': dayName,
-              'date': d,
-              'isToday': isToday,
-              'isActive': isActive,
-            };
-          });
 
           return SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
@@ -153,13 +137,23 @@ class _StreakScreenState extends State<StreakScreen>
 
                 // 4. Motivation Status Banner
                 _buildMotivationBanner(context, colors, practicedToday),
-                const SizedBox(height: 24),
-
-                // 5. Monday-to-Sunday 7-Day Strip
-                _buildSevenDayStrip(colors, last7Days),
                 const SizedBox(height: 20),
 
-                // 6. Stats Grid: Best Streak & Freeze Shields
+                // 5. 30-Day Activity Heatmap Grid
+                ActivityHeatmapCard(
+                  colors: colors,
+                  gamification: gamification,
+                ),
+                const SizedBox(height: 14),
+
+                // 6. Next Streak Milestone Banner (linking streak to achievements roadmap)
+                NextStreakMilestoneBanner(
+                  colors: colors,
+                  gamification: gamification,
+                ),
+                const SizedBox(height: 20),
+
+                // 7. Stats Grid: Best Streak & Freeze Shields
                 _buildStatsGrid(context, colors, longestStreak, freezes, totalXp, gamification),
                 const SizedBox(height: 28),
 
@@ -223,12 +217,15 @@ class _StreakScreenState extends State<StreakScreen>
       clipBehavior: Clip.none,
       children: [
         // Pulsing background glow
-        Container(
-          width: 100,
-          height: 100,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: style.glowColor.withValues(alpha: 0.35),
+        ScaleTransition(
+          scale: _pulseAnimation,
+          child: Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: style.glowColor.withValues(alpha: 0.35),
+            ),
           ),
         ),
 
@@ -341,106 +338,6 @@ class _StreakScreenState extends State<StreakScreen>
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  /// Monday-to-Sunday 7-Day Strip
-  Widget _buildSevenDayStrip(VocaColorPalette colors, List<Map<String, dynamic>> days) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      decoration: BoxDecoration(
-        color: colors.bgSecondary,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colors.borderColor),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: days.map((d) {
-          final dayLetter = d['day'] as String;
-          final isToday = d['isToday'] as bool;
-          final isActive = d['isActive'] as bool;
-
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                dayLetter,
-                style: TextStyle(
-                  color: isToday ? colors.accentPrimary : colors.textMuted,
-                  fontSize: 11,
-                  fontWeight: isToday ? FontWeight.bold : FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              // Circle indicator
-              if (isActive)
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [colors.colorFire, colors.accentTertiary],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: colors.colorFire.withValues(alpha: 0.25),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: const Center(
-                    child: Icon(Icons.local_fire_department_rounded, size: 16, color: Colors.white),
-                  ),
-                )
-              else if (isToday)
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: colors.colorFire.withValues(alpha: 0.12),
-                    border: Border.all(color: colors.colorFire, width: 2),
-                  ),
-                  child: Center(
-                    child: ScaleTransition(
-                      scale: _pulseAnimation,
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: colors.colorFire,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: colors.colorFire.withValues(alpha: 0.6),
-                              blurRadius: 6,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                )
-              else
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: colors.bgCard,
-                    border: Border.all(color: colors.borderColorLight),
-                  ),
-                ),
-            ],
-          );
-        }).toList(),
       ),
     );
   }
@@ -605,7 +502,7 @@ class _StreakScreenState extends State<StreakScreen>
               // Replenish Button
               if (freezes < 2)
                 ElevatedButton.icon(
-                  onPressed: () {
+                  onPressed: () async {
                     if (totalXp < 150) {
                       ToastService.info(
                         context,
@@ -614,8 +511,8 @@ class _StreakScreenState extends State<StreakScreen>
                       return;
                     }
 
-                    final success = gamification.replenishFreeze();
-                    if (success) {
+                    final success = await gamification.replenishFreeze();
+                    if (context.mounted && success) {
                       ToastService.success(
                         context,
                         'Frost Ward replenished! +1 Shield active (-150 XP).',

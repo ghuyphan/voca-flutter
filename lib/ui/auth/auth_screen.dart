@@ -664,11 +664,11 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
 
                   const SizedBox(height: 12),
 
-                  // 3. Continue with Email Button (Surface container with Coral accent icon)
+                  // 3. Continue with Email Button (Card container matching Google & Apple buttons)
                   _buildSecondaryButton(
                     label: context.t('auth.continueWithEmail', null, 'Continue with email'),
                     leading: Icon(Icons.mail_outline_rounded, size: 20, color: colors.accentPrimary),
-                    backgroundColor: colors.bgSurface,
+                    backgroundColor: colors.bgCard,
                     textColor: colors.textPrimary,
                     borderColor: colors.borderColor,
                     onPressed: () => _openForm(AuthScreenMode.signIn),

@@ -1,10 +1,9 @@
-// lib/ui/sheets/saved_words_sheet.dart
-
 import 'package:flutter/material.dart';
+import 'package:signals_flutter/signals_flutter.dart';
 import '../../config/voca_theme.dart';
 import '../../models/voca_models.dart';
 import '../../services/i18n_service.dart';
-import '../../state/app_state.dart';
+import '../../services/vocabulary_service.dart';
 import 'dictionary_bottom_sheet.dart';
 import 'voca_bottom_sheet.dart';
 
@@ -40,23 +39,9 @@ class SavedWordsSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.vocaColors;
 
-    return FutureBuilder<List<Flashcard>>(
-      future: AppState.instance.supabaseService.getVocabularyCards(language: language),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 40),
-            child: Center(
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: colors.accentPrimary,
-              ),
-            ),
-          );
-        }
-
-        final cards = snapshot.data ?? [];
-        if (cards.isEmpty) {
+    return Watch((context) {
+      final cards = VocabularyService.instance.getCardsForLanguage(language);
+      if (cards.isEmpty) {
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(32),
@@ -95,7 +80,7 @@ class SavedWordsSheet extends StatelessWidget {
 
         return ListView.separated(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
-          shrinkWrap: true,
+          shrinkWrap: false,
           itemCount: cards.length,
           separatorBuilder: (_, __) => const SizedBox(height: 8),
           itemBuilder: (context, index) {

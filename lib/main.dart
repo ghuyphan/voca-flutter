@@ -39,6 +39,7 @@ Future<void> main() async {
 
   // Load persistent settings & gamification stats (initializes I18nService & profile)
   await appState.initSettingsAndGamification();
+  await appState.vocabularyService.syncVocabulary();
 
   // Pre-load default learning language grammar database
   await appState.grammarEngine.loadLanguage('ja');

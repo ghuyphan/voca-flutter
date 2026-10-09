@@ -499,6 +499,7 @@
     "syncing": "Syncing...",
     "syncError": "Sync failed",
     "signInGoogle": "Continue with Google",
+    "signInOrRegister": "Log in or Sign up",
     "syncVocab": "Sync vocabulary across devices",
     "learningLanguage": "Learning Language",
     "replayOnboarding": "Replay Onboarding",
@@ -745,6 +746,12 @@
     "morePractice": "More Practice",
     "clozeQuizTitle": "Cloze Sentence Quiz",
     "clozeQuizDesc": "Practice missing words from authentic video sentences",
+    "correctBonus": "Correct! +20 XP",
+    "correctPracticed": "Correct! Practiced (+0 XP)",
+    "correctAnswer": "Correct answer:",
+    "practiceMode": "Practice",
+    "reviewCompleted": "Review Complete",
+    "unlimitedPracticeNotice": "You can practice unlimited times for memory retention! XP rewards reset tomorrow.",
     "dailyQuests": "Daily Quests",
     "claimReward": "Claim",
     "claimed": "Claimed",
@@ -760,6 +767,7 @@
     "allDone": "All cards cleared for today! 🎉",
     "startReview": "Start Review",
     "exploreVideos": "Explore videos for new words",
+    "exploreVideosAction": "Explore videos to add words",
     "items": "items",
     "heatmapReviewed": "Reviewed",
     "heatmapRestDay": "Rest day",
@@ -825,12 +833,25 @@
     "infuseWard": "Infuse Frost Ward",
     "trailTitle": "Weekly Expedition Trail",
     "title": "Day Streak",
+    "subtitle": "Consistency is the secret to fluency",
+    "viewStreakDetails": "View streak calendar & frost shields",
+    "daysShort": "days",
+    "activeToday": "Streak kept alive today! Great work! 🔥",
+    "riskToday": "Practice today to keep your flame blazing!",
+    "notEnoughXp": "Need 150 XP to purchase a Frost Shield",
+    "buyFreeze": "Replenish Shield (150 XP)",
     "bestStreak": "Best Streak",
     "freezesLeft": "Freezes Left",
     "fullStats": "Full Stats",
     "keepStreak": "Watch a video or review cards today to keep your streak!",
     "personalBest": "Personal Best",
-    "activityLast7Days": "Activity (Last 7 Days)"
+    "activityLast7Days": "Activity (Last 7 Days)",
+    "nextGoalLabel": "Next Streak Milestone",
+    "daysRemainingHint": "{{days}} days of immersion left to ignite!",
+    "stageCold": "Cold Slate",
+    "stageEmber": "Kindle Ember",
+    "stageBlaze": "Blazing Hearth",
+    "stageBeacon": "Eternal Beacon"
   },
   "history": {
     "title": "History",
@@ -1442,8 +1463,16 @@
       "title": "Deep Immersion",
       "desc": "Watch 2 videos with subtitles"
     },
-    "save3": {
+    "watch3": {
+      "title": "Immersion Marathon",
+      "desc": "Study with 3 video lessons today"
+    },
+    "save2": {
       "title": "Word Collector",
+      "desc": "Save 2 new words from subtitles"
+    },
+    "save3": {
+      "title": "Sentence Mining",
       "desc": "Save 3 new words from subtitles"
     },
     "save5": {
@@ -1454,13 +1483,29 @@
       "title": "Dictionary Sleuth",
       "desc": "Look up 3 words in the dictionary"
     },
+    "dict5": {
+      "title": "Deep Inquirer",
+      "desc": "Look up 5 definitions across transcripts"
+    },
+    "srs5": {
+      "title": "Quick Flashcards",
+      "desc": "Complete 5 flashcard reviews"
+    },
     "srs10": {
       "title": "Memory Workout",
       "desc": "Complete 10 flashcard reviews"
     },
+    "srs15": {
+      "title": "Synapse Workout",
+      "desc": "Complete 15 flashcard reviews"
+    },
     "quiz1": {
       "title": "Comprehension Test",
       "desc": "Complete 1 video comprehension quiz"
+    },
+    "quiz2": {
+      "title": "Quiz Master",
+      "desc": "Complete 2 comprehension quizzes"
     }
   },
   "achievements": {
@@ -1800,7 +1845,9 @@
     "stopLoop": "Stop Loop",
     "rateSetNotice": "Playback set to 0.85x for Shadowing",
     "chooseMissingWord": "Choose the missing word in the sentence above:",
-    "correct": "Correct! +15 XP",
+    "correct": "Correct! +20 XP",
+    "correctXp": "Correct! +20 XP",
+    "correctPracticed": "Correct! Practiced (+0 XP)",
     "incorrect": "Not quite, try the next sentence!",
     "replayCue": "Replay cue"
   },

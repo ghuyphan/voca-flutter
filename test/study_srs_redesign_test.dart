@@ -383,7 +383,9 @@ class _FakeApiForStudy extends VocaApiClient {
 }
 
 class _FakeSupabaseForStudy extends SupabaseService {
-  _FakeSupabaseForStudy() : super(SupabaseClient('https://mock.supabase.co', 'mock_anon_key'));
+  _FakeSupabaseForStudy() : super(SupabaseClient('https://mock.supabase.co', 'mock_anon_key')) {
+    vocabularyCardsSignal.value = List.from(savedCards);
+  }
 
   final List<Flashcard> savedCards = [
     Flashcard(
@@ -415,6 +417,7 @@ class _FakeSupabaseForStudy extends SupabaseService {
     } else {
       savedCards.add(card);
     }
+    vocabularyCardsSignal.value = List.from(savedCards);
   }
 
   @override

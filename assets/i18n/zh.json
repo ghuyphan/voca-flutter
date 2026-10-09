@@ -477,6 +477,7 @@
     "syncing": "同步中...",
     "syncError": "同步失败",
     "signInGoogle": "使用 Google 账号登录",
+    "signInOrRegister": "登录或注册",
     "syncVocab": "多端同步生词本",
     "learningLanguage": "学习语言",
     "switchedToLanguage": "已将学习语言切换为 {lang}",
@@ -706,6 +707,12 @@
     "morePractice": "更多练习",
     "clozeQuizTitle": "填空测验",
     "clozeQuizDesc": "通过真实视频字幕练习填空",
+    "correctBonus": "回答正确！ +20 XP",
+    "correctPracticed": "回答正确！ 复习练习 (+0 XP)",
+    "correctAnswer": "正确答案：",
+    "practiceMode": "练习",
+    "reviewCompleted": "复习完成",
+    "unlimitedPracticeNotice": "可无限次练习以加深记忆！XP 奖励将于明日刷新。",
     "dailyQuests": "每日任务",
     "claimReward": "领取",
     "claimed": "已领取",
@@ -721,6 +728,7 @@
     "allDone": "今日卡片已全部完成！🎉",
     "startReview": "开始复习",
     "exploreVideos": "浏览视频获取新词",
+    "exploreVideosAction": "浏览视频添加新词",
     "items": "项",
     "heatmapReviewed": "已复习",
     "heatmapRestDay": "休息日",
@@ -799,12 +807,25 @@
     "infuseWard": "充能冰霜结界",
     "trailTitle": "每周远征踪迹",
     "title": "连续学习天数",
+    "subtitle": "持之以恒是通往流利的秘诀",
+    "viewStreakDetails": "查看连续记录日历与冰霜护盾",
+    "daysShort": "天",
+    "activeToday": "今日连续记录已保持！太棒了！🔥",
+    "riskToday": "今天完成学习，让火苗持续燃烧！",
+    "notEnoughXp": "需要 150 XP 补充冰霜护盾",
+    "buyFreeze": "补充护盾 (150 XP)",
     "bestStreak": "最高记录",
     "freezesLeft": "剩余保护次数",
     "fullStats": "完整统计",
     "keepStreak": "今天观看视频或复习卡片以保持连续打卡！",
     "personalBest": "个人最佳记录",
-    "activityLast7Days": "最近 7 天学习动态"
+    "activityLast7Days": "最近 7 天学习动态",
+    "nextGoalLabel": "下一连续目标",
+    "daysRemainingHint": "还需学习 {{days}} 天即可点亮！",
+    "stageCold": "熄灭",
+    "stageEmber": "火星",
+    "stageBlaze": "烈火",
+    "stageBeacon": "不灭灯塔"
   },
   "history": {
     "title": "观看历史",
@@ -1418,6 +1439,14 @@
       "title": "深度沉浸",
       "desc": "观看 2 个带字幕的视频"
     },
+    "watch3": {
+      "title": "沉浸马拉松",
+      "desc": "今日学习 3 个视频课程"
+    },
+    "save2": {
+      "title": "单词收集家",
+      "desc": "从字幕中保存 2 个新单词"
+    },
     "save3": {
       "title": "语境淘金",
       "desc": "从字幕中保存 3 个生词"
@@ -1430,13 +1459,29 @@
       "title": "查词探索",
       "desc": "在词典中查询 3 个生词"
     },
+    "dict5": {
+      "title": "深度探求",
+      "desc": "在字幕中查询 5 次词典释义"
+    },
+    "srs5": {
+      "title": "快速复习",
+      "desc": "完成 5 张记忆闪卡复习"
+    },
     "srs10": {
       "title": "记忆锻炼",
       "desc": "完成 10 张记忆闪卡复习"
     },
+    "srs15": {
+      "title": "突触强化",
+      "desc": "完成 15 张记忆闪卡复习"
+    },
     "quiz1": {
       "title": "理解测试",
       "desc": "完成 1 次字幕理解小测验"
+    },
+    "quiz2": {
+      "title": "测验达人",
+      "desc": "完成 2 次字幕理解小测验"
     }
   },
   "achievements": {
@@ -1776,7 +1821,9 @@
     "stopLoop": "停止循环",
     "rateSetNotice": "已将跟读语速设置为 0.85x",
     "chooseMissingWord": "请选择上方句子中缺失的单词：",
-    "correct": "回答正确！ +15 XP",
+    "correct": "回答正确！ +20 XP",
+    "correctXp": "回答正确！ +20 XP",
+    "correctPracticed": "回答正确！ 复习练习 (+0 XP)",
     "incorrect": "回答错误，再接再厉！",
     "replayCue": "重播单句"
   },

@@ -478,6 +478,7 @@
     "syncing": "同期中...",
     "syncError": "同期失敗",
     "signInGoogle": "Googleでログイン",
+    "signInOrRegister": "ログイン / 新規登録",
     "syncVocab": "デバイス間で単語帳を同期",
     "learningLanguage": "学習言語",
     "switchedToLanguage": "学習言語を{lang}に切り替えました",
@@ -709,6 +710,12 @@
     "morePractice": "もっと練習",
     "clozeQuizTitle": "穴埋めクイズ",
     "clozeQuizDesc": "動画の実際の例文から抜けた単語を穴埋めテスト",
+    "correctBonus": "正解！ +20 XP",
+    "correctPracticed": "正解！ 復習練習 (+0 XP)",
+    "correctAnswer": "正解:",
+    "practiceMode": "復習",
+    "reviewCompleted": "復習完了",
+    "unlimitedPracticeNotice": "記憶定着のために何度でも練習できます！XP報酬は明日リセットされます。",
     "dailyQuests": "デイリークエスト",
     "claimReward": "受け取る",
     "claimed": "受取済",
@@ -802,12 +809,25 @@
     "infuseWard": "結界を補給",
     "trailTitle": "週間遠征トレイル",
     "title": "連続学習日数",
+    "subtitle": "毎日の継続が流暢さへの鍵",
+    "viewStreakDetails": "連続記録カレンダーとフロストシールドを確認",
+    "daysShort": "日",
+    "activeToday": "本日の連続記録を維持しました！素晴らしい！🔥",
+    "riskToday": "炎を灯し続けるために、今日学習しましょう！",
+    "notEnoughXp": "フロストシールドの補充には150 XP必要です",
+    "buyFreeze": "シールドを補充 (150 XP)",
     "bestStreak": "自己ベスト",
     "freezesLeft": "残りのフリーズ",
     "fullStats": "詳しい統計",
     "keepStreak": "今日も動画を見るかカードを復習して、連続日数を維持しましょう！",
     "personalBest": "自己最高記録",
-    "activityLast7Days": "最近7日間の学習状況"
+    "activityLast7Days": "最近7日間の学習状況",
+    "nextGoalLabel": "次の連続目標",
+    "daysRemainingHint": "あと{{days}}日の学習で達成！",
+    "stageCold": "消火",
+    "stageEmber": "残り火",
+    "stageBlaze": "燃える炎",
+    "stageBeacon": "不滅の炎"
   },
   "history": {
     "title": "履歴",
@@ -1421,6 +1441,14 @@
       "title": "ディープイマージョン",
       "desc": "字幕付き動画を2本視聴する"
     },
+    "watch3": {
+      "title": "イマージョン・マラソン",
+      "desc": "字幕付き動画を3本学習する"
+    },
+    "save2": {
+      "title": "単語コレクター",
+      "desc": "字幕から新しい単語を2つ保存する"
+    },
     "save3": {
       "title": "フレーズマイナー",
       "desc": "字幕から新しい単語を3つ保存する"
@@ -1433,13 +1461,29 @@
       "title": "辞書探求者",
       "desc": "辞書で3つの単語を調べる"
     },
+    "dict5": {
+      "title": "探究の学徒",
+      "desc": "字幕内で辞書を5回引く"
+    },
+    "srs5": {
+      "title": "クイック復習",
+      "desc": "フラッシュカードを5枚復習する"
+    },
     "srs10": {
       "title": "記憶トレーニング",
       "desc": "フラッシュカードで単語を10枚復習する"
     },
+    "srs15": {
+      "title": "シナプス・トレーニング",
+      "desc": "フラッシュカードを15枚復習する"
+    },
     "quiz1": {
       "title": "理解度チェック",
       "desc": "動画の理解度クイズを1回完了する"
+    },
+    "quiz2": {
+      "title": "クイズマスター",
+      "desc": "理解度クイズを2回クリアする"
     }
   },
   "achievements": {
@@ -1779,7 +1823,9 @@
     "stopLoop": "ループ停止",
     "rateSetNotice": "シャドーイング用に速度を0.85倍に設定しました",
     "chooseMissingWord": "上の文の空欄に入る単語を選択してください：",
-    "correct": "正解！ +15 XP",
+    "correct": "正解！ +20 XP",
+    "correctXp": "正解！ +20 XP",
+    "correctPracticed": "正解！ 復習練習 (+0 XP)",
     "incorrect": "不正解です。次の文に挑戦しましょう！",
     "replayCue": "字幕を再生"
   },

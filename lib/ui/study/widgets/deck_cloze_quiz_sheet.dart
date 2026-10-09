@@ -39,10 +39,12 @@ class _DeckClozeQuizSheetState extends State<DeckClozeQuizSheet> {
   late final List<Flashcard> _quizCards;
   int _currentIndex = 0;
   int _score = 0;
+  int _earnedXpTotal = 0;
   bool _isFinished = false;
 
   // Current question state
   int? _selectedOptionIndex;
+  bool? _lastAwarded;
   List<String> _currentOptions = [];
 
   @override
@@ -68,6 +70,7 @@ class _DeckClozeQuizSheetState extends State<DeckClozeQuizSheet> {
 
   void _prepareQuestion(Flashcard card) {
     _selectedOptionIndex = null;
+    _lastAwarded = null;
 
     final correctWord = card.word;
     final otherWords = widget.cards
@@ -99,7 +102,7 @@ class _DeckClozeQuizSheetState extends State<DeckClozeQuizSheet> {
     _currentOptions = allOpts;
   }
 
-  void _handleOptionSelect(int index, String option) {
+  Future<void> _handleOptionSelect(int index, String option) async {
     if (_selectedOptionIndex != null || _quizCards.isEmpty) return;
 
     final currentCard = _quizCards[_currentIndex];
@@ -114,7 +117,17 @@ class _DeckClozeQuizSheetState extends State<DeckClozeQuizSheet> {
 
     if (isCorrect) {
       HapticFeedback.lightImpact();
-      AppState.instance.gamificationService.onQuizCompleted();
+      final awarded = await AppState.instance.gamificationService.onQuizCompleted(
+        quizKey: 'card_${currentCard.id}',
+      );
+      if (mounted) {
+        setState(() {
+          _lastAwarded = awarded;
+          if (awarded) {
+            _earnedXpTotal += 20;
+          }
+        });
+      }
     } else {
       HapticFeedback.mediumImpact();
     }
@@ -145,6 +158,7 @@ class _DeckClozeQuizSheetState extends State<DeckClozeQuizSheet> {
     final sentence = currentCard.contextSentence ?? '';
     final translation = currentCard.contextTranslation;
     final maskedSentence = sentence.replaceFirst(currentCard.word, '[ _____ ]');
+    final canEarnXp = AppState.instance.gamificationService.canEarnQuizXp('card_${currentCard.id}');
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -165,19 +179,27 @@ class _DeckClozeQuizSheetState extends State<DeckClozeQuizSheet> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: colors.accentPrimarySoft,
+                color: canEarnXp ? colors.accentPrimarySoft : colors.bgSecondary,
                 borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: colors.accentPrimary.withValues(alpha: 0.3)),
+                border: Border.all(
+                  color: canEarnXp
+                      ? colors.accentPrimary.withValues(alpha: 0.3)
+                      : colors.borderColorLight,
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.bolt_rounded, size: 13, color: colors.accentPrimary),
+                  Icon(
+                    canEarnXp ? Icons.bolt_rounded : Icons.refresh_rounded,
+                    size: 13,
+                    color: canEarnXp ? colors.accentPrimary : colors.textSecondary,
+                  ),
                   const SizedBox(width: 3),
                   Text(
-                    '+15 XP',
+                    canEarnXp ? '+20 XP' : context.t('study.practiceMode', null, 'Practice'),
                     style: TextStyle(
-                      color: colors.accentPrimary,
+                      color: canEarnXp ? colors.accentPrimary : colors.textSecondary,
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
                     ),
@@ -309,7 +331,9 @@ class _DeckClozeQuizSheetState extends State<DeckClozeQuizSheet> {
                     const SizedBox(width: 6),
                     Text(
                       isCorrect
-                          ? context.t('study.correctBonus', null, 'Correct! +15 XP')
+                          ? (_lastAwarded == true
+                              ? context.t('study.correctBonus', null, 'Correct! +20 XP')
+                              : context.t('study.correctPracticed', null, 'Correct! Practiced (+0 XP)'))
                           : '${context.t('study.correctAnswer', null, 'Correct answer:')} ${currentCard.word}',
                       style: TextStyle(
                         color: isCorrect ? colors.success : colors.error,
@@ -360,8 +384,6 @@ class _DeckClozeQuizSheetState extends State<DeckClozeQuizSheet> {
   }
 
   Widget _buildFinishedView(BuildContext context, VocaColorPalette colors) {
-    final earnedXp = _score * 20;
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -395,24 +417,57 @@ class _DeckClozeQuizSheetState extends State<DeckClozeQuizSheet> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        if (earnedXp > 0) ...[
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            decoration: BoxDecoration(
-              color: colors.accentPrimarySoft,
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              '+$earnedXp XP',
-              style: TextStyle(
-                color: colors.accentPrimary,
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-              ),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          decoration: BoxDecoration(
+            color: _earnedXpTotal > 0 ? colors.accentPrimarySoft : colors.bgSecondary,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: _earnedXpTotal > 0
+                  ? colors.accentPrimary.withValues(alpha: 0.3)
+                  : colors.borderColorLight,
             ),
           ),
-        ],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_earnedXpTotal > 0)
+                Icon(Icons.bolt_rounded, size: 15, color: colors.accentPrimary)
+              else
+                Icon(Icons.refresh_rounded, size: 15, color: colors.textSecondary),
+              const SizedBox(width: 4),
+              Text(
+                _earnedXpTotal > 0
+                    ? '+$_earnedXpTotal XP'
+                    : context.t('study.reviewCompleted', null, 'Review Complete (+0 XP)'),
+                style: TextStyle(
+                  color: _earnedXpTotal > 0 ? colors.accentPrimary : colors.textSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Text(
+            context.t(
+              'study.unlimitedPracticeNotice',
+              null,
+              'You can practice unlimited times for memory retention! XP rewards reset tomorrow.',
+            ),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: colors.textMuted,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              height: 1.35,
+            ),
+          ),
+        ),
         const SizedBox(height: 22),
         SizedBox(
           width: double.infinity,

@@ -8,7 +8,7 @@ import '../../services/audio_service.dart';
 import '../../services/i18n_service.dart';
 import '../../services/srs_service.dart';
 import '../../services/toast_service.dart';
-import '../../state/app_state.dart';
+import '../../services/vocabulary_service.dart';
 import '../sheets/voca_bottom_sheet.dart';
 import '../widgets/voca_confirm_dialog.dart';
 
@@ -58,13 +58,13 @@ class _WordDetailSheetState extends State<WordDetailSheet> {
   }
 
   ({Color bg, Color text}) _getMasteryColors(String level, VocaColorPalette colors) {
-    switch (level.toLowerCase()) {
-      case 'mastered':
-        return (bg: colors.wordMasteredBg, text: colors.wordMasteredText);
+    switch (WordLevels.normalize(level)) {
       case 'known':
         return (bg: colors.wordKnownBg, text: colors.wordKnownText);
       case 'learning':
         return (bg: colors.wordLearningBg, text: colors.wordLearningText);
+      case 'ignored':
+        return (bg: colors.bgSurface, text: colors.textMuted);
       case 'new':
       default:
         return (bg: colors.wordNewBg, text: colors.wordNewText);
@@ -73,29 +73,25 @@ class _WordDetailSheetState extends State<WordDetailSheet> {
 
   Future<void> _updateLevel(String newLevel) async {
     setState(() => _isSaving = true);
-    final seed = SpacedRepetitionService.seedSrsParamsForLevel(newLevel);
+    final normLevel = WordLevels.normalize(newLevel);
+    final seed = SpacedRepetitionService.seedSrsParamsForLevel(normLevel);
     final updated = _card.copyWith(
-      level: newLevel,
+      level: normLevel,
       srsRepetition: seed.repetition,
       srsInterval: seed.interval,
       srsEaseFactor: seed.easeFactor,
       srsNextReviewAt: seed.nextReviewAt,
     );
 
-    await AppState.instance.supabaseService.upsertVocabularyCard(updated);
+    await VocabularyService.instance.upsertCard(updated);
     if (mounted) {
       setState(() {
         _card = updated;
         _isSaving = false;
       });
       widget.onCardUpdated?.call();
-      ToastService.success(context, 'Stage updated to ${newLevel.toUpperCase()}');
+      ToastService.success(context, 'Stage updated to ${normLevel.toUpperCase()}');
     }
-  }
-
-  Future<void> _toggleMastery() async {
-    final newLevel = _card.level == 'mastered' ? 'learning' : 'mastered';
-    await _updateLevel(newLevel);
   }
 
   Future<void> _deleteCard() async {
@@ -109,7 +105,7 @@ class _WordDetailSheetState extends State<WordDetailSheet> {
 
     if (confirmed && mounted) {
       setState(() => _isSaving = true);
-      await AppState.instance.supabaseService.deleteVocabularyCard(_card.id);
+      await VocabularyService.instance.deleteCard(_card);
       if (mounted) {
         Navigator.of(context).pop();
         widget.onCardDeleted?.call();
@@ -177,7 +173,7 @@ class _WordDetailSheetState extends State<WordDetailSheet> {
     if (newNotes != null && mounted) {
       setState(() => _isSaving = true);
       final updated = _card.copyWith(notes: newNotes);
-      await AppState.instance.supabaseService.upsertVocabularyCard(updated);
+      await VocabularyService.instance.upsertCard(updated);
       if (mounted) {
         setState(() {
           _card = updated;
@@ -201,6 +197,10 @@ class _WordDetailSheetState extends State<WordDetailSheet> {
       return context.t('study.today', null, 'Today');
     } else if (difference == 1) {
       return context.t('study.tomorrow', null, 'Tomorrow');
+    } else if (difference >= 365) {
+      return 'In 1 year';
+    } else if (difference >= 30) {
+      return 'In ${(difference / 30).round()} months';
     } else {
       return context.t('study.inDays', {'days': difference.toString()}, 'In $difference days');
     }
@@ -228,7 +228,7 @@ class _WordDetailSheetState extends State<WordDetailSheet> {
               // Word Header Card
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   color: colors.bgCard,
                   borderRadius: BorderRadius.circular(20),
@@ -237,48 +237,40 @@ class _WordDetailSheetState extends State<WordDetailSheet> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (readingDisplay != null && readingDisplay.isNotEmpty) ...[
+                      Text(
+                        readingDisplay,
+                        style: TextStyle(
+                          color: colors.accentPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                    ],
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (readingDisplay != null && readingDisplay.isNotEmpty) ...[
-                                Text(
-                                  readingDisplay,
-                                  style: TextStyle(
-                                    color: colors.textSecondary,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                              ],
-                              Text(
-                                _card.word,
-                                style: TextStyle(
-                                  color: colors.textPrimary,
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                              if (_card.reading != null && _card.romanization != null) ...[
-                                const SizedBox(height: 2),
-                                Text(
-                                  _card.romanization!,
-                                  style: TextStyle(
-                                    color: colors.textTertiary,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ],
+                        Flexible(
+                          child: Text(
+                            _card.word,
+                            style: TextStyle(
+                              color: colors.textPrimary,
+                              fontSize: 30,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.3,
+                              fontFamily: switch (_card.language.toLowerCase()) {
+                                'ja' || 'japanese' => 'Kosugi Maru',
+                                'zh' || 'chinese' => 'Noto Sans SC',
+                                'ko' || 'korean' => 'Noto Sans KR',
+                                _ => null,
+                              },
+                            ),
                           ),
                         ),
+                        const SizedBox(width: 10),
 
-                        // Audio Pronunciation Button
+                        // Audio Pronunciation Button Inline (Clear of top-right close button)
                         ValueListenableBuilder<String?>(
                           valueListenable: AudioService.instance.currentPlaying,
                           builder: (context, playing, _) {
@@ -299,11 +291,12 @@ class _WordDetailSheetState extends State<WordDetailSheet> {
                                     ? Colors.white
                                     : colors.accentPrimary,
                                 side: BorderSide(color: colors.borderColor),
-                                padding: const EdgeInsets.all(12),
+                                padding: const EdgeInsets.all(8),
+                                minimumSize: const Size(36, 36),
                               ),
                               icon: Icon(
                                 isPlaying ? Icons.volume_up : Icons.volume_up_outlined,
-                                size: 22,
+                                size: 19,
                               ),
                               tooltip: context.t('audio.pronounce', null, 'Listen pronunciation'),
                             );
@@ -311,6 +304,16 @@ class _WordDetailSheetState extends State<WordDetailSheet> {
                         ),
                       ],
                     ),
+                    if (_card.reading != null && _card.romanization != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        _card.romanization!,
+                        style: TextStyle(
+                          color: colors.textTertiary,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
 
                     const SizedBox(height: 12),
 
@@ -525,7 +528,7 @@ class _WordDetailSheetState extends State<WordDetailSheet> {
                     _buildStatRow(
                       icon: Icons.calendar_today,
                       label: context.t('study.currentInterval', null, 'Current Interval'),
-                      value: '${_card.srsInterval} ${context.t('study.days', null, 'days')}',
+                      value: '${_card.srsInterval.clamp(0, 365)} ${context.t('study.days', null, 'days')}',
                       colors: colors,
                     ),
                     Divider(color: colors.borderColorLight, height: 16),
@@ -570,29 +573,29 @@ class _WordDetailSheetState extends State<WordDetailSheet> {
               ),
               const SizedBox(height: 8),
               Row(
-                children: ['new', 'learning', 'known', 'mastered'].map((lvl) {
-                  final isSelected = _card.level.toLowerCase() == lvl;
+                children: WordLevels.all.map((lvl) {
+                  final isSelected = WordLevels.normalize(_card.level) == lvl;
                   final col = _getMasteryColors(lvl, colors);
                   return Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 3),
                       child: OutlinedButton(
                         onPressed: _isSaving ? null : () => _updateLevel(lvl),
                         style: OutlinedButton.styleFrom(
                           backgroundColor: isSelected ? col.bg : Colors.transparent,
                           side: BorderSide(
                             color: isSelected ? col.text : colors.borderColor,
-                            width: isSelected ? 1.8 : 1,
+                            width: isSelected ? 1.6 : 1,
                           ),
-                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ),
                         child: Text(
                           lvl[0].toUpperCase() + lvl.substring(1),
                           style: TextStyle(
                             color: isSelected ? col.text : colors.textSecondary,
-                            fontSize: 11,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                            fontSize: 12,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                           ),
                         ),
                       ),
@@ -606,54 +609,39 @@ class _WordDetailSheetState extends State<WordDetailSheet> {
               // Action Buttons
               Row(
                 children: [
-                  // Toggle Mastery Button
+                  // Edit Notes Primary Action
                   Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: _isSaving ? null : _toggleMastery,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _card.level == 'mastered'
-                            ? colors.warning
-                            : colors.colorGrammar,
-                        foregroundColor: Colors.white,
+                    child: FilledButton.tonalIcon(
+                      onPressed: _isSaving ? null : _editNotes,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: colors.bgSurface,
+                        foregroundColor: colors.textPrimary,
+                        side: BorderSide(color: colors.borderColor),
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       ),
-                      icon: Icon(
-                        _card.level == 'mastered' ? Icons.undo : Icons.check_circle_outline,
-                        size: 18,
-                      ),
+                      icon: Icon(Icons.edit_note_rounded, size: 20, color: colors.accentPrimary),
                       label: Text(
-                        _card.level == 'mastered' ? context.t('vocab.markReview', null, 'Mark as Review') : context.t('vocab.markMastered', null, 'Mark as Mastered'),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        _card.notes?.isNotEmpty == true
+                            ? context.t('vocab.editNotes', null, 'Edit Notes')
+                            : context.t('vocab.addNotes', null, 'Add Notes / Mnemonic'),
+                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-
-                  // Edit Notes Button
-                  IconButton.outlined(
-                    onPressed: _isSaving ? null : _editNotes,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: colors.textSecondary,
-                      side: BorderSide(color: colors.borderColor),
-                      padding: const EdgeInsets.all(14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    icon: const Icon(Icons.edit_note_rounded, size: 20),
-                    tooltip: context.t('vocab.editNotes', null, 'Edit notes'),
-                  ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 10),
 
                   // Delete Card Button
                   IconButton.outlined(
                     onPressed: _isSaving ? null : _deleteCard,
-                    style: OutlinedButton.styleFrom(
+                    style: IconButton.styleFrom(
                       foregroundColor: colors.error,
-                      side: BorderSide(color: colors.error.withValues(alpha: 0.4)),
-                      padding: const EdgeInsets.all(14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      backgroundColor: colors.bgSurface,
+                      side: BorderSide(color: colors.error.withValues(alpha: 0.35)),
+                      padding: const EdgeInsets.all(12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
-                    icon: const Icon(Icons.delete_outline, size: 20),
+                    icon: const Icon(Icons.delete_outline_rounded, size: 20),
                     tooltip: context.t('vocab.deleteWord', null, 'Delete word'),
                   ),
                 ],

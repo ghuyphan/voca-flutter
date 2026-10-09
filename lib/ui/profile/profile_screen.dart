@@ -8,6 +8,7 @@ import '../../services/i18n_service.dart';
 import '../../services/toast_service.dart';
 import '../../state/app_state.dart';
 import '../auth/auth_screen.dart';
+import '../gamification/widgets/activity_heatmap_card.dart';
 import '../settings/settings_screen.dart';
 import '../widgets/voca_back_button.dart';
 import '../widgets/voca_confirm_dialog.dart';
@@ -311,7 +312,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final currentStreak = gamification.currentStreak.value;
       final longestStreak = gamification.longestStreak.value;
       final streakFreezes = gamification.streakFreezes.value;
-      final days = gamification.activityCalendar.value;
 
       return Container(
         padding: const EdgeInsets.all(16),
@@ -375,58 +375,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Divider(color: colors.borderColorLight, height: 1),
             const SizedBox(height: 14),
 
-            // Last 7 Days Activity Calendar
-            Text(
-              context.t('streak.activityLast7Days', null, 'Activity (Last 7 Days)'),
-              style: TextStyle(color: colors.textSecondary, fontSize: 12, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 10),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: days.map((day) {
-                return Column(
-                  children: [
-                    Text(
-                      day.dayLabel,
-                      style: TextStyle(
-                        color: day.isToday ? colors.accentPrimary : colors.textMuted,
-                        fontSize: 11,
-                        fontWeight: day.isToday ? FontWeight.bold : FontWeight.normal,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: day.isActive
-                            ? colors.colorFire
-                            : (day.isToday ? colors.bgHover : colors.bgSecondary),
-                        border: Border.all(
-                          color: day.isToday
-                              ? colors.accentPrimary
-                              : (day.isActive ? colors.colorFire : colors.borderColor),
-                          width: day.isToday ? 2 : 1,
-                        ),
-                      ),
-                      child: Center(
-                        child: day.isActive
-                            ? const Icon(Icons.local_fire_department_rounded, color: Colors.white, size: 18)
-                            : Text(
-                                day.dayNumber,
-                                style: TextStyle(
-                                  color: day.isToday ? colors.accentPrimary : colors.textMuted,
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                      ),
-                    ),
-                  ],
-                );
-              }).toList(),
+            // 30-Day Activity Heatmap
+            ActivityHeatmapCard(
+              colors: colors,
+              gamification: gamification,
+              showOuterContainer: false,
             ),
           ],
         ),

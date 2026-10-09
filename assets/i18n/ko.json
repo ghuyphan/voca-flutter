@@ -477,6 +477,7 @@
     "syncing": "동기화 중...",
     "syncError": "동기화 실패",
     "signInGoogle": "Google로 계속하기",
+    "signInOrRegister": "로그인 / 회원가입",
     "syncVocab": "기기 간 단어장 동기화",
     "learningLanguage": "학습 언어",
     "switchedToLanguage": "학습 언어를 {lang}로 변경했어요",
@@ -706,6 +707,12 @@
     "morePractice": "추가 연습",
     "clozeQuizTitle": "빈칸 채우기 퀴즈",
     "clozeQuizDesc": "실제 영상 자막의 빈칸 단어를 맞춰보세요",
+    "correctBonus": "정답입니다! +20 XP",
+    "correctPracticed": "정답입니다! 복습 연습 (+0 XP)",
+    "correctAnswer": "정답:",
+    "practiceMode": "연습",
+    "reviewCompleted": "복습 완료",
+    "unlimitedPracticeNotice": "기억 정착을 위해 무제한 연습할 수 있습니다! XP 보상은 내일 초기화됩니다.",
     "dailyQuests": "일일 퀘스트",
     "claimReward": "받기",
     "claimed": "완료",
@@ -721,6 +728,7 @@
     "allDone": "오늘의 카드를 모두 완료했습니다! 🎉",
     "startReview": "복습 시작",
     "exploreVideos": "동영상에서 새로운 단어 찾기",
+    "exploreVideosAction": "단어를 추가할 영상 탐색",
     "items": "개",
     "heatmapReviewed": "복습 완료",
     "heatmapRestDay": "휴식일",
@@ -799,12 +807,25 @@
     "infuseWard": "서리 결계 충전",
     "trailTitle": "주간 원정 트레일",
     "title": "연속 학습 일수",
+    "subtitle": "매일의 꾸준함이 유창함으로 향하는 비결",
+    "viewStreakDetails": "연속 기록 달력 및 서리 보호막 확인",
+    "daysShort": "일",
+    "activeToday": "오늘의 연속 기록을 달성했습니다! 멋져요! 🔥",
+    "riskToday": "불꽃을 유지하려면 오늘 학습을 진행하세요!",
+    "notEnoughXp": "서리 보호막 충전에는 150 XP가 필요합니다",
+    "buyFreeze": "보호막 충전 (150 XP)",
     "bestStreak": "최고 기록",
     "freezesLeft": "남은 프리즈",
     "fullStats": "전체 통계",
     "keepStreak": "오늘 동영상을 보거나 카드를 복습하여 연속 기록을 이어가세요!",
     "personalBest": "개인 최고 기록",
-    "activityLast7Days": "활동 (최근 7일)"
+    "activityLast7Days": "활동 (최근 7일)",
+    "nextGoalLabel": "다음 연속 목표",
+    "daysRemainingHint": "점화까지 {{days}}일 남았습니다!",
+    "stageCold": "소화",
+    "stageEmber": "불씨",
+    "stageBlaze": "타오르는 불꽃",
+    "stageBeacon": "영원의 등대"
   },
   "history": {
     "title": "시청 기록",
@@ -1418,6 +1439,14 @@
       "title": "심층 몰입",
       "desc": "자막과 함께 동영상 2개 시청하기"
     },
+    "watch3": {
+      "title": "몰입 마라톤",
+      "desc": "오늘 자막 동영상 3편으로 학습하기"
+    },
+    "save2": {
+      "title": "단어 수집가",
+      "desc": "자막에서 새로운 단어 2개 저장하기"
+    },
     "save3": {
       "title": "문장 수집가",
       "desc": "자막에서 새로운 단어 3개 저장하기"
@@ -1430,13 +1459,29 @@
       "title": "사전 탐색가",
       "desc": "사전에서 단어 3개 검색하기"
     },
+    "dict5": {
+      "title": "심층 탐구자",
+      "desc": "자막에서 단어 5회 검색하기"
+    },
+    "srs5": {
+      "title": "빠른 복습",
+      "desc": "플래시카드 5개 복습하기"
+    },
     "srs10": {
       "title": "기억력 트레이닝",
       "desc": "플래시카드로 단어 10개 복습하기"
     },
+    "srs15": {
+      "title": "시냅스 트레이닝",
+      "desc": "플래시카드 15개 복습하기"
+    },
     "quiz1": {
       "title": "이해도 평가",
       "desc": "동영상 이해도 퀴즈 1회 완료하기"
+    },
+    "quiz2": {
+      "title": "퀴즈 마스터",
+      "desc": "이해도 퀴즈 2회 완료하기"
     }
   },
   "achievements": {
@@ -1776,7 +1821,9 @@
     "stopLoop": "반복 정지",
     "rateSetNotice": "섀도잉을 위해 재생 속도를 0.85배로 설정했습니다",
     "chooseMissingWord": "위 문장의 빈칸에 들어갈 단어를 선택하세요:",
-    "correct": "정답입니다! +15 XP",
+    "correct": "정답입니다! +20 XP",
+    "correctXp": "정답입니다! +20 XP",
+    "correctPracticed": "정답입니다! 복습 연습 (+0 XP)",
     "incorrect": "오답입니다. 다음 문장에 도전하세요!",
     "replayCue": "자막 다시 듣기"
   },

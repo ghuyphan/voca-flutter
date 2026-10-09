@@ -95,13 +95,15 @@ class SpacedRepetitionService {
         ease += 0.15;
 
         // Easy graduation: if learner easily knew it from the start or rep >= 2
-        if (repetition >= 2 || interval >= 7 || currentLevel == 'new') {
+        if (repetition >= 2 || interval >= 7 || normalizedLevel == 'new') {
           normalizedLevel = 'known';
         } else {
           normalizedLevel = 'learning';
         }
         break;
     }
+
+    interval = min(SrsConfig.maxIntervalDays, interval);
 
     final nextReviewAt = interval <= 0
         ? now // Due immediately for same-session relearning

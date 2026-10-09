@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:signals_flutter/signals_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/voca_models.dart';
 
@@ -96,6 +97,14 @@ class SupabaseService {
 
   final List<Flashcard> _localCards = [];
 
+  /// Global reactive signal tracking all cached vocabulary cards.
+  /// Any UI watching this signal updates instantly across tabs when words are saved or deleted.
+  final Signal<List<Flashcard>> vocabularyCardsSignal = signal<List<Flashcard>>([]);
+
+  void _notifyCardsChanged() {
+    vocabularyCardsSignal.value = List.unmodifiable(_localCards);
+  }
+
   List<Flashcard> getLocalCards() => List.unmodifiable(_localCards);
 
   /// 1. Vocabulary / Flashcards Sync
@@ -130,6 +139,7 @@ class SupabaseService {
         _localCards.clear();
         _localCards.addAll(cleanLocal);
         await _saveCardsToLocal(_localCards);
+        _notifyCardsChanged();
         return list;
       } catch (e) {
         debugPrint('[SupabaseService] Remote fetch error, falling back to local: $e');
@@ -149,6 +159,7 @@ class SupabaseService {
       _localCards.addAll(cleanLocal);
       await _saveCardsToLocal(_localCards);
     }
+    _notifyCardsChanged();
     if (targetLang != null) {
       return _localCards.where((c) {
         final l = c.language.trim().toLowerCase();
@@ -195,6 +206,7 @@ class SupabaseService {
     _localCards.clear();
     _localCards.addAll(cleanLocal);
     await _saveCardsToLocal(_localCards);
+    _notifyCardsChanged();
 
     final user = currentUser;
     if (user == null) return;
@@ -214,6 +226,7 @@ class SupabaseService {
   Future<void> deleteVocabularyCard(String cardId) async {
     _localCards.removeWhere((c) => c.id == cardId);
     await _saveCardsToLocal(_localCards);
+    _notifyCardsChanged();
 
     final user = currentUser;
     if (user == null) return;
@@ -229,6 +242,7 @@ class SupabaseService {
     _localCards.clear();
     _localCards.addAll(deduplicateCards(cards));
     await _saveCardsToLocal(_localCards);
+    _notifyCardsChanged();
   }
 
   Future<void> _saveCardsToLocal(List<Flashcard> cards) async {
@@ -296,11 +310,80 @@ class SupabaseService {
     if (user == null) return null;
 
     final dateStr = DateFormat('yyyy-MM-dd').format(date);
-    final res = await client.rpc('record_streak_activity', params: {
-      'p_user_id': user.id,
-      'p_activity_date': dateStr,
-    });
-    return res != null ? Map<String, dynamic>.from(res as Map) : null;
+    try {
+      final res = await client.rpc('record_streak_activity', params: {
+        'p_client_date': dateStr,
+      });
+      return res != null ? Map<String, dynamic>.from(res as Map) : null;
+    } catch (e) {
+      debugPrint('[SupabaseService] recordStreakActivity error: $e');
+      return null;
+    }
+  }
+
+  /// 2d. Atomic XP Spending via RPC
+  Future<Map<String, dynamic>?> spendXp({
+    required int cost,
+    required String purpose,
+    String? itemId,
+  }) async {
+    final user = currentUser;
+    if (user == null) return null;
+
+    try {
+      final res = await client.rpc('spend_xp', params: {
+        'p_cost': cost,
+        'p_purpose': purpose,
+        if (itemId != null) 'p_item_id': itemId,
+      });
+      return res != null ? Map<String, dynamic>.from(res as Map) : null;
+    } catch (e) {
+      debugPrint('[SupabaseService] spendXp error: $e');
+      return null;
+    }
+  }
+
+  /// 2b. Atomic Study XP Awarding via RPC
+  Future<Map<String, dynamic>?> awardStudyXp({
+    required String activityType,
+    required int amount,
+    String? referenceId,
+  }) async {
+    final user = currentUser;
+    if (user == null) return null;
+
+    try {
+      final res = await client.rpc('award_study_xp', params: {
+        'p_activity_type': activityType,
+        'p_amount': amount,
+        if (referenceId != null) 'p_reference_id': referenceId,
+        'p_client_date': DateFormat('yyyy-MM-dd').format(DateTime.now()),
+      });
+      return res != null ? Map<String, dynamic>.from(res as Map) : null;
+    } catch (e) {
+      debugPrint('[SupabaseService] awardStudyXp error: $e');
+      return null;
+    }
+  }
+
+  /// 2c. Atomic Achievements Sync via RPC
+  Future<bool> syncAchievements({
+    required Map<String, dynamic> unlocked,
+    List<String>? notified,
+  }) async {
+    final user = currentUser;
+    if (user == null) return false;
+
+    try {
+      final res = await client.rpc('sync_achievements', params: {
+        'p_unlocked': unlocked,
+        'p_notified': notified ?? [],
+      });
+      return res != null && res['success'] == true;
+    } catch (e) {
+      debugPrint('[SupabaseService] syncAchievements error: $e');
+      return false;
+    }
   }
 
   /// 3. Watch History

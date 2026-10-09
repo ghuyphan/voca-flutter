@@ -104,7 +104,7 @@ class _GrammarBottomSheetState extends State<GrammarBottomSheet> {
         createdAt: DateTime.now(),
       );
 
-      await supabase.upsertVocabularyCard(card);
+      await AppState.instance.vocabularyService.upsertCard(card, notifyGamification: true);
 
       final playerCtrl = PlayerCoordinator.instance.playerController;
       if (playerCtrl != null) {

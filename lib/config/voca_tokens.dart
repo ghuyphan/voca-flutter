@@ -94,6 +94,9 @@ class SrsConfig {
   /// Maximum cards scheduled per active study session
   static const int defaultSessionCap = 20;
 
+  /// Maximum scheduled interval cap (1 year) to prevent infinite exponentiation
+  static const int maxIntervalDays = 365;
+
   /// Position offset in the queue to reinsert cards rated Again for relearning
   static const int relearnStepGap = 3;
 }

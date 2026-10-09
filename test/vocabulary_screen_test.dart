@@ -7,11 +7,14 @@ import 'package:voca_flutter/config/voca_theme.dart';
 import 'package:voca_flutter/models/voca_models.dart';
 import 'package:voca_flutter/services/grammar_engine.dart';
 import 'package:voca_flutter/services/supabase_service.dart';
+import 'package:voca_flutter/services/vocabulary_service.dart';
 import 'package:voca_flutter/state/app_state.dart';
 import 'package:voca_flutter/ui/vocabulary/vocabulary_screen.dart';
 
 class MockSupabaseService extends SupabaseService {
-  MockSupabaseService() : super(SupabaseClient('https://mock.supabase.co', 'mock_anon_key'));
+  MockSupabaseService() : super(SupabaseClient('https://mock.supabase.co', 'mock_anon_key')) {
+    vocabularyCardsSignal.value = List.from(mockCards);
+  }
 
   final List<Flashcard> mockCards = [
     Flashcard(
@@ -66,11 +69,13 @@ class MockSupabaseService extends SupabaseService {
     } else {
       mockCards.add(card);
     }
+    vocabularyCardsSignal.value = List.from(mockCards);
   }
 
   @override
   Future<void> deleteVocabularyCard(String id) async {
     mockCards.removeWhere((c) => c.id == id);
+    vocabularyCardsSignal.value = List.from(mockCards);
   }
 }
 
@@ -103,7 +108,7 @@ void main() {
 
       // 1. Sleek top header (No generic AppBar)
       expect(find.byType(AppBar), findsNothing);
-      expect(find.text('Saved Vocabulary'), findsOneWidget);
+      expect(find.text('Words'), findsOneWidget);
       expect(find.text('Dictionary'), findsOneWidget);
       expect(find.byIcon(Icons.more_vert_rounded), findsOneWidget);
 
@@ -112,7 +117,7 @@ void main() {
       expect(find.byIcon(Icons.search_rounded), findsOneWidget);
 
       // 3. Level filter strip
-      expect(find.text('All'), findsOneWidget);
+      expect(find.text('All'), findsWidgets);
       expect(find.text('New'), findsOneWidget);
       expect(find.text('Learning'), findsOneWidget);
       expect(find.text('Known'), findsOneWidget);
@@ -145,7 +150,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      expect(find.text('Saved Vocabulary'), findsOneWidget);
+      expect(find.text('Words'), findsOneWidget);
       expect(find.byType(GridView), findsOneWidget);
       expect(find.byType(ListView), findsNothing);
     });
@@ -250,6 +255,13 @@ void main() {
       expect(find.text('食べる'), findsNothing);
       // Undo action is visible in toast
       expect(find.text('Undo'), findsOneWidget);
+
+      // Verify undo restores the card
+      await VocabularyService.instance.undoLastDelete();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('食べる'), findsOneWidget);
     });
 
     testWidgets('Tapping options icon opens bottom sheet with Export JSON and Export Anki', (tester) async {

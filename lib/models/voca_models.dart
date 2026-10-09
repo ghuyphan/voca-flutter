@@ -1,4 +1,5 @@
 // lib/models/voca_models.dart
+import '../config/voca_tokens.dart';
 export '../services/auth_service.dart' show UserProfile, SubscriptionTier;
 
 class RubyPart {
@@ -646,19 +647,20 @@ class Flashcard {
       meaning: json['meaning'] as String? ?? '',
       language: json['language'] as String? ?? 'ja',
       level: WordLevels.normalize(json['level']),
-      srsInterval: ((json['interval'] ?? json['srs_interval']) as num?)?.toInt() ?? 0,
+      srsInterval: ((json['interval'] ?? json['srs_interval']) as num?)?.toInt().clamp(0, SrsConfig.maxIntervalDays) ?? 0,
       srsRepetition: ((json['repetitions'] ?? json['srs_repetition']) as num?)?.toInt() ?? 0,
       srsEaseFactor: ((json['ease_factor'] ?? json['srs_ease_factor']) as num?)?.toDouble() ?? 2.5,
       reviewCount: ((json['review_count'] ?? json['reviewCount']) as num?)?.toInt() ?? 0,
-      srsNextReviewAt: parseDate(
-        json['next_review_date'] ?? json['srs_next_review_at'] ?? json['nextReviewDate'],
-        WordLevels.normalize(json['level']) == WordLevels.known
-            ? DateTime.now().add(Duration(
-                days: (((json['interval'] ?? json['srs_interval']) as num?)?.toInt() ?? 0) > 0
-                    ? (((json['interval'] ?? json['srs_interval']) as num?)?.toInt() ?? 21)
-                    : 21))
-            : DateTime.now(),
-      ),
+      srsNextReviewAt: () {
+        final parsed = parseDate(
+          json['next_review_date'] ?? json['srs_next_review_at'] ?? json['nextReviewDate'],
+          WordLevels.normalize(json['level']) == WordLevels.known
+              ? DateTime.now().add(const Duration(days: SrsConfig.matureIntervalDays))
+              : DateTime.now(),
+        );
+        final maxFuture = DateTime.now().add(const Duration(days: SrsConfig.maxIntervalDays));
+        return parsed.isAfter(maxFuture) ? maxFuture : parsed;
+      }(),
       srsLastReviewedAt: parseNullableDate(
         json['last_reviewed_at'] ?? json['srs_last_reviewed_at'] ?? json['lastReviewedAt'],
       ),

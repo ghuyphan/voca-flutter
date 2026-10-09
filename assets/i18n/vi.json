@@ -499,6 +499,7 @@
     "syncing": "Đang đồng bộ...",
     "syncError": "Đồng bộ thất bại",
     "signInGoogle": "Tiếp tục với Google",
+    "signInOrRegister": "Đăng nhập hoặc Đăng ký",
     "syncVocab": "Đồng bộ từ vựng giữa các thiết bị",
     "learningLanguage": "Ngôn ngữ đang học",
     "replayOnboarding": "Xem lại giới thiệu",
@@ -745,6 +746,12 @@
     "morePractice": "Luyện tập thêm",
     "clozeQuizTitle": "Trắc nghiệm điền từ",
     "clozeQuizDesc": "Luyện điền từ còn thiếu từ câu video thực tế",
+    "correctBonus": "Chính xác! +20 XP",
+    "correctPracticed": "Chính xác! Ôn tập (+0 XP)",
+    "correctAnswer": "Đáp án đúng:",
+    "practiceMode": "Ôn tập",
+    "reviewCompleted": "Ôn tập hoàn tất",
+    "unlimitedPracticeNotice": "Bạn có thể ôn tập không giới hạn để nhớ lâu hơn! Thưởng XP làm mới mỗi ngày.",
     "dailyQuests": "Nhiệm vụ hàng ngày",
     "claimReward": "Nhận",
     "claimed": "Đã nhận",
@@ -760,6 +767,7 @@
     "allDone": "Đã hoàn thành tất cả thẻ hôm nay! 🎉",
     "startReview": "Bắt đầu ôn tập",
     "exploreVideos": "Khám phá video để thêm từ mới",
+    "exploreVideosAction": "Khám phá video để thêm từ mới",
     "items": "thẻ",
     "heatmapReviewed": "Đã ôn tập",
     "heatmapRestDay": "Ngày nghỉ",
@@ -825,12 +833,25 @@
     "infuseWard": "Nạp Lá Chắn Băng",
     "trailTitle": "Dấu Ấn Chặng Đường Tuần",
     "title": "Chuỗi ngày học",
+    "subtitle": "Kiên trì mỗi ngày là chìa khóa thành thạo",
+    "viewStreakDetails": "Xem lịch chuỗi ngày & lá chắn băng",
+    "daysShort": "ngày",
+    "activeToday": "Chuỗi ngày đã được thắp sáng hôm nay! Thật tuyệt vời! 🔥",
+    "riskToday": "Học hôm nay để giữ ngọn lửa không bị tắt!",
+    "notEnoughXp": "Cần 150 XP để mua Lá Chắn Băng",
+    "buyFreeze": "Nạp Lá Chắn (150 XP)",
     "bestStreak": "Chuỗi tốt nhất",
     "freezesLeft": "Lượt bảo vệ còn lại",
     "fullStats": "Xem thống kê đầy đủ",
     "keepStreak": "Hôm nay hãy xem video hoặc ôn thẻ để duy trì chuỗi nhé!",
     "personalBest": "Kỷ lục cá nhân",
-    "activityLast7Days": "Hoạt động (7 ngày gần nhất)"
+    "activityLast7Days": "Hoạt động (7 ngày gần nhất)",
+    "nextGoalLabel": "Mục tiêu chuỗi tiếp theo",
+    "daysRemainingHint": "Còn {{days}} ngày học nữa để thắp sáng!",
+    "stageCold": "Lửa Tắt",
+    "stageEmber": "Tàn Lửa",
+    "stageBlaze": "Lửa Cháy",
+    "stageBeacon": "Hải Đăng"
   },
   "history": {
     "title": "Lịch sử xem",
@@ -1442,6 +1463,14 @@
       "title": "Học tập chuyên sâu",
       "desc": "Xem 2 video học tập kèm phụ đề"
     },
+    "watch3": {
+      "title": "Marathon luyện nghe",
+      "desc": "Học tập với 3 video kèm phụ đề"
+    },
+    "save2": {
+      "title": "Thu thập từ mới",
+      "desc": "Lưu 2 từ vựng mới từ phụ đề"
+    },
     "save3": {
       "title": "Thợ săn câu từ",
       "desc": "Lưu 3 từ vựng mới từ phụ đề"
@@ -1454,13 +1483,29 @@
       "title": "Tra từ thông thái",
       "desc": "Tra cứu 3 từ trong từ điển"
     },
+    "dict5": {
+      "title": "Học giả tra cứu",
+      "desc": "Tra cứu 5 từ trong từ điển video"
+    },
+    "srs5": {
+      "title": "Ôn tập nhanh",
+      "desc": "Ôn tập 5 thẻ ghi nhớ từ vựng"
+    },
     "srs10": {
       "title": "Rèn luyện trí nhớ",
       "desc": "Ôn tập 10 thẻ ghi nhớ từ vựng"
     },
+    "srs15": {
+      "title": "Tập luyện trí nhớ",
+      "desc": "Ôn tập 15 thẻ ghi nhớ trong bộ thẻ"
+    },
     "quiz1": {
       "title": "Thử tài hiểu bài",
       "desc": "Hoàn thành 1 bài trắc nghiệm video"
+    },
+    "quiz2": {
+      "title": "Bậc thầy thử thách",
+      "desc": "Hoàn thành 2 bài trắc nghiệm video"
     }
   },
   "achievements": {
@@ -1800,7 +1845,9 @@
     "stopLoop": "Dừng lặp",
     "rateSetNotice": "Đã đặt tốc độ phát 0.85x cho chế độ Shadowing",
     "chooseMissingWord": "Chọn từ còn thiếu trong câu trên:",
-    "correct": "Chính xác! +15 XP",
+    "correct": "Chính xác! +20 XP",
+    "correctXp": "Chính xác! +20 XP",
+    "correctPracticed": "Chính xác! Ôn tập (+0 XP)",
     "incorrect": "Chưa đúng, thử lại câu tiếp theo nhé!",
     "replayCue": "Nghe lại câu"
   },

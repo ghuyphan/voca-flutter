@@ -15,6 +15,23 @@ class StudySessionController {
   final isLoading = signal<bool>(true);
   final isSessionActive = signal<bool>(false); // Lands on Deck Hub by default
 
+  EffectCleanup? _cardsSubscription;
+
+  StudySessionController() {
+    _cardsSubscription = effect(() {
+      final globalCards = AppState.instance.vocabularyService.cards.value;
+      if (!isSessionActive.value) {
+        final lang = AppState.instance.activeLanguage.value.trim().toLowerCase();
+        final filtered = globalCards.where((c) {
+          final cl = c.language.trim().toLowerCase();
+          return cl == lang || cl.startsWith('$lang-') || lang.startsWith('$cl-');
+        }).toList();
+        allCards.value = SupabaseService.deduplicateCards(filtered);
+        _recalculateMetrics();
+      }
+    });
+  }
+
   // Deck filters & configurations
   final subDeck = signal<String>('all'); // 'all' | 'words' | 'grammar'
   final sessionSize = signal<int?>(10); // 5, 10, 20, or null (all)
@@ -546,7 +563,7 @@ class StudySessionController {
 
     // Restore previous card
     final queue = List<Flashcard>.from(sessionCards.value);
-    if (lastEvent.wasRelearning) {
+    if (lastEvent.wasRelearning && queue.isNotEmpty) {
       final reinsertedIndex = (lastEvent.previousQueueIndex + SrsConfig.relearnStepGap + 1).clamp(0, queue.length - 1);
       if (reinsertedIndex < queue.length && queue[reinsertedIndex].id == lastEvent.updatedCard.id) {
         queue.removeAt(reinsertedIndex);
@@ -600,5 +617,7 @@ class StudySessionController {
     } catch (_) {}
   }
 
-  void dispose() {}
+  void dispose() {
+    _cardsSubscription?.call();
+  }
 }

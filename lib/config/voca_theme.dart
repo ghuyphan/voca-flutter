@@ -685,25 +685,20 @@ class VocaTheme {
       ),
       tooltipTheme: TooltipThemeData(
         decoration: BoxDecoration(
-          color: VocaColorPalette.dark.bgCard,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: VocaColorPalette.dark.borderColor),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.35),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
+          color: const Color(0xFFE8EAF0),
+          borderRadius: BorderRadius.circular(8),
         ),
-        textStyle: TextStyle(
-          color: VocaColorPalette.dark.textPrimary,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
+        textStyle: const TextStyle(
+          color: Color(0xFF0D0F14),
+          fontSize: 11.5,
+          fontWeight: FontWeight.w700,
           fontFamily: 'Nunito',
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        waitDuration: const Duration(milliseconds: 400),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        verticalOffset: 12,
+        triggerMode: TooltipTriggerMode.tap,
+        waitDuration: Duration.zero,
+        showDuration: const Duration(seconds: 2),
       ),
     );
   }
@@ -960,25 +955,20 @@ class VocaTheme {
       ),
       tooltipTheme: TooltipThemeData(
         decoration: BoxDecoration(
-          color: VocaColorPalette.light.bgCard,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: VocaColorPalette.light.borderColor),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
+          color: const Color(0xFF1E2128),
+          borderRadius: BorderRadius.circular(8),
         ),
-        textStyle: TextStyle(
-          color: VocaColorPalette.light.textPrimary,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
+        textStyle: const TextStyle(
+          color: Colors.white,
+          fontSize: 11.5,
+          fontWeight: FontWeight.w700,
           fontFamily: 'Nunito',
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        waitDuration: const Duration(milliseconds: 400),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        verticalOffset: 12,
+        triggerMode: TooltipTriggerMode.tap,
+        waitDuration: Duration.zero,
+        showDuration: const Duration(seconds: 2),
       ),
     );
   }

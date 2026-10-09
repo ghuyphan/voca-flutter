@@ -1,26 +1,19 @@
 // lib/ui/sheets/gamification_dialogs.dart
 
 import 'package:flutter/material.dart';
-import '../gamification/streak_screen.dart';
 import '../gamification/achievements_hub_screen.dart';
 import '../gamification/ai_credits_screen.dart';
+import '../gamification/widgets/achievements_sheet.dart';
+import '../gamification/widgets/streak_sheet.dart';
 
-/// Opens dedicated Streak Screen full experience.
+/// Opens dedicated Streak Modal Sheet experience.
 Future<void> showStreakDialog(BuildContext context) {
-  return Navigator.of(context).push<void>(
-    MaterialPageRoute(
-      builder: (_) => const StreakScreen(),
-    ),
-  );
+  return StreakSheet.show(context);
 }
 
-/// Opens dedicated Achievements Hub Screen (focusing on Achievements tab).
+/// Opens dedicated Achievements Modal Sheet experience.
 Future<void> showAchievementsDialog(BuildContext context) {
-  return Navigator.of(context).push<void>(
-    MaterialPageRoute(
-      builder: (_) => const AchievementsHubScreen(initialTabIndex: 1),
-    ),
-  );
+  return AchievementsSheet.show(context);
 }
 
 /// Opens dedicated Daily Missions Hub Screen (focusing on Missions tab).

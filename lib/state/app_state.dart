@@ -11,6 +11,7 @@ import '../services/auth_service.dart';
 import '../services/grammar_engine.dart';
 import '../services/gamification_service.dart';
 import '../services/i18n_service.dart';
+import '../services/vocabulary_service.dart';
 
 class AppState {
   static final AppState instance = AppState._();
@@ -30,6 +31,7 @@ class AppState {
   set authService(AuthService s) => _authService = s;
   late GrammarEngine grammarEngine;
   late GamificationService gamificationService;
+  VocabularyService get vocabularyService => VocabularyService.instance;
 
   final activeLanguage = signal<String>('ja');
   final userSettings = signal<UserSettings>(UserSettings());

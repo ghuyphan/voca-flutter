@@ -396,7 +396,7 @@ class _MainShellState extends State<MainShell> {
                             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                             child: Row(
                               children: [
-                                const Text('🔥', style: TextStyle(fontSize: 14)),
+                                Icon(Icons.local_fire_department_rounded, size: 16, color: colors.colorFire),
                                 const SizedBox(width: 4),
                                 Text(
                                   '$streak',

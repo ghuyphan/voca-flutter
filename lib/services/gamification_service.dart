@@ -74,6 +74,22 @@ class Achievement {
   double get progress => target > 0 ? (current / target).clamp(0.0, 1.0) : 0.0;
   bool get canClaim => isUnlocked && !isClaimed;
 
+  String localizedTitle(BuildContext context) {
+    final key = id.replaceAll('_', '');
+    final direct = context.t('achievements.$key.title', null, '');
+    if (direct.isNotEmpty) return direct;
+    final fallback = context.t('achievements.$id.title', null, title);
+    return fallback;
+  }
+
+  String localizedDescription(BuildContext context) {
+    final key = id.replaceAll('_', '');
+    final direct = context.t('achievements.$key.desc', null, '');
+    if (direct.isNotEmpty) return direct;
+    final fallback = context.t('achievements.$id.desc', null, description);
+    return fallback;
+  }
+
   Achievement copyWith({
     int? current,
     bool? isUnlocked,
@@ -165,11 +181,17 @@ class DailyMission {
     final key = switch (id) {
       'daily_watch_1' => 'watch1',
       'daily_watch_2' => 'watch2',
+      'daily_watch_3' => 'watch3',
+      'daily_save_2' => 'save2',
       'daily_save_3' => 'save3',
       'daily_save_5' => 'save5',
       'daily_dict_3' => 'dict3',
+      'daily_dict_5' => 'dict5',
+      'daily_srs_5' => 'srs5',
       'daily_srs_10' => 'srs10',
+      'daily_srs_15' => 'srs15',
       'daily_quiz_1' => 'quiz1',
+      'daily_quiz_2' => 'quiz2',
       _ => id.replaceAll('daily_', ''),
     };
     return context.t('missions.$key.title', null, title);
@@ -179,11 +201,17 @@ class DailyMission {
     final key = switch (id) {
       'daily_watch_1' => 'watch1',
       'daily_watch_2' => 'watch2',
+      'daily_watch_3' => 'watch3',
+      'daily_save_2' => 'save2',
       'daily_save_3' => 'save3',
       'daily_save_5' => 'save5',
       'daily_dict_3' => 'dict3',
+      'daily_dict_5' => 'dict5',
+      'daily_srs_5' => 'srs5',
       'daily_srs_10' => 'srs10',
+      'daily_srs_15' => 'srs15',
       'daily_quiz_1' => 'quiz1',
+      'daily_quiz_2' => 'quiz2',
       _ => id.replaceAll('daily_', ''),
     };
     return context.t('missions.$key.desc', null, description);
@@ -873,12 +901,27 @@ class GamificationService {
     return achCount + missionCount + bonus;
   });
 
+  /// Computes the next upcoming, locked streak milestone achievement.
+  late final Computed<Achievement?> nextStreakMilestone = computed(() {
+    final list = achievements.value
+        .where((a) => a.category == AchievementCategory.streak && !a.isUnlocked)
+        .toList();
+    if (list.isEmpty) return null;
+    list.sort((a, b) => a.target.compareTo(b.target));
+    return list.first;
+  });
+
   final Set<String> _activeDateStrings = {};
   DateTime? _lastActiveDate;
   int _totalVideosWatched = 0;
   int _totalWordsSaved = 0;
   int _totalCardsReviewed = 0;
   int _totalQuizzesCompleted = 0;
+
+  // Anti-spam lockout tracking for Cloze Quizzes (daily per-sentence deduplication & velocity cap)
+  final Set<String> _todaySolvedQuizKeys = {};
+  String? _lastQuizDate;
+  int _todayQuizXpAwarded = 0;
 
   /// Initialize local state from SharedPreferences
   Future<void> init() async {
@@ -905,6 +948,19 @@ class GamificationService {
       _totalWordsSaved = prefs.getInt('voca_total_words_saved') ?? 0;
       _totalCardsReviewed = prefs.getInt('voca_total_cards_reviewed') ?? 0;
       _totalQuizzesCompleted = prefs.getInt('voca_total_quizzes_completed') ?? 0;
+
+      // Restore quiz anti-spam tracking
+      final lastQuizDate = prefs.getString('voca_last_quiz_date');
+      final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      if (lastQuizDate == todayStr) {
+        _lastQuizDate = todayStr;
+        _todaySolvedQuizKeys.addAll(prefs.getStringList('voca_today_solved_quizzes') ?? []);
+        _todayQuizXpAwarded = prefs.getInt('voca_today_quiz_xp') ?? 0;
+      } else {
+        _lastQuizDate = todayStr;
+        _todaySolvedQuizKeys.clear();
+        _todayQuizXpAwarded = 0;
+      }
 
       // Load Achievements
       final achievementsJson = prefs.getString('voca_achievements_v2') ?? prefs.getString('voca_achievements');
@@ -953,53 +1009,71 @@ class GamificationService {
   }
 
   DailyMissionsState _generateDailyMissions(String dateStr) {
-    final dayNum = DateTime.now().day;
+    // Generate deterministic seed from dateStr so daily missions remain stable during that day
+    final seed = dateStr.hashCode.abs();
+    final random = Random(seed);
 
-    // Slot 1: Immersion
-    final slot1 = (dayNum % 2 == 0)
-        ? const DailyMission(
-            id: 'daily_watch_1',
-            type: MissionType.watchVideo,
-            title: 'Daily Watch',
-            description: 'Watch 1 video lesson with interactive subtitles.',
-            icon: Icons.play_circle_fill_rounded,
-            target: 1,
-            xpReward: 25,
-          )
-        : const DailyMission(
-            id: 'daily_watch_2',
-            type: MissionType.watchVideo,
-            title: 'Deep Immersion',
-            description: 'Complete 2 video lessons today.',
-            icon: Icons.video_library_rounded,
-            target: 2,
-            xpReward: 35,
-          );
+    // Slot 1: Immersion Pool (Video watching / listening)
+    final immersionPool = [
+      const DailyMission(
+        id: 'daily_watch_1',
+        type: MissionType.watchVideo,
+        title: 'Daily Watch',
+        description: 'Watch 1 video lesson with interactive subtitles.',
+        icon: Icons.play_circle_fill_rounded,
+        target: 1,
+        xpReward: 25,
+      ),
+      const DailyMission(
+        id: 'daily_watch_2',
+        type: MissionType.watchVideo,
+        title: 'Deep Immersion',
+        description: 'Complete 2 video lessons today.',
+        icon: Icons.video_library_rounded,
+        target: 2,
+        xpReward: 35,
+      ),
+      const DailyMission(
+        id: 'daily_watch_3',
+        type: MissionType.watchVideo,
+        title: 'Immersion Marathon',
+        description: 'Study with 3 video lessons today.',
+        icon: Icons.subscriptions_rounded,
+        target: 3,
+        xpReward: 40,
+      ),
+    ];
 
-    // Slot 2: Mining / Vocabulary
-    DailyMission slot2;
-    if (dayNum % 3 == 0) {
-      slot2 = const DailyMission(
+    // Slot 2: Mining & Vocabulary Pool
+    final miningPool = [
+      const DailyMission(
+        id: 'daily_save_2',
+        type: MissionType.saveWord,
+        title: 'Word Collector',
+        description: 'Save 2 new words from video subtitles.',
+        icon: Icons.bookmark_add_rounded,
+        target: 2,
+        xpReward: 20,
+      ),
+      const DailyMission(
         id: 'daily_save_3',
         type: MissionType.saveWord,
         title: 'Sentence Mining',
         description: 'Save 3 new words to your vocabulary deck.',
         icon: Icons.bookmark_add_rounded,
         target: 3,
-        xpReward: 20,
-      );
-    } else if (dayNum % 3 == 1) {
-      slot2 = const DailyMission(
+        xpReward: 25,
+      ),
+      const DailyMission(
         id: 'daily_save_5',
         type: MissionType.saveWord,
         title: 'Vocabulary Harvest',
         description: 'Add 5 authentic words from transcripts.',
         icon: Icons.view_in_ar_rounded,
         target: 5,
-        xpReward: 30,
-      );
-    } else {
-      slot2 = const DailyMission(
+        xpReward: 35,
+      ),
+      const DailyMission(
         id: 'daily_dict_3',
         type: MissionType.lookUpDict,
         title: 'Word Inquiry',
@@ -1007,29 +1081,70 @@ class GamificationService {
         icon: Icons.auto_stories_rounded,
         target: 3,
         xpReward: 20,
-      );
-    }
+      ),
+      const DailyMission(
+        id: 'daily_dict_5',
+        type: MissionType.lookUpDict,
+        title: 'Deep Inquirer',
+        description: 'Look up 5 definitions across video transcripts.',
+        icon: Icons.menu_book_rounded,
+        target: 5,
+        xpReward: 30,
+      ),
+    ];
 
-    // Slot 3: Memory / Quiz
-    final slot3 = (dayNum % 2 == 0)
-        ? const DailyMission(
-            id: 'daily_srs_10',
-            type: MissionType.srsReview,
-            title: 'Memory Refresh',
-            description: 'Review 10 flashcards in your study deck.',
-            icon: Icons.style_rounded,
-            target: 10,
-            xpReward: 25,
-          )
-        : const DailyMission(
-            id: 'daily_quiz_1',
-            type: MissionType.completeQuiz,
-            title: 'Trial of Wit',
-            description: 'Complete 1 comprehension quiz.',
-            icon: Icons.sports_kabaddi_rounded,
-            target: 1,
-            xpReward: 25,
-          );
+    // Slot 3: Memory Review & Quiz Pool
+    final practicePool = [
+      const DailyMission(
+        id: 'daily_srs_5',
+        type: MissionType.srsReview,
+        title: 'Quick Flashcards',
+        description: 'Review 5 flashcards in your study deck.',
+        icon: Icons.style_rounded,
+        target: 5,
+        xpReward: 20,
+      ),
+      const DailyMission(
+        id: 'daily_srs_10',
+        type: MissionType.srsReview,
+        title: 'Memory Refresh',
+        description: 'Review 10 flashcards in your study deck.',
+        icon: Icons.style_rounded,
+        target: 10,
+        xpReward: 25,
+      ),
+      const DailyMission(
+        id: 'daily_srs_15',
+        type: MissionType.srsReview,
+        title: 'Synapse Workout',
+        description: 'Review 15 flashcards in your study deck.',
+        icon: Icons.psychology_rounded,
+        target: 15,
+        xpReward: 35,
+      ),
+      const DailyMission(
+        id: 'daily_quiz_1',
+        type: MissionType.completeQuiz,
+        title: 'Trial of Wit',
+        description: 'Complete 1 comprehension quiz.',
+        icon: Icons.sports_kabaddi_rounded,
+        target: 1,
+        xpReward: 25,
+      ),
+      const DailyMission(
+        id: 'daily_quiz_2',
+        type: MissionType.completeQuiz,
+        title: 'Quiz Master',
+        description: 'Complete 2 comprehension quizzes.',
+        icon: Icons.emoji_events_rounded,
+        target: 2,
+        xpReward: 40,
+      ),
+    ];
+
+    final slot1 = immersionPool[random.nextInt(immersionPool.length)];
+    final slot2 = miningPool[random.nextInt(miningPool.length)];
+    final slot3 = practicePool[random.nextInt(practicePool.length)];
 
     return DailyMissionsState(
       date: dateStr,
@@ -1058,6 +1173,11 @@ class GamificationService {
       await prefs.setInt('voca_total_words_saved', _totalWordsSaved);
       await prefs.setInt('voca_total_cards_reviewed', _totalCardsReviewed);
       await prefs.setInt('voca_total_quizzes_completed', _totalQuizzesCompleted);
+
+      // Quiz anti-spam state
+      await prefs.setString('voca_last_quiz_date', _lastQuizDate ?? '');
+      await prefs.setStringList('voca_today_solved_quizzes', _todaySolvedQuizKeys.toList());
+      await prefs.setInt('voca_today_quiz_xp', _todayQuizXpAwarded);
 
       // Achievements
       final Map<String, dynamic> achMap = {};
@@ -1147,9 +1267,25 @@ class GamificationService {
 
       // Sync streak with Supabase RPC
       try {
-        await supabaseService.recordStreakActivity(today);
+        final remote = await supabaseService.recordStreakActivity(today);
+        if (remote != null) {
+          if (remote['current_streak'] is num) {
+            currentStreak.value = (remote['current_streak'] as num).toInt();
+          }
+          if (remote['longest_streak'] is num) {
+            longestStreak.value = (remote['longest_streak'] as num).toInt();
+          }
+          if (remote['freezes_remaining'] is num) {
+            streakFreezes.value = (remote['freezes_remaining'] as num).toInt();
+          }
+          if (remote['activity_log'] is List) {
+            for (final item in remote['activity_log']) {
+              _activeDateStrings.add(item.toString());
+            }
+          }
+        }
       } catch (e) {
-        debugPrint('[GamificationService] Supabase recordStreakActivity ignored: $e');
+        debugPrint('[GamificationService] Supabase recordStreakActivity error: $e');
       }
     }
 
@@ -1175,13 +1311,24 @@ class GamificationService {
   }
 
   /// Replenish streak freeze using 150 XP (max 2 freezes)
-  bool replenishFreeze() {
+  Future<bool> replenishFreeze() async {
     if (streakFreezes.value >= 2) return false;
     if (xp.value < 150) return false;
 
     xp.value -= 150;
     streakFreezes.value += 1;
-    _persist();
+    await _persist();
+
+    try {
+      final res = await supabaseService.spendXp(cost: 150, purpose: 'freeze_replenish');
+      if (res != null && res['new_xp'] is num) {
+        xp.value = (res['new_xp'] as num).toInt();
+        await _persist();
+      }
+    } catch (e) {
+      debugPrint('[GamificationService] spendXp error: $e');
+    }
+
     return true;
   }
 
@@ -1204,6 +1351,41 @@ class GamificationService {
     _persist();
   }
 
+  /// Helper to award XP in Supabase RPC atomically in background
+  Future<void> _awardRemoteXp(String activityType, int amount, [String? referenceId]) async {
+    try {
+      await supabaseService.awardStudyXp(
+        activityType: activityType,
+        amount: amount,
+        referenceId: referenceId,
+      );
+    } catch (e) {
+      debugPrint('[GamificationService] awardRemoteXp ignored: $e');
+    }
+  }
+
+  /// Helper to sync unlocked achievements to Supabase remote DB
+  Future<void> _syncAchievementsToRemote() async {
+    try {
+      final unlockedMap = <String, dynamic>{};
+      final notifiedList = <String>[];
+      for (final a in achievements.value) {
+        if (a.isUnlocked) {
+          unlockedMap[a.id] = (a.unlockedAt ?? DateTime.now()).toUtc().toIso8601String();
+          notifiedList.add(a.id);
+        }
+      }
+      if (unlockedMap.isNotEmpty) {
+        await supabaseService.syncAchievements(
+          unlocked: unlockedMap,
+          notified: notifiedList,
+        );
+      }
+    } catch (e) {
+      debugPrint('[GamificationService] _syncAchievementsToRemote ignored: $e');
+    }
+  }
+
   /// Claim a completed mission's XP reward
   bool claimMission(String missionId) {
     final curState = dailyMissions.value;
@@ -1219,6 +1401,7 @@ class GamificationService {
 
     dailyMissions.value = curState.copyWith(missions: newList);
     addXp(m.xpReward, reason: 'Mission: ${m.title}');
+    _awardRemoteXp('daily_mission', m.xpReward, missionId);
     _persist();
     return true;
   }
@@ -1229,6 +1412,7 @@ class GamificationService {
 
     dailyMissions.value = dailyMissions.value.copyWith(allCompletedBonusClaimed: true);
     addXp(dailyMissions.value.bonusXp, reason: 'Daily Missions Bonus Chest');
+    _awardRemoteXp('daily_bonus_chest', dailyMissions.value.bonusXp, 'bonus_chest');
     _persist();
     return true;
   }
@@ -1245,6 +1429,8 @@ class GamificationService {
     list[idx] = ach.copyWith(isClaimed: true);
     achievements.value = list;
     addXp(ach.xpReward, reason: 'Achievement: ${ach.title}');
+    _awardRemoteXp('achievement_unlocked', ach.xpReward, id);
+    _syncAchievementsToRemote();
     _persist();
     return true;
   }
@@ -1277,6 +1463,7 @@ class GamificationService {
   Future<void> onVideoWatched() async {
     _totalVideosWatched += 1;
     addXp(25, reason: 'Video Watched');
+    _awardRemoteXp('video_completed', 25);
     trackMissionProgress(MissionType.watchVideo, 1);
     _updateAchievementCategoryProgress(AchievementCategory.immersion, _totalVideosWatched);
     await recordActivity();
@@ -1289,6 +1476,7 @@ class GamificationService {
   Future<void> onWordSaved(int totalCount) async {
     _totalWordsSaved = max(_totalWordsSaved, totalCount);
     addXp(10, reason: 'Vocabulary Saved');
+    _awardRemoteXp('word_saved', 10);
     trackMissionProgress(MissionType.saveWord, 1);
     _updateAchievementCategoryProgress(AchievementCategory.vocabulary, _totalWordsSaved);
     await recordActivity();
@@ -1303,18 +1491,80 @@ class GamificationService {
   Future<void> onCardReviewed(int totalCount) async {
     _totalCardsReviewed = max(_totalCardsReviewed, totalCount);
     addXp(10, reason: 'Flashcard Reviewed');
+    _awardRemoteXp('flashcard_review', 10);
     trackMissionProgress(MissionType.srsReview, 1);
     _updateAchievementCategoryProgress(AchievementCategory.srs, _totalCardsReviewed);
     await recordActivity();
   }
 
+  void _checkQuizDayRollover() {
+    final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    if (_lastQuizDate != todayStr) {
+      _lastQuizDate = todayStr;
+      _todaySolvedQuizKeys.clear();
+      _todayQuizXpAwarded = 0;
+    }
+  }
+
+  /// Daily quiz XP awarded today so far
+  int get todayQuizXpAwarded {
+    _checkQuizDayRollover();
+    return _todayQuizXpAwarded;
+  }
+
+  /// Whether user has reached the daily limit for quiz XP (100 XP max per day = 5 unique sentences)
+  bool get isQuizCapReachedToday {
+    _checkQuizDayRollover();
+    return _todayQuizXpAwarded >= 100;
+  }
+
+  /// Check whether a specific quiz key can earn fresh XP right now
+  bool canEarnQuizXp(String quizKey) {
+    _checkQuizDayRollover();
+    return !_todaySolvedQuizKeys.contains(quizKey) && _todayQuizXpAwarded < 100;
+  }
+
+  /// Check whether a specific quiz key was already solved today for full XP
+  bool isQuizSolvedToday(String quizKey) {
+    _checkQuizDayRollover();
+    return _todaySolvedQuizKeys.contains(quizKey);
+  }
+
   /// Event: Quiz completed
-  Future<void> onQuizCompleted() async {
+  /// Returns `true` if fresh XP was awarded, or `false` if already completed today / daily cap reached.
+  Future<bool> onQuizCompleted({String? quizKey}) async {
+    _checkQuizDayRollover();
+
+    bool isFresh = true;
+    if (quizKey != null && quizKey.isNotEmpty) {
+      if (_todaySolvedQuizKeys.contains(quizKey)) {
+        isFresh = false;
+      } else {
+        _todaySolvedQuizKeys.add(quizKey);
+      }
+    }
+
+    // Daily quiz XP cap check (max 100 XP from quizzes per day = 5 unique sentences)
+    if (_todayQuizXpAwarded >= 100) {
+      isFresh = false;
+    }
+
     _totalQuizzesCompleted += 1;
-    addXp(20, reason: 'Comprehension Quiz Completed');
     trackMissionProgress(MissionType.completeQuiz, 1);
     _updateAchievementCategoryProgress(AchievementCategory.quiz, _totalQuizzesCompleted);
     await recordActivity();
+
+    if (isFresh) {
+      const earned = 20;
+      _todayQuizXpAwarded += earned;
+      addXp(earned, reason: 'Comprehension Quiz Completed');
+      _awardRemoteXp('quiz_completed', earned, quizKey);
+      await _persist();
+      return true;
+    } else {
+      await _persist();
+      return false;
+    }
   }
 
   /// Helper to update achievements by category
@@ -1342,6 +1592,7 @@ class GamificationService {
     if (changed) {
       achievements.value = list;
       _persist();
+      _syncAchievementsToRemote();
     }
   }
 
