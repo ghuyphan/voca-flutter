@@ -257,51 +257,56 @@ class DeckOverview extends StatelessWidget {
               children: [
                 // Top row: Section tag + Estimated study time badge
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Icon(Icons.schedule_rounded, size: 15, color: colors.accentPrimary),
-                        const SizedBox(width: 6),
-                        Text(
-                          context.t('study.dueToday', null, 'Due Today'),
-                          style: TextStyle(
-                            color: colors.textSecondary,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Icon(Icons.schedule_rounded, size: 15, color: colors.accentPrimary),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              context.t('study.dueToday', null, 'Due Today'),
+                              style: TextStyle(
+                                color: colors.textSecondary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                        ),
-                        if (dueCount > 0) ...[
-                          const SizedBox(width: 5),
-                          Icon(Icons.arrow_forward_ios_rounded, size: 11, color: colors.accentPrimary),
+                          if (dueCount > 0) ...[
+                            const SizedBox(width: 5),
+                            Icon(Icons.arrow_forward_ios_rounded, size: 11, color: colors.accentPrimary),
+                          ],
                         ],
-                      ],
-                    ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: colors.bgSurface,
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: colors.borderColorLight),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.timer_outlined, size: 12, color: colors.textMuted),
-                      const SizedBox(width: 4),
-                      Text(
-                        context.t('study.estimatedMinutes', {'minutes': estMinutes}, '~$estMinutes min'),
-                        style: TextStyle(
-                          color: colors.textSecondary,
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                        ),
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: colors.bgSurface,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: colors.borderColorLight),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.timer_outlined, size: 12, color: colors.textMuted),
+                          const SizedBox(width: 4),
+                          Text(
+                            context.t('study.estimatedMinutes', {'minutes': estMinutes}, '~$estMinutes min'),
+                            style: TextStyle(
+                              color: colors.textSecondary,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
 
             const SizedBox(height: 18),
 
@@ -405,14 +410,18 @@ class DeckOverview extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  context.t('study.dailyGoal', null, 'Daily Goal'),
-                  style: TextStyle(
-                    color: colors.textMuted,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                Expanded(
+                  child: Text(
+                    context.t('study.dailyGoal', null, 'Daily Goal'),
+                    style: TextStyle(
+                      color: colors.textMuted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                const SizedBox(width: 8),
                 Text(
                   '$dailyProgress / $dailyTarget',
                   style: TextStyle(
@@ -725,6 +734,7 @@ class DeckOverview extends StatelessWidget {
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
                     isEmptyDeck ? Icons.movie_filter_rounded : Icons.play_arrow_rounded,
@@ -732,16 +742,20 @@ class DeckOverview extends StatelessWidget {
                     size: 22,
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    isEmptyDeck
-                        ? context.t('study.exploreVideos', null, 'Explore Videos')
-                        : hasCandidates
-                            ? '${context.t('study.startReview', null, 'Start Review')} ($sessionCount)'
-                            : context.t('study.practiceAnyway', null, 'Practice Anyway'),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
+                  Flexible(
+                    child: Text(
+                      isEmptyDeck
+                          ? context.t('study.exploreVideos', null, 'Explore Videos')
+                          : hasCandidates
+                              ? '${context.t('study.startReview', null, 'Start Review')} ($sessionCount)'
+                              : context.t('study.practiceAnyway', null, 'Practice Anyway'),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],

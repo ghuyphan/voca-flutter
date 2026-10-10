@@ -8,6 +8,7 @@ import 'package:voca_flutter/services/grammar_engine.dart';
 import 'package:voca_flutter/services/voca_api_client.dart';
 import 'package:voca_flutter/state/app_state.dart';
 import 'package:voca_flutter/state/player_state.dart';
+import 'package:voca_flutter/ui/sheets/dictionary_bottom_sheet.dart';
 import 'package:voca_flutter/ui/video/fullscreen_subtitle.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
@@ -275,6 +276,13 @@ void main() {
 
     // Player should have been paused
     expect(ytController.pauseCalled, isTrue);
+
+    // Dismiss bottom sheet cleanly
+    final sheetFinder = find.byType(DictionaryBottomSheet);
+    if (sheetFinder.evaluate().isNotEmpty) {
+      Navigator.of(tester.element(sheetFinder)).pop();
+      await tester.pumpAndSettle();
+    }
   });
 
   testWidgets('FullscreenSubtitle card fits its content and does not expand to screen width', (tester) async {

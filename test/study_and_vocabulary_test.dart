@@ -367,17 +367,18 @@ void main() {
       // Current headword rendered on front face of top card
       expect(find.text('食べる'), findsAtLeastNWidgets(1));
 
-      // Tinder Action Dock buttons and intervals
-      expect(find.text('<1 min'), findsOneWidget); // Again interval
-      expect(find.text('Again'), findsOneWidget);
-      expect(find.text('Good'), findsOneWidget);
+      // Tinder Action Dock initial front face shows Show Answer
+      expect(find.text('Show Answer'), findsOneWidget);
 
       // Tap card body to flip
       await tester.tap(find.text('食べる').first);
       await tester.pumpAndSettle();
 
-      // Back of card reveals meaning
+      // Back of card reveals meaning and grading action dock
       expect(find.text('to eat'), findsAtLeastNWidgets(1));
+      expect(find.text('<1 min'), findsOneWidget); // Again interval
+      expect(find.text('Again'), findsOneWidget);
+      expect(find.text('Good'), findsOneWidget);
     });
 
     testWidgets('StudyDeckScreen on tablet (width >= 720) centers content with max width constraint', (tester) async {

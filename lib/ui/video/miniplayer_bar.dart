@@ -121,15 +121,19 @@ class _MiniplayerBarState extends State<MiniplayerBar> with SingleTickerProvider
   }
 
   String _resolveTitle(String activeT) {
-    if (!_isPlaceholder(activeT)) return activeT;
+    final coord = PlayerCoordinator.instance;
+    final isCurrentVideo = coord.activeVideoId.value == widget.videoId;
+    if (isCurrentVideo && !_isPlaceholder(activeT)) return activeT;
     if (!_isPlaceholder(widget.title)) return widget.title;
-    return '';
+    return isCurrentVideo ? activeT : widget.title;
   }
 
   String _resolveChannel(String? activeC) {
-    if (activeC != null && activeC.isNotEmpty && activeC != 'YouTube') return activeC;
+    final coord = PlayerCoordinator.instance;
+    final isCurrentVideo = coord.activeVideoId.value == widget.videoId;
+    if (isCurrentVideo && activeC != null && activeC.isNotEmpty && activeC != 'YouTube') return activeC;
     if (widget.channel.isNotEmpty && widget.channel != 'YouTube') return widget.channel;
-    return (activeC != null && activeC.isNotEmpty) ? activeC : widget.channel;
+    return (isCurrentVideo && activeC != null && activeC.isNotEmpty) ? activeC : widget.channel;
   }
 
   @override

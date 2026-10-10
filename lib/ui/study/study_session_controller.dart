@@ -476,7 +476,7 @@ class StudySessionController {
       currentIndex.value += 1;
     });
 
-    unawaited(AppState.instance.supabaseService.upsertVocabularyCard(updatedCard));
+    await AppState.instance.supabaseService.upsertVocabularyCard(updatedCard);
     try {
       unawaited(AppState.instance.gamificationService.onCardReviewed(allCards.value.length));
     } catch (_) {}
@@ -544,7 +544,7 @@ class StudySessionController {
       currentIndex.value += 1;
     });
 
-    unawaited(AppState.instance.supabaseService.upsertVocabularyCard(updatedCard));
+    await AppState.instance.supabaseService.upsertVocabularyCard(updatedCard);
     try {
       unawaited(AppState.instance.gamificationService.onCardReviewed(allCards.value.length));
     } catch (_) {}

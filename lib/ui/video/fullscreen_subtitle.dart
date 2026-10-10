@@ -46,7 +46,6 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
     with TickerProviderStateMixin {
   /// Position controller: 0.0 = Top dock, 1.0 = Bottom dock. Defaults to Bottom dock (1.0).
   late final AnimationController _positionAnim;
-  late final AnimationController _dotsAnimController;
   final ValueNotifier<bool> _isDragging = ValueNotifier<bool>(false);
 
   SubtitleCue? _lastActiveCue;
@@ -60,17 +59,11 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
       value: 1.0,
       duration: const Duration(milliseconds: 300),
     );
-
-    _dotsAnimController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat();
   }
 
   @override
   void dispose() {
     _positionAnim.dispose();
-    _dotsAnimController.dispose();
     _isDragging.dispose();
     super.dispose();
   }
@@ -697,10 +690,43 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
   }
 
   Widget _buildAnimatedDots(Color color) {
+    return _FullscreenSubLoadingDots(color: color);
+  }
+}
+
+class _FullscreenSubLoadingDots extends StatefulWidget {
+  final Color color;
+  const _FullscreenSubLoadingDots({required this.color});
+
+  @override
+  State<_FullscreenSubLoadingDots> createState() => _FullscreenSubLoadingDotsState();
+}
+
+class _FullscreenSubLoadingDotsState extends State<_FullscreenSubLoadingDots>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _dotsAnimController,
+      animation: _controller,
       builder: (context, _) {
-        final val = _dotsAnimController.value;
+        final val = _controller.value;
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(3, (i) {
@@ -711,7 +737,7 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
               width: 5.5,
               height: 5.5,
               decoration: BoxDecoration(
-                color: color.withValues(alpha: opacity.clamp(0.2, 1.0)),
+                color: widget.color.withValues(alpha: opacity.clamp(0.2, 1.0)),
                 shape: BoxShape.circle,
               ),
             );

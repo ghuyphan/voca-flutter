@@ -473,6 +473,7 @@ void main() {
 
       // Tap close
       await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.pumpAndSettle();
       expect(closeCalled, isTrue);
     });
 

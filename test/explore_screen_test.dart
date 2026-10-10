@@ -291,10 +291,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // On tablet (>= 720dp), video feed should render a GridView
-    expect(find.byType(GridView), findsOneWidget);
-    final gridView = tester.widget<GridView>(find.byType(GridView));
-    final delegate = gridView.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount;
+    // On tablet (>= 720dp), video feed should render a SliverGrid
+    expect(find.byType(SliverGrid), findsOneWidget);
+    final sliverGrid = tester.widget<SliverGrid>(find.byType(SliverGrid));
+    final delegate = sliverGrid.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount;
     expect(delegate.crossAxisCount, equals(2));
   });
 

@@ -234,7 +234,7 @@ class FlashcardFace extends StatelessWidget {
                                   ),
                                   const SizedBox(width: 6),
                                   Text(
-                                    context.t('study.replayClip', null, 'Replay clip'),
+                                    context.t('study.replayClip', null, 'Replay this clip'),
                                     style: TextStyle(
                                       color: colors.textSecondary,
                                       fontSize: 12,

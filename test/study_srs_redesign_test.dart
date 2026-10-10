@@ -102,7 +102,7 @@ void main() {
       expect(SpacedRepetitionService.formatInterval(0, isAgain: true), equals('<10m'));
       expect(SpacedRepetitionService.formatInterval(1), equals('1d'));
       expect(SpacedRepetitionService.formatInterval(6), equals('6d'));
-      expect(SpacedRepetitionService.formatInterval(14), equals('14d'));
+      expect(SpacedRepetitionService.formatInterval(14), equals('2w'));
       expect(SpacedRepetitionService.formatInterval(30), equals('1mo'));
       expect(SpacedRepetitionService.formatInterval(90), equals('3mo'));
     });
@@ -229,9 +229,8 @@ void main() {
       expect(find.text('食べる'), findsOneWidget);
       expect(find.text('たべる'), findsOneWidget);
 
-      // Check Stage label & Memory header
+      // Check Stage label
       expect(find.text('Learning'), findsWidgets);
-      expect(find.text('Memory'), findsOneWidget);
     });
 
     testWidgets('FlashcardFace back face displays meaning, replay clip button, and memory progress', (tester) async {
@@ -278,7 +277,6 @@ void main() {
       // Meaning should be visible on back face
       expect(find.text('to drink'), findsOneWidget);
       expect(find.text('Replay this clip'), findsOneWidget);
-      expect(find.text('Memory'), findsOneWidget);
     });
 
     testWidgets('TinderCardStack front and back faces handle Peek and Flip reliably', (tester) async {

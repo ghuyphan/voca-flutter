@@ -51,7 +51,25 @@ class FakeVocaApiClient extends VocaApiClient {
 
 // Simple mock for SupabaseService
 class FakeSupabaseService extends SupabaseService {
-  FakeSupabaseService() : super(SupabaseClient('https://mock.supabase.co', 'mock_anon_key'));
+  FakeSupabaseService() : super(SupabaseClient('https://mock.supabase.co', 'mock_anon_key')) {
+    vocabularyCardsSignal.value = List.generate(
+      25,
+      (i) => Flashcard(
+        id: 'card_$i',
+        userId: 'test_user',
+        word: 'Word $i',
+        reading: 'reading $i',
+        meaning: 'meaning $i',
+        language: 'ja',
+        level: 'learning',
+        srsInterval: 1,
+        srsRepetition: 1,
+        srsEaseFactor: 2.5,
+        srsNextReviewAt: DateTime.now(),
+        createdAt: DateTime.now().subtract(Duration(days: i)),
+      ),
+    );
+  }
 
   @override
   User? get currentUser => null;
@@ -97,22 +115,7 @@ class FakeSupabaseService extends SupabaseService {
 
   @override
   Future<List<Flashcard>> getVocabularyCards({String? language}) async {
-    return List.generate(
-      25,
-      (i) => Flashcard(
-        id: 'card_$i',
-        userId: 'test_user',
-        word: 'Word $i',
-        reading: 'reading $i',
-        meaning: 'meaning $i',
-        language: 'ja',
-        level: 'N5',
-        srsInterval: 1,
-        srsRepetition: 1,
-        srsEaseFactor: 2.5,
-        srsNextReviewAt: DateTime.now(),
-      ),
-    );
+    return vocabularyCardsSignal.value;
   }
 }
 

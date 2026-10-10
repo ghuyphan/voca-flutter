@@ -48,21 +48,28 @@ class ActivityHeatmapCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Icon(Icons.calendar_month_rounded, size: 16, color: colors.colorFire),
-                  const SizedBox(width: 8),
-                  Text(
-                    customTitle ?? context.t('study.last30Days', null, 'Last 30 days'),
-                    style: TextStyle(
-                      color: colors.textPrimary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
+              Expanded(
+                child: Row(
+                  children: [
+                    Icon(Icons.calendar_month_rounded, size: 16, color: colors.colorFire),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        customTitle ?? context.t('study.last30Days', null, 'Last 30 days'),
+                        style: TextStyle(
+                          color: colors.textPrimary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     context.t('study.less', null, 'Less'),
@@ -122,27 +129,36 @@ class ActivityHeatmapCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.local_fire_department_rounded, size: 14, color: colors.colorFire),
-                  const SizedBox(width: 4),
-                  Text(
-                    '$streak ${context.t('streak.dayStreak', null, 'days streak')}',
-                    style: TextStyle(
-                      color: colors.colorFire,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
+              Flexible(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.local_fire_department_rounded, size: 14, color: colors.colorFire),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        '$streak ${context.t('streak.dayStreak', null, 'days streak')}',
+                        style: TextStyle(
+                          color: colors.colorFire,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              Text(
-                context.t('study.tapDayToView', null, 'Tap a day to view'),
-                style: TextStyle(
-                  color: colors.textSecondary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  context.t('study.tapDayToView', null, 'Tap a day to view'),
+                  style: TextStyle(
+                    color: colors.textSecondary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],

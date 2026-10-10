@@ -6,19 +6,44 @@ import '../state/app_state.dart';
 
 class AudioService {
   static final AudioService instance = AudioService._();
-  AudioService._() {
-    _player.onPlayerComplete.listen((_) {
-      _currentPlaying.value = null;
-    });
-    _player.onPlayerStateChanged.listen((state) {
-      if (state == PlayerState.stopped || state == PlayerState.completed) {
-        _currentPlaying.value = null;
+  AudioService._();
+
+  AudioPlayer? _playerInstance;
+  AudioPlayer? _sfxPlayerInstance;
+
+  AudioPlayer? get _player {
+    if (_playerInstance == null) {
+      try {
+        final p = AudioPlayer();
+        p.onPlayerComplete.listen((_) {
+          _currentPlaying.value = null;
+        });
+        p.onPlayerStateChanged.listen((state) {
+          if (state == PlayerState.stopped || state == PlayerState.completed) {
+            _currentPlaying.value = null;
+          }
+        });
+        _playerInstance = p;
+      } catch (e) {
+        debugPrint('[AudioService] Could not initialize player: $e');
+        return null;
       }
-    });
+    }
+    return _playerInstance;
   }
 
-  final AudioPlayer _player = AudioPlayer();
-  final AudioPlayer _sfxPlayer = AudioPlayer();
+  AudioPlayer? get _sfxPlayer {
+    if (_sfxPlayerInstance == null) {
+      try {
+        _sfxPlayerInstance = AudioPlayer();
+      } catch (e) {
+        debugPrint('[AudioService] Could not initialize sfx player: $e');
+        return null;
+      }
+    }
+    return _sfxPlayerInstance;
+  }
+
   final Map<String, Uint8List> _cache = {};
   final ValueNotifier<String?> _currentPlaying = ValueNotifier<String?>(null);
 
@@ -27,9 +52,11 @@ class AudioService {
   /// Play celebratory session completion fanfare chime
   Future<void> playVictoryChime() async {
     try {
-      await _sfxPlayer.stop();
-      await _sfxPlayer.setVolume(0.45);
-      await _sfxPlayer.play(
+      final sfx = _sfxPlayer;
+      if (sfx == null) return;
+      await sfx.stop();
+      await sfx.setVolume(0.45);
+      await sfx.play(
         AssetSource('audio/victory_chime.wav'),
         mode: PlayerMode.lowLatency,
       );
@@ -46,7 +73,7 @@ class AudioService {
 
   Future<void> stop() async {
     try {
-      await _player.stop();
+      await _player?.stop();
     } catch (_) {}
     _currentPlaying.value = null;
   }
@@ -86,12 +113,17 @@ class AudioService {
       }
 
       // 3. Play bytes or fallback to audio URL
+      final player = _player;
+      if (player == null) {
+        _currentPlaying.value = null;
+        return;
+      }
       if (bytes != null && bytes.isNotEmpty) {
-        await _player.stop();
-        await _player.play(BytesSource(bytes));
+        await player.stop();
+        await player.play(BytesSource(bytes));
       } else if (fallbackAudioUrl != null && fallbackAudioUrl.startsWith('http')) {
-        await _player.stop();
-        await _player.play(UrlSource(fallbackAudioUrl));
+        await player.stop();
+        await player.play(UrlSource(fallbackAudioUrl));
       } else {
         _currentPlaying.value = null;
       }
@@ -102,6 +134,7 @@ class AudioService {
   }
 
   void dispose() {
-    _player.dispose();
+    _playerInstance?.dispose();
+    _sfxPlayerInstance?.dispose();
   }
 }
