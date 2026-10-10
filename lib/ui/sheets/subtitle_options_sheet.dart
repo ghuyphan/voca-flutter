@@ -7,6 +7,7 @@ import '../../config/voca_theme.dart';
 import '../../models/voca_models.dart';
 import '../../services/i18n_service.dart';
 import '../../state/player_state.dart';
+import '../../utils/language_utils.dart';
 import 'video_settings_sheet.dart';
 import 'voca_bottom_sheet.dart';
 
@@ -42,8 +43,6 @@ class SubtitleOptionsSheet extends StatefulWidget {
 }
 
 class _SubtitleOptionsSheetState extends State<SubtitleOptionsSheet> {
-  bool _grammarModeEnabled = true;
-
   String _getReadingIcon(String lang) {
     switch (lang) {
       case 'ja':
@@ -79,8 +78,11 @@ class _SubtitleOptionsSheetState extends State<SubtitleOptionsSheet> {
       child: Watch((context) {
         final subtitleSize = widget.controller.subtitleSize.value;
         final showFurigana = widget.controller.showFurigana.value;
+        final readingMode = widget.controller.readingDisplayMode.value;
+        final grammarMode = widget.controller.grammarModeEnabled.value;
         final showTranslation = widget.controller.showTranslation.value;
         final rate = widget.controller.playbackRate.value;
+        final isReadingActive = showFurigana && readingMode != 'native';
 
         return Column(
           mainAxisSize: MainAxisSize.min,
@@ -224,10 +226,12 @@ class _SubtitleOptionsSheetState extends State<SubtitleOptionsSheet> {
                       ),
                     ),
                     subtitle: Text(
-                      context.t('settings.readingDisplayDesc'),
+                      isReadingActive
+                          ? getReadingDisplayLabel(readingMode, currentLang, context)
+                          : context.t('settings.readingDisplayDesc'),
                       style: TextStyle(color: colors.textMuted, fontSize: 11.5),
                     ),
-                    value: showFurigana,
+                    value: isReadingActive,
                     onChanged: (_) => widget.controller.toggleFurigana(),
                   ),
                   Divider(height: 1, color: colors.borderColorLight),
@@ -262,11 +266,9 @@ class _SubtitleOptionsSheetState extends State<SubtitleOptionsSheet> {
                       context.t('grammar.highlightDesc', null, 'Highlight detected JLPT / HSK / TOPIK / CEFR grammar rules'),
                       style: TextStyle(color: colors.textMuted, fontSize: 11.5),
                     ),
-                    value: _grammarModeEnabled,
+                    value: grammarMode,
                     onChanged: (val) {
-                      setState(() {
-                        _grammarModeEnabled = val;
-                      });
+                      widget.controller.setGrammarMode(val);
                     },
                   ),
                   Divider(height: 1, color: colors.borderColorLight),

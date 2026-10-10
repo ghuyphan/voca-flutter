@@ -9,6 +9,7 @@ import '../../models/voca_models.dart';
 import '../../services/i18n_service.dart';
 import '../../services/toast_service.dart';
 import '../../state/app_state.dart';
+import '../../utils/language_utils.dart';
 import '../auth/auth_screen.dart';
 import '../onboarding/onboarding_screen.dart';
 import '../profile/edit_profile_screen.dart';
@@ -434,7 +435,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         break;
     }
 
-    final readingModeLabel = _getRubyModeLabel(context, settings.rubyMode);
+    final readingModeLabel = getReadingDisplayLabel(settings.readingDisplayMode, targetLang, context);
 
     return _buildCardGroup(
       colors: colors,
@@ -1111,17 +1112,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return 'vn';
       default:
         return code.toLowerCase();
-    }
-  }
-
-  static String _getRubyModeLabel(BuildContext context, RubyDisplayMode mode) {
-    switch (mode) {
-      case RubyDisplayMode.always:
-        return context.t('settings.alwaysShow', null, 'Always Show');
-      case RubyDisplayMode.tap:
-        return context.t('settings.onTapOnly', null, 'On Tap Only');
-      case RubyDisplayMode.never:
-        return context.t('settings.off', null, 'Off');
     }
   }
 }

@@ -27,6 +27,7 @@ class OnboardingController {
   final Signal<String> learningLang;
   final Signal<String> nativeLang;
   final Signal<bool> showDualSubtitles;
+  final Signal<String> readingDisplayMode;
   final Signal<String> level;
   final Signal<int> dailyGoal;
   final Signal<String> companion;
@@ -41,6 +42,7 @@ class OnboardingController {
     required String learning,
     required String native,
     required bool dual,
+    required String readingMode,
     required String lvl,
     required int goal,
     required String comp,
@@ -49,6 +51,7 @@ class OnboardingController {
         learningLang = signal(learning),
         nativeLang = signal(native),
         showDualSubtitles = signal(dual),
+        readingDisplayMode = signal(readingMode),
         level = signal(lvl),
         dailyGoal = signal(goal),
         companion = signal(comp),
@@ -74,12 +77,15 @@ class OnboardingController {
 
     final theme = s.themeMode.isNotEmpty ? s.themeMode : 'system';
 
+    final readingMode = app.getReadingDisplayModeFor(learning);
+
     return OnboardingController._(
       isReplay: isReplay,
       initialStep: isReplay ? 1 : welcomeStep,
       learning: learning,
       native: native,
       dual: s.showDualSubtitles,
+      readingMode: readingMode,
       lvl: lvl,
       goal: DailyGoalOption.byMinutes(s.dailyGoalMinutes).minutes,
       comp: isReplay
@@ -93,6 +99,11 @@ class OnboardingController {
     if (themeMode.value == mode) return;
     themeMode.value = mode;
     AppState.instance.setThemeMode(mode);
+  }
+
+  void setReadingDisplayMode(String mode) {
+    if (readingDisplayMode.value == mode) return;
+    readingDisplayMode.value = mode;
   }
 
   /// First step reachable via Back (Welcome is skipped on replay).
@@ -115,6 +126,7 @@ class OnboardingController {
   void selectLearningLanguage(String code) {
     if (learningLang.value == code) return;
     learningLang.value = code;
+    readingDisplayMode.value = AppState.instance.getReadingDisplayModeFor(code);
     companion.value = LearningLanguageOption.byCode(code).defaultCompanion;
     if (nativeLang.value == code) {
       selectNativeLanguage(code == 'en' ? 'vi' : 'en');

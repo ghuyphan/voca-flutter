@@ -9,6 +9,8 @@ import '../../state/app_state.dart';
 import '../../utils/language_utils.dart';
 import '../widgets/circle_flag.dart';
 import '../widgets/voca_back_button.dart';
+import '../widgets/voca_confirm_dialog.dart';
+import '../widgets/voca_download_progress_indicator.dart';
 import '../widgets/voca_switch.dart';
 
 /// Screen for managing on-device ML Kit language models and offline subtitle settings.
@@ -301,18 +303,38 @@ class OfflineTranslationScreen extends StatelessWidget {
                       }
                     },
                     onDelete: () async {
-                      final success = await onDeviceService.deleteModel(lang.code);
-                      if (context.mounted && success) {
-                        final locName = lang.getLocalizedName(context);
-                        ToastService.show(
-                          context,
-                          context.t(
-                            'settings.modelRemoved',
-                            {'name': locName},
-                            '$locName model removed',
-                          ),
-                          type: ToastType.info,
-                        );
+                      final locName = lang.getLocalizedName(context);
+                      final confirmed = await showVocaConfirmDialog(
+                        context: context,
+                        title: context.t(
+                          'settings.removeModelTitle',
+                          {'name': locName},
+                          'Remove $locName model?',
+                        ),
+                        message: context.t(
+                          'settings.removeModelMessage',
+                          {'name': locName},
+                          'This will remove the offline language model (~30 MB) from your device. You can download it again anytime.',
+                        ),
+                        confirmLabel: context.t('common.remove', null, 'Remove'),
+                        variant: ConfirmDialogVariant.danger,
+                        isDestructive: true,
+                        icon: Icons.delete_outline_rounded,
+                      );
+
+                      if (confirmed && context.mounted) {
+                        final success = await onDeviceService.deleteModel(lang.code);
+                        if (context.mounted && success) {
+                          ToastService.show(
+                            context,
+                            context.t(
+                              'settings.modelRemoved',
+                              {'name': locName},
+                              '$locName model removed',
+                            ),
+                            type: ToastType.info,
+                          );
+                        }
                       }
                     },
                   );
@@ -358,17 +380,6 @@ class OfflineTranslationScreen extends StatelessWidget {
         ? lang.name
         : '$localizedName (${lang.name})';
 
-    String subtitleText;
-    if (lang.isBuiltIn) {
-      subtitleText = context.t('settings.builtInPivot', null, 'Built-in (Pivot language)');
-    } else if (isDownloading) {
-      subtitleText = context.t('settings.downloadingModel', null, 'Downloading model (~30 MB)...');
-    } else if (isDownloaded) {
-      subtitleText = context.t('settings.modelReady', null, 'Downloaded • Ready on-device');
-    } else {
-      subtitleText = context.t('settings.notDownloaded', null, 'Not downloaded (~30 MB)');
-    }
-
     String? displayError;
     if (errorMessage != null) {
       if (errorMessage == 'settings.restartRequired' ||
@@ -389,8 +400,9 @@ class OfflineTranslationScreen extends StatelessWidget {
       }
     }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    return Container(
+      constraints: const BoxConstraints(minHeight: 70),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
       child: Row(
         children: [
           CircleFlag(code: lang.code, size: 28),
@@ -398,6 +410,7 @@ class OfflineTranslationScreen extends StatelessWidget {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   displayName,
@@ -408,16 +421,7 @@ class OfflineTranslationScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  subtitleText,
-                  style: TextStyle(
-                    color: isDownloaded
-                        ? colors.colorGrammar
-                        : colors.textSecondary,
-                    fontSize: 12,
-                    fontWeight: isDownloaded ? FontWeight.w600 : FontWeight.w400,
-                  ),
-                ),
+                _buildSubtitle(context, colors, lang, isDownloaded, isDownloading),
                 if (displayError != null) ...[
                   const SizedBox(height: 3),
                   Text(
@@ -434,16 +438,91 @@ class OfflineTranslationScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          _buildActionWidget(
-            context: context,
-            colors: colors,
-            lang: lang,
-            isDownloaded: isDownloaded,
-            isDownloading: isDownloading,
-            onDownload: onDownload,
-            onDelete: onDelete,
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            switchInCurve: Curves.easeOut,
+            switchOutCurve: Curves.easeIn,
+            transitionBuilder: (child, animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: child,
+              );
+            },
+            child: _buildActionWidget(
+              context: context,
+              colors: colors,
+              lang: lang,
+              isDownloaded: isDownloaded,
+              isDownloading: isDownloading,
+              onDownload: onDownload,
+              onDelete: onDelete,
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSubtitle(
+    BuildContext context,
+    VocaColorPalette colors,
+    SubtitleLanguageOption lang,
+    bool isDownloaded,
+    bool isDownloading,
+  ) {
+    if (lang.isBuiltIn) {
+      return Text(
+        context.t('settings.builtInPivot', null, 'Built-in (Pivot language)'),
+        style: TextStyle(
+          color: colors.textSecondary,
+          fontSize: 12,
+          fontWeight: FontWeight.w400,
+        ),
+      );
+    }
+
+    if (isDownloading) {
+      return Text(
+        context.t('settings.downloadingModel', null, 'Downloading model (~30 MB)...'),
+        style: TextStyle(
+          color: colors.accentPrimary,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+      );
+    }
+
+    if (isDownloaded) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.check_circle_rounded,
+            size: 13,
+            color: colors.colorGrammar,
+          ),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              context.t('settings.modelReady', null, 'Downloaded • Ready on-device'),
+              style: TextStyle(
+                color: colors.colorGrammar,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Text(
+      context.t('settings.notDownloaded', null, 'Not downloaded (~30 MB)'),
+      style: TextStyle(
+        color: colors.textSecondary,
+        fontSize: 12,
+        fontWeight: FontWeight.w400,
       ),
     );
   }
@@ -461,68 +540,90 @@ class OfflineTranslationScreen extends StatelessWidget {
 
     if (lang.isBuiltIn) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: colors.bgSurface,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: colors.borderColor),
-        ),
-        child: Text(
-          context.t('settings.builtIn', null, 'Built-in'),
-          style: TextStyle(
-            color: colors.textSecondary,
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
+        key: const ValueKey('builtin'),
+        constraints: const BoxConstraints(minHeight: 48),
+        alignment: Alignment.centerRight,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: colors.bgSurface,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: colors.borderColor),
+          ),
+          child: Text(
+            context.t('settings.builtIn', null, 'Built-in'),
+            style: TextStyle(
+              color: colors.textSecondary,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       );
     }
 
     if (isDownloading) {
-      return Semantics(
-        liveRegion: true,
-        label: 'Downloading $locName',
-        child: SizedBox(
-          width: 24,
-          height: 24,
-          child: CircularProgressIndicator(
-            strokeWidth: 2.5,
-            color: colors.accentPrimary,
+      return SizedBox(
+        key: const ValueKey('downloading'),
+        width: 48,
+        height: 48,
+        child: Center(
+          child: Tooltip(
+            message: context.t(
+              'settings.downloadingTooltip',
+              {'name': locName},
+              'Downloading $locName model...',
+            ),
+            child: VocaDownloadProgressIndicator(
+              size: 28,
+              strokeWidth: 2.5,
+              semanticsLabel: 'Downloading $locName model',
+            ),
           ),
         ),
       );
     }
 
     if (isDownloaded) {
-      return IconButton(
-        icon: Icon(
-          Icons.delete_outline_rounded,
-          color: colors.textMuted,
-          size: 22,
+      return SizedBox(
+        key: const ValueKey('downloaded'),
+        width: 48,
+        height: 48,
+        child: IconButton(
+          icon: Icon(
+            Icons.delete_outline_rounded,
+            color: colors.textMuted,
+            size: 22,
+          ),
+          tooltip: context.t(
+            'settings.removeModelTooltip',
+            {'name': locName},
+            'Remove $locName model',
+          ),
+          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          onPressed: onDelete,
         ),
-        tooltip: context.t(
-          'settings.removeModelTooltip',
-          {'name': locName},
-          'Remove $locName model',
-        ),
-        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-        onPressed: onDelete,
       );
     }
 
-    return IconButton(
-      icon: Icon(
-        Icons.cloud_download_outlined,
-        color: colors.accentPrimary,
-        size: 22,
+    return SizedBox(
+      key: const ValueKey('not_downloaded'),
+      width: 48,
+      height: 48,
+      child: IconButton(
+        icon: Icon(
+          Icons.cloud_download_outlined,
+          color: colors.accentPrimary,
+          size: 22,
+        ),
+        tooltip: context.t(
+          'settings.downloadModelTooltip',
+          {'name': locName},
+          'Download $locName model (~30 MB)',
+        ),
+        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+        onPressed: onDownload,
       ),
-      tooltip: context.t(
-        'settings.downloadModelTooltip',
-        {'name': locName},
-        'Download $locName model (~30 MB)',
-      ),
-      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-      onPressed: onDownload,
     );
   }
 }

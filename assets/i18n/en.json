@@ -1214,6 +1214,11 @@
       "freezeDesc": "Keep streak safe when busy"
     },
     "starterBonusTitle": "New Learner Starter Pack",
+    "readingModeFurigana": "Furigana",
+    "readingModeRomaji": "Romaji",
+    "readingModeKana": "Kana",
+    "readingModePinyin": "Pinyin",
+    "readingModeOff": "Off",
     "enterRealm": "Enter the Language Realm",
     "claimStarterPack": "Start Learning",
     "starterPackClaimed": "Starter Pack Activated! +50 XP & Day 1 Streak ignited.",

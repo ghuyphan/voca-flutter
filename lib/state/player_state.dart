@@ -55,13 +55,32 @@ class VideoPlayerController {
       grammarEngine.loadedLanguages.value;
       grammarEngine.loadedTranslations.value;
 
+      if (!grammarModeEnabled.value) return <GrammarMatch>[];
+
       final cue = activeCue.value;
       final lang = activeLanguage.value;
       final uiLang = I18nService.instance.currentLanguage.value;
       if (cue == null || cue.tokens.isEmpty) return <GrammarMatch>[];
       return grammarEngine.detectPatterns(cue.tokens, lang, uiLang: uiLang);
     });
+
+    // Reactive sync with AppState global user settings
+    _userSettingsCleanup = effect(() {
+      final s = AppState.instance.userSettings.value;
+      if (readingDisplayMode.value != s.readingDisplayMode) {
+        readingDisplayMode.value = s.readingDisplayMode;
+      }
+      final shouldShowFurigana = s.readingDisplayMode != 'native' && s.rubyMode != RubyDisplayMode.never;
+      if (showFurigana.value != shouldShowFurigana) {
+        showFurigana.value = shouldShowFurigana;
+      }
+      if (subtitleSize.value != s.subtitleSize) {
+        subtitleSize.value = s.subtitleSize;
+      }
+    });
   }
+
+  EffectCleanup? _userSettingsCleanup;
 
   // --- Core Playback & Video Metadata Signals ---
   final currentVideoId = signal<String?>(null);
@@ -81,7 +100,14 @@ class VideoPlayerController {
   final playbackRate = signal<double>(1.0);
   final isLoopingCue = signal<bool>(false);
   final loopingCue = signal<SubtitleCue?>(null);
-  final showFurigana = signal<bool>(true);
+  final readingDisplayMode = signal<String>(
+    AppState.instance.userSettings.value.readingDisplayMode,
+  );
+  final showFurigana = signal<bool>(
+    AppState.instance.userSettings.value.readingDisplayMode != 'native' &&
+        AppState.instance.userSettings.value.rubyMode != RubyDisplayMode.never,
+  );
+  final grammarModeEnabled = signal<bool>(true);
   final showTranslation = signal<bool>(true);
   final subtitleSize = signal<SubtitleSize>(SubtitleSize.medium);
   final isTranscriptMode = signal<bool>(false);
@@ -545,8 +571,26 @@ class VideoPlayerController {
     }
   }
 
+  void setReadingDisplayMode(String mode) {
+    readingDisplayMode.value = mode;
+    showFurigana.value = mode != 'native' && AppState.instance.userSettings.value.rubyMode != RubyDisplayMode.never;
+    AppState.instance.setReadingDisplayMode(mode, language: activeLanguage.value);
+  }
+
   void toggleFurigana() {
-    showFurigana.value = !showFurigana.value;
+    if (showFurigana.value) {
+      setReadingDisplayMode('native');
+    } else {
+      setReadingDisplayMode('annotated');
+    }
+  }
+
+  void toggleGrammarMode() {
+    grammarModeEnabled.value = !grammarModeEnabled.value;
+  }
+
+  void setGrammarMode(bool enabled) {
+    grammarModeEnabled.value = enabled;
   }
 
   void toggleTranslation() {
@@ -580,6 +624,7 @@ class VideoPlayerController {
   }
 
   void dispose() {
+    _userSettingsCleanup?.call();
     dualSubService.dispose();
     cancelSleepTimer();
     clearPauseLocks();

@@ -8,6 +8,7 @@ import '../../models/voca_models.dart';
 import '../../services/haptic_service.dart';
 import '../../services/i18n_service.dart';
 import '../../state/app_state.dart';
+import '../../utils/language_utils.dart';
 import '../profile/edit_profile_screen.dart';
 import '../widgets/voca_back_button.dart';
 import '../widgets/voca_option_picker.dart';
@@ -25,6 +26,7 @@ class VocaSettingSubScreenLayout extends StatelessWidget {
   final String headerDescription;
   final String sectionTitle;
   final Widget cardChild;
+  final List<Widget>? extraChildren;
 
   const VocaSettingSubScreenLayout({
     super.key,
@@ -34,6 +36,7 @@ class VocaSettingSubScreenLayout extends StatelessWidget {
     required this.headerDescription,
     required this.sectionTitle,
     required this.cardChild,
+    this.extraChildren,
   });
 
   @override
@@ -155,6 +158,8 @@ class VocaSettingSubScreenLayout extends StatelessWidget {
                   clipBehavior: Clip.antiAlias,
                   child: cardChild,
                 ),
+
+                if (extraChildren != null) ...extraChildren!,
 
                 const SizedBox(height: 32),
               ],
@@ -465,6 +470,7 @@ class ReadingGuidesSettingsScreen extends StatelessWidget {
       final _ = I18nService.instance.currentLanguage.value;
       final targetLang = AppState.instance.activeLanguage.value;
       final settings = AppState.instance.userSettings.value;
+      final colors = context.vocaColors;
 
       final String readingGuideTitle;
       switch (targetLang) {
@@ -487,6 +493,8 @@ class ReadingGuidesSettingsScreen extends StatelessWidget {
           break;
       }
 
+      final availableModes = getAvailableReadingDisplayModes(targetLang);
+
       return VocaSettingSubScreenLayout(
         title: readingGuideTitle,
         headerIcon: Icons.subtitles_outlined,
@@ -500,49 +508,99 @@ class ReadingGuidesSettingsScreen extends StatelessWidget {
           null,
           'Control how pronunciation guides appear above words in video subtitles and vocabulary flashcards.',
         ),
-        sectionTitle: context.t('settings.preferences', null, 'PREFERENCES'),
+        sectionTitle: context.t('settings.readingStyle', null, 'Reading Script Style'),
         cardChild: VocaSettingOptionCardList(
-          selectedValue: settings.rubyMode.name,
+          selectedValue: AppState.instance.getReadingDisplayModeFor(targetLang),
           onSelect: (selected) {
-            final mode = RubyDisplayMode.values.firstWhere(
-              (e) => e.name == selected,
-              orElse: () => RubyDisplayMode.always,
-            );
-            AppState.instance.setRubyMode(mode);
+            AppState.instance.setReadingDisplayMode(selected, language: targetLang);
           },
-          options: [
-            OptionItem(
-              value: RubyDisplayMode.always.name,
-              label: context.t('settings.alwaysShow', null, 'Always Show'),
-              example: context.t(
-                'settings.alwaysShowDesc',
-                null,
-                'Display reading annotations above all words',
-              ),
-              iconData: Icons.visibility_rounded,
-            ),
-            OptionItem(
-              value: RubyDisplayMode.tap.name,
-              label: context.t('settings.onTapOnly', null, 'On Tap Only'),
-              example: context.t(
-                'settings.onTapOnlyDesc',
-                null,
-                'Reveal pronunciation when tapping a word',
-              ),
-              iconData: Icons.touch_app_rounded,
-            ),
-            OptionItem(
-              value: RubyDisplayMode.never.name,
-              label: context.t('settings.off', null, 'Off'),
-              example: context.t(
-                'settings.offDesc',
-                null,
-                'Hide all phonetic guides for full immersion',
-              ),
-              iconData: Icons.visibility_off_rounded,
-            ),
-          ],
+          options: availableModes.map((mode) {
+            final isRoman = mode == 'romanized' || mode == 'annotatedRomanized';
+            final text = isRoman ? 'Aa' : getReadingScriptIcon(targetLang);
+            final leading = mode == 'native'
+                ? Icon(Icons.block_rounded, size: 20, color: colors.textMuted)
+                : Text(
+                    text,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: colors.accentPrimary,
+                    ),
+                  );
+
+            return OptionItem(
+              value: mode,
+              label: getReadingDisplayLabel(mode, targetLang, context),
+              example: getReadingDisplayExample(mode, targetLang),
+              leading: leading,
+            );
+          }).toList(),
         ),
+        extraChildren: [
+          const SizedBox(height: 24),
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 8),
+            child: Text(
+              context.t('settings.annotationBehavior', null, 'Annotation Behavior').toUpperCase(),
+              style: TextStyle(
+                color: colors.textSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.6,
+              ),
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              color: colors.bgCard,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: colors.borderColor),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: VocaSettingOptionCardList(
+              selectedValue: settings.rubyMode.name,
+              onSelect: (selected) {
+                final mode = RubyDisplayMode.values.firstWhere(
+                  (e) => e.name == selected,
+                  orElse: () => RubyDisplayMode.always,
+                );
+                AppState.instance.setRubyMode(mode);
+              },
+              options: [
+                OptionItem(
+                  value: RubyDisplayMode.always.name,
+                  label: context.t('settings.alwaysShow', null, 'Always Show'),
+                  example: context.t(
+                    'settings.alwaysShowDesc',
+                    null,
+                    'Display reading annotations above all words',
+                  ),
+                  iconData: Icons.visibility_rounded,
+                ),
+                OptionItem(
+                  value: RubyDisplayMode.tap.name,
+                  label: context.t('settings.onTapOnly', null, 'On Tap Only'),
+                  example: context.t(
+                    'settings.onTapOnlyDesc',
+                    null,
+                    'Reveal pronunciation when tapping a word',
+                  ),
+                  iconData: Icons.touch_app_rounded,
+                ),
+                OptionItem(
+                  value: RubyDisplayMode.never.name,
+                  label: context.t('settings.off', null, 'Off'),
+                  example: context.t(
+                    'settings.offDesc',
+                    null,
+                    'Hide all phonetic guides for full immersion',
+                  ),
+                  iconData: Icons.visibility_off_rounded,
+                ),
+              ],
+            ),
+          ),
+        ],
       );
     });
   }

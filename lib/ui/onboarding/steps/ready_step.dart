@@ -3,20 +3,26 @@
 import 'package:flutter/material.dart';
 import '../../../config/voca_theme.dart';
 import '../../../services/i18n_service.dart';
+import '../../../utils/language_utils.dart';
+import '../../widgets/voca_sliding_segmented_bar.dart';
 import '../models/onboarding_models.dart';
 import '../widgets/onboarding_primitives.dart';
-import '../widgets/pressable_scale.dart';
 
-/// Step 4: Personalized Plan Summary & Starter Loot Rewards.
-/// Confirms learner's choices with a polished pass card, presents
-/// initial starter loot, and provides appearance theme personalization.
+/// Step 4: Simplified Personalized Adventurer Pass, Reading Preferences, Theme & Starter Rewards.
+/// Direct 1:1 alignment with lingua-tube's `adventurer-license-card` layout & Voca Sliding Segmented Bar:
+/// - Holographic adventurer pass card (avatar + rank + language + exam + goal).
+/// - Sliding capsule segmented bar for pronunciation guide (for JA/ZH/KO).
+/// - Sliding capsule segmented bar for theme selector (System, Light, Dark).
+/// - Material 3 Starter Loot reward cache grid (fully localized).
 class ReadyStep extends StatelessWidget {
   final String learningLanguage;
   final String selectedLevel;
   final String selectedCompanion;
   final int dailyGoal;
   final String themeMode;
+  final String readingDisplayMode;
   final ValueChanged<String>? onThemeChanged;
+  final ValueChanged<String>? onReadingDisplayModeChanged;
 
   const ReadyStep({
     super.key,
@@ -25,7 +31,9 @@ class ReadyStep extends StatelessWidget {
     required this.selectedCompanion,
     required this.dailyGoal,
     required this.themeMode,
+    this.readingDisplayMode = 'annotated',
     this.onThemeChanged,
+    this.onReadingDisplayModeChanged,
   });
 
   @override
@@ -39,394 +47,261 @@ class ReadyStep extends StatelessWidget {
 
     final langName = context.t(languageNameKey(langOpt.code), null, langOpt.englishName);
     final rankName = context.t(levelOpt.rankNameKey, null, levelOpt.rankKey);
-    final levelTitle = context.t(levelOpt.titleKey, null, levelOpt.id);
     final compName = context.t(compOpt.nameKey, null, compOpt.id);
-    final compTrait = context.t(compOpt.traitKey, null, '');
-    final goalMinutes = context.t(
-      'onboarding.minutesPerDay',
-      {'minutes': dailyGoal},
-      '$dailyGoal min/day',
+    final examBadge = levelOpt.examBadge(learningLanguage);
+
+    final cleanLang = normalizeLanguageCode(learningLanguage);
+    final hasReadingSupport = cleanLang != 'en';
+
+    final previewExample = getReadingDisplayExample(
+      readingDisplayMode,
+      learningLanguage,
     );
 
-    final effectiveTheme =
-        (themeMode == 'light' || themeMode == 'dark') ? themeMode : 'system';
-
     return OnboardingStepLayout(
-      title: context.t('onboarding.starterTitle', null, 'Ready to Learn'),
+      title: context.t('onboarding.starterTitle', null, 'Ready to Learn!'),
       subtitle: context.t(
         'onboarding.starterSubtitle',
         null,
-        'Your personalized immersion plan',
+        'Your personalized immersion pass',
       ),
       children: [
-        // 1. Personalized Learning Plan Pass Card
-        Container(
-          decoration: BoxDecoration(
-            color: colors.bgCard,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: colors.borderColor,
-              width: 1.2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
-              ),
-            ],
+        // 1. Holographic Adventurer License Pass (1:1 port of lingua-tube adventurer-license-card)
+        _AdventurerPassCard(
+          compOpt: compOpt,
+          compName: compName,
+          rankName: rankName,
+          langOpt: langOpt,
+          langName: langName,
+          examBadge: examBadge,
+          dailyGoal: dailyGoal,
+          colors: colors,
+          isDark: isDark,
+        ),
+
+        const SizedBox(height: 14),
+
+        // 2. Pronunciation Guide Selector (Only for script languages: JA, ZH, KO)
+        if (hasReadingSupport) ...[
+          _PronunciationSelector(
+            learningLanguage: cleanLang,
+            readingDisplayMode: readingDisplayMode,
+            previewExample: previewExample,
+            colors: colors,
+            isDark: isDark,
+            onChanged: onReadingDisplayModeChanged,
           ),
-          child: Column(
-            children: [
-              // Card Header Banner
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
-                decoration: BoxDecoration(
-                  color: colors.bgSurface,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(17)),
-                  border: Border(
-                    bottom: BorderSide(color: colors.borderColorLight),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.verified_user_rounded,
-                      size: 16,
-                      color: colors.accentPrimary,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      context.t('onboarding.planSummary', null, 'Learning Plan'),
-                      style: TextStyle(
-                        color: colors.textPrimary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: colors.success.withValues(alpha: isDark ? 0.20 : 0.12),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        context.t('onboarding.planReady', null, 'Ready'),
-                        style: TextStyle(
-                          color: colors.success,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+          const SizedBox(height: 14),
+        ],
 
-              // Plan Item Rows
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Column(
-                  children: [
-                    // Target Language
-                    _PlanItemRow(
-                      iconWidget: RoundFlag(asset: langOpt.flagAsset, size: 22),
-                      title: langName,
-                      subtitle: langOpt.examFramework,
-                      trailingBadge: langOpt.nativeName,
-                      colors: colors,
-                    ),
-                    const SizedBox(height: 10),
-
-                    // Level
-                    _PlanItemRow(
-                      iconWidget: Container(
-                        width: 22,
-                        height: 22,
-                        decoration: BoxDecoration(
-                          color: levelOpt.colors(isDark: isDark).bg,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          levelOpt.icon,
-                          size: 13,
-                          color: levelOpt.colors(isDark: isDark).text,
-                        ),
-                      ),
-                      title: '$rankName • $levelTitle',
-                      subtitle: levelOpt.examBadge(learningLanguage),
-                      colors: colors,
-                    ),
-                    const SizedBox(height: 10),
-
-                    // Companion Guide
-                    _PlanItemRow(
-                      iconWidget: ClipOval(
-                        child: Image.asset(
-                          compOpt.avatarAsset,
-                          width: 22,
-                          height: 22,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Icon(
-                            compOpt.icon,
-                            size: 16,
-                            color: compOpt.color,
-                          ),
-                        ),
-                      ),
-                      title: compName,
-                      subtitle: compTrait,
-                      trailingBadge: 'Lv.1',
-                      colors: colors,
-                    ),
-                    const SizedBox(height: 10),
-
-                    // Daily Goal
-                    _PlanItemRow(
-                      iconWidget: Icon(
-                        Icons.local_fire_department_rounded,
-                        size: 20,
-                        color: colors.colorFire,
-                      ),
-                      title: goalMinutes,
-                      subtitle: context.t('onboarding.dailyGoalLabel', null, 'Daily Habit'),
-                      colors: colors,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+        // 3. Sliding Theme Appearance Selector (System / Light / Dark)
+        _ThemeSelector(
+          themeMode: themeMode,
+          colors: colors,
+          isDark: isDark,
+          onChanged: onThemeChanged,
         ),
 
-        const SizedBox(height: 20),
+        const SizedBox(height: 14),
 
-        // 2. Starter Loot Cache Grid
-        SectionLabel(
-          context.t('onboarding.starterBonusTitle', null, 'New Learner Starter Pack'),
-        ),
-        Row(
-          children: [
-            Expanded(
-              child: _LootCard(
-                icon: Icons.diamond_rounded,
-                iconColor: colors.colorDiamond,
-                title: context.t('onboarding.starterLoot.diamonds', null, '5 AI Captions'),
-                desc: context.t('onboarding.starterLoot.diamondsDesc', null, 'AI voice sync & translation'),
-                colors: colors,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _LootCard(
-                icon: Icons.auto_awesome_rounded,
-                iconColor: colors.accentSecondary,
-                title: context.t('onboarding.starterLoot.xp', null, '+50 Starter XP'),
-                desc: context.t('onboarding.starterLoot.xpDesc', null, 'Jumpstart to Level 1'),
-                colors: colors,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: _LootCard(
-                icon: Icons.local_fire_department_rounded,
-                iconColor: colors.colorFire,
-                title: context.t('onboarding.starterLoot.hearth', null, 'Day 1 Streak'),
-                desc: context.t('onboarding.starterLoot.hearthDesc', null, 'Start your learning habit'),
-                colors: colors,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _LootCard(
-                icon: Icons.ac_unit_rounded,
-                iconColor: colors.colorDiamond,
-                title: context.t('onboarding.starterLoot.freeze', null, 'Streak Freeze'),
-                desc: context.t('onboarding.starterLoot.freezeDesc', null, 'Keep streak safe when busy'),
-                colors: colors,
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 20),
-
-        // 3. Appearance & Theme Selection
-        SectionLabel(
-          context.t('onboarding.appearance', null, 'Appearance'),
-        ),
-        Row(
-          children: [
-            _ThemeOptionTile(
-              icon: Icons.brightness_auto_outlined,
-              label: context.t('onboarding.themeSystem', null, 'System'),
-              subtitle: context.t('onboarding.themeSystemDesc', null, 'Auto'),
-              isSelected: effectiveTheme == 'system',
-              onTap: () => onThemeChanged?.call('system'),
-            ),
-            const SizedBox(width: 8),
-            _ThemeOptionTile(
-              icon: Icons.light_mode_outlined,
-              label: context.t('onboarding.themeLight', null, 'Light'),
-              subtitle: context.t('onboarding.themeLightDesc', null, 'Light theme'),
-              isSelected: effectiveTheme == 'light',
-              onTap: () => onThemeChanged?.call('light'),
-            ),
-            const SizedBox(width: 8),
-            _ThemeOptionTile(
-              icon: Icons.dark_mode_outlined,
-              label: context.t('onboarding.themeDark', null, 'Dark'),
-              subtitle: context.t('onboarding.themeDarkDesc', null, 'Dark theme'),
-              isSelected: effectiveTheme == 'dark',
-              onTap: () => onThemeChanged?.call('dark'),
-            ),
-          ],
-        ),
+        // 4. Compact Starter Loot Reward Cache
+        _StarterLootBanner(colors: colors, isDark: isDark),
       ],
     );
   }
 }
 
-class _PlanItemRow extends StatelessWidget {
-  final Widget iconWidget;
-  final String title;
-  final String subtitle;
-  final String? trailingBadge;
+/// Holographic Guild Adventurer Pass Card
+class _AdventurerPassCard extends StatelessWidget {
+  final CompanionOption compOpt;
+  final String compName;
+  final String rankName;
+  final LearningLanguageOption langOpt;
+  final String langName;
+  final String examBadge;
+  final int dailyGoal;
   final VocaColorPalette colors;
+  final bool isDark;
 
-  const _PlanItemRow({
-    required this.iconWidget,
-    required this.title,
-    required this.subtitle,
-    this.trailingBadge,
+  const _AdventurerPassCard({
+    required this.compOpt,
+    required this.compName,
+    required this.rankName,
+    required this.langOpt,
+    required this.langName,
+    required this.examBadge,
+    required this.dailyGoal,
     required this.colors,
+    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        SizedBox(width: 24, height: 24, child: Center(child: iconWidget)),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  color: colors.textPrimary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  color: colors.textMuted,
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w500,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-        if (trailingBadge != null)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-            decoration: BoxDecoration(
-              color: colors.bgSurface,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: colors.borderColorLight, width: 1.0),
-            ),
-            child: Text(
-              trailingBadge!,
-              style: TextStyle(
-                color: colors.textSecondary,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-      ],
+    const goldColor = Color(0xFFEAB308);
+    final goalText = context.t(
+      'onboarding.minutesPerDay',
+      {'minutes': dailyGoal},
+      '$dailyGoal min',
     );
-  }
-}
-
-class _LootCard extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String title;
-  final String desc;
-  final VocaColorPalette colors;
-
-  const _LootCard({
-    required this.icon,
-    required this.iconColor,
-    required this.title,
-    required this.desc,
-    required this.colors,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = colors.isDark;
 
     return Container(
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: colors.bgCard,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colors.borderColor, width: 1.0),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: isDark ? 0.18 : 0.10),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, size: 17, color: iconColor),
+        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [
+                  goldColor.withValues(alpha: 0.14),
+                  colors.accentPrimary.withValues(alpha: 0.08),
+                  colors.bgCard,
+                ]
+              : [
+                  goldColor.withValues(alpha: 0.10),
+                  colors.accentPrimary.withValues(alpha: 0.05),
+                  Colors.white,
+                ],
+        ),
+        border: Border.all(
+          color: goldColor.withValues(alpha: isDark ? 0.45 : 0.35),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: goldColor.withValues(alpha: isDark ? 0.18 : 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
           ),
-          const SizedBox(width: 10),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Left: Companion Avatar in Golden Ring
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: goldColor, width: 2.0),
+                  color: colors.bgCard,
+                  boxShadow: [
+                    BoxShadow(
+                      color: goldColor.withValues(alpha: 0.35),
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.all(2),
+                child: ClipOval(
+                  child: Image.asset(
+                    compOpt.avatarAsset,
+                    width: 44,
+                    height: 44,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Icon(
+                      compOpt.icon,
+                      size: 26,
+                      color: compOpt.color,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: -2,
+                right: -2,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                  decoration: BoxDecoration(
+                    color: goldColor,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Text(
+                    'Lv.1',
+                    style: TextStyle(
+                      color: Color(0xFF422006),
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(width: 14),
+
+          // Right: License Info & Badges
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
+                // Top Tag
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.shield_outlined,
+                      size: 12,
+                      color: goldColor,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      context.t('onboarding.guildCharter', null, 'Voca Guild Charter').toUpperCase(),
+                      style: TextStyle(
+                        color: isDark ? goldColor : const Color(0xFFB45309),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 3),
+
+                // Name & Rank
                 Text(
-                  title,
+                  '$rankName • $compName',
                   style: TextStyle(
                     color: colors.textPrimary,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.2,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  desc,
-                  style: TextStyle(
-                    color: colors.textMuted,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w500,
-                    height: 1.25,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                const SizedBox(height: 6),
+
+                // Badges Row
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: [
+                    _MiniChip(
+                      icon: RoundFlag(asset: langOpt.flagAsset, size: 14),
+                      label: langName,
+                      colors: colors,
+                    ),
+                    _MiniChip(
+                      label: examBadge,
+                      colors: colors,
+                    ),
+                    _MiniChip(
+                      icon: const Icon(
+                        Icons.local_fire_department_rounded,
+                        size: 13,
+                        color: Color(0xFFEA580C),
+                      ),
+                      label: goalText,
+                      colors: colors,
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -437,19 +312,400 @@ class _LootCard extends StatelessWidget {
   }
 }
 
-class _ThemeOptionTile extends StatelessWidget {
-  final IconData icon;
+class _MiniChip extends StatelessWidget {
+  final Widget? icon;
   final String label;
-  final String subtitle;
-  final bool isSelected;
-  final VoidCallback onTap;
+  final VocaColorPalette colors;
 
-  const _ThemeOptionTile({
-    required this.icon,
+  const _MiniChip({
+    this.icon,
     required this.label,
-    required this.subtitle,
-    required this.isSelected,
-    required this.onTap,
+    required this.colors,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: colors.bgCard.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: colors.borderColorLight.withValues(alpha: 0.8),
+          width: 0.8,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            icon!,
+            const SizedBox(width: 4),
+          ],
+          Text(
+            label,
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Sliding Capsule Pronunciation Guide Selector
+class _PronunciationSelector extends StatelessWidget {
+  final String learningLanguage;
+  final String readingDisplayMode;
+  final String? previewExample;
+  final VocaColorPalette colors;
+  final bool isDark;
+  final ValueChanged<String>? onChanged;
+
+  const _PronunciationSelector({
+    required this.learningLanguage,
+    required this.readingDisplayMode,
+    required this.previewExample,
+    required this.colors,
+    required this.isDark,
+    required this.onChanged,
+  });
+
+  List<({String mode, String label})> _getModes(BuildContext context) {
+    final offLabel = context.t('onboarding.readingModeOff', null, 'Off');
+    switch (learningLanguage) {
+      case 'ja':
+        return [
+          (
+            mode: 'annotated',
+            label: context.t('onboarding.readingModeFurigana', null, 'Furigana'),
+          ),
+          (
+            mode: 'romanized',
+            label: context.t('onboarding.readingModeRomaji', null, 'Romaji'),
+          ),
+          (
+            mode: 'reading',
+            label: context.t('onboarding.readingModeKana', null, 'Kana'),
+          ),
+          (
+            mode: 'native',
+            label: offLabel,
+          ),
+        ];
+      case 'zh':
+        return [
+          (
+            mode: 'annotated',
+            label: context.t('onboarding.readingModePinyin', null, 'Pinyin'),
+          ),
+          (
+            mode: 'reading',
+            label: context.t('settings.pinyinOnly', null, 'Pinyin only'),
+          ),
+          (
+            mode: 'native',
+            label: offLabel,
+          ),
+        ];
+      case 'ko':
+        return [
+          (
+            mode: 'annotated',
+            label: context.t('onboarding.readingModeRomaji', null, 'Romaji'),
+          ),
+          (
+            mode: 'reading',
+            label: context.t('settings.romanizationOnly', null, 'Romaji only'),
+          ),
+          (
+            mode: 'native',
+            label: offLabel,
+          ),
+        ];
+      default:
+        return const [];
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final modes = _getModes(context);
+    final validModes = modes.map((m) => m.mode).toSet();
+    final effectiveMode = validModes.contains(readingDisplayMode)
+        ? readingDisplayMode
+        : (modes.isNotEmpty ? modes.first.mode : 'annotated');
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: colors.bgCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.borderColorLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header row with live preview
+          Row(
+            children: [
+              Icon(Icons.subtitles_rounded, size: 16, color: colors.accentPrimary),
+              const SizedBox(width: 6),
+              Text(
+                context.t('settings.readingStyle', null, 'Pronunciation Guide'),
+                style: TextStyle(
+                  color: colors.textPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const Spacer(),
+              if (previewExample != null)
+                Text(
+                  previewExample!,
+                  style: TextStyle(
+                    color: colors.accentPrimary,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // Sliding Segmented Capsule Bar
+          VocaSlidingSegmentedBar(
+            values: modes.map((m) => m.mode).toList(),
+            labels: modes.map((m) => m.label).toList(),
+            selectedValue: effectiveMode,
+            onSelected: (val) => onChanged?.call(val),
+            colors: colors,
+            height: 38,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Sliding Capsule Theme Appearance Selector (System / Light / Dark)
+class _ThemeSelector extends StatefulWidget {
+  final String themeMode;
+  final VocaColorPalette colors;
+  final bool isDark;
+  final ValueChanged<String>? onChanged;
+
+  const _ThemeSelector({
+    required this.themeMode,
+    required this.colors,
+    required this.isDark,
+    this.onChanged,
+  });
+
+  @override
+  State<_ThemeSelector> createState() => _ThemeSelectorState();
+}
+
+class _ThemeSelectorState extends State<_ThemeSelector> {
+  late String _currentTheme;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentTheme = _validTheme(widget.themeMode);
+  }
+
+  @override
+  void didUpdateWidget(covariant _ThemeSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.themeMode != widget.themeMode) {
+      _currentTheme = _validTheme(widget.themeMode);
+    }
+  }
+
+  String _validTheme(String mode) {
+    return (mode == 'system' || mode == 'light' || mode == 'dark')
+        ? mode
+        : 'system';
+  }
+
+  void _onSelectTheme(String mode) {
+    if (_currentTheme == mode) return;
+    setState(() {
+      _currentTheme = mode;
+    });
+
+    // Let the slider pill glide smoothly across to the new position first
+    // so the animation completes without jank before the entire MaterialApp theme rebuilds
+    Future.delayed(const Duration(milliseconds: 190), () {
+      if (mounted) {
+        widget.onChanged?.call(mode);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: widget.colors.bgCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: widget.colors.borderColorLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.palette_outlined, size: 16, color: widget.colors.accentPrimary),
+              const SizedBox(width: 6),
+              Text(
+                context.t('onboarding.appearance', null, 'Appearance'),
+                style: TextStyle(
+                  color: widget.colors.textPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // Sliding Segmented Capsule Bar with Icons
+          VocaSlidingSegmentedBar(
+            values: const ['system', 'light', 'dark'],
+            labels: [
+              context.t('onboarding.themeSystem', null, 'System'),
+              context.t('onboarding.themeLight', null, 'Light'),
+              context.t('onboarding.themeDark', null, 'Dark'),
+            ],
+            icons: const [
+              Icons.brightness_auto_outlined,
+              Icons.light_mode_outlined,
+              Icons.dark_mode_outlined,
+            ],
+            selectedValue: _currentTheme,
+            onSelected: _onSelectTheme,
+            colors: widget.colors,
+            height: 38,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Material 3 Starter Loot Reward Cache
+class _StarterLootBanner extends StatelessWidget {
+  final VocaColorPalette colors;
+  final bool isDark;
+
+  const _StarterLootBanner({
+    required this.colors,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: colors.bgCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.borderColorLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.card_giftcard_rounded, size: 16, color: colors.accentPrimary),
+              const SizedBox(width: 6),
+              Text(
+                context.t('onboarding.starterBonusTitle', null, 'Starter Pack'),
+                style: TextStyle(
+                  color: colors.textPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _LootTile(
+                  icon: Icons.diamond_rounded,
+                  iconColor: colors.colorDiamond,
+                  text: context.t(
+                    'onboarding.starterLoot.diamonds',
+                    null,
+                    '5 AI Captions',
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _LootTile(
+                  icon: Icons.auto_awesome_rounded,
+                  iconColor: colors.accentSecondary,
+                  text: context.t(
+                    'onboarding.starterLoot.xp',
+                    null,
+                    '+50 Starter XP',
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _LootTile(
+                  icon: Icons.local_fire_department_rounded,
+                  iconColor: colors.colorFire,
+                  text: context.t(
+                    'onboarding.starterLoot.hearth',
+                    null,
+                    'Day 1 Streak',
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _LootTile(
+                  icon: Icons.ac_unit_rounded,
+                  iconColor: colors.colorDiamond,
+                  text: context.t(
+                    'onboarding.starterLoot.freeze',
+                    null,
+                    'Streak Freeze',
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LootTile extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String text;
+
+  const _LootTile({
+    required this.icon,
+    required this.iconColor,
+    required this.text,
   });
 
   @override
@@ -457,66 +713,41 @@ class _ThemeOptionTile extends StatelessWidget {
     final colors = context.colors;
     final isDark = context.isDark;
 
-    final border = isSelected
-        ? Border.all(color: colors.accentPrimary, width: 1.6)
-        : Border.all(color: colors.borderColorLight, width: 1.0);
-
-    final bg = isSelected
-        ? colors.accentPrimary.withValues(alpha: isDark ? 0.20 : 0.08)
-        : colors.bgCard;
-
-    final textColor = isSelected ? colors.accentPrimary : colors.textPrimary;
-    final iconColor = isSelected ? colors.accentPrimary : colors.textSecondary;
-
-    return Expanded(
-      child: Semantics(
-        button: true,
-        selected: isSelected,
-        label: '$label, $subtitle',
-        child: PressableScale(
-          haptic: true,
-          onTap: onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOut,
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: colors.bgSurface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: colors.borderColorLight.withValues(alpha: 0.6),
+          width: 1.0,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 24,
+            height: 24,
             decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(16),
-              border: border,
+              color: iconColor.withValues(alpha: isDark ? 0.22 : 0.12),
+              shape: BoxShape.circle,
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 22, color: iconColor),
-                const SizedBox(height: 4),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: textColor,
-                    fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: isSelected
-                        ? colors.accentPrimary.withValues(alpha: 0.85)
-                        : colors.textMuted,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+            child: Icon(icon, size: 14, color: iconColor),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: colors.textPrimary,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-        ),
+        ],
       ),
     );
   }

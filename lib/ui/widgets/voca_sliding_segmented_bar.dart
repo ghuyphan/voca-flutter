@@ -8,6 +8,7 @@ import '../../services/haptic_service.dart';
 class VocaSlidingSegmentedBar extends StatelessWidget {
   final List<String> values;
   final List<String> labels;
+  final List<IconData?>? icons;
   final String selectedValue;
   final ValueChanged<String> onSelected;
   final VocaColorPalette colors;
@@ -17,6 +18,7 @@ class VocaSlidingSegmentedBar extends StatelessWidget {
     super.key,
     required this.values,
     required this.labels,
+    this.icons,
     required this.selectedValue,
     required this.onSelected,
     required this.colors,
@@ -73,6 +75,8 @@ class VocaSlidingSegmentedBar extends StatelessWidget {
               Row(
                 children: List.generate(values.length, (i) {
                   final isSelected = i == selectedIndex;
+                  final hasIcon = icons != null && i < icons!.length && icons![i] != null;
+
                   return Expanded(
                     child: Semantics(
                       selected: isSelected,
@@ -93,10 +97,26 @@ class VocaSlidingSegmentedBar extends StatelessWidget {
                               fontSize: 12.5,
                               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                             ),
-                            child: Text(
-                              labels.length > i ? labels[i] : values[i],
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                if (hasIcon) ...[
+                                  Icon(
+                                    icons![i],
+                                    size: 15,
+                                    color: isSelected ? colors.textPrimary : colors.textMuted,
+                                  ),
+                                  const SizedBox(width: 5),
+                                ],
+                                Flexible(
+                                  child: Text(
+                                    labels.length > i ? labels[i] : values[i],
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -112,4 +132,3 @@ class VocaSlidingSegmentedBar extends StatelessWidget {
     );
   }
 }
-

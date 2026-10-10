@@ -5,6 +5,8 @@ import 'package:signals_flutter/signals_flutter.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import '../../config/voca_theme.dart';
 import '../../models/voca_models.dart';
+import '../../utils/language_utils.dart';
+import '../../utils/japanese_romaji.dart';
 import '../../state/player_state.dart';
 import '../sheets/dictionary_bottom_sheet.dart';
 import '../sheets/grammar_bottom_sheet.dart';
@@ -132,6 +134,8 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
 
       final colors = context.vocaColors;
       final showFurigana = widget.controller.showFurigana.value;
+      final readingDisplayMode = widget.controller.readingDisplayMode.value;
+      final activeLanguage = widget.controller.activeLanguage.value;
       final showTranslation = widget.controller.showTranslation.value;
       final subtitleSize = widget.controller.subtitleSize.value;
       final isDualSubLoading = widget.controller.isDualSubLoading.value;
@@ -201,6 +205,8 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
                     cue: displayCue,
                     colors: colors,
                     showFurigana: showFurigana,
+                    readingDisplayMode: readingDisplayMode,
+                    activeLanguage: activeLanguage,
                     showTranslation: showTranslation,
                     isDualSubLoading: isDualSubLoading,
                     grammarMatches: grammarMatches,
@@ -222,6 +228,8 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
     required SubtitleCue cue,
     required VocaColorPalette colors,
     required bool showFurigana,
+    required String readingDisplayMode,
+    required String activeLanguage,
     required bool showTranslation,
     required bool isDualSubLoading,
     required List<GrammarMatch> grammarMatches,
@@ -337,6 +345,8 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
                                       surfaceFontSize: surfaceFontSize,
                                       rubyFontSize: rubyFontSize,
                                       showFurigana: showFurigana,
+                                      readingDisplayMode: readingDisplayMode,
+                                      activeLanguage: activeLanguage,
                                       colors: colors,
                                     ),
                                   ),
@@ -461,6 +471,8 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
     required double surfaceFontSize,
     required double rubyFontSize,
     required bool showFurigana,
+    required String readingDisplayMode,
+    required String activeLanguage,
     required VocaColorPalette colors,
   }) {
     final isGrammar = grammarPattern != null;
@@ -511,16 +523,90 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
       decorationColor = colors.accentPrimary;
     }
 
-    final tokenReading = token.reading ?? token.pinyin ?? token.romanization;
-    final hasRuby = showFurigana && token.rubyParts != null && token.rubyParts!.isNotEmpty;
-    final hasReading = showFurigana && tokenReading != null && tokenReading.isNotEmpty;
+    final cleanLang = normalizeLanguageCode(activeLanguage);
+    final isReadingOnly = readingDisplayMode == 'reading';
+    final isRomanizedOnly = readingDisplayMode == 'romanized';
+    final isRomajiAnnotated = readingDisplayMode == 'annotatedRomanized';
+    final isNativeOnly = readingDisplayMode == 'native' || !showFurigana;
+
+    // 1. Resolve primary surface text (supports Kana only / Romaji only / Pinyin only replacement)
+    String surfaceText = token.surface;
+    if (isReadingOnly) {
+      if (cleanLang == 'ja') {
+        // Replace Kanji with Kana (Kana only / No Kanji mode)
+        final kana = token.reading ??
+            (token.rubyParts != null && token.rubyParts!.isNotEmpty
+                ? token.rubyParts!.map((p) => p.reading ?? p.text).join()
+                : token.surface);
+        surfaceText = katakanaToHiragana(kana);
+      } else if (cleanLang == 'zh') {
+        surfaceText = token.pinyin ?? token.surface;
+      } else if (cleanLang == 'ko') {
+        surfaceText = token.romanization ?? token.reading ?? token.surface;
+      }
+    } else if (isRomanizedOnly) {
+      if (cleanLang == 'ja') {
+        final kana = token.reading ??
+            (token.rubyParts != null && token.rubyParts!.isNotEmpty
+                ? token.rubyParts!.map((p) => p.reading ?? p.text).join()
+                : null);
+        final romaji = token.romanization ?? getJapaneseRomaji(kana, token.surface);
+        surfaceText = romaji ?? token.surface;
+      } else if (cleanLang == 'zh') {
+        surfaceText = token.pinyin ?? token.surface;
+      } else if (cleanLang == 'ko') {
+        surfaceText = token.romanization ?? token.reading ?? token.surface;
+      }
+    }
+
+    // 2. Resolve ruby annotation text (if any)
+    List<RubyPart>? rubyParts;
+    String? singleRubyReading;
+
+    if (!isNativeOnly && !isReadingOnly && !isRomanizedOnly) {
+      if (cleanLang == 'ja') {
+        if (isRomajiAnnotated) {
+          // Kanji + Romaji mode: Romaji above all words
+          final kana = token.reading ??
+              (token.rubyParts != null && token.rubyParts!.isNotEmpty
+                  ? token.rubyParts!.map((p) => p.reading ?? p.text).join()
+                  : null);
+          singleRubyReading = token.romanization ?? getJapaneseRomaji(kana, token.surface);
+        } else {
+          // Standard Furigana mode: Hiragana above Kanji only! Pure kana has NO ruby.
+          if (token.rubyParts != null && token.rubyParts!.isNotEmpty) {
+            rubyParts = token.rubyParts;
+          } else {
+            final hasKanji = token.hasKanji || UnicodeRanges.hanzi.hasMatch(token.surface);
+            if (hasKanji && token.reading != null && token.reading!.isNotEmpty) {
+              singleRubyReading = token.reading;
+            }
+          }
+        }
+      } else if (cleanLang == 'zh') {
+        if (token.rubyParts != null && token.rubyParts!.isNotEmpty) {
+          rubyParts = token.rubyParts;
+        } else if (token.pinyin != null && token.pinyin!.isNotEmpty) {
+          singleRubyReading = token.pinyin;
+        }
+      } else if (cleanLang == 'ko') {
+        final r = token.romanization ?? token.reading;
+        if (r != null && r.isNotEmpty) {
+          singleRubyReading = r;
+        }
+      } else {
+        if (token.reading != null && token.reading!.isNotEmpty) {
+          singleRubyReading = token.reading;
+        }
+      }
+    }
 
     Widget content;
-    if (hasRuby) {
+    if (rubyParts != null && rubyParts.isNotEmpty) {
       content = Row(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.end,
-        children: token.rubyParts!.map((part) {
+        children: rubyParts.map((part) {
           final hasPartReading = part.reading != null && part.reading!.isNotEmpty;
           return Column(
             mainAxisSize: MainAxisSize.min,
@@ -547,7 +633,7 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
                     ),
                   ),
                 )
-              else if (showFurigana)
+              else
                 SizedBox(
                   height: rubyFontSize * 1.15 + 1,
                 ),
@@ -574,7 +660,7 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
           );
         }).toList(),
       );
-    } else if (hasReading) {
+    } else if (singleRubyReading != null && singleRubyReading.isNotEmpty) {
       content = Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -582,7 +668,7 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
           Padding(
             padding: const EdgeInsets.only(bottom: 1),
             child: Text(
-              tokenReading,
+              singleRubyReading,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.88),
                 fontSize: rubyFontSize,
@@ -600,7 +686,7 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
             ),
           ),
           Text(
-            token.surface,
+            surfaceText,
             style: TextStyle(
               color: textColor,
               fontSize: surfaceFontSize,
@@ -622,7 +708,7 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
       );
     } else {
       content = Text(
-        token.surface,
+        surfaceText,
         style: TextStyle(
           color: textColor,
           fontSize: surfaceFontSize,

@@ -109,6 +109,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       preferredLevel: _controller.level.value,
       nativeLanguage: _controller.nativeLang.value,
       showDualSubtitles: _controller.showDualSubtitles.value,
+      readingDisplayMode: _controller.readingDisplayMode.value,
       dailyGoalMinutes: _controller.dailyGoal.value,
       isReplay: widget.isReplay,
     );
@@ -195,6 +196,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       final selectedDailyGoal = _controller.dailyGoal.value;
       final selectedCompanion = _controller.companion.value;
       final selectedThemeMode = _controller.themeMode.value;
+      final selectedReadingDisplayMode = _controller.readingDisplayMode.value;
       final isCompleting = _controller.isCompleting.value;
       final canGoBack = _controller.canGoBack;
 
@@ -282,7 +284,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               selectedCompanion: selectedCompanion,
                               dailyGoal: selectedDailyGoal,
                               themeMode: selectedThemeMode,
+                              readingDisplayMode: selectedReadingDisplayMode,
                               onThemeChanged: _controller.setThemeMode,
+                              onReadingDisplayModeChanged:
+                                  _controller.setReadingDisplayMode,
                             ),
                           ],
                         ),

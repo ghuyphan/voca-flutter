@@ -1079,6 +1079,13 @@ enum RubyDisplayMode { always, tap, never }
 enum SubtitleSize { small, medium, large }
 
 class UserSettings {
+  static const Map<String, String> defaultReadingDisplayModes = {
+    'ja': 'annotated',
+    'zh': 'annotated',
+    'ko': 'annotated',
+    'en': 'native',
+  };
+
   final RubyDisplayMode rubyMode;
   final SubtitleSize subtitleSize;
   final String nativeLanguage;
@@ -1086,7 +1093,8 @@ class UserSettings {
   final double playbackRate;
   final String themeMode; // 'system' | 'light' | 'dark'
   final String uiLanguage; // 'en' | 'vi' | 'ja' | 'ko' | 'zh'
-  final String readingDisplayMode; // 'annotated' | 'native' | 'reading' | 'annotatedRomanized' | 'romanized'
+  final String readingDisplayMode; // Active mode: 'annotated' | 'native' | 'reading' | 'annotatedRomanized' | 'romanized'
+  final Map<String, String> readingDisplayModes; // Isolated per-language reading modes
   final bool showDualSubtitles;
   final String dualSubtitleTargetLang;
   final bool hasSeenSubtitleCoachmark;
@@ -1107,6 +1115,7 @@ class UserSettings {
     this.themeMode = 'system',
     this.uiLanguage = 'en',
     this.readingDisplayMode = 'annotated',
+    Map<String, String>? readingDisplayModes,
     this.showDualSubtitles = true,
     this.dualSubtitleTargetLang = 'en',
     this.hasSeenSubtitleCoachmark = false,
@@ -1117,7 +1126,13 @@ class UserSettings {
     this.offlineTranslationEnabled = true,
     this.offlineTranslationWifiOnly = true,
     this.hapticFeedbackEnabled = true,
-  });
+  }) : readingDisplayModes = readingDisplayModes ?? defaultReadingDisplayModes;
+
+  String readingModeFor(String? lang) {
+    if (lang == null || lang.isEmpty) return readingDisplayMode;
+    final clean = lang.toLowerCase().trim();
+    return readingDisplayModes[clean] ?? readingDisplayMode;
+  }
 
   UserSettings copyWith({
     RubyDisplayMode? rubyMode,
@@ -1128,6 +1143,7 @@ class UserSettings {
     String? themeMode,
     String? uiLanguage,
     String? readingDisplayMode,
+    Map<String, String>? readingDisplayModes,
     bool? showDualSubtitles,
     String? dualSubtitleTargetLang,
     bool? hasSeenSubtitleCoachmark,
@@ -1148,6 +1164,7 @@ class UserSettings {
       themeMode: themeMode ?? this.themeMode,
       uiLanguage: uiLanguage ?? this.uiLanguage,
       readingDisplayMode: readingDisplayMode ?? this.readingDisplayMode,
+      readingDisplayModes: readingDisplayModes ?? this.readingDisplayModes,
       showDualSubtitles: showDualSubtitles ?? this.showDualSubtitles,
       dualSubtitleTargetLang: dualSubtitleTargetLang ?? this.dualSubtitleTargetLang,
       hasSeenSubtitleCoachmark: hasSeenSubtitleCoachmark ?? this.hasSeenSubtitleCoachmark,
@@ -1170,6 +1187,7 @@ class UserSettings {
     'themeMode': themeMode,
     'uiLanguage': uiLanguage,
     'readingDisplayMode': readingDisplayMode,
+    'readingDisplayModes': readingDisplayModes,
     'showDualSubtitles': showDualSubtitles,
     'dualSubtitleTargetLang': dualSubtitleTargetLang,
     'hasSeenSubtitleCoachmark': hasSeenSubtitleCoachmark,
@@ -1183,6 +1201,13 @@ class UserSettings {
   };
 
   factory UserSettings.fromJson(Map<String, dynamic> json) {
+    final rawModes = json['readingDisplayModes'];
+    final modesMap = rawModes is Map
+        ? rawModes.map((k, v) => MapEntry(k.toString(), v.toString()))
+        : Map<String, String>.from(defaultReadingDisplayModes);
+
+    final activeReadingMode = json['readingDisplayMode'] as String? ?? 'annotated';
+
     return UserSettings(
       rubyMode: RubyDisplayMode.values.firstWhere(
         (e) => e.name == json['rubyMode'],
@@ -1197,7 +1222,8 @@ class UserSettings {
       playbackRate: (json['playbackRate'] as num?)?.toDouble() ?? 1.0,
       themeMode: json['themeMode'] as String? ?? 'system',
       uiLanguage: json['uiLanguage'] as String? ?? 'en',
-      readingDisplayMode: json['readingDisplayMode'] as String? ?? 'annotated',
+      readingDisplayMode: activeReadingMode,
+      readingDisplayModes: modesMap,
       showDualSubtitles: json['showDualSubtitles'] as bool? ?? true,
       dualSubtitleTargetLang: json['dualSubtitleTargetLang'] as String? ?? 'en',
       hasSeenSubtitleCoachmark: json['hasSeenSubtitleCoachmark'] as bool? ?? false,

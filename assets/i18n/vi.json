@@ -1214,6 +1214,11 @@
       "freezeDesc": "Tự động giữ chuỗi khi bạn bận rộn"
     },
     "starterBonusTitle": "Quyền lợi hỗ trợ học tập",
+    "readingModeFurigana": "Furigana",
+    "readingModeRomaji": "Romaji",
+    "readingModeKana": "Kana",
+    "readingModePinyin": "Pinyin",
+    "readingModeOff": "Tắt",
     "enterRealm": "Bắt Đầu Học Ngay",
     "claimStarterPack": "Bắt đầu học ngay",
     "starterPackClaimed": "Đã kích hoạt quà khởi đầu! +50 XP & thắp sáng chuỗi streak Ngày 1.",

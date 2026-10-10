@@ -14,6 +14,7 @@ import '../settings/offline_translation_screen.dart';
 import 'add_to_playlist_sheet.dart';
 import 'voca_bottom_sheet.dart';
 import '../widgets/circle_flag.dart';
+import '../widgets/voca_download_progress_indicator.dart';
 
 /// YouTube-style nested multi-panel settings sheet.
 /// Ported 1:1 from lingua-tube's playerSettingsTemplate:
@@ -65,19 +66,6 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
   static const List<double> _playbackSpeeds = [
     0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0
   ];
-
-  String _getReadingScriptIcon(String lang) {
-    switch (lang.toLowerCase()) {
-      case 'ja':
-        return 'あ';
-      case 'zh':
-        return '拼';
-      case 'ko':
-        return '한';
-      default:
-        return 'Aa';
-    }
-  }
 
   String _getReadingModeName(String lang) {
     switch (lang.toLowerCase()) {
@@ -201,15 +189,17 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
       final fontSize = widget.controller.subtitleSize.value;
       final showDual = widget.controller.showTranslation.value;
       final showReading = widget.controller.showFurigana.value;
+      final readingMode = widget.controller.readingDisplayMode.value;
+      final grammarEnabled = widget.controller.grammarModeEnabled.value;
       final targetLang = widget.controller.dualSubLanguage.value ?? 'en';
 
       final speedLabel = (currentSpeed - 1.0).abs() < 0.05
           ? (context.t('player.normalSpeed', null, 'Bình thường (1x)'))
           : '${currentSpeed}x';
 
-      final readingLabel = showReading
-          ? _getReadingModeName(currentLang)
-          : (context.t('player.off', null, 'Tắt'));
+      final readingLabel = (!showReading || readingMode == 'native')
+          ? (context.t('player.off', null, 'Tắt'))
+          : getReadingDisplayLabel(readingMode, currentLang, context);
 
       final dualSubLabel = showDual
           ? _getTargetLangName(targetLang)
@@ -282,7 +272,9 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
               context: context,
               icon: Icons.auto_awesome_rounded,
               label: context.t('grammar.mode', null, 'Ngữ pháp'),
-              value: context.t('common.on', null, 'Bật'),
+              value: grammarEnabled
+                  ? context.t('common.on', null, 'Bật')
+                  : context.t('player.off', null, 'Tắt'),
               onTap: () => setState(() => _currentView = 'grammar'),
             ),
 
@@ -522,11 +514,14 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
                 );
               } else if (isDownloading) {
                 trailing = SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: colors.accentPrimary,
+                  width: 32,
+                  height: 32,
+                  child: Center(
+                    child: VocaDownloadProgressIndicator(
+                      size: 20,
+                      strokeWidth: 2,
+                      semanticsLabel: 'Downloading $locName model',
+                    ),
                   ),
                 );
               } else if (isDownloaded) {
@@ -605,101 +600,83 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
     );
   }
 
+  Widget _buildReadingModeLeading(String mode, String lang, VocaColorPalette colors) {
+    if (mode == 'native') {
+      return Container(
+        width: 26,
+        height: 26,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: colors.bgSurface,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: colors.borderColor),
+        ),
+        child: Icon(Icons.block_rounded, size: 16, color: colors.textMuted),
+      );
+    }
+    final isRoman = mode == 'romanized' || mode == 'annotatedRomanized';
+    final text = isRoman ? 'Aa' : getReadingScriptIcon(lang);
+    return Container(
+      width: 26,
+      height: 26,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: colors.accentPrimarySoft,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: colors.accentPrimary,
+          fontWeight: FontWeight.bold,
+          fontSize: 13,
+        ),
+      ),
+    );
+  }
+
   // ==========================================
   // 5. READING PANEL
   // ==========================================
   Widget _buildReadingPanel(BuildContext context) {
     final colors = context.vocaColors;
     final currentLang = widget.controller.activeLanguage.value;
-    final showReading = widget.controller.showFurigana.value;
     final readingTitle = _getReadingModeName(currentLang);
-    final scriptIcon = _getReadingScriptIcon(currentLang);
+    final availableModes = getAvailableReadingDisplayModes(currentLang);
 
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildPanelHeader(
-            context: context,
-            title: readingTitle,
-            icon: Icons.text_fields_rounded,
-          ),
+    return Watch((context) {
+      final activeMode = widget.controller.readingDisplayMode.value;
+      final showReading = widget.controller.showFurigana.value;
 
-          // Off
-          _buildOptionRow(
-            context: context,
-            label: context.t('player.off', null, 'Off'),
-            isSelected: !showReading,
-            leading: Icon(Icons.block_rounded, size: 18, color: colors.textMuted),
-            onTap: () {
-              widget.controller.showFurigana.value = false;
-              setState(() => _currentView = 'main');
-            },
-          ),
-
-          // Annotated (Furigana / Pinyin / Romaja)
-          _buildOptionRow(
-            context: context,
-            label: readingTitle,
-            isSelected: showReading,
-            leading: Container(
-              width: 24,
-              height: 24,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: colors.accentPrimarySoft,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                scriptIcon,
-                style: TextStyle(
-                  color: colors.accentPrimary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                ),
-              ),
-            ),
-            onTap: () {
-              widget.controller.showFurigana.value = true;
-              setState(() => _currentView = 'main');
-            },
-          ),
-
-          // Romaji option for Japanese
-          if (currentLang.toLowerCase() == 'ja')
-            _buildOptionRow(
+      return SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildPanelHeader(
               context: context,
-              label: 'Romaji',
-              isSelected: false,
-              leading: Container(
-                width: 24,
-                height: 24,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: colors.bgSurface,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: colors.borderColor),
-                ),
-                child: Text(
-                  'Aa',
-                  style: TextStyle(
-                    color: colors.textPrimary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-              onTap: () {
-                widget.controller.showFurigana.value = true;
-                setState(() => _currentView = 'main');
-              },
+              title: readingTitle,
+              icon: Icons.text_fields_rounded,
             ),
-
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
+            for (final mode in availableModes) ...[
+              _buildOptionRow(
+                context: context,
+                label: getReadingDisplayLabel(mode, currentLang, context),
+                subtitle: getReadingDisplayExample(mode, currentLang),
+                isSelected: (!showReading && mode == 'native') ||
+                    (showReading && activeMode == mode),
+                leading: _buildReadingModeLeading(mode, currentLang, colors),
+                onTap: () {
+                  widget.controller.setReadingDisplayMode(mode);
+                  setState(() => _currentView = 'main');
+                },
+              ),
+            ],
+            const SizedBox(height: 16),
+          ],
+        ),
+      );
+    });
   }
 
   // ==========================================
@@ -708,34 +685,46 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
   Widget _buildGrammarPanel(BuildContext context) {
     final colors = context.vocaColors;
 
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildPanelHeader(
-            context: context,
-            title: context.t('grammar.mode', null, 'Grammar Mode'),
-            icon: Icons.auto_awesome_rounded,
-          ),
-          _buildOptionRow(
-            context: context,
-            label: context.t('player.off', null, 'Off'),
-            isSelected: false,
-            leading: Icon(Icons.block_rounded, size: 18, color: colors.textMuted),
-            onTap: () => setState(() => _currentView = 'main'),
-          ),
-          _buildOptionRow(
-            context: context,
-            label: context.t('common.on', null, 'On (Highlight Patterns)'),
-            isSelected: true,
-            leading: Icon(Icons.auto_awesome_rounded, size: 18, color: colors.colorGrammar),
-            onTap: () => setState(() => _currentView = 'main'),
-          ),
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
+    return Watch((context) {
+      final isEnabled = widget.controller.grammarModeEnabled.value;
+
+      return SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildPanelHeader(
+              context: context,
+              title: context.t('grammar.mode', null, 'Grammar Mode'),
+              icon: Icons.auto_awesome_rounded,
+            ),
+            _buildOptionRow(
+              context: context,
+              label: context.t('player.off', null, 'Off'),
+              subtitle: context.t('grammar.modeOffDesc', null, 'Do not highlight grammar points in subtitles'),
+              isSelected: !isEnabled,
+              leading: Icon(Icons.block_rounded, size: 18, color: colors.textMuted),
+              onTap: () {
+                widget.controller.setGrammarMode(false);
+                setState(() => _currentView = 'main');
+              },
+            ),
+            _buildOptionRow(
+              context: context,
+              label: context.t('common.on', null, 'On'),
+              subtitle: context.t('grammar.modeOnDesc', null, 'Highlight detected grammar patterns with colored markers'),
+              isSelected: isEnabled,
+              leading: Icon(Icons.auto_awesome_rounded, size: 18, color: colors.colorGrammar),
+              onTap: () {
+                widget.controller.setGrammarMode(true);
+                setState(() => _currentView = 'main');
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      );
+    });
   }
 
   // ==========================================
@@ -798,6 +787,7 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
   Widget _buildOptionRow({
     required BuildContext context,
     required String label,
+    String? subtitle,
     required bool isSelected,
     bool isDisabled = false,
     Widget? leading,
@@ -817,15 +807,31 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
               const SizedBox(width: 12),
             ],
             Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 14.5,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  color: isDisabled
-                      ? colors.textMuted
-                      : (isSelected ? colors.accentPrimary : colors.textPrimary),
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                      color: isDisabled
+                          ? colors.textMuted
+                          : (isSelected ? colors.accentPrimary : colors.textPrimary),
+                    ),
+                  ),
+                  if (subtitle != null && subtitle.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colors.textMuted,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
             if (trailing != null) ...[

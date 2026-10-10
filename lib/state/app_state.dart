@@ -88,8 +88,24 @@ class AppState {
     }
   }
 
+  String getReadingDisplayModeFor(String? lang) {
+    return userSettings.value.readingModeFor(lang);
+  }
+
   void setLanguage(String lang) {
     activeLanguage.value = lang;
+    final langMode = getReadingDisplayModeFor(lang);
+    if (userSettings.value.readingDisplayMode != langMode) {
+      final shouldBeFurigana = langMode != 'native';
+      updateUserSettings(userSettings.value.copyWith(
+        readingDisplayMode: langMode,
+        rubyMode: shouldBeFurigana
+            ? (userSettings.value.rubyMode == RubyDisplayMode.never
+                ? RubyDisplayMode.always
+                : userSettings.value.rubyMode)
+            : RubyDisplayMode.never,
+      ));
+    }
     try {
       grammarEngine.loadLanguage(lang);
       final uiLang = I18nService.instance.currentLanguage.value;
@@ -182,12 +198,35 @@ class AppState {
     } catch (_) {}
   }
 
-  void setReadingDisplayMode(String mode) {
-    updateUserSettings(userSettings.value.copyWith(readingDisplayMode: mode));
+  void setReadingDisplayMode(String mode, {String? language}) {
+    final targetLang = language ?? activeLanguage.value;
+    final updatedModes = Map<String, String>.from(userSettings.value.readingDisplayModes);
+    updatedModes[targetLang] = mode;
+
+    var newRubyMode = userSettings.value.rubyMode;
+    if (mode == 'native') {
+      newRubyMode = RubyDisplayMode.never;
+    } else if (newRubyMode == RubyDisplayMode.never) {
+      newRubyMode = RubyDisplayMode.always;
+    }
+    updateUserSettings(userSettings.value.copyWith(
+      readingDisplayMode: mode,
+      readingDisplayModes: updatedModes,
+      rubyMode: newRubyMode,
+    ));
   }
 
   void setRubyMode(RubyDisplayMode mode) {
-    updateUserSettings(userSettings.value.copyWith(rubyMode: mode));
+    var newReadingMode = userSettings.value.readingDisplayMode;
+    if (mode == RubyDisplayMode.never && newReadingMode == 'annotated') {
+      newReadingMode = 'native';
+    } else if (mode != RubyDisplayMode.never && newReadingMode == 'native') {
+      newReadingMode = 'annotated';
+    }
+    updateUserSettings(userSettings.value.copyWith(
+      rubyMode: mode,
+      readingDisplayMode: newReadingMode,
+    ));
   }
 
   void setSubtitleSize(SubtitleSize size) {
@@ -274,6 +313,7 @@ class AppState {
     required String preferredLevel,
     required String nativeLanguage,
     required bool showDualSubtitles,
+    String? readingDisplayMode,
     int dailyGoalMinutes = 10,
     bool isReplay = false,
   }) async {
@@ -285,11 +325,18 @@ class AppState {
         ? true
         : showDualSubtitles;
 
+    final updatedModes = Map<String, String>.from(userSettings.value.readingDisplayModes);
+    final effectiveReadingMode = readingDisplayMode ??
+        (companionClass == 'bard' ? 'annotated' : userSettings.value.readingModeFor(learningLanguage));
+    updatedModes[learningLanguage] = effectiveReadingMode;
+
     final updated = userSettings.value.copyWith(
       hasCompletedOnboarding: true,
       nativeLanguage: nativeLanguage,
       dualSubtitleTargetLang: nativeLanguage,
       showDualSubtitles: effectiveDualSubtitles,
+      readingDisplayMode: effectiveReadingMode,
+      readingDisplayModes: updatedModes,
       preferredLevel: preferredLevel,
       companionClass: companionClass,
       dailyGoalMinutes: dailyGoalMinutes,
