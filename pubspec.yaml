@@ -68,6 +68,7 @@ flutter:
     - assets/avatars/
     - assets/flags/
     - assets/illustrations/
+    - assets/audio/
 
 flutter_native_splash:
   color: "#F3F4F7"

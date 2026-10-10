@@ -47,6 +47,8 @@ class DictionaryBottomSheet extends StatefulWidget {
   final String explanationLang;
   final String? contextSentence;
   final String? contextTranslation;
+  final String? sourceVideoId;
+  final double? sourceTimestamp;
 
   const DictionaryBottomSheet({
     super.key,
@@ -55,6 +57,8 @@ class DictionaryBottomSheet extends StatefulWidget {
     this.explanationLang = 'vi',
     this.contextSentence,
     this.contextTranslation,
+    this.sourceVideoId,
+    this.sourceTimestamp,
   });
 
   static Future<void> show(
@@ -64,6 +68,8 @@ class DictionaryBottomSheet extends StatefulWidget {
     String explanationLang = 'vi',
     String? contextSentence,
     String? contextTranslation,
+    String? sourceVideoId,
+    double? sourceTimestamp,
   }) {
     return showVocaBottomSheet(
       context: context,
@@ -76,6 +82,8 @@ class DictionaryBottomSheet extends StatefulWidget {
         explanationLang: explanationLang,
         contextSentence: contextSentence,
         contextTranslation: contextTranslation,
+        sourceVideoId: sourceVideoId,
+        sourceTimestamp: sourceTimestamp,
       ),
     );
   }
@@ -363,6 +371,9 @@ class _DictionaryBottomSheetState extends State<DictionaryBottomSheet> {
       final pos = widget.token.partOfSpeech ?? _activeEntry?.partOfSpeech;
 
       final id = generateDeterministicRecordId([userId, word.toLowerCase(), widget.sourceLang]);
+      final resolvedVideoId = widget.sourceVideoId ?? PlayerCoordinator.instance.activeVideoId.value;
+      final resolvedTimestamp = widget.sourceTimestamp ??
+          (resolvedVideoId != null ? PlayerCoordinator.instance.currentTime.value : null);
 
       final card = Flashcard(
         id: id,
@@ -377,6 +388,8 @@ class _DictionaryBottomSheetState extends State<DictionaryBottomSheet> {
         partOfSpeech: pos,
         contextSentence: widget.contextSentence,
         contextTranslation: widget.contextTranslation,
+        sourceVideoId: resolvedVideoId,
+        sourceTimestamp: resolvedTimestamp,
         srsNextReviewAt: DateTime.now(),
         createdAt: DateTime.now(),
       );

@@ -37,7 +37,7 @@ class OfflineTranslationScreen extends StatelessWidget {
           child: Center(child: VocaBackButton()),
         ),
         title: Text(
-          context.t('settings.offlineTranslation', null, 'Offline Translation'),
+          context.t('settings.offlineTranslation', null, 'On-Device Translation'),
           style: TextStyle(
             color: colors.textPrimary,
             fontSize: 18,
@@ -238,9 +238,9 @@ class OfflineTranslationScreen extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // 4. Offline Language Models List
+            // 4. On-Device Language Models List
             _buildSectionHeader(
-              context.t('settings.languageModels', null, 'OFFLINE LANGUAGE MODELS (~30 MB EACH)'),
+              context.t('settings.languageModels', null, 'ON-DEVICE LANGUAGE MODELS (~30 MB EACH)'),
               colors,
             ),
             Container(
@@ -285,7 +285,7 @@ class OfflineTranslationScreen extends StatelessWidget {
                             toastMsg = context.t(
                               'settings.restartRequired',
                               null,
-                              'Please restart the app to activate offline models',
+                              'Please restart the app to activate on-device models',
                             );
                           } else if (rawErr == 'settings.downloadWaitingWifi') {
                             toastMsg = context.t(
@@ -364,7 +364,7 @@ class OfflineTranslationScreen extends StatelessWidget {
     } else if (isDownloading) {
       subtitleText = context.t('settings.downloadingModel', null, 'Downloading model (~30 MB)...');
     } else if (isDownloaded) {
-      subtitleText = context.t('settings.modelReady', null, 'Downloaded • Ready offline');
+      subtitleText = context.t('settings.modelReady', null, 'Downloaded • Ready on-device');
     } else {
       subtitleText = context.t('settings.notDownloaded', null, 'Not downloaded (~30 MB)');
     }
@@ -376,7 +376,7 @@ class OfflineTranslationScreen extends StatelessWidget {
         displayError = context.t(
           'settings.restartRequired',
           null,
-          'Please restart the app to activate offline models',
+          'Please restart the app to activate on-device models',
         );
       } else if (errorMessage == 'settings.downloadWaitingWifi') {
         displayError = context.t(

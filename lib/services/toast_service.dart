@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../config/voca_theme.dart';
+import 'haptic_service.dart';
 
 enum ToastType { success, error, info, warning }
 
@@ -27,19 +27,19 @@ class ToastService {
     VoidCallback? onAction,
     Duration duration = const Duration(milliseconds: 3200),
   }) {
-    // 1. Native Platform Haptic Feedback
+    // 1. Native Platform Haptic Feedback (unified via HapticService)
     switch (type) {
       case ToastType.success:
-        HapticFeedback.lightImpact();
+        HapticService.light();
         break;
       case ToastType.warning:
-        HapticFeedback.mediumImpact();
+        HapticService.medium();
         break;
       case ToastType.error:
-        HapticFeedback.heavyImpact();
+        HapticService.heavy();
         break;
       case ToastType.info:
-        HapticFeedback.selectionClick();
+        HapticService.selection();
         break;
     }
 

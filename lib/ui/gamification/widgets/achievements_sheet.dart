@@ -1,10 +1,10 @@
 // lib/ui/gamification/widgets/achievements_sheet.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import '../../../config/voca_theme.dart';
 import '../../../services/gamification_service.dart';
+import '../../../services/haptic_service.dart';
 import '../../../services/i18n_service.dart';
 import '../../../services/toast_service.dart';
 import '../../../state/app_state.dart';
@@ -219,7 +219,7 @@ class _AchievementsSheetState extends State<AchievementsSheet> {
                   colors: colors,
                   achievement: a,
                   onClaim: () {
-                    HapticFeedback.mediumImpact();
+                    HapticService.medium();
                     final ok = gamification.claimAchievement(a.id);
                     if (ok) {
                       ToastService.success(

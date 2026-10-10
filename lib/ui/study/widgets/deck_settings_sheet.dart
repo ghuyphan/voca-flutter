@@ -1,8 +1,8 @@
 // lib/ui/study/widgets/deck_settings_sheet.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../../config/voca_theme.dart';
+import '../../../services/haptic_service.dart';
 import '../../../services/i18n_service.dart';
 import '../../sheets/voca_bottom_sheet.dart';
 import '../study_session_controller.dart';
@@ -228,7 +228,7 @@ class _DeckSettingsSheetState extends State<DeckSettingsSheet> {
           child: InkWell(
             borderRadius: BorderRadius.circular(10),
             onTap: () {
-              HapticFeedback.selectionClick();
+              HapticService.selection();
               setState(() => _subDeck = type);
             },
             child: ConstrainedBox(
@@ -286,7 +286,7 @@ class _DeckSettingsSheetState extends State<DeckSettingsSheet> {
           child: InkWell(
             borderRadius: BorderRadius.circular(10),
             onTap: () {
-              HapticFeedback.selectionClick();
+              HapticService.selection();
               setState(() => _sessionSize = size);
             },
             child: ConstrainedBox(

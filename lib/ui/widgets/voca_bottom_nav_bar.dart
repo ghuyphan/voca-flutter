@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import '../../config/voca_theme.dart';
+import '../../services/haptic_service.dart';
 import '../../services/i18n_service.dart';
 import '../../state/app_state.dart';
 
@@ -51,6 +52,7 @@ class VocaBottomNavBar extends StatelessWidget {
       return NavigationBar(
         selectedIndex: currentIndex.clamp(0, 3),
           onDestinationSelected: (index) {
+            HapticService.selection();
             onTabSelected(index);
             if (index == 3) {
               onMorePressed?.call();

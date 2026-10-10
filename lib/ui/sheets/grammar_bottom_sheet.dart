@@ -89,6 +89,9 @@ class _GrammarBottomSheetState extends State<GrammarBottomSheet> {
         p.language,
       ]);
 
+      final activeVid = PlayerCoordinator.instance.activeVideoId.value;
+      final activeTs = activeVid != null ? PlayerCoordinator.instance.currentTime.value : null;
+
       final card = Flashcard(
         id: id,
         userId: userId,
@@ -100,6 +103,8 @@ class _GrammarBottomSheetState extends State<GrammarBottomSheet> {
         contextSentence: p.examples.isNotEmpty ? p.examples.first.sentence : null,
         contextTranslation: p.examples.isNotEmpty ? p.examples.first.translation : null,
         notes: p.formation.isNotEmpty ? 'Formation: ${p.formation}' : null,
+        sourceVideoId: activeVid,
+        sourceTimestamp: activeTs,
         srsNextReviewAt: DateTime.now(),
         createdAt: DateTime.now(),
       );

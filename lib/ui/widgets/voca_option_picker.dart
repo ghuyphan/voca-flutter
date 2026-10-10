@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../../config/voca_theme.dart';
+import '../../services/haptic_service.dart';
 import '../sheets/voca_bottom_sheet.dart';
 
 class OptionItem {
@@ -62,6 +63,7 @@ Future<String?> showVocaOptionPicker({
               color: isSelected ? colors.accentPrimarySoft : Colors.transparent,
               child: InkWell(
               onTap: () async {
+                HapticService.selection();
                 if (onSelect != null) {
                   onSelect(item.value);
                   // Brief micro-pause for visual tactile ink feedback and live transform

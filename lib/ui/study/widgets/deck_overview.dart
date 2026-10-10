@@ -2,11 +2,11 @@
 
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import '../../../config/voca_theme.dart';
 import '../../../models/voca_models.dart';
 import '../../../services/gamification_service.dart';
+import '../../../services/haptic_service.dart';
 import '../../../services/i18n_service.dart';
 import '../../../services/toast_service.dart';
 import '../../../state/app_state.dart';
@@ -165,7 +165,7 @@ class DeckOverview extends StatelessWidget {
                     color: Colors.transparent,
                     child: InkWell(
                       onTap: () {
-                        HapticFeedback.selectionClick();
+                        HapticService.selection();
                         StreakSheet.show(context);
                       },
                       borderRadius: BorderRadius.circular(999),
@@ -229,7 +229,7 @@ class DeckOverview extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: () {
-            HapticFeedback.mediumImpact();
+            HapticService.medium();
             if (dueCount > 0) {
               onStartDueOnlySession();
             } else if (!isEmptyDeck) {
@@ -392,7 +392,9 @@ class DeckOverview extends StatelessWidget {
                 child: FractionallySizedBox(
                   alignment: Alignment.centerLeft,
                   widthFactor: goalFraction,
-                  child: Container(color: colors.textPrimary),
+                  child: Container(
+                    color: goalFraction >= 1.0 ? colors.success : colors.accentPrimary,
+                  ),
                 ),
               ),
             ),
@@ -497,7 +499,7 @@ class DeckOverview extends StatelessWidget {
               color: Colors.transparent,
               child: InkWell(
                 onTap: () {
-                  HapticFeedback.selectionClick();
+                  HapticService.selection();
                   onTap();
                 },
                 borderRadius: BorderRadius.circular(999),
@@ -600,7 +602,7 @@ class DeckOverview extends StatelessWidget {
                     color: Colors.transparent,
                     child: InkWell(
                       onTap: () {
-                        HapticFeedback.selectionClick();
+                        HapticService.selection();
                         controller.toggleDueOnly();
                         if (controller.dueOnly.value && controller.dueCount.value == 0) {
                           ToastService.info(
@@ -671,7 +673,7 @@ class DeckOverview extends StatelessWidget {
             height: 50,
             child: FilledButton(
               onPressed: () {
-                HapticFeedback.mediumImpact();
+                HapticService.medium();
                 if (isEmptyDeck) {
                   ToastService.info(
                     context,
@@ -767,7 +769,7 @@ class DeckOverview extends StatelessWidget {
       height: 44,
       child: FilledButton.tonalIcon(
         onPressed: () {
-          HapticFeedback.selectionClick();
+          HapticService.selection();
           onExploreVideos?.call();
         },
         style: FilledButton.styleFrom(
@@ -1051,7 +1053,7 @@ class DeckOverview extends StatelessWidget {
           const SizedBox(height: 12),
           InkWell(
             onTap: () {
-              HapticFeedback.selectionClick();
+              HapticService.selection();
               final candidateCards = controller.allCards.value
                   .where((c) =>
                       c.contextSentence != null &&
@@ -1503,7 +1505,7 @@ class DeckOverview extends StatelessWidget {
     if (isCompleted) {
       return FilledButton(
         onPressed: () {
-          HapticFeedback.mediumImpact();
+          HapticService.medium();
           final ok = gamification.claimMission(mission.id);
           if (ok) {
             ToastService.success(
@@ -1676,10 +1678,10 @@ class DeckOverview extends StatelessWidget {
           if (isReadyToOpen)
             FilledButton(
               onPressed: () {
-                HapticFeedback.heavyImpact();
+                HapticService.heavy();
                 final ok = gamification.claimDailyBonus();
                 if (ok) {
-                  HapticFeedback.lightImpact();
+                  HapticService.light();
                   ToastService.success(
                     context,
                     context.t('missions.dailyChestClaimed', null, 'Claimed +$bonusXp XP Daily Completion Chest! 🏆'),

@@ -87,10 +87,12 @@ void main() {
       expect(find.text('Learning Language'), findsOneWidget);
       expect(find.text('Interface Language'), findsOneWidget);
       expect(find.text('Furigana & Ruby'), findsOneWidget);
+      expect(find.text('On-Device Translation'), findsOneWidget);
 
       // Section 2: Appearance
       expect(find.text('APPEARANCE'), findsOneWidget);
       expect(find.text('Theme'), findsOneWidget);
+      expect(find.text('Haptic Feedback'), findsOneWidget);
 
       // Section 3: About & Updates
       expect(find.text('ABOUT & UPDATES'), findsOneWidget);
@@ -101,6 +103,76 @@ void main() {
 
       // Simplified clean footer
       expect(find.text('VOCA MOBILE • v1.2.4'), findsOneWidget);
+    });
+
+    testWidgets('navigates to HapticSettingsScreen and toggles haptic feedback on/off', (tester) async {
+      tester.view.physicalSize = const Size(800, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(buildTestableWidget(const SettingsScreen()));
+      await tester.pumpAndSettle();
+
+      expect(AppState.instance.userSettings.value.hapticFeedbackEnabled, isTrue);
+      expect(find.text('Haptic Feedback'), findsOneWidget);
+      expect(find.text('On'), findsOneWidget);
+
+      // Tap Haptic Feedback tile to open sub-screen
+      await tester.tap(find.text('Haptic Feedback'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Tactile Touch Feedback'), findsOneWidget);
+      expect(find.text('Enable Haptic Feedback'), findsOneWidget);
+
+      // Toggle off
+      await tester.tap(find.text('Enable Haptic Feedback'));
+      await tester.pumpAndSettle();
+      expect(AppState.instance.userSettings.value.hapticFeedbackEnabled, isFalse);
+
+      // Pop back and verify subtitle updated to Off
+      await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+      await tester.pumpAndSettle();
+      expect(find.text('Off'), findsWidgets);
+    });
+
+    testWidgets('navigates to unified sub-screens for Learning Language and Theme', (tester) async {
+      tester.view.physicalSize = const Size(800, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(buildTestableWidget(const SettingsScreen()));
+      await tester.pumpAndSettle();
+
+      // Open Learning Language sub-screen
+      await tester.tap(find.text('Learning Language'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Target Immersion Language'), findsOneWidget);
+      expect(find.text('中文'), findsOneWidget);
+
+      // Select Chinese
+      await tester.tap(find.text('中文'));
+      await tester.pumpAndSettle();
+      expect(AppState.instance.activeLanguage.value, equals('zh'));
+
+      // Pop back to SettingsScreen
+      await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+      await tester.pumpAndSettle();
+
+      // Open Theme sub-screen
+      await tester.tap(find.text('Theme'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Visual Appearance'), findsOneWidget);
+      await tester.tap(find.text('Light'));
+      await tester.pumpAndSettle();
+      expect(AppState.instance.userSettings.value.themeMode, equals('light'));
     });
 
     testWidgets('strictly removes raw emoji stat rows, library items, and bulky segmented buttons', (tester) async {

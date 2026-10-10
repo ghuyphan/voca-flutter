@@ -17,6 +17,7 @@ import '../widgets/voca_empty_state.dart';
 import '../widgets/voca_option_picker.dart';
 import '../widgets/voca_shimmer.dart';
 import '../widgets/voca_sliding_segmented_bar.dart';
+import '../widgets/voca_audio_pulse_button.dart';
 import 'word_detail_sheet.dart';
 
 enum VocabTypeFilter { all, words, grammar }
@@ -573,7 +574,6 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
               colors: colors,
               height: 38,
               onSelected: (val) {
-                HapticFeedback.selectionClick();
                 setState(() {
                   if (val == 'grammar') {
                     _selectedType = VocabTypeFilter.grammar;
@@ -1139,7 +1139,11 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
                     valueListenable: AudioService.instance.currentPlaying,
                     builder: (context, playingWord, _) {
                       final isPlaying = playingWord == card.word;
-                      return IconButton(
+                      return VocaAudioPulseButton(
+                        isPlaying: isPlaying,
+                        tooltip: context.t('study.listen', null, 'Listen'),
+                        size: 30,
+                        iconSize: 15,
                         onPressed: () {
                           AudioService.instance.playWord(
                             card.word,
@@ -1147,19 +1151,6 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
                             fallbackAudioUrl: card.audio,
                           );
                         },
-                        tooltip: context.t('study.listen', null, 'Listen'),
-                        iconSize: 15,
-                        visualDensity: VisualDensity.compact,
-                        style: IconButton.styleFrom(
-                          backgroundColor: isPlaying ? colors.accentPrimary : colors.bgSurface,
-                          foregroundColor: isPlaying ? Colors.white : colors.textMuted,
-                          side: BorderSide(
-                            color: isPlaying ? colors.accentPrimary : colors.borderColorLight,
-                          ),
-                          padding: EdgeInsets.zero,
-                          minimumSize: const Size(30, 30),
-                        ),
-                        icon: Icon(isPlaying ? Icons.volume_up_rounded : Icons.volume_up_outlined),
                       );
                     },
                   ),

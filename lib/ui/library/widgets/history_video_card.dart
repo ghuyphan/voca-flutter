@@ -6,6 +6,8 @@ import '../../../config/voca_theme.dart';
 import '../../../state/player_coordinator.dart';
 import '../../../utils/video_format_utils.dart';
 import '../../widgets/voca_level_badge.dart';
+import '../../widgets/voca_favorite_button.dart';
+import '../../widgets/pressable_scale.dart';
 
 /// Sleek 16:9 History Video Card matching lingua-tube's yt-video-card.
 class HistoryVideoCard extends StatelessWidget {
@@ -81,14 +83,16 @@ class HistoryVideoCard extends StatelessWidget {
         child: Icon(Icons.delete_outline_rounded, color: colors.error, size: 22),
       ),
       onDismissed: (_) => onRemove(),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        decoration: BoxDecoration(
-          color: colors.bgCard,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: colors.borderColor),
-        ),
-        clipBehavior: Clip.antiAlias,
+      child: PressableScale(
+        pressedScale: 0.985,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          decoration: BoxDecoration(
+            color: colors.bgCard,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: colors.borderColor),
+          ),
+          clipBehavior: Clip.antiAlias,
         child: Material(
           color: Colors.transparent,
           child: InkWell(
@@ -290,28 +294,23 @@ class HistoryVideoCard extends StatelessWidget {
                   Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: onToggleFavorite,
-                        child: Padding(
-                          padding: const EdgeInsets.all(6),
-                          child: Icon(
-                            isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                            size: 19,
-                            color: isFavorite ? colors.accentPrimary : colors.textMuted,
-                          ),
-                        ),
+                      VocaFavoriteButton(
+                        isFavorite: isFavorite,
+                        onToggle: onToggleFavorite,
+                        iconSize: 20,
                       ),
-                      GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: onRemove,
-                        child: Padding(
-                          padding: const EdgeInsets.all(6),
-                          child: Icon(
-                            Icons.delete_outline_rounded,
-                            size: 19,
-                            color: colors.textMuted,
-                          ),
+                      IconButton(
+                        onPressed: onRemove,
+                        tooltip: 'Remove',
+                        icon: Icon(
+                          Icons.delete_outline_rounded,
+                          size: 20,
+                          color: colors.textMuted,
+                        ),
+                        visualDensity: VisualDensity.compact,
+                        style: IconButton.styleFrom(
+                          foregroundColor: colors.textMuted,
+                          minimumSize: const Size(48, 48),
                         ),
                       ),
                     ],
@@ -322,6 +321,7 @@ class HistoryVideoCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

@@ -2,9 +2,9 @@
 
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../../config/voca_theme.dart';
 import '../../../models/voca_models.dart';
+import '../../../services/haptic_service.dart';
 import '../../../services/i18n_service.dart';
 import '../../../state/app_state.dart';
 import '../../sheets/voca_bottom_sheet.dart';
@@ -116,7 +116,7 @@ class _DeckClozeQuizSheetState extends State<DeckClozeQuizSheet> {
     });
 
     if (isCorrect) {
-      HapticFeedback.lightImpact();
+      HapticService.light();
       final awarded = await AppState.instance.gamificationService.onQuizCompleted(
         quizKey: 'card_${currentCard.id}',
       );
@@ -129,7 +129,7 @@ class _DeckClozeQuizSheetState extends State<DeckClozeQuizSheet> {
         });
       }
     } else {
-      HapticFeedback.mediumImpact();
+      HapticService.medium();
     }
   }
 

@@ -2,9 +2,9 @@
 
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../../config/voca_theme.dart';
 import '../../../models/voca_models.dart';
+import '../../../services/haptic_service.dart';
 import '../../../services/srs_service.dart';
 import 'flashcard_face.dart';
 
@@ -27,7 +27,7 @@ class TinderStackController {
 }
 
 /// High-performance, physics-based multi-card swiper with natural thumb pivot rotation,
-/// dynamic scaling background layers, and bouncy spring snap-back.
+/// RepaintBoundary GPU layer caching, and seamless next-card promotion.
 class TinderCardStack extends StatefulWidget {
   final Flashcard currentCard;
   final Flashcard? nextCard;
@@ -68,19 +68,23 @@ class TinderCardStack extends StatefulWidget {
 
 class _TinderCardStackState extends State<TinderCardStack>
     with TickerProviderStateMixin {
-  // Drag physics & position
-  Offset _dragOffset = Offset.zero;
+  // Zero-rebuild drag offset notifier for 120fps gesture tracking
+  final ValueNotifier<Offset> _dragOffsetNotifier = ValueNotifier<Offset>(Offset.zero);
   bool _isDragging = false;
   bool _hasHapticTriggered = false;
+  DateTime? _panStartTime;
 
   // Animation controller for drag release snap-back & programmatic swipe
   late final AnimationController _flightController;
-  late Animation<Offset> _flightOffsetAnimation;
-  late Animation<double> _flightRotationAnimation;
+  Animation<Offset>? _flightOffsetAnimation;
+  Animation<double>? _flightRotationAnimation;
 
   // 3D perspective flip controller
   late final AnimationController _flipController;
   late final Animation<double> _flipAnimation;
+
+  // Merged listenable created once to avoid per-build allocation
+  late final Listenable _combinedAnimation;
 
   @override
   void initState() {
@@ -89,20 +93,26 @@ class _TinderCardStackState extends State<TinderCardStack>
 
     _flightController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 240),
+      duration: const Duration(milliseconds: 220),
     );
 
     _flipController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 260),
     );
     _flipAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _flipController, curve: Curves.easeInOutCubic),
+      CurvedAnimation(parent: _flipController, curve: Curves.easeOutCubic),
     );
 
     if (widget.isRevealed) {
       _flipController.value = 1.0;
     }
+
+    _combinedAnimation = Listenable.merge([
+      _dragOffsetNotifier,
+      _flightController,
+      _flipController,
+    ]);
   }
 
   @override
@@ -110,12 +120,11 @@ class _TinderCardStackState extends State<TinderCardStack>
     super.didUpdateWidget(oldWidget);
     if (widget.controller != oldWidget.controller) {
       oldWidget.controller?._detach();
-      widget.controller?._attach(this);
     }
+    widget.controller?._attach(this);
 
     if (widget.currentCard.id != oldWidget.currentCard.id ||
         widget.cardIndex != oldWidget.cardIndex) {
-      _dragOffset = Offset.zero;
       _isDragging = false;
       _hasHapticTriggered = false;
       _flightController.reset();
@@ -123,6 +132,7 @@ class _TinderCardStackState extends State<TinderCardStack>
       if (widget.isRevealed) {
         _flipController.value = 1.0;
       }
+      _dragOffsetNotifier.value = Offset.zero;
     } else if (widget.isRevealed != oldWidget.isRevealed) {
       if (widget.isRevealed) {
         _flipController.forward();
@@ -135,98 +145,105 @@ class _TinderCardStackState extends State<TinderCardStack>
   @override
   void dispose() {
     widget.controller?._detach();
+    _dragOffsetNotifier.dispose();
     _flightController.dispose();
     _flipController.dispose();
     super.dispose();
   }
 
   void toggleFlip() {
-    HapticFeedback.selectionClick();
+    if (_flightController.isAnimating) return;
+    HapticService.selection();
     widget.onToggleFlip();
   }
 
   void programmaticSwipe(SRSReviewRating rating) {
     if (_flightController.isAnimating) return;
-    HapticFeedback.mediumImpact();
+    HapticService.medium();
 
-    final size = MediaQuery.of(context).size;
+    final size = MediaQuery.sizeOf(context);
+    final startOffset = _dragOffsetNotifier.value;
     final endOffset = switch (rating) {
-      SRSReviewRating.again => Offset(-size.width * 1.5, 20),
-      SRSReviewRating.good => Offset(size.width * 1.5, 20),
-      SRSReviewRating.easy => Offset(0, -size.height * 1.2),
-      SRSReviewRating.hard => Offset(0, size.height * 1.2),
+      SRSReviewRating.again => Offset(-size.width * 1.2, 20),
+      SRSReviewRating.good => Offset(size.width * 1.2, 20),
+      SRSReviewRating.easy => Offset(0, -size.height * 0.85),
+      SRSReviewRating.hard => Offset(0, size.height * 0.85),
     };
 
     final endRotation = switch (rating) {
-      SRSReviewRating.again => -0.42,
-      SRSReviewRating.good => 0.42,
+      SRSReviewRating.again => -0.28,
+      SRSReviewRating.good => 0.28,
       SRSReviewRating.easy => 0.0,
       SRSReviewRating.hard => 0.0,
     };
 
+    _flightController.duration = const Duration(milliseconds: 250);
+
     _flightOffsetAnimation = Tween<Offset>(
-      begin: _dragOffset,
+      begin: startOffset,
       end: endOffset,
     ).animate(CurvedAnimation(parent: _flightController, curve: Curves.easeOutCubic));
 
     _flightRotationAnimation = Tween<double>(
-      begin: _calculateRotation(_dragOffset.dx, size.width),
+      begin: _calculateRotation(startOffset.dx, size.width),
       end: endRotation,
     ).animate(CurvedAnimation(parent: _flightController, curve: Curves.easeOutCubic));
 
     _flightController.forward(from: 0.0).then((_) {
       if (!mounted) return;
-      _dragOffset = endOffset;
-      _isDragging = false;
+      // Keep _flightController at 1.0 (off-screen) until didUpdateWidget swaps in the new card
+      // on the next frame, preventing any 1-frame snap-back flash of the old card.
       widget.onSwipe(rating);
     });
   }
 
   double _calculateRotation(double dx, double screenWidth) {
-    // Natural thumb pivot rotation (approx. 18-20 degrees tilt on full drag)
-    return (dx / screenWidth) * 0.60;
+    return (dx / screenWidth) * 0.45;
   }
 
-  double _calculateProgress(Size size) {
-    final horizontalRatio = (_dragOffset.dx.abs() / 110.0).clamp(0.0, 1.0);
-    final verticalRatio = (_dragOffset.dy.abs() / 110.0).clamp(0.0, 1.0);
+  double _calculateProgressFromOffset(Offset offset) {
+    final horizontalRatio = (offset.dx.abs() / 100.0).clamp(0.0, 1.0);
+    final verticalRatio = (offset.dy.abs() / 100.0).clamp(0.0, 1.0);
     return math.max(horizontalRatio, verticalRatio);
   }
 
   void _onPanStart(DragStartDetails details) {
-    if (_flightController.isAnimating) return;
-    setState(() {
-      _isDragging = true;
-      _hasHapticTriggered = false;
-    });
+    if (_flightController.isAnimating || _flightController.value > 0.0) return;
+    _isDragging = true;
+    _hasHapticTriggered = false;
+    _panStartTime = DateTime.now();
   }
 
   void _onPanUpdate(DragUpdateDetails details) {
-    if (_flightController.isAnimating) return;
-    setState(() {
-      _dragOffset += details.delta;
-    });
+    if (_flightController.isAnimating || _flightController.value > 0.0) return;
+    final nextOffset = _dragOffsetNotifier.value + details.delta;
+    _dragOffsetNotifier.value = nextOffset;
 
-    final dist = math.max(_dragOffset.dx.abs(), _dragOffset.dy.abs());
-    if (dist > 80 && !_hasHapticTriggered) {
+    final dist = math.max(nextOffset.dx.abs(), nextOffset.dy.abs());
+    if (dist > 65 && !_hasHapticTriggered) {
       _hasHapticTriggered = true;
-      HapticFeedback.lightImpact();
-    } else if (dist <= 80 && _hasHapticTriggered) {
+      HapticService.light();
+    } else if (dist <= 65 && _hasHapticTriggered) {
       _hasHapticTriggered = false;
     }
   }
 
   void _onPanEnd(DragEndDetails details) {
-    if (_flightController.isAnimating) return;
-    final size = MediaQuery.of(context).size;
+    if (_flightController.isAnimating || _flightController.value > 0.0) return;
+    final size = MediaQuery.sizeOf(context);
     final velocity = details.velocity.pixelsPerSecond;
+    final dragOffset = _dragOffsetNotifier.value;
+    final elapsedMs = _panStartTime != null
+        ? DateTime.now().difference(_panStartTime!).inMilliseconds
+        : 999;
 
-    // Reset if drag was negligible (taps are handled natively by onTap)
-    if (_dragOffset.distance < 10.0) {
-      setState(() {
-        _isDragging = false;
-        _dragOffset = Offset.zero;
-      });
+    // Forgiving tap-to-flip if user made a quick thumb tap with slight finger movement
+    if (dragOffset.distance < 24.0 && velocity.distance < 350.0) {
+      _isDragging = false;
+      _dragOffsetNotifier.value = Offset.zero;
+      if (elapsedMs < 260 && dragOffset.distance > 2.0) {
+        toggleFlip();
+      }
       return;
     }
 
@@ -234,401 +251,340 @@ class _TinderCardStackState extends State<TinderCardStack>
     Offset targetOffset = Offset.zero;
     double targetRotation = 0.0;
 
-    // Check dominant axis for precise multi-directional Tinder gesture recognition
-    final isHorizontalDominant = _dragOffset.dx.abs() >= _dragOffset.dy.abs();
+    // Dominant axis multi-directional swipe recognition
+    final isHorizontalDominant = dragOffset.dx.abs() >= dragOffset.dy.abs();
     if (isHorizontalDominant) {
-      if (_dragOffset.dx > 80 || velocity.dx > 450) {
+      if (dragOffset.dx > 65 || velocity.dx > 380) {
         rating = SRSReviewRating.good;
-        targetOffset = Offset(size.width * 1.5, _dragOffset.dy + velocity.dy * 0.1);
-        targetRotation = 0.38;
-      } else if (_dragOffset.dx < -80 || velocity.dx < -450) {
+        targetOffset = Offset(size.width * 1.25, dragOffset.dy + velocity.dy * 0.06);
+        targetRotation = 0.30;
+      } else if (dragOffset.dx < -65 || velocity.dx < -380) {
         rating = SRSReviewRating.again;
-        targetOffset = Offset(-size.width * 1.5, _dragOffset.dy + velocity.dy * 0.1);
-        targetRotation = -0.38;
+        targetOffset = Offset(-size.width * 1.25, dragOffset.dy + velocity.dy * 0.06);
+        targetRotation = -0.30;
       }
     } else {
-      if (_dragOffset.dy < -80 || velocity.dy < -450) {
+      if (dragOffset.dy < -65 || velocity.dy < -380) {
         rating = SRSReviewRating.easy;
-        targetOffset = Offset(_dragOffset.dx, -size.height * 1.2);
+        targetOffset = Offset(dragOffset.dx, -size.height * 0.9);
         targetRotation = 0.0;
-      } else if (_dragOffset.dy > 80 || velocity.dy > 450) {
+      } else if (dragOffset.dy > 65 || velocity.dy > 380) {
         rating = SRSReviewRating.hard;
-        targetOffset = Offset(_dragOffset.dx, size.height * 1.2);
+        targetOffset = Offset(dragOffset.dx, size.height * 0.9);
         targetRotation = 0.0;
       }
     }
 
     if (rating != null) {
-      HapticFeedback.mediumImpact();
-      _flightController.duration = const Duration(milliseconds: 200);
+      HapticService.medium();
+      _flightController.duration = const Duration(milliseconds: 210);
       _flightOffsetAnimation = Tween<Offset>(
-        begin: _dragOffset,
+        begin: dragOffset,
         end: targetOffset,
       ).animate(CurvedAnimation(parent: _flightController, curve: Curves.easeOutCubic));
 
       _flightRotationAnimation = Tween<double>(
-        begin: _calculateRotation(_dragOffset.dx, size.width),
+        begin: _calculateRotation(dragOffset.dx, size.width),
         end: targetRotation,
       ).animate(CurvedAnimation(parent: _flightController, curve: Curves.easeOutCubic));
 
       _flightController.forward(from: 0.0).then((_) {
         if (!mounted) return;
-        _dragOffset = targetOffset;
-        _isDragging = false;
+        // Keep _flightController at 1.0 until didUpdateWidget swaps in the new card
         widget.onSwipe(rating!);
       });
     } else {
-      // Natural spring bounce snap-back with elastic overshoot curve
-      _flightController.duration = const Duration(milliseconds: 320);
+      // Smooth spring snap-back to center
+      _flightController.duration = const Duration(milliseconds: 240);
       _flightOffsetAnimation = Tween<Offset>(
-        begin: _dragOffset,
+        begin: dragOffset,
         end: Offset.zero,
       ).animate(CurvedAnimation(parent: _flightController, curve: Curves.easeOutBack));
 
       _flightRotationAnimation = Tween<double>(
-        begin: _calculateRotation(_dragOffset.dx, size.width),
+        begin: _calculateRotation(dragOffset.dx, size.width),
         end: 0.0,
       ).animate(CurvedAnimation(parent: _flightController, curve: Curves.easeOutBack));
 
       _flightController.forward(from: 0.0).then((_) {
         if (!mounted) return;
-        setState(() {
-          _isDragging = false;
-          _dragOffset = Offset.zero;
-        });
+        _isDragging = false;
         _flightController.reset();
+        _dragOffsetNotifier.value = Offset.zero;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final progress = _isDragging || _flightController.isAnimating
-        ? _calculateProgress(size)
-        : 0.0;
+    final size = MediaQuery.sizeOf(context);
+    final colors = context.vocaColors;
 
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        // 1. Background Card 2 (Bottom layer in stack)
-        if (widget.cardAfterNext != null)
-          Positioned.fill(
+    // Pre-build and cache GPU RepaintBoundary layers outside AnimatedBuilder
+    // so 60-120fps drag/flight frames never rebuild or rasterize FlashcardFace.
+    final frontFace = RepaintBoundary(
+      child: FlashcardFace(
+        key: ValueKey('front_${widget.currentCard.id}_${widget.isReadingPeeked}'),
+        card: widget.currentCard,
+        isBack: false,
+        isReadingPeeked: widget.isReadingPeeked,
+        onTogglePeekReading: widget.onTogglePeekReading,
+        againInterval: widget.againInterval,
+        goodInterval: widget.goodInterval,
+      ),
+    );
+
+    final backFace = RepaintBoundary(
+      child: FlashcardFace(
+        key: ValueKey('back_${widget.currentCard.id}'),
+        card: widget.currentCard,
+        isBack: true,
+        againInterval: widget.againInterval,
+        goodInterval: widget.goodInterval,
+      ),
+    );
+
+    final nextCardLayer = widget.nextCard != null
+        ? RepaintBoundary(
             child: IgnorePointer(
-              ignoring: true,
-              child: Transform.translate(
-                offset: Offset(0, 24.0 * (1.0 - progress)),
-                child: Transform.scale(
-                  scale: 0.88 + (0.06 * progress),
-                  alignment: Alignment.center,
-                  child: Opacity(
-                    opacity: (0.45 + (0.25 * progress)).clamp(0.0, 1.0),
-                    child: RepaintBoundary(
-                      child: FlashcardFace(
-                        card: widget.cardAfterNext!,
-                        isBack: false,
-                      ),
+              child: FlashcardFace(
+                key: ValueKey('next_${widget.nextCard!.id}'),
+                card: widget.nextCard!,
+                isBack: false,
+                againInterval: widget.againInterval,
+                goodInterval: widget.goodInterval,
+              ),
+            ),
+          )
+        : null;
+
+    final thirdCardShell = widget.cardAfterNext != null
+        ? RepaintBoundary(
+            child: IgnorePointer(
+              child: _buildDeckCardShell(colors: colors),
+            ),
+          )
+        : null;
+
+    return AnimatedBuilder(
+      animation: _combinedAnimation,
+      builder: (context, _) {
+        final isFlightActive = _flightController.isAnimating || _flightController.value > 0.0;
+        final currentOffset = isFlightActive && _flightOffsetAnimation != null
+            ? _flightOffsetAnimation!.value
+            : _dragOffsetNotifier.value;
+
+        final currentRotation = isFlightActive && _flightRotationAnimation != null
+            ? _flightRotationAnimation!.value
+            : _calculateRotation(currentOffset.dx, size.width);
+
+        final progress = (_isDragging || isFlightActive)
+            ? _calculateProgressFromOffset(currentOffset)
+            : 0.0;
+
+        final dx = currentOffset.dx;
+        final dy = currentOffset.dy;
+        final isHorizontal = dx.abs() >= dy.abs();
+
+        // Normalized progress for 4 directions
+        final goodProgress = (isHorizontal && dx > 0 ? (dx / 70.0) : 0.0).clamp(0.0, 1.0);
+        final againProgress = (isHorizontal && dx < 0 ? (-dx / 70.0) : 0.0).clamp(0.0, 1.0);
+        final hardProgress = (!isHorizontal && dy > 0 ? (dy / 70.0) : 0.0).clamp(0.0, 1.0);
+        final easyProgress = (!isHorizontal && dy < 0 ? (-dy / 70.0) : 0.0).clamp(0.0, 1.0);
+
+        final t = _flipAnimation.value;
+        final isShowingBack = t >= 0.5;
+        final flipAngle = isShowingBack ? (t - 1.0) * math.pi : t * math.pi;
+        final flipShade = (math.sin(t * math.pi) * 0.14).clamp(0.0, 1.0);
+
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // 1. Background Card 2 (Bottom layer in stack - fixed constraints via Positioned.fill + Transform)
+            if (thirdCardShell != null)
+              Positioned.fill(
+                child: Transform.translate(
+                  offset: Offset(0.0, -14.0 * (1.0 - (progress * 0.5))),
+                  child: Transform.scale(
+                    scale: 0.92 + (0.04 * progress),
+                    alignment: Alignment.topCenter,
+                    child: Opacity(
+                      opacity: (0.50 + (0.35 * progress)).clamp(0.0, 1.0),
+                      child: thirdCardShell,
                     ),
                   ),
                 ),
               ),
-            ),
-          ),
 
-        // 2. Background Card 1 (Middle layer in stack)
-        if (widget.nextCard != null)
-          Positioned.fill(
-            child: IgnorePointer(
-              ignoring: true,
-              child: Transform.translate(
-                offset: Offset(0, 12.0 * (1.0 - progress)),
-                child: Transform.scale(
-                  scale: 0.94 + (0.06 * progress),
-                  alignment: Alignment.center,
-                  child: Opacity(
-                    opacity: (0.80 + (0.20 * progress)).clamp(0.0, 1.0),
-                    child: RepaintBoundary(
-                      child: FlashcardFace(
-                        card: widget.nextCard!,
-                        isBack: false,
-                      ),
+            // 2. Background Card 1 (Actual Next Card promoted smoothly via GPU Transform with zero relayout)
+            if (nextCardLayer != null)
+              Positioned.fill(
+                child: Transform.translate(
+                  offset: Offset(0.0, -7.0 * (1.0 - progress)),
+                  child: Transform.scale(
+                    scale: 0.96 + (0.04 * progress),
+                    alignment: Alignment.topCenter,
+                    child: Opacity(
+                      opacity: (0.88 + (0.12 * progress)).clamp(0.0, 1.0),
+                      child: nextCardLayer,
                     ),
                   ),
                 ),
               ),
-            ),
-          ),
 
-        // 2.5 Background Swipe Indicators (Revealed behind the active card as it moves)
-        Positioned.fill(
-          child: IgnorePointer(
-            ignoring: true,
-            child: AnimatedBuilder(
-              animation: _flightController,
-              builder: (context, _) {
-                final currentOffset = _flightController.isAnimating
-                    ? _flightOffsetAnimation.value
-                    : _dragOffset;
-                final dx = currentOffset.dx;
-                final dy = currentOffset.dy;
-                final isHorizontal = dx.abs() >= dy.abs();
-
-                // Normalized progress for 4 directions
-                final goodProgress = (isHorizontal && dx > 0 ? (dx / 80.0) : 0.0).clamp(0.0, 1.0);
-                final againProgress = (isHorizontal && dx < 0 ? (-dx / 80.0) : 0.0).clamp(0.0, 1.0);
-                final hardProgress = (!isHorizontal && dy > 0 ? (dy / 80.0) : 0.0).clamp(0.0, 1.0);
-                final easyProgress = (!isHorizontal && dy < 0 ? (-dy / 80.0) : 0.0).clamp(0.0, 1.0);
-
-                if (goodProgress <= 0.02 &&
-                    againProgress <= 0.02 &&
-                    hardProgress <= 0.02 &&
-                    easyProgress <= 0.02) {
-                  return const SizedBox.shrink();
-                }
-
-                final colors = context.vocaColors;
-
-                return Stack(
-                  children: [
-                    // Drag Right exposes LEFT side: Good Indicator
-                    if (goodProgress > 0.02)
-                      Positioned(
-                        left: 28,
-                        top: 0,
-                        bottom: 0,
-                        child: Center(
-                          child: Opacity(
-                            opacity: goodProgress,
-                            child: Transform.scale(
-                              scale: 0.82 + (0.18 * goodProgress),
-                              child: _buildBackgroundIndicator(
-                                icon: Icons.check_circle_rounded,
-                                title: 'Good',
-                                interval: widget.goodInterval,
-                                color: colors.colorGrammar,
-                                colors: colors,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                    // Drag Left exposes RIGHT side: Again Indicator
-                    if (againProgress > 0.02)
-                      Positioned(
-                        right: 28,
-                        top: 0,
-                        bottom: 0,
-                        child: Center(
-                          child: Opacity(
-                            opacity: againProgress,
-                            child: Transform.scale(
-                              scale: 0.82 + (0.18 * againProgress),
-                              child: _buildBackgroundIndicator(
-                                icon: Icons.replay_circle_filled_rounded,
-                                title: 'Again',
-                                interval: widget.againInterval,
-                                color: colors.accentPrimary,
-                                colors: colors,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                    // Drag Up exposes BOTTOM side: Easy Indicator
-                    if (easyProgress > 0.02)
-                      Positioned(
-                        bottom: 40,
-                        left: 0,
-                        right: 0,
-                        child: Center(
-                          child: Opacity(
-                            opacity: easyProgress,
-                            child: Transform.scale(
-                              scale: 0.82 + (0.18 * easyProgress),
-                              child: _buildBackgroundIndicator(
-                                icon: Icons.bolt_rounded,
-                                title: 'Easy',
-                                interval: widget.easyInterval,
-                                color: colors.accentSecondary,
-                                colors: colors,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                    // Drag Down exposes TOP side: Hard Indicator
-                    if (hardProgress > 0.02)
-                      Positioned(
-                        top: 40,
-                        left: 0,
-                        right: 0,
-                        child: Center(
-                          child: Opacity(
-                            opacity: hardProgress,
-                            child: Transform.scale(
-                              scale: 0.82 + (0.18 * hardProgress),
-                              child: _buildBackgroundIndicator(
-                                icon: Icons.timelapse_rounded,
-                                title: 'Hard',
-                                interval: widget.hardInterval,
-                                color: colors.colorFire,
-                                colors: colors,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                );
-              },
-            ),
-          ),
-        ),
-
-        // 3. Foreground Top Card (Active interactive swipeable card)
-        Positioned.fill(
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: toggleFlip,
-            onPanStart: _onPanStart,
-            onPanUpdate: _onPanUpdate,
-            onPanEnd: _onPanEnd,
-            child: AnimatedBuilder(
-              animation: Listenable.merge([_flightController, _flipController]),
-              builder: (context, child) {
-                final currentOffset = _flightController.isAnimating
-                    ? _flightOffsetAnimation.value
-                    : _dragOffset;
-
-                final currentRotation = _flightController.isAnimating
-                    ? _flightRotationAnimation.value
-                    : _calculateRotation(_dragOffset.dx, size.width);
-
-                final t = _flipAnimation.value;
-                final isShowingBack = t >= 0.5;
-                // Seamless clockwise 3D turn: front rotates 0 -> +pi/2, back rotates -pi/2 -> 0.
-                // At t = 1.0, angle = 0 so local coordinates are completely identity with 0 inversion.
-                final flipAngle = isShowingBack ? (t - 1.0) * math.pi : t * math.pi;
-                final flipShade = (math.sin(t * math.pi) * 0.18).clamp(0.0, 1.0);
-
-                return Transform.translate(
+            // 3. Foreground Top Card (Active interactive swipeable card)
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: toggleFlip,
+                onPanStart: _onPanStart,
+                onPanUpdate: _onPanUpdate,
+                onPanEnd: _onPanEnd,
+                child: Transform.translate(
                   offset: currentOffset,
                   child: Transform.rotate(
-                    // Anchored naturally near the bottom for realistic card swing
-                    alignment: const Alignment(0.0, 1.25),
+                    alignment: const Alignment(0.0, 1.15),
                     angle: currentRotation,
                     child: Stack(
                       clipBehavior: Clip.none,
                       children: [
-                        // The 3D Flipped Card Content
+                        // The 3D Flipped Card Content (cached GPU layer)
                         Transform(
                           transform: Matrix4.identity()
-                            ..setEntry(3, 2, 0.0012)
+                            ..setEntry(3, 2, 0.001)
                             ..rotateY(flipAngle),
                           alignment: Alignment.center,
-                          child: isShowingBack
-                              ? FlashcardFace(
-                                  card: widget.currentCard,
-                                  isBack: true,
-                                  againInterval: widget.againInterval,
-                                  goodInterval: widget.goodInterval,
-                                )
-                              : FlashcardFace(
-                                  card: widget.currentCard,
-                                  isBack: false,
-                                  isReadingPeeked: widget.isReadingPeeked,
-                                  onTogglePeekReading: widget.onTogglePeekReading,
-                                  againInterval: widget.againInterval,
-                                  goodInterval: widget.goodInterval,
-                                ),
+                          child: isShowingBack ? backFace : frontFace,
                         ),
+
+                        // Dynamic On-Card Stamp Overlay during drag or button flight
+                        if (goodProgress > 0.05 ||
+                            againProgress > 0.05 ||
+                            hardProgress > 0.05 ||
+                            easyProgress > 0.05)
+                          Positioned.fill(
+                            child: IgnorePointer(
+                              child: _buildOnCardStamp(
+                                goodProgress: goodProgress,
+                                againProgress: againProgress,
+                                hardProgress: hardProgress,
+                                easyProgress: easyProgress,
+                                colors: colors,
+                              ),
+                            ),
+                          ),
 
                         // Subtle 3D dynamic specular shading during flip turn
                         if (flipShade > 0.01)
                           Positioned.fill(
                             child: IgnorePointer(
-                              child: Container(
+                              child: DecoratedBox(
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius: BorderRadius.circular(24),
                                   color: Colors.black.withValues(alpha: flipShade),
                                 ),
                               ),
                             ),
                           ),
-
                       ],
                     ),
                   ),
-                );
-              },
+                ),
+              ),
             ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 
-  Widget _buildBackgroundIndicator({
-    required IconData icon,
-    required String title,
-    String? interval,
-    required Color color,
+  Widget _buildOnCardStamp({
+    required double goodProgress,
+    required double againProgress,
+    required double hardProgress,
+    required double easyProgress,
     required VocaColorPalette colors,
   }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          size: 44,
-          color: color,
-          shadows: [
-            Shadow(
-              color: Colors.black.withValues(alpha: colors.isDark ? 0.45 : 0.12),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
+    // Strictly select only the single dominant direction and place at
+    // center-left, center-right, center-top (below top header), or center-bottom.
+    final (progress, label, icon, color, alignment) = goodProgress >= againProgress &&
+            goodProgress >= hardProgress &&
+            goodProgress >= easyProgress
+        ? (goodProgress, 'GOOD', Icons.check_rounded, colors.success, Alignment.centerLeft)
+        : againProgress >= hardProgress && againProgress >= easyProgress
+            ? (againProgress, 'AGAIN', Icons.replay_rounded, colors.accentPrimary, Alignment.centerRight)
+            : hardProgress >= easyProgress
+                ? (hardProgress, 'HARD', Icons.timelapse_rounded, colors.colorFire, const Alignment(0.0, -0.72))
+                : (easyProgress, 'EASY', Icons.bolt_rounded, colors.accentSecondary, const Alignment(0.0, 0.72));
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: color.withValues(alpha: (progress * 0.75).clamp(0.0, 0.9)),
+          width: 2.2,
         ),
-        const SizedBox(height: 5),
-        Text(
-          title,
-          style: TextStyle(
-            color: color,
-            fontSize: 15,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.3,
-            shadows: [
-              Shadow(
-                color: Colors.black.withValues(alpha: colors.isDark ? 0.45 : 0.10),
-                blurRadius: 8,
-                offset: const Offset(0, 1),
-              ),
-            ],
-          ),
-        ),
-        if (interval != null && interval.isNotEmpty) ...[
-          const SizedBox(height: 2),
-          Text(
-            interval,
-            style: TextStyle(
-              color: color.withValues(alpha: 0.85),
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              shadows: [
-                Shadow(
-                  color: Colors.black.withValues(alpha: colors.isDark ? 0.4 : 0.08),
-                  blurRadius: 6,
-                  offset: const Offset(0, 1),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        child: Align(
+          alignment: alignment,
+          child: Opacity(
+            opacity: progress.clamp(0.0, 1.0),
+            child: Transform.scale(
+              scale: 0.85 + (0.15 * progress),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                decoration: BoxDecoration(
+                  color: colors.bgCard.withValues(alpha: 0.94),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: color, width: 1.6),
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.22),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
-              ],
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(icon, size: 16, color: color),
+                    const SizedBox(width: 6),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
-        ],
-      ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDeckCardShell({
+    required VocaColorPalette colors,
+  }) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: colors.bgCard,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: colors.borderColor.withValues(alpha: 0.45),
+          width: 1.2,
+        ),
+      ),
     );
   }
 }
+

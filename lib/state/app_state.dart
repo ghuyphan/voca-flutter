@@ -202,6 +202,10 @@ class AppState {
     updateUserSettings(userSettings.value.copyWith(autoPauseOnLookup: autoPause));
   }
 
+  void setHapticFeedback(bool enabled) {
+    updateUserSettings(userSettings.value.copyWith(hapticFeedbackEnabled: enabled));
+  }
+
   void markSubtitleCoachmarkSeen() {
     updateUserSettings(userSettings.value.copyWith(hasSeenSubtitleCoachmark: true));
   }

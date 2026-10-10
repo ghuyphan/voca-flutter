@@ -12,6 +12,7 @@ import '../gamification/widgets/activity_heatmap_card.dart';
 import '../settings/settings_screen.dart';
 import '../widgets/voca_back_button.dart';
 import '../widgets/voca_confirm_dialog.dart';
+import '../widgets/voca_animated_counter.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -271,8 +272,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ],
                 ),
-                Text(
-                  '$totalXp ${context.t('gamification.totalXp', null, 'Total XP')}',
+                VocaAnimatedCounter(
+                  value: totalXp,
+                  suffix: ' ${context.t('gamification.totalXp', null, 'Total XP')}',
                   style: TextStyle(color: colors.accentTertiary, fontSize: 13, fontWeight: FontWeight.bold),
                 ),
               ],
@@ -334,8 +336,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          '$currentStreak ${context.t('streak.dayStreak', null, 'Day Streak')}',
+                        VocaAnimatedCounter(
+                          value: currentStreak,
+                          suffix: ' ${context.t('streak.dayStreak', null, 'Day Streak')}',
                           style: TextStyle(
                             color: colors.textPrimary,
                             fontSize: 16,

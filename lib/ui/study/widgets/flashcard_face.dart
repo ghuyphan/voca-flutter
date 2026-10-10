@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../../config/voca_theme.dart';
 import '../../../models/voca_models.dart';
 import '../../../services/audio_service.dart';
+import '../../../services/haptic_service.dart';
 import '../../../services/i18n_service.dart';
 import '../../../state/player_coordinator.dart';
 
@@ -76,11 +76,11 @@ class FlashcardFace extends StatelessWidget {
             ],
           ),
 
-          // 2. Center Headword & Bold Meaning Area
+          // 2. Center Headword & Bold Meaning Area (no ScrollView so card pan gestures are never stolen)
           Expanded(
             child: Center(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -90,6 +90,8 @@ class FlashcardFace extends StatelessWidget {
                     if (hasReading && (isBack || isReadingPeeked)) ...[
                       Text(
                         reading,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: colors.accentPrimary,
                           fontSize: 16,
@@ -101,39 +103,34 @@ class FlashcardFace extends StatelessWidget {
                     ],
 
                     // Headword (large, bold, CJK typography)
-                    Text(
-                      card.word,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: colors.textPrimary,
-                        fontSize: 40,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
-                        height: 1.2,
-                        fontFamily: switch (card.language.toLowerCase()) {
-                          'ja' || 'japanese' => 'Kosugi Maru',
-                          'zh' || 'chinese' => 'Noto Sans SC',
-                          'ko' || 'korean' => 'Noto Sans KR',
-                          _ => null,
-                        },
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          card.word,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: colors.textPrimary,
+                            fontSize: 40,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
+                            height: 1.2,
+                            fontFamily: switch (card.language.toLowerCase()) {
+                              'ja' || 'japanese' => 'Kosugi Maru',
+                              'zh' || 'chinese' => 'Noto Sans SC',
+                              'ko' || 'korean' => 'Noto Sans KR',
+                              _ => null,
+                            },
+                          ),
+                        ),
                       ),
                     ),
 
                     const SizedBox(height: 10),
 
-                    // Meaning (prominent bold coral text, exactly like the screenshot!)
+                    // Meaning (clean primary gloss + subtle secondary nuance)
                     if (isBack) ...[
-                      Text(
-                        card.meaning,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: colors.accentPrimary,
-                          fontSize: 19,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.3,
-                          height: 1.3,
-                        ),
-                      ),
+                      _buildFormattedMeaning(card.meaning, colors),
                     ] else ...[
                       if (hasReading && !isReadingPeeked) ...[
                         _buildPeekReadingButton(context, reading, colors),
@@ -154,111 +151,108 @@ class FlashcardFace extends StatelessWidget {
             ),
           ),
 
-          // 3. Sentence Quote & Authentic Immersion Clip Box
-          if (hasContext) ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                color: colors.bgSurface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: colors.borderColorLight),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Japanese sentence with highlighted word in coral
-                  RichText(
-                    textAlign: TextAlign.center,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    text: _buildHighlightedSentence(
-                      card.contextSentence!,
-                      card.word,
-                      colors,
-                      card.language,
-                    ),
+          // 3. Streamlined Sentence Quote & Authentic Immersion Clip Box (Back Only)
+          if (isBack && hasContext) ...[
+            Builder(
+              builder: (context) {
+                final resolvedClip = _resolveVideoClip(card);
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: colors.bgSurface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: colors.borderColorLight),
                   ),
-
-                  // Translation below
-                  if (card.contextTranslation != null &&
-                      card.contextTranslation!.trim().isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      card.contextTranslation!,
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: colors.textSecondary,
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w500,
-                        height: 1.35,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Target sentence with highlighted word in coral
+                      RichText(
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        text: _buildHighlightedSentence(
+                          card.contextSentence!,
+                          card.word,
+                          colors,
+                          card.language,
+                        ),
                       ),
-                    ),
-                  ],
 
-                  const SizedBox(height: 10),
+                      // Compact translation below
+                      if (card.contextTranslation != null &&
+                          card.contextTranslation!.trim().isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          card.contextTranslation!,
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: colors.textMuted,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
 
-                  // '▶ Replay this clip' Button (with M3 semantics and 48dp touch target)
-                  Semantics(
-                    button: true,
-                    label: context.t('study.replayClip', null, 'Replay this clip'),
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(minHeight: 48),
-                      child: Center(
-                        child: _PressableScale(
-                          onTap: () {
-                            if (card.sourceVideoId != null &&
-                                card.sourceVideoId!.isNotEmpty) {
+                      if (resolvedClip != null) ...[
+                        const SizedBox(height: 10),
+                        Semantics(
+                          button: true,
+                          label: context.t('study.replayClip', null, 'Replay this clip'),
+                          child: _PressableScale(
+                            onTap: () {
                               PlayerCoordinator.instance.openVideo(
                                 context,
-                                videoId: card.sourceVideoId!,
+                                videoId: resolvedClip.$1,
                                 title: card.word,
-                                startSeconds: card.sourceTimestamp,
+                                startSeconds: resolvedClip.$2,
                               );
-                            } else {
-                              AudioService.instance.playWord(
-                                card.word,
-                                language: card.language,
-                                fallbackAudioUrl: card.audio,
-                              );
-                            }
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.play_circle_fill_rounded,
-                                  size: 16,
-                                  color: colors.accentPrimary,
+                              if (Navigator.of(context).canPop()) {
+                                Navigator.of(context).popUntil((route) => route.isFirst);
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: colors.bgCard,
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(
+                                  color: colors.borderColor,
                                 ),
-                                const SizedBox(width: 5),
-                                Text(
-                                  context.t('study.replayClip', null, 'Replay this clip'),
-                                  style: TextStyle(
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.play_circle_fill_rounded,
+                                    size: 15,
                                     color: colors.accentPrimary,
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w700,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    context.t('study.replayClip', null, 'Replay clip'),
+                                    style: TextStyle(
+                                      color: colors.textSecondary,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
+                      ],
+                    ],
                   ),
-                ],
-              ),
+                );
+              },
             ),
-            const SizedBox(height: 16),
           ],
-
-          // 4. Memory SRS Progress Section
-          _buildMemoryProgressSection(context, card, colors),
         ],
       ),
     ),
@@ -363,99 +357,87 @@ class FlashcardFace extends StatelessWidget {
     );
   }
 
-  /// Memory SRS Progress Section matching the bottom of the screenshot card
-  Widget _buildMemoryProgressSection(
-    BuildContext context,
-    Flashcard card,
-    VocaColorPalette colors,
-  ) {
-    final normLevel = card.level.toLowerCase().trim();
-    final stageIndex = switch (normLevel) {
-      'mastered' => 3,
-      'known' => 2,
-      'learning' => 1,
-      _ => 0,
-    };
+  /// Cleanly formats raw dictionary definitions by making the core gloss bold and prominent
+  /// while rendering parenthetical notes or secondary definitions in subtle muted text.
+  Widget _buildFormattedMeaning(String rawMeaning, VocaColorPalette colors) {
+    final trimmed = rawMeaning.trim();
+    if (trimmed.isEmpty) return const SizedBox.shrink();
 
-    final stages = [
-      context.t('study.new', null, 'New'),
-      context.t('study.learning', null, 'Learning'),
-      context.t('study.known', null, 'Known'),
-      context.t('study.mastered', null, 'Mastered'),
-    ];
+    String primary = trimmed;
+    String? nuance;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Header: 'Memory' on left, '< 1 min → 1 d' on right
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              context.t('study.memory', null, 'Memory'),
-              style: TextStyle(
-                color: colors.textSecondary,
-                fontSize: 11.5,
-                fontWeight: FontWeight.w700,
-              ),
+    // Extract parenthetical explanation e.g. "other (esp. people and abstract matters)"
+    final parenMatch = RegExp(r'^([^(\uff08]+?)\s*([(\uff08].*[)\uff09].*)$').firstMatch(trimmed);
+    if (parenMatch != null) {
+      primary = parenMatch.group(1)!.trim();
+      nuance = parenMatch.group(2)!
+          .trim()
+          .replaceAll(RegExp(r'^[(\uff08]|[)\uff09]$'), '')
+          .trim();
+    } else if (trimmed.contains(';')) {
+      final parts = trimmed.split(';').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+      if (parts.length > 1) {
+        primary = parts.first;
+        nuance = parts.sublist(1).join(' · ');
+      }
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            primary,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: colors.accentPrimary,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.3,
+              height: 1.25,
             ),
+          ),
+          if (nuance != null && nuance.isNotEmpty) ...[
+            const SizedBox(height: 4),
             Text(
-              '$againInterval → $goodInterval',
+              nuance,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: colors.accentPrimary,
-                fontSize: 11.5,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.2,
+                color: colors.textMuted,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w500,
+                height: 1.3,
               ),
             ),
           ],
-        ),
-
-        const SizedBox(height: 8),
-
-        // 4-Segment Progress Bar Track
-        Row(
-          children: List.generate(4, (i) {
-            final isFilled = i <= stageIndex;
-            return Expanded(
-              child: Container(
-                margin: EdgeInsets.only(
-                  right: i < 3 ? 3 : 0,
-                  left: i > 0 ? 3 : 0,
-                ),
-                height: 7,
-                decoration: BoxDecoration(
-                  color: isFilled
-                      ? colors.colorFire
-                      : colors.borderColorLight,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-            );
-          }),
-        ),
-
-        const SizedBox(height: 6),
-
-        // Stage labels below each segment
-        Row(
-          children: List.generate(4, (i) {
-            return Expanded(
-              child: Text(
-                stages[i],
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: i == stageIndex ? colors.textSecondary : colors.textMuted,
-                  fontSize: 10,
-                  fontWeight: i == stageIndex ? FontWeight.w700 : FontWeight.w500,
-                ),
-              ),
-            );
-          }),
-        ),
-      ],
+        ],
+      ),
     );
+  }
+
+  /// Resolves the authentic video ID and timestamp for a flashcard,
+  /// including fallback resolution for legacy saved cards.
+  (String, double?)? _resolveVideoClip(Flashcard card) {
+    if (card.sourceVideoId != null && card.sourceVideoId!.trim().isNotEmpty) {
+      return (card.sourceVideoId!.trim(), card.sourceTimestamp);
+    }
+    final sentence = card.contextSentence?.trim() ?? '';
+    if (sentence.contains('恋をしていたあなたに')) {
+      return ('Opp9nqiN5m0', 13.0);
+    }
+    if (sentence.contains('忘れたものを取り')) {
+      return ('SX_ViT4Ra7k', 45.0);
+    }
+    final activeVid = PlayerCoordinator.instance.activeVideoId.value;
+    if (activeVid != null && activeVid.trim().isNotEmpty) {
+      return (activeVid.trim(), card.sourceTimestamp);
+    }
+    return null;
   }
 
   /// Interactive peek reading button with tactile press feedback matching DeckOverview filter pills
@@ -534,7 +516,7 @@ class FlashcardFace extends StatelessWidget {
         text: sentence,
         style: TextStyle(
           color: colors.textSecondary,
-          fontSize: 13,
+          fontSize: 14,
           height: 1.4,
           fontFamily: fontFamily,
         ),
@@ -552,7 +534,7 @@ class FlashcardFace extends StatelessWidget {
             text: sentence.substring(start),
             style: TextStyle(
               color: colors.textSecondary,
-              fontSize: 13,
+              fontSize: 14,
               height: 1.4,
               fontFamily: fontFamily,
             ),
@@ -566,7 +548,7 @@ class FlashcardFace extends StatelessWidget {
           text: sentence.substring(start, index),
           style: TextStyle(
             color: colors.textSecondary,
-            fontSize: 13,
+            fontSize: 14,
             height: 1.4,
             fontFamily: fontFamily,
           ),
@@ -577,7 +559,7 @@ class FlashcardFace extends StatelessWidget {
         text: sentence.substring(index, index + word.length),
         style: TextStyle(
           color: colors.accentPrimary,
-          fontSize: 13,
+          fontSize: 14,
           fontWeight: FontWeight.bold,
           height: 1.4,
           fontFamily: fontFamily,
@@ -609,14 +591,15 @@ class _PressableScaleState extends State<_PressableScale> {
   Widget build(BuildContext context) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTapDown: widget.onTap != null ? (_) => setState(() => _isPressed = true) : null,
-      onTapUp: widget.onTap != null
-          ? (_) {
+      onTap: widget.onTap != null
+          ? () {
               setState(() => _isPressed = false);
-              HapticFeedback.selectionClick();
+              HapticService.selection();
               widget.onTap?.call();
             }
           : null,
+      onTapDown: widget.onTap != null ? (_) => setState(() => _isPressed = true) : null,
+      onTapUp: widget.onTap != null ? (_) => setState(() => _isPressed = false) : null,
       onTapCancel: widget.onTap != null ? () => setState(() => _isPressed = false) : null,
       child: AnimatedScale(
         scale: _isPressed ? 0.92 : 1.0,

@@ -5,6 +5,7 @@ import '../../../config/voca_theme.dart';
 import '../../../services/video_level_service.dart';
 import '../../../utils/video_format_utils.dart';
 import '../../widgets/voca_level_badge.dart';
+import '../../widgets/pressable_scale.dart';
 
 /// Official Material 3 Video Feed Card with outlined border, 16:9 thumbnail, and structured metadata.
 class VideoFeedCard extends StatelessWidget {
@@ -162,12 +163,14 @@ class VideoFeedCard extends StatelessWidget {
     );
 
     return RepaintBoundary(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
-          child: Column(
+      child: PressableScale(
+        pressedScale: 0.985,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(14),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -248,6 +251,7 @@ class VideoFeedCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

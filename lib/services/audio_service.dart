@@ -18,10 +18,25 @@ class AudioService {
   }
 
   final AudioPlayer _player = AudioPlayer();
+  final AudioPlayer _sfxPlayer = AudioPlayer();
   final Map<String, Uint8List> _cache = {};
   final ValueNotifier<String?> _currentPlaying = ValueNotifier<String?>(null);
 
   ValueListenable<String?> get currentPlaying => _currentPlaying;
+
+  /// Play celebratory session completion fanfare chime
+  Future<void> playVictoryChime() async {
+    try {
+      await _sfxPlayer.stop();
+      await _sfxPlayer.setVolume(0.45);
+      await _sfxPlayer.play(
+        AssetSource('audio/victory_chime.wav'),
+        mode: PlayerMode.lowLatency,
+      );
+    } catch (e) {
+      debugPrint('[AudioService] SFX victory playback error: $e');
+    }
+  }
 
   bool isPlaying(String text) => _currentPlaying.value == text;
 

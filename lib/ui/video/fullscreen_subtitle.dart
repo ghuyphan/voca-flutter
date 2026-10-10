@@ -685,6 +685,7 @@ class _FullscreenSubtitleState extends State<FullscreenSubtitle>
           sourceLang: widget.controller.activeLanguage.value,
           contextSentence: cue.text,
           contextTranslation: cue.translation,
+          sourceTimestamp: cue.start,
         );
       }
     } finally {

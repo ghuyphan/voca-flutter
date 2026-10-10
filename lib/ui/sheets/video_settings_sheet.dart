@@ -536,7 +536,7 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
                     Icon(Icons.offline_pin_outlined, size: 15, color: colors.colorGrammar),
                     const SizedBox(width: 4),
                     Text(
-                      context.t('settings.offlineBadge', null, 'Offline'),
+                      context.t('settings.offlineBadge', null, 'On-Device'),
                       style: TextStyle(
                         fontSize: 11,
                         color: colors.colorGrammar,
@@ -581,7 +581,7 @@ class _VideoSettingsSheetState extends State<VideoSettingsSheet> {
             contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
             leading: Icon(Icons.download_for_offline_outlined, color: colors.accentPrimary, size: 22),
             title: Text(
-              context.t('settings.manageOfflineModels', null, 'Manage Offline Models'),
+              context.t('settings.manageOfflineModels', null, 'Manage On-Device Models'),
               style: TextStyle(
                 color: colors.textPrimary,
                 fontSize: 14,

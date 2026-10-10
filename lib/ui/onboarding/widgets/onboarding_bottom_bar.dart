@@ -1,8 +1,8 @@
 // lib/ui/onboarding/widgets/onboarding_bottom_bar.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../../config/voca_theme.dart';
+import '../../../services/haptic_service.dart';
 import '../../../services/i18n_service.dart';
 
 /// Thumb-zone primary CTA pill button with optional legal consent above
@@ -118,7 +118,7 @@ class OnboardingBottomBar extends StatelessWidget {
               onPressed: isLoading
                   ? null
                   : () {
-                      HapticFeedback.lightImpact();
+                      HapticService.light();
                       onPressed();
                     },
               style: FilledButton.styleFrom(

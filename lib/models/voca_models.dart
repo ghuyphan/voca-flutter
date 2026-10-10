@@ -1096,6 +1096,7 @@ class UserSettings {
   final int dailyGoalMinutes; // 5 | 10 | 15 | 25
   final bool offlineTranslationEnabled;
   final bool offlineTranslationWifiOnly;
+  final bool hapticFeedbackEnabled;
 
   UserSettings({
     this.rubyMode = RubyDisplayMode.always,
@@ -1115,6 +1116,7 @@ class UserSettings {
     this.dailyGoalMinutes = 10,
     this.offlineTranslationEnabled = true,
     this.offlineTranslationWifiOnly = true,
+    this.hapticFeedbackEnabled = true,
   });
 
   UserSettings copyWith({
@@ -1135,6 +1137,7 @@ class UserSettings {
     int? dailyGoalMinutes,
     bool? offlineTranslationEnabled,
     bool? offlineTranslationWifiOnly,
+    bool? hapticFeedbackEnabled,
   }) {
     return UserSettings(
       rubyMode: rubyMode ?? this.rubyMode,
@@ -1154,6 +1157,7 @@ class UserSettings {
       dailyGoalMinutes: dailyGoalMinutes ?? this.dailyGoalMinutes,
       offlineTranslationEnabled: offlineTranslationEnabled ?? this.offlineTranslationEnabled,
       offlineTranslationWifiOnly: offlineTranslationWifiOnly ?? this.offlineTranslationWifiOnly,
+      hapticFeedbackEnabled: hapticFeedbackEnabled ?? this.hapticFeedbackEnabled,
     );
   }
 
@@ -1175,6 +1179,7 @@ class UserSettings {
     'dailyGoalMinutes': dailyGoalMinutes,
     'offlineTranslationEnabled': offlineTranslationEnabled,
     'offlineTranslationWifiOnly': offlineTranslationWifiOnly,
+    'hapticFeedbackEnabled': hapticFeedbackEnabled,
   };
 
   factory UserSettings.fromJson(Map<String, dynamic> json) {
@@ -1202,6 +1207,7 @@ class UserSettings {
       dailyGoalMinutes: json['dailyGoalMinutes'] as int? ?? 10,
       offlineTranslationEnabled: json['offlineTranslationEnabled'] as bool? ?? true,
       offlineTranslationWifiOnly: json['offlineTranslationWifiOnly'] as bool? ?? true,
+      hapticFeedbackEnabled: json['hapticFeedbackEnabled'] as bool? ?? true,
     );
   }
 }

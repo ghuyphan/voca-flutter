@@ -695,13 +695,13 @@ class VocaTheme {
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: SegmentedButton.styleFrom(
-          selectedBackgroundColor: VocaColorPalette.dark.textPrimary,
-          selectedForegroundColor: VocaColorPalette.dark.textInverse,
+          selectedBackgroundColor: VocaColorPalette.dark.accentPrimary.withValues(alpha: 0.18),
+          selectedForegroundColor: VocaColorPalette.dark.accentPrimary,
           backgroundColor: VocaColorPalette.dark.bgCard,
           foregroundColor: VocaColorPalette.dark.textSecondary,
           side: BorderSide(color: VocaColorPalette.dark.borderColor, width: 1.0),
           shape: const StadiumBorder(),
-          textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+          textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
@@ -976,13 +976,13 @@ class VocaTheme {
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: SegmentedButton.styleFrom(
-          selectedBackgroundColor: VocaColorPalette.light.textPrimary,
-          selectedForegroundColor: VocaColorPalette.light.textInverse,
+          selectedBackgroundColor: VocaColorPalette.light.accentPrimary.withValues(alpha: 0.14),
+          selectedForegroundColor: VocaColorPalette.light.accentPrimary,
           backgroundColor: VocaColorPalette.light.bgCard,
           foregroundColor: VocaColorPalette.light.textSecondary,
           side: BorderSide(color: VocaColorPalette.light.borderColor, width: 1.0),
           shape: const StadiumBorder(),
-          textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+          textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(

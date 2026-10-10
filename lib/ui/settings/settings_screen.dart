@@ -14,10 +14,10 @@ import '../onboarding/onboarding_screen.dart';
 import '../profile/edit_profile_screen.dart';
 import '../sheets/voca_bottom_sheet.dart';
 import 'offline_translation_screen.dart';
+import 'setting_sub_screens.dart';
 import '../widgets/kikyou_logo.dart';
 import '../widgets/voca_back_button.dart';
 import '../widgets/voca_confirm_dialog.dart';
-import '../widgets/voca_option_picker.dart';
 
 const String kAppVersion = '1.2.4';
 const String kBuildDate = '2026-09-30';
@@ -446,7 +446,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: context.t('settings.learningLanguage', null, 'Learning Language'),
           subtitle: langName,
           colors: colors,
-          onTap: () => _pickLearningLanguage(context, targetLang),
+          onTap: () => _pickLearningLanguage(context),
         ),
 
         _buildDivider(colors),
@@ -470,16 +470,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: readingGuideTitle,
           subtitle: readingModeLabel,
           colors: colors,
-          onTap: () => _pickRubyMode(context, settings.rubyMode, readingGuideTitle),
+          onTap: () => _pickRubyMode(context),
         ),
 
         _buildDivider(colors),
 
-        // 4. Offline Subtitle Translation (Google ML Kit on-device models)
+        // 4. On-Device Subtitle Translation (Google ML Kit on-device models)
         _buildSettingTile(
           context: context,
           leading: _buildM3IconBox(Icons.download_for_offline_outlined, colors),
-          title: context.t('settings.offlineTranslation', null, 'Offline Translation'),
+          title: context.t('settings.offlineTranslation', null, 'On-Device Translation'),
           subtitle: settings.offlineTranslationEnabled
               ? context.t('settings.onDeviceActive', null, 'On-Device ML Kit Active')
               : context.t('settings.cloudOnly', null, 'Cloud Only'),
@@ -517,108 +517,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Future<void> _pickLearningLanguage(BuildContext context, String currentLang) async {
-    final selected = await showVocaOptionPicker(
-      context: context,
-      title: context.t('settings.learningLanguage', null, 'Learning Language'),
-      selectedValue: currentLang,
-      options: [
-        OptionItem(
-          value: 'ja',
-          label: '日本語',
-          example: context.t('settings.japanese', null, 'Japanese'),
-          leading: const VocaFlagWidget(countryCode: 'jp', size: 22),
-        ),
-        OptionItem(
-          value: 'zh',
-          label: '中文',
-          example: context.t('settings.chinese', null, 'Chinese (Mandarin)'),
-          leading: const VocaFlagWidget(countryCode: 'cn', size: 22),
-        ),
-        OptionItem(
-          value: 'ko',
-          label: '한국어',
-          example: context.t('settings.korean', null, 'Korean'),
-          leading: const VocaFlagWidget(countryCode: 'kr', size: 22),
-        ),
-        OptionItem(
-          value: 'en',
-          label: 'English',
-          example: context.t('settings.english', null, 'English'),
-          leading: const VocaFlagWidget(countryCode: 'us', size: 22),
-        ),
-      ],
+  void _pickLearningLanguage(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const LearningLanguageSettingsScreen()),
     );
-
-    if (selected != null) {
-      AppState.instance.setLanguage(selected);
-    }
   }
 
-  Future<void> _pickRubyMode(
-    BuildContext context,
-    RubyDisplayMode currentMode,
-    String title,
-  ) async {
-    final selected = await showVocaOptionPicker(
-      context: context,
-      title: title,
-      selectedValue: currentMode.name,
-      options: [
-        OptionItem(
-          value: RubyDisplayMode.always.name,
-          label: context.t('settings.alwaysShow', null, 'Always Show'),
-          example: context.t('settings.alwaysShowDesc', null, 'Display reading annotations above all words'),
-          iconData: Icons.visibility_rounded,
-        ),
-        OptionItem(
-          value: RubyDisplayMode.tap.name,
-          label: context.t('settings.onTapOnly', null, 'On Tap Only'),
-          example: context.t('settings.onTapOnlyDesc', null, 'Reveal pronunciation when tapping a word'),
-          iconData: Icons.touch_app_rounded,
-        ),
-        OptionItem(
-          value: RubyDisplayMode.never.name,
-          label: context.t('settings.off', null, 'Off'),
-          example: context.t('settings.offDesc', null, 'Hide all phonetic guides for full immersion'),
-          iconData: Icons.visibility_off_rounded,
-        ),
-      ],
+  void _pickRubyMode(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const ReadingGuidesSettingsScreen(),
+      ),
     );
-
-    if (selected != null) {
-      final mode = RubyDisplayMode.values.firstWhere(
-        (e) => e.name == selected,
-        orElse: () => RubyDisplayMode.always,
-      );
-      AppState.instance.setRubyMode(mode);
-    }
   }
 
-  Future<void> _pickUILanguage(BuildContext context) async {
-    final i18n = I18nService.instance;
-    await showVocaOptionPicker(
-      context: context,
-      title: context.t('settings.interfaceLanguage', null, 'Interface Language'),
-      selectedValue: i18n.currentLanguage.value,
-      options: i18n.availableLanguages.map((l) {
-        return OptionItem(
-          value: l.code,
-          label: l.nativeName,
-          example: l.name,
-          leading: VocaFlagWidget(countryCode: _getLanguageCountryCode(l.code), size: 22),
-        );
-      }).toList(),
-      onSelect: (selected) {
-        if (selected != i18n.currentLanguage.value) {
-          AppState.instance.setUiLanguage(selected);
-        }
-      },
+  void _pickUILanguage(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const InterfaceLanguageSettingsScreen()),
     );
   }
 
   // ===========================================================================
-  // 3. APPEARANCE GROUP (Material 3 Tri-State Theme Selector)
+  // 3. APPEARANCE GROUP (Theme & Haptic Feedback)
   // ===========================================================================
 
   Widget _buildAppearanceGroup(
@@ -647,6 +567,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         break;
     }
 
+    final hapticSubtitle = settings.hapticFeedbackEnabled
+        ? context.t('settings.on', null, 'On')
+        : context.t('settings.off', null, 'Off');
+
     return _buildCardGroup(
       colors: colors,
       children: [
@@ -660,42 +584,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: context.t('settings.theme', null, 'Theme'),
           subtitle: themeSubtitle,
           colors: colors,
-          onTap: () => _pickThemeMode(context, currentThemeMode),
+          onTap: () => _pickThemeMode(context),
+        ),
+        _buildDivider(colors),
+        _buildSettingTile(
+          context: context,
+          leading: _buildM3IconBox(Icons.vibration_rounded, colors),
+          title: context.t('settings.hapticFeedback', null, 'Haptic Feedback'),
+          subtitle: hapticSubtitle,
+          colors: colors,
+          onTap: () => _openHapticSettings(context),
         ),
       ],
     );
   }
 
-  Future<void> _pickThemeMode(BuildContext context, String currentMode) async {
-    await showVocaOptionPicker(
-      context: context,
-      title: context.t('settings.theme', null, 'Theme'),
-      selectedValue: currentMode,
-      options: [
-        OptionItem(
-          value: 'system',
-          label: context.t('settings.themeSystem', null, 'System'),
-          example: context.t('settings.themeSystemDesc', null, 'Follow device appearance'),
-          iconData: Icons.brightness_auto_rounded,
-        ),
-        OptionItem(
-          value: 'light',
-          label: context.t('settings.themeLight', null, 'Light'),
-          example: context.t('settings.themeLightDesc', null, 'Light theme'),
-          iconData: Icons.light_mode_rounded,
-        ),
-        OptionItem(
-          value: 'dark',
-          label: context.t('settings.themeDark', null, 'Dark'),
-          example: context.t('settings.themeDarkDesc', null, 'Dark theme'),
-          iconData: Icons.dark_mode_rounded,
-        ),
-      ],
-      onSelect: (selected) {
-        if (selected != currentMode) {
-          AppState.instance.setThemeMode(selected);
-        }
-      },
+  void _pickThemeMode(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ThemeSettingsScreen()),
+    );
+  }
+
+  void _openHapticSettings(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const HapticSettingsScreen()),
     );
   }
 

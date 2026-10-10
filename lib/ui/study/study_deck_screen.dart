@@ -210,10 +210,10 @@ class _StudyDeckScreenState extends State<StudyDeckScreen> {
                         onUndo: _controller.canUndo ? () => _controller.undoLastRating() : null,
                       ),
 
-                      // Center Tinder Multi-Card Stack
+                      // Center Tinder Multi-Card Stack with Physical Deck Elevation
                       Expanded(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                          padding: const EdgeInsets.fromLTRB(16, 20, 16, 6),
                           child: TinderCardStack(
                             controller: _stackController,
                             cardIndex: _controller.currentIndex.value,
@@ -233,12 +233,14 @@ class _StudyDeckScreenState extends State<StudyDeckScreen> {
                         ),
                       ),
 
-                      // Bottom 4-Button SRS Action Dock matching screenshot
+                      // Bottom Contextual SRS Action Dock
                       TinderActionDock(
+                        isRevealed: _controller.isCardRevealed.value,
                         againInterval: '<1 min',
                         hardInterval: intervals.hard,
                         goodInterval: intervals.good,
                         easyInterval: intervals.easy,
+                        onShowAnswer: () => _controller.toggleReveal(),
                         onAgain: () => _stackController.swipeLeft(),
                         onHard: () => _stackController.swipeDown(),
                         onGood: () => _stackController.swipeRight(),

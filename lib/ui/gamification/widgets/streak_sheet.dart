@@ -1,9 +1,9 @@
 // lib/ui/gamification/widgets/streak_sheet.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import '../../../config/voca_theme.dart';
+import '../../../services/haptic_service.dart';
 import '../../../services/i18n_service.dart';
 import '../../../services/toast_service.dart';
 import '../../../state/app_state.dart';
@@ -214,7 +214,7 @@ class StreakSheet extends StatelessWidget {
                 child: OutlinedButton.icon(
                   onPressed: totalXp >= 150
                       ? () async {
-                          HapticFeedback.lightImpact();
+                          HapticService.light();
                           final success = await gamification.replenishFreeze();
                           if (context.mounted) {
                             if (success) {

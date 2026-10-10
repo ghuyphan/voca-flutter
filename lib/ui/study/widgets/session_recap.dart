@@ -1,11 +1,14 @@
 // lib/ui/study/widgets/session_recap.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../../config/voca_theme.dart';
 import '../../../models/study_session_models.dart';
+import '../../../services/audio_service.dart';
+import '../../../services/haptic_service.dart';
 import '../../../services/i18n_service.dart';
 import '../../../state/app_state.dart';
+import '../../gamification/widgets/animated_fire_icon.dart';
+import '../../gamification/widgets/celebration_confetti.dart';
 import '../../gamification/widgets/rpg_shield_crest.dart';
 
 /// Highly-polished, consistent Session Recap Screen.
@@ -32,10 +35,14 @@ class SessionRecap extends StatefulWidget {
 }
 
 class _SessionRecapState extends State<SessionRecap>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _entranceController;
   late final Animation<double> _crestScaleAnimation;
   late final Animation<double> _crestFadeAnimation;
+
+  late final AnimationController _crestBreathingController;
+  late final AnimationController _countersController;
+  late final Animation<double> _countersAnimation;
 
   @override
   void initState() {
@@ -44,7 +51,7 @@ class _SessionRecapState extends State<SessionRecap>
     // 1:1 with web's crestPop: 500ms cubic-bezier(0.34, 1.56, 0.64, 1)
     _entranceController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 550),
     );
 
     _crestScaleAnimation = Tween<double>(begin: 0.65, end: 1.0).animate(
@@ -61,22 +68,46 @@ class _SessionRecapState extends State<SessionRecap>
       ),
     );
 
+    // Continuous ambient breathing glow on the crest
+    _crestBreathingController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2200),
+    )..repeat(reverse: true);
+
+    // Smooth counting up animation for metrics, XP, and streak
+    _countersController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1100),
+    );
+    _countersAnimation = CurvedAnimation(
+      parent: _countersController,
+      curve: Curves.easeOutCubic,
+    );
+
     _entranceController.forward();
+    _countersController.forward();
+
+    // Play celebratory victory fanfare sound effect on session finish
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AudioService.instance.playVictoryChime();
+    });
   }
 
   @override
   void dispose() {
     _entranceController.dispose();
+    _crestBreathingController.dispose();
+    _countersController.dispose();
     super.dispose();
   }
 
   void _handleDone() {
-    HapticFeedback.mediumImpact();
+    HapticService.medium();
     widget.onDone();
   }
 
   void _handleClose() {
-    HapticFeedback.lightImpact();
+    HapticService.light();
     (widget.onClose ?? widget.onDone)();
   }
 
@@ -124,32 +155,18 @@ class _SessionRecapState extends State<SessionRecap>
                 children: [
                   const SizedBox(height: 16),
 
-                  // 1. RPG Shield Crest with Spring Pop & Subtle Ambient Glow
-                  ScaleTransition(
-                    scale: _crestScaleAnimation,
-                    child: FadeTransition(
-                      opacity: _crestFadeAnimation,
-                      child: SizedBox(
-                        width: 110,
-                        height: 110,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Container(
-                              width: 86,
-                              height: 86,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: crestStyle.glowColor.withValues(alpha: 0.24),
-                                    blurRadius: 24,
-                                    spreadRadius: 2,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            RpgShieldCrest(
+                  // 1. RPG Shield Crest with Spring Pop & Living Ambient Breathing Glow
+                  RepaintBoundary(
+                    child: ScaleTransition(
+                      scale: _crestScaleAnimation,
+                      child: FadeTransition(
+                        opacity: _crestFadeAnimation,
+                        child: SizedBox(
+                          width: 110,
+                          height: 110,
+                          child: AnimatedBuilder(
+                            animation: _crestBreathingController,
+                            child: RpgShieldCrest(
                               width: 86,
                               height: 98,
                               style: crestStyle,
@@ -157,7 +174,31 @@ class _SessionRecapState extends State<SessionRecap>
                               iconSize: 42,
                               showGlow: false,
                             ),
-                          ],
+                            builder: (context, crestChild) {
+                              final glowPulse = 0.20 + (0.16 * _crestBreathingController.value);
+                              final glowSpread = 2.0 + (3.0 * _crestBreathingController.value);
+                              return Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Container(
+                                    width: 86,
+                                    height: 86,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: crestStyle.glowColor.withValues(alpha: glowPulse),
+                                          blurRadius: 26,
+                                          spreadRadius: glowSpread,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  crestChild!,
+                                ],
+                              );
+                            },
+                          ),
                         ),
                       ),
                     ),
@@ -222,120 +263,130 @@ class _SessionRecapState extends State<SessionRecap>
 
                   const SizedBox(height: 22),
 
-                  // 3. Streak & Rewards Row
-                  Row(
-                    children: [
-                      // Streak Card
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                          decoration: BoxDecoration(
-                            color: colors.bgCard,
-                            borderRadius: VocaRadius.roundedLg,
-                            border: Border.all(color: colors.colorFire.withValues(alpha: 0.3)),
-                            boxShadow: [
-                              BoxShadow(
-                                color: colors.colorFire.withValues(alpha: 0.06),
-                                blurRadius: 10,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 30,
-                                    height: 30,
-                                    decoration: BoxDecoration(
-                                      color: colors.colorFire.withValues(alpha: 0.14),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(Icons.local_fire_department_rounded, color: colors.colorFire, size: 18),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      '$streak ${context.t('gamification.dayStreak', null, 'Days')}',
-                                      style: TextStyle(
-                                        color: colors.textPrimary,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                context.t('flashcards.keepItUp', null, 'Streak active! 🔥'),
-                                style: TextStyle(color: colors.textMuted, fontSize: 11.5, fontWeight: FontWeight.w500),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
+                  // 3. Streak & Rewards Row with Animated Fire Icon & Rolling Numbers
+                  AnimatedBuilder(
+                    animation: _countersAnimation,
+                    builder: (context, _) {
+                      final animatedStreak = (streak * _countersAnimation.value).round();
+                      final animatedXp = (xpGained * _countersAnimation.value).round();
 
-                      // XP Gained Card
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                          decoration: BoxDecoration(
-                            color: colors.bgCard,
-                            borderRadius: VocaRadius.roundedLg,
-                            border: Border.all(color: colors.accentTertiary.withValues(alpha: 0.3)),
-                            boxShadow: [
-                              BoxShadow(
-                                color: colors.accentTertiary.withValues(alpha: 0.06),
-                                blurRadius: 10,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 30,
-                                    height: 30,
-                                    decoration: BoxDecoration(
-                                      color: colors.accentTertiary.withValues(alpha: 0.14),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(Icons.bolt_rounded, color: colors.accentTertiary, size: 18),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      '+$xpGained XP',
-                                      style: TextStyle(
-                                        color: colors.textPrimary,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
+                      return Row(
+                        children: [
+                          // Streak Card with living animated fire icon
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                              decoration: BoxDecoration(
+                                color: colors.bgCard,
+                                borderRadius: VocaRadius.roundedLg,
+                                border: Border.all(color: colors.colorFire.withValues(alpha: 0.3)),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: colors.colorFire.withValues(alpha: 0.06),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 3),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 6),
-                              Text(
-                                context.t('gamification.earnedXp', null, 'Study bonus earned'),
-                                style: TextStyle(color: colors.textMuted, fontSize: 11.5, fontWeight: FontWeight.w500),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: 32,
+                                        height: 32,
+                                        decoration: BoxDecoration(
+                                          color: colors.colorFire.withValues(alpha: 0.14),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Center(
+                                          child: AnimatedFireIcon(size: 20),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          '$animatedStreak ${context.t('gamification.dayStreak', null, 'Days')}',
+                                          style: TextStyle(
+                                            color: colors.textPrimary,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    context.t('flashcards.keepItUp', null, 'Streak active! 🔥'),
+                                    style: TextStyle(color: colors.textMuted, fontSize: 11.5, fontWeight: FontWeight.w500),
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
-                        ),
-                      ),
-                    ],
+                          const SizedBox(width: 10),
+
+                          // XP Gained Card with rolling XP number
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                              decoration: BoxDecoration(
+                                color: colors.bgCard,
+                                borderRadius: VocaRadius.roundedLg,
+                                border: Border.all(color: colors.accentTertiary.withValues(alpha: 0.3)),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: colors.accentTertiary.withValues(alpha: 0.06),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: 30,
+                                        height: 30,
+                                        decoration: BoxDecoration(
+                                          color: colors.accentTertiary.withValues(alpha: 0.14),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(Icons.bolt_rounded, color: colors.accentTertiary, size: 18),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          '+$animatedXp XP',
+                                          style: TextStyle(
+                                            color: colors.textPrimary,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    context.t('gamification.earnedXp', null, 'Study bonus earned'),
+                                    style: TextStyle(color: colors.textMuted, fontSize: 11.5, fontWeight: FontWeight.w500),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
 
                   const SizedBox(height: 14),
@@ -444,51 +495,52 @@ class _SessionRecapState extends State<SessionRecap>
                       if (widget.onReviewAgain != null && widget.stats.againOrHardCount > 0) ...[
                         SizedBox(
                           width: double.infinity,
-                          height: 50,
+                          height: 48,
                           child: FilledButton.tonalIcon(
                             onPressed: () {
-                              HapticFeedback.mediumImpact();
+                              HapticService.medium();
                               widget.onReviewAgain?.call();
                             },
-                            icon: const Icon(Icons.refresh_rounded, size: 20),
+                            icon: const Icon(Icons.refresh_rounded, size: 19),
                             label: Text(
                               context.t(
                                 'study.reviewMissedCards',
                                 {'count': widget.stats.againOrHardCount.toString()},
                                 'Review Missed Cards (${widget.stats.againOrHardCount})',
                               ),
-                              style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold),
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                             ),
                             style: FilledButton.styleFrom(
-                              backgroundColor: colors.accentPrimary.withValues(alpha: 0.16),
+                              backgroundColor: colors.accentPrimary.withValues(alpha: 0.12),
                               foregroundColor: colors.accentPrimary,
                               elevation: 0,
-                              shape: RoundedRectangleBorder(borderRadius: VocaRadius.roundedPill),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                             ),
                           ),
                         ),
                         const SizedBox(height: 10),
                       ],
 
-                      // Keep Going / Study Next Batch Button
+                      // Keep Going / Study Next Batch Button (Matching Explore Videos tonal button from Overview)
                       if (widget.onKeepGoing != null) ...[
                         SizedBox(
                           width: double.infinity,
-                          height: 48,
-                          child: OutlinedButton.icon(
+                          height: 46,
+                          child: FilledButton.tonalIcon(
                             onPressed: () {
-                              HapticFeedback.lightImpact();
+                              HapticService.selection();
                               widget.onKeepGoing?.call();
                             },
                             icon: const Icon(Icons.play_arrow_rounded, size: 20),
                             label: Text(
                               context.t('study.continueNextBatch', null, 'Continue (Next Batch)'),
-                              style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold),
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                             ),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: colors.textPrimary,
-                              side: BorderSide(color: colors.borderColor),
-                              shape: RoundedRectangleBorder(borderRadius: VocaRadius.roundedPill),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: colors.accentPrimary.withValues(alpha: 0.12),
+                              foregroundColor: colors.accentPrimary,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                             ),
                           ),
                         ),
@@ -498,25 +550,32 @@ class _SessionRecapState extends State<SessionRecap>
                       // Primary Done / Back to Deck Button
                       SizedBox(
                         width: double.infinity,
-                        height: 52,
+                        height: 50,
                         child: FilledButton.icon(
                           onPressed: _handleDone,
                           icon: const Icon(Icons.check_rounded, size: 20),
                           label: Text(
                             context.t('study.done', null, 'Done'),
-                            style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800),
+                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
                           ),
                           style: FilledButton.styleFrom(
                             backgroundColor: colors.accentPrimary,
                             foregroundColor: Colors.white,
                             elevation: 0,
-                            shape: RoundedRectangleBorder(borderRadius: VocaRadius.roundedPill),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           ),
                         ),
                       ),
                     ],
                   ),
                 ],
+              ),
+            ),
+
+            // Confetti Particle Shower Celebration Overlay (GPU-isolated RepaintBoundary, ignores touches)
+            const Positioned.fill(
+              child: RepaintBoundary(
+                child: CelebrationConfetti(),
               ),
             ),
 
@@ -561,55 +620,61 @@ class _SessionRecapState extends State<SessionRecap>
     required String suffix,
     required VocaColorPalette colors,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      decoration: BoxDecoration(
-        color: colors.bgSurface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colors.borderColorLight),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 18, color: iconColor),
+    return AnimatedBuilder(
+      animation: _countersAnimation,
+      builder: (context, _) {
+        final animatedVal = (targetValue * _countersAnimation.value).round();
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: colors.bgSurface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: colors.borderColorLight),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '${targetValue.round()}$suffix',
-                  style: TextStyle(
-                    color: colors.textPrimary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    height: 1.1,
-                  ),
+          child: Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: colors.textMuted,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
+                child: Icon(icon, size: 18, color: iconColor),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '$animatedVal$suffix',
+                      style: TextStyle(
+                        color: colors.textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        height: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: colors.textMuted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

@@ -1,8 +1,8 @@
 // lib/ui/study/widgets/anki_hud_header.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../../config/voca_theme.dart';
+import '../../../services/haptic_service.dart';
 import '../../../services/i18n_service.dart';
 
 /// Top HUD header featuring minimal dash capsule progress, session counter, and undo action.
@@ -42,7 +42,7 @@ class AnkiHudHeader extends StatelessWidget {
               constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
               tooltip: context.t('study.exitToOverview', null, 'Exit to Overview'),
               onPressed: () {
-                HapticFeedback.selectionClick();
+                HapticService.selection();
                 onExit?.call();
               },
             )
@@ -87,7 +87,7 @@ class AnkiHudHeader extends StatelessWidget {
                   constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                   tooltip: context.t('study.undo', null, 'Undo'),
                   onPressed: () {
-                    HapticFeedback.selectionClick();
+                    HapticService.selection();
                     onUndo?.call();
                   },
                 ),
@@ -100,7 +100,7 @@ class AnkiHudHeader extends StatelessWidget {
                 constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                 tooltip: context.t('study.deckSettings', null, 'Deck Settings'),
                 onPressed: () {
-                  HapticFeedback.selectionClick();
+                  HapticService.selection();
                   onOpenDeckSettings();
                 },
               ),

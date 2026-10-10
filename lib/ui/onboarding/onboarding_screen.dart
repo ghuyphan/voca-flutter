@@ -1,10 +1,10 @@
 // lib/ui/onboarding/onboarding_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../config/voca_theme.dart';
+import '../../services/haptic_service.dart';
 import '../../services/i18n_service.dart';
 import '../../services/toast_service.dart';
 import '../../state/app_state.dart';
@@ -101,7 +101,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     if (_controller.isCompleting.value) return;
     _controller.isCompleting.value = true;
 
-    HapticFeedback.mediumImpact();
+    HapticService.medium();
 
     final perkMsg = await AppState.instance.completeOnboarding(
       learningLanguage: _controller.learningLang.value,

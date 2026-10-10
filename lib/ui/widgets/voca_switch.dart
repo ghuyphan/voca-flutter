@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../../config/voca_theme.dart';
+import '../../services/haptic_service.dart';
 
 /// Reusable theme-aware toggle switch matching lingua-tube's SwitchComponent.
 class VocaSwitch extends StatelessWidget {
@@ -20,13 +21,18 @@ class VocaSwitch extends StatelessWidget {
     this.leading,
   });
 
+  void _handleToggle(bool nextValue) {
+    onChanged(nextValue);
+    HapticService.selection();
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.vocaColors;
 
     final switchWidget = Switch(
       value: value,
-      onChanged: onChanged,
+      onChanged: _handleToggle,
     );
 
     if (label == null) {
@@ -34,7 +40,7 @@ class VocaSwitch extends StatelessWidget {
     }
 
     return InkWell(
-      onTap: () => onChanged(!value),
+      onTap: () => _handleToggle(!value),
       borderRadius: BorderRadius.circular(12),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),

@@ -9,6 +9,7 @@ import '../../services/toast_service.dart';
 import '../../state/app_state.dart';
 import '../study/study_deck_screen.dart';
 import '../widgets/voca_back_button.dart';
+import '../widgets/voca_animated_counter.dart';
 import 'widgets/activity_heatmap_card.dart';
 import 'widgets/next_streak_milestone_banner.dart';
 import 'widgets/rpg_shield_crest.dart';
@@ -109,8 +110,8 @@ class _StreakScreenState extends State<StreakScreen>
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
                   children: [
-                    Text(
-                      '$currentStreak',
+                    VocaAnimatedCounter(
+                      value: currentStreak,
                       style: TextStyle(
                         color: colors.textPrimary,
                         fontSize: 48,

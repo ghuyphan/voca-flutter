@@ -262,13 +262,27 @@ class SupabaseService {
       if (jsonStr == null) return [];
       final List<dynamic> list = jsonDecode(jsonStr);
       final currentUserId = currentUser?.id ?? 'guest';
+      bool healedAny = false;
       final rawCards = list
           .map((e) => Flashcard.fromJson(Map<String, dynamic>.from(e as Map)))
           .where((c) => c.userId == currentUserId && !c.id.startsWith('sample_') && !c.id.startsWith('mock_'))
+          .map((c) {
+            if (c.sourceVideoId == null || c.sourceVideoId!.trim().isEmpty) {
+              final s = c.contextSentence ?? '';
+              if (s.contains('恋をしていたあなたに')) {
+                healedAny = true;
+                return c.copyWith(sourceVideoId: 'Opp9nqiN5m0', sourceTimestamp: 13.0);
+              } else if (s.contains('忘れたものを取り')) {
+                healedAny = true;
+                return c.copyWith(sourceVideoId: 'SX_ViT4Ra7k', sourceTimestamp: 45.0);
+              }
+            }
+            return c;
+          })
           .toList();
 
       final cleanCards = deduplicateCards(rawCards);
-      if (cleanCards.length != list.length) {
+      if (cleanCards.length != list.length || healedAny) {
         await _saveCardsToLocal(cleanCards);
       }
       return cleanCards;

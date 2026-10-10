@@ -1,8 +1,8 @@
 // lib/ui/onboarding/steps/companion_step.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../../config/voca_theme.dart';
+import '../../../services/haptic_service.dart';
 import '../../../services/i18n_service.dart';
 import '../models/onboarding_models.dart';
 import '../widgets/onboarding_primitives.dart';
@@ -63,12 +63,12 @@ class _CompanionStepState extends State<CompanionStep> {
 
   void _onPageChanged(int page) {
     setState(() => _currentPage = page);
-    HapticFeedback.selectionClick();
+    HapticService.selection();
     widget.onCompanionChanged(CompanionOption.all[page].id);
   }
 
   void _showRosterSheet(BuildContext context, VocaColorPalette colors) {
-    HapticFeedback.lightImpact();
+    HapticService.light();
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: colors.bgCard,

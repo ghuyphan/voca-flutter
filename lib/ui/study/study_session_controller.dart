@@ -437,27 +437,12 @@ class StudySessionController {
     );
 
     final newUndo = List<ReviewEvent>.from(undoStack.value)..add(event);
-    undoStack.value = newUndo;
-
-    sessionStats.value = sessionStats.value.copyWithReview(
-      rating,
-      isLapse,
-      isNewUniqueCard: isNewUnique,
-    );
-
-    // Update combo streak
-    if (rating == SRSReviewRating.again) {
-      currentCombo.value = 0;
-    } else {
-      currentCombo.value += 1;
-    }
 
     // Relearn queue: if Again, reinsert 3 positions ahead
     final queue = List<Flashcard>.from(sessionCards.value);
     if (rating == SRSReviewRating.again) {
       final insertIndex = (currentIndex.value + SrsConfig.relearnStepGap + 1).clamp(0, queue.length);
       queue.insert(insertIndex, updatedCard);
-      sessionCards.value = queue;
     }
 
     // Optimistic persistence to Supabase and in-place allCards sync
@@ -468,18 +453,33 @@ class StudySessionController {
             c.language.toLowerCase() == updatedCard.language.toLowerCase()));
     if (allIdx >= 0) {
       allList[allIdx] = updatedCard;
-      allCards.value = allList;
-      _recalculateMetrics();
     }
+
+    batch(() {
+      undoStack.value = newUndo;
+      sessionStats.value = sessionStats.value.copyWithReview(
+        rating,
+        isLapse,
+        isNewUniqueCard: isNewUnique,
+      );
+      if (rating == SRSReviewRating.again) {
+        currentCombo.value = 0;
+        sessionCards.value = queue;
+      } else {
+        currentCombo.value += 1;
+      }
+      if (allIdx >= 0) {
+        allCards.value = allList;
+        _recalculateMetrics();
+      }
+      resetCardState();
+      currentIndex.value += 1;
+    });
 
     unawaited(AppState.instance.supabaseService.upsertVocabularyCard(updatedCard));
     try {
       unawaited(AppState.instance.gamificationService.onCardReviewed(allCards.value.length));
     } catch (_) {}
-
-    // Advance queue
-    currentIndex.value += 1;
-    resetCardState();
 
     if (isFinished && !_rewardClaimed) {
       await claimSessionRewards();
@@ -517,15 +517,6 @@ class StudySessionController {
     );
 
     final newUndo = List<ReviewEvent>.from(undoStack.value)..add(event);
-    undoStack.value = newUndo;
-
-    sessionStats.value = sessionStats.value.copyWithReview(
-      SRSReviewRating.easy,
-      false,
-      isNewUniqueCard: isNewUnique,
-    );
-
-    currentCombo.value += 1;
 
     // Optimistic persistence to Supabase and in-place allCards sync
     final allList = List<Flashcard>.from(allCards.value);
@@ -535,18 +526,28 @@ class StudySessionController {
             c.language.toLowerCase() == updatedCard.language.toLowerCase()));
     if (allIdx >= 0) {
       allList[allIdx] = updatedCard;
-      allCards.value = allList;
-      _recalculateMetrics();
     }
+
+    batch(() {
+      undoStack.value = newUndo;
+      sessionStats.value = sessionStats.value.copyWithReview(
+        SRSReviewRating.easy,
+        false,
+        isNewUniqueCard: isNewUnique,
+      );
+      currentCombo.value += 1;
+      if (allIdx >= 0) {
+        allCards.value = allList;
+        _recalculateMetrics();
+      }
+      resetCardState();
+      currentIndex.value += 1;
+    });
 
     unawaited(AppState.instance.supabaseService.upsertVocabularyCard(updatedCard));
     try {
       unawaited(AppState.instance.gamificationService.onCardReviewed(allCards.value.length));
     } catch (_) {}
-
-    // Advance queue
-    currentIndex.value += 1;
-    resetCardState();
 
     if (isFinished && !_rewardClaimed) {
       await claimSessionRewards();
@@ -559,7 +560,6 @@ class StudySessionController {
 
     final events = List<ReviewEvent>.from(undoStack.value);
     final lastEvent = events.removeLast();
-    undoStack.value = events;
 
     // Restore previous card
     final queue = List<Flashcard>.from(sessionCards.value);
@@ -574,13 +574,6 @@ class StudySessionController {
       _reviewedCardIds.remove(lastEvent.previousCard.id);
     }
 
-    sessionCards.value = queue;
-    currentIndex.value = lastEvent.previousQueueIndex;
-
-    // Restore stats and streak combo
-    sessionStats.value = lastEvent.previousStats;
-    currentCombo.value = lastEvent.previousCombo;
-
     // Revert DB record and in-place allCards sync
     final allList = List<Flashcard>.from(allCards.value);
     final allIdx = allList.indexWhere((c) =>
@@ -589,13 +582,22 @@ class StudySessionController {
             c.language.toLowerCase() == lastEvent.previousCard.language.toLowerCase()));
     if (allIdx >= 0) {
       allList[allIdx] = lastEvent.previousCard;
-      allCards.value = allList;
-      _recalculateMetrics();
     }
 
-    unawaited(AppState.instance.supabaseService.upsertVocabularyCard(lastEvent.previousCard));
+    batch(() {
+      undoStack.value = events;
+      sessionCards.value = queue;
+      currentIndex.value = lastEvent.previousQueueIndex;
+      sessionStats.value = lastEvent.previousStats;
+      currentCombo.value = lastEvent.previousCombo;
+      if (allIdx >= 0) {
+        allCards.value = allList;
+        _recalculateMetrics();
+      }
+      resetCardState();
+    });
 
-    resetCardState();
+    unawaited(AppState.instance.supabaseService.upsertVocabularyCard(lastEvent.previousCard));
   }
 
   Future<void> claimSessionRewards() async {

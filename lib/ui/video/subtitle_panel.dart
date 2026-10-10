@@ -280,6 +280,8 @@ class _SubtitlePanelState extends State<SubtitlePanel>
                             sourceLang: widget.controller.activeLanguage.value,
                             contextSentence: cue.text,
                             contextTranslation: cue.translation,
+                            sourceVideoId: PlayerCoordinator.instance.activeVideoId.value,
+                            sourceTimestamp: cue.start,
                           );
                         }
                       } finally {
