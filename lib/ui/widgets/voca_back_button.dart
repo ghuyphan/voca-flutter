@@ -45,8 +45,8 @@ class VocaBackButton extends StatelessWidget {
       child: Tooltip(
         message: resolvedTooltip,
         child: SizedBox(
-          width: size < 44 ? 44 : size,
-          height: size < 44 ? 44 : size,
+          width: size < 48 ? 48 : size,
+          height: size < 48 ? 48 : size,
           child: Center(
             child: PressableScale(
               onTap: effectiveOnPressed,
@@ -61,13 +61,6 @@ class VocaBackButton extends StatelessWidget {
                     color: borderColor ?? colors.borderColor,
                     width: 1.0,
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: colors.isDark ? 0.25 : 0.04),
-                      blurRadius: 4,
-                      offset: const Offset(0, 1),
-                    ),
-                  ],
                 ),
                 child: Center(
                   child: Icon(

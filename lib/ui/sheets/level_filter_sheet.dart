@@ -95,9 +95,7 @@ class _LevelFilterSheetState extends State<LevelFilterSheet> {
                   return BorderSide(color: colors.borderColor, width: 1.0);
                 }),
                 shape: const StadiumBorder(),
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 onSelected: (_) {
                   setState(() => _level = 'All');
                 },
@@ -140,9 +138,7 @@ class _LevelFilterSheetState extends State<LevelFilterSheet> {
                     return BorderSide(color: colors.borderColor, width: 1.0);
                   }),
                   shape: const StadiumBorder(),
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   onSelected: (_) {
                     setState(() => _level = lvl);
                   },

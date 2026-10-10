@@ -48,17 +48,8 @@ class VocaBottomNavBar extends StatelessWidget {
       final vocabLabel = context.t('nav.vocab', null, 'Vocab');
       final libraryLabel = context.t('nav.library', null, 'Library');
 
-      return Container(
-        decoration: BoxDecoration(
-          border: Border(
-            top: BorderSide(
-              color: colors.borderColorLight.withValues(alpha: 0.8),
-              width: 0.8,
-            ),
-          ),
-        ),
-        child: NavigationBar(
-          selectedIndex: currentIndex.clamp(0, 3),
+      return NavigationBar(
+        selectedIndex: currentIndex.clamp(0, 3),
           onDestinationSelected: (index) {
             onTabSelected(index);
             if (index == 3) {
@@ -107,8 +98,7 @@ class VocaBottomNavBar extends StatelessWidget {
                   : libraryLabel,
             ),
           ],
-        ),
-      );
-    });
+        );
+      });
   }
 }

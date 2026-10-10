@@ -126,7 +126,7 @@ class _WordDetailSheetState extends State<WordDetailSheet> {
           return AlertDialog(
             backgroundColor: colors.bgCard,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(28),
               side: BorderSide(color: colors.borderColor),
             ),
             title: Text(context.t('vocab.editNotes', null, 'Edit Notes'), style: TextStyle(color: colors.textPrimary)),

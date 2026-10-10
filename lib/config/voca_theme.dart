@@ -76,8 +76,8 @@ class VocaTokens {
   static const Color levelAdvancedText = Color(0xFFFDA4AF);
   static const Color levelAdvancedBorder = Color(0x59FB7185);
 
-  // Responsive Breakpoints
-  static const double tabletBreakpoint = 720.0;
+  // Responsive Breakpoints (Canonical M3 Window Size Classes)
+  static const double tabletBreakpoint = 600.0;
   static const double desktopBreakpoint = 1024.0;
 }
 
@@ -433,6 +433,30 @@ class VocaTheme {
         : VocaColorPalette.light;
   }
 
+  /// Complete 15-scale Material 3 typography with Nunito base
+  static TextTheme _buildM3TextTheme(VocaColorPalette palette) {
+    final primary = palette.textPrimary;
+    final secondary = palette.textSecondary;
+    const font = 'Nunito';
+    return TextTheme(
+      displayLarge: TextStyle(fontFamily: font, fontSize: 57, height: 1.12, letterSpacing: -0.25, fontWeight: FontWeight.w700, color: primary),
+      displayMedium: TextStyle(fontFamily: font, fontSize: 45, height: 1.16, letterSpacing: 0, fontWeight: FontWeight.w700, color: primary),
+      displaySmall: TextStyle(fontFamily: font, fontSize: 36, height: 1.22, letterSpacing: 0, fontWeight: FontWeight.w700, color: primary),
+      headlineLarge: TextStyle(fontFamily: font, fontSize: 32, height: 1.25, letterSpacing: 0, fontWeight: FontWeight.w700, color: primary),
+      headlineMedium: TextStyle(fontFamily: font, fontSize: 28, height: 1.29, letterSpacing: 0, fontWeight: FontWeight.w600, color: primary),
+      headlineSmall: TextStyle(fontFamily: font, fontSize: 24, height: 1.33, letterSpacing: 0, fontWeight: FontWeight.w600, color: primary),
+      titleLarge: TextStyle(fontFamily: font, fontSize: 22, height: 1.27, letterSpacing: 0, fontWeight: FontWeight.bold, color: primary),
+      titleMedium: TextStyle(fontFamily: font, fontSize: 16, height: 1.50, letterSpacing: 0.15, fontWeight: FontWeight.w600, color: primary),
+      titleSmall: TextStyle(fontFamily: font, fontSize: 14, height: 1.43, letterSpacing: 0.1, fontWeight: FontWeight.w600, color: secondary),
+      bodyLarge: TextStyle(fontFamily: font, fontSize: 16, height: 1.50, letterSpacing: 0.5, fontWeight: FontWeight.normal, color: primary),
+      bodyMedium: TextStyle(fontFamily: font, fontSize: 14, height: 1.43, letterSpacing: 0.25, fontWeight: FontWeight.normal, color: primary),
+      bodySmall: TextStyle(fontFamily: font, fontSize: 12, height: 1.33, letterSpacing: 0.4, fontWeight: FontWeight.normal, color: secondary),
+      labelLarge: TextStyle(fontFamily: font, fontSize: 14, height: 1.43, letterSpacing: 0.1, fontWeight: FontWeight.w600, color: primary),
+      labelMedium: TextStyle(fontFamily: font, fontSize: 12, height: 1.33, letterSpacing: 0.5, fontWeight: FontWeight.w600, color: secondary),
+      labelSmall: TextStyle(fontFamily: font, fontSize: 11, height: 1.45, letterSpacing: 0.5, fontWeight: FontWeight.w500, color: secondary),
+    );
+  }
+
   /// Dark Theme Configuration
   static ThemeData get darkTheme {
     return ThemeData(
@@ -470,7 +494,6 @@ class VocaTheme {
         inverseSurface: const Color(0xFFF3F4F7),
         onInverseSurface: const Color(0xFF181D27),
         inversePrimary: VocaColorPalette.light.accentPrimary,
-        surfaceTint: Colors.transparent,
         error: VocaColorPalette.dark.error,
         onError: const Color(0xFF601410),
         errorContainer: const Color(0xFF8C1D18),
@@ -480,21 +503,34 @@ class VocaTheme {
         backgroundColor: VocaColorPalette.dark.bgPrimary,
         foregroundColor: VocaColorPalette.dark.textPrimary,
         elevation: 0,
-        scrolledUnderElevation: 0,
+        scrolledUnderElevation: 3.0,
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: VocaColorPalette.dark.bgCard,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(28),
+          side: BorderSide(color: VocaColorPalette.dark.borderColor, width: 0.8),
+        ),
+        titleTextStyle: TextStyle(
+          color: VocaColorPalette.dark.textPrimary,
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+        ),
+        contentTextStyle: TextStyle(
+          color: VocaColorPalette.dark.textSecondary,
+          fontSize: 14,
+          height: 1.45,
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
       ),
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: VocaColorPalette.dark.bgCard,
-        surfaceTintColor: Colors.transparent,
         modalBackgroundColor: VocaColorPalette.dark.bgCard,
+        showDragHandle: false,
+        dragHandleColor: VocaColorPalette.dark.borderColorHover,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
-      ),
-      bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: VocaColorPalette.dark.bgCard,
-        selectedItemColor: VocaColorPalette.dark.accentPrimary,
-        unselectedItemColor: VocaColorPalette.dark.textSecondary,
-        elevation: 3.0,
       ),
       navigationBarTheme: NavigationBarThemeData(
         height: 80.0,
@@ -572,12 +608,12 @@ class VocaTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: VocaColorPalette.dark.accentPrimary,
-          foregroundColor: Colors.white,
+          foregroundColor: const Color(0xFF5C0018),
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: const TextStyle(fontWeight: FontWeight.w600),
+          textStyle: const TextStyle(fontWeight: FontWeight.w700),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -589,14 +625,7 @@ class VocaTheme {
           ),
         ),
       ),
-      textTheme: TextTheme(
-        bodyLarge: TextStyle(color: VocaColorPalette.dark.textPrimary),
-        bodyMedium: TextStyle(color: VocaColorPalette.dark.textPrimary),
-        bodySmall: TextStyle(color: VocaColorPalette.dark.textSecondary),
-        titleLarge: TextStyle(color: VocaColorPalette.dark.textPrimary, fontWeight: FontWeight.bold),
-        titleMedium: TextStyle(color: VocaColorPalette.dark.textPrimary, fontWeight: FontWeight.w600),
-        titleSmall: TextStyle(color: VocaColorPalette.dark.textSecondary, fontWeight: FontWeight.w500),
-      ),
+      textTheme: _buildM3TextTheme(VocaColorPalette.dark),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.disabled)) {
@@ -678,15 +707,15 @@ class VocaTheme {
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           backgroundColor: VocaColorPalette.dark.accentPrimary,
-          foregroundColor: Colors.white,
+          foregroundColor: const Color(0xFF5C0018),
           elevation: 0,
           shape: const StadiumBorder(),
-          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5),
+          textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
         ),
       ),
       badgeTheme: BadgeThemeData(
         backgroundColor: VocaColorPalette.dark.accentPrimary,
-        textColor: Colors.white,
+        textColor: const Color(0xFF5C0018),
         textStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
       ),
       tooltipTheme: TooltipThemeData(
@@ -738,7 +767,7 @@ class VocaTheme {
         surfaceBright: VocaColorPalette.light.bgCard,
         surfaceContainerLowest: VocaColorPalette.light.bgCard,
         surfaceContainerLow: VocaColorPalette.light.bgSurface,
-        surfaceContainer: VocaColorPalette.light.bgCard,
+        surfaceContainer: VocaColorPalette.light.bgPrimary,
         surfaceContainerHigh: VocaColorPalette.light.bgSecondary,
         surfaceContainerHighest: VocaColorPalette.light.bgTertiary,
         outline: VocaColorPalette.light.borderColor,
@@ -746,7 +775,6 @@ class VocaTheme {
         inverseSurface: const Color(0xFF181B24),
         onInverseSurface: const Color(0xFFF1F3F7),
         inversePrimary: VocaColorPalette.dark.accentPrimary,
-        surfaceTint: Colors.transparent,
         error: VocaColorPalette.light.error,
         onError: Colors.white,
         errorContainer: const Color(0xFFF9DEDC),
@@ -756,21 +784,34 @@ class VocaTheme {
         backgroundColor: VocaColorPalette.light.bgPrimary,
         foregroundColor: VocaColorPalette.light.textPrimary,
         elevation: 0,
-        scrolledUnderElevation: 0,
+        scrolledUnderElevation: 3.0,
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: VocaColorPalette.light.bgCard,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(28),
+          side: BorderSide(color: VocaColorPalette.light.borderColor, width: 0.8),
+        ),
+        titleTextStyle: TextStyle(
+          color: VocaColorPalette.light.textPrimary,
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+        ),
+        contentTextStyle: TextStyle(
+          color: VocaColorPalette.light.textSecondary,
+          fontSize: 14,
+          height: 1.45,
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
       ),
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: VocaColorPalette.light.bgCard,
-        surfaceTintColor: Colors.transparent,
         modalBackgroundColor: VocaColorPalette.light.bgCard,
+        showDragHandle: false,
+        dragHandleColor: VocaColorPalette.light.borderColorHover,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
-      ),
-      bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: VocaColorPalette.light.bgCard,
-        selectedItemColor: VocaColorPalette.light.accentPrimary,
-        unselectedItemColor: VocaColorPalette.light.textSecondary,
-        elevation: 3.0,
       ),
       navigationBarTheme: NavigationBarThemeData(
         height: 80.0,
@@ -847,13 +888,13 @@ class VocaTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: VocaColorPalette.light.accentPrimary,
+          backgroundColor: const Color(0xFFD83855),
           foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: const TextStyle(fontWeight: FontWeight.w600),
+          textStyle: const TextStyle(fontWeight: FontWeight.w700),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -865,14 +906,7 @@ class VocaTheme {
           ),
         ),
       ),
-      textTheme: TextTheme(
-        bodyLarge: TextStyle(color: VocaColorPalette.light.textPrimary),
-        bodyMedium: TextStyle(color: VocaColorPalette.light.textPrimary),
-        bodySmall: TextStyle(color: VocaColorPalette.light.textSecondary),
-        titleLarge: TextStyle(color: VocaColorPalette.light.textPrimary, fontWeight: FontWeight.bold),
-        titleMedium: TextStyle(color: VocaColorPalette.light.textPrimary, fontWeight: FontWeight.w600),
-        titleSmall: TextStyle(color: VocaColorPalette.light.textSecondary, fontWeight: FontWeight.w500),
-      ),
+      textTheme: _buildM3TextTheme(VocaColorPalette.light),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.disabled)) {
@@ -953,17 +987,17 @@ class VocaTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: VocaColorPalette.light.accentPrimary,
+          backgroundColor: const Color(0xFFD83855),
           foregroundColor: Colors.white,
           elevation: 0,
           shape: const StadiumBorder(),
-          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5),
+          textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
         ),
       ),
-      badgeTheme: BadgeThemeData(
-        backgroundColor: VocaColorPalette.light.accentPrimary,
+      badgeTheme: const BadgeThemeData(
+        backgroundColor: Color(0xFFD83855),
         textColor: Colors.white,
-        textStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+        textStyle: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
       ),
       tooltipTheme: TooltipThemeData(
         decoration: BoxDecoration(

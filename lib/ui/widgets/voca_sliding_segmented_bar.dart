@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../config/voca_theme.dart';
 
-/// Reusable native sliding capsule segmented bar matching Voca's Material 3 aesthetics.
+/// Canonical Material 3 segmented control wrapping Flutter's SegmentedButton<String>.
 class VocaSlidingSegmentedBar extends StatelessWidget {
   final List<String> values;
   final List<String> labels;
@@ -20,84 +20,38 @@ class VocaSlidingSegmentedBar extends StatelessWidget {
     required this.selectedValue,
     required this.onSelected,
     required this.colors,
-    this.height = 38,
+    this.height = 40,
   });
 
   @override
   Widget build(BuildContext context) {
     if (values.isEmpty) return const SizedBox.shrink();
 
-    final rawIndex = values.indexOf(selectedValue);
-    final selectedIndex = (rawIndex >= 0 ? rawIndex : 0).clamp(0, values.length - 1);
+    final activeValue = values.contains(selectedValue) ? selectedValue : values.first;
 
-    return Container(
-      height: height,
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: colors.bgSurface,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: colors.borderColor),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final itemWidth = constraints.maxWidth / values.length;
-
-          return Stack(
-            children: [
-              // Gliding thumb indicator
-              AnimatedPositioned(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOutCubic,
-                left: selectedIndex * itemWidth,
-                top: 0,
-                bottom: 0,
-                width: itemWidth,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: colors.isDark ? colors.bgHover : colors.bgCard,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-              ),
-
-              // Segment Labels & Gestures
-              Row(
-                children: List.generate(values.length, (i) {
-                  final isSelected = i == selectedIndex;
-                  return Expanded(
-                    child: Semantics(
-                      selected: isSelected,
-                      button: true,
-                      label: labels[i],
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          onSelected(values[i]);
-                        },
-                        child: Center(
-                          child: AnimatedDefaultTextStyle(
-                            duration: const Duration(milliseconds: 160),
-                            style: TextStyle(
-                              color: isSelected ? colors.textPrimary : colors.textMuted,
-                              fontSize: 12.5,
-                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                            ),
-                            child: Text(
-                              labels[i],
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }),
-              ),
-            ],
-          );
-        },
+    return SegmentedButton<String>(
+      segments: [
+        for (int i = 0; i < values.length; i++)
+          ButtonSegment<String>(
+            value: values[i],
+            label: Text(
+              labels.length > i ? labels[i] : values[i],
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+      ],
+      selected: {activeValue},
+      showSelectedIcon: false,
+      onSelectionChanged: (Set<String> newSelection) {
+        if (newSelection.isNotEmpty) {
+          HapticFeedback.selectionClick();
+          onSelected(newSelection.first);
+        }
+      },
+      style: SegmentedButton.styleFrom(
+        minimumSize: Size(0, height),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
       ),
     );
   }

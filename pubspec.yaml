@@ -45,6 +45,9 @@ dependencies:
   google_mlkit_translation: ^0.15.1
   flutter_native_splash: ^2.4.8
 
+  # Typography (Google Fonts with local disk caching)
+  google_fonts: ^6.2.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

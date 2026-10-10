@@ -424,6 +424,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
         },
         child: Scaffold(
           backgroundColor: colors.bgPrimary,
+          resizeToAvoidBottomInset: false,
           body: Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -462,14 +463,20 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                     if (_sheetAnimation.value <= 0.001 && _screenMode == AuthScreenMode.landing) {
                       return const SizedBox.shrink();
                     }
+                    final viewInsets = MediaQuery.of(context).viewInsets;
                     return SlideTransition(
                       position: Tween<Offset>(
                         begin: const Offset(0, 1),
                         end: Offset.zero,
                       ).animate(_sheetAnimation),
-                      child: Align(
-                        alignment: Alignment.bottomCenter,
-                        child: _buildFormSheet(colors, isDark),
+                      child: AnimatedPadding(
+                        padding: EdgeInsets.only(bottom: viewInsets.bottom),
+                        duration: const Duration(milliseconds: 180),
+                        curve: Curves.easeOutCubic,
+                        child: Align(
+                          alignment: Alignment.bottomCenter,
+                          child: _buildFormSheet(colors, isDark),
+                        ),
                       ),
                     );
                   },
@@ -717,8 +724,13 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   // ===========================================================================
 
   Widget _buildFormSheet(VocaColorPalette colors, bool isDark) {
-    final viewInsets = MediaQuery.of(context).viewInsets;
-    final maxSheetHeight = MediaQuery.of(context).size.height * 0.88;
+    final mediaQuery = MediaQuery.of(context);
+    final viewInsets = mediaQuery.viewInsets;
+    final topPadding = mediaQuery.padding.top;
+    final screenHeight = mediaQuery.size.height;
+    // Ensure sheet never touches or clips into the status bar or camera notch (leaves at least topPadding + 28dp)
+    final availableHeight = (screenHeight - viewInsets.bottom - topPadding - 28).clamp(240.0, screenHeight);
+    final maxSheetHeight = (availableHeight * 0.96).clamp(240.0, screenHeight * 0.88);
 
     String formTitle;
     String formDescription;
@@ -796,7 +808,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
             Flexible(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(20, 8, 20, viewInsets.bottom + 20),
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -912,6 +924,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                               focusNode: _nameFocusNode,
                               label: context.t('auth.displayNameLabel', null, 'Name (optional)'),
                               placeholder: context.t('auth.displayNamePlaceholder', null, 'How should we call you?'),
+                              prefixIcon: Icon(Icons.person_outline_rounded, size: 20, color: colors.textMuted),
                               textCapitalization: TextCapitalization.words,
                               textInputAction: TextInputAction.next,
                               colors: colors,
@@ -926,6 +939,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                             focusNode: _emailFocusNode,
                             label: context.t('auth.emailLabel', null, 'Email'),
                             placeholder: context.t('auth.emailPlaceholder', null, 'you@example.com'),
+                            prefixIcon: Icon(Icons.mail_outline_rounded, size: 20, color: colors.textMuted),
                             keyboardType: TextInputType.emailAddress,
                             textInputAction: _screenMode == AuthScreenMode.resetPassword
                                 ? TextInputAction.done
@@ -948,6 +962,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                               focusNode: _passwordFocusNode,
                               label: context.t('auth.passwordLabel', null, 'Password'),
                               placeholder: context.t('auth.passwordPlaceholder', null, 'Enter your password'),
+                              prefixIcon: Icon(Icons.lock_outline_rounded, size: 20, color: colors.textMuted),
                               obscureText: !_showPassword,
                               textInputAction: _screenMode == AuthScreenMode.register
                                   ? TextInputAction.next
@@ -979,6 +994,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                               focusNode: _confirmPasswordFocusNode,
                               label: context.t('auth.confirmPasswordLabel', null, 'Confirm password'),
                               placeholder: context.t('auth.confirmPasswordPlaceholder', null, 'Type your password again'),
+                              prefixIcon: Icon(Icons.lock_reset_rounded, size: 20, color: colors.textMuted),
                               obscureText: !_showConfirmPassword,
                               textInputAction: TextInputAction.done,
                               colors: colors,
@@ -1283,6 +1299,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     required String label,
     required String placeholder,
     required VocaColorPalette colors,
+    Widget? prefixIcon,
     bool obscureText = false,
     TextInputType keyboardType = TextInputType.text,
     TextCapitalization textCapitalization = TextCapitalization.none,
@@ -1323,6 +1340,10 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
               fontSize: 14,
               fontWeight: FontWeight.w400,
             ),
+            prefixIcon: prefixIcon,
+            prefixIconColor: colors.textMuted,
+            suffixIcon: trailing,
+            suffixIconColor: colors.textMuted,
             filled: true,
             fillColor: colors.bgSurface,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
@@ -1336,9 +1357,8 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: colors.accentPrimary, width: 1.5),
+              borderSide: BorderSide(color: colors.accentPrimary, width: 1.8),
             ),
-            suffixIcon: trailing,
           ),
         ),
       ],

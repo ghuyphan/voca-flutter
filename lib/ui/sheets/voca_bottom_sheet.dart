@@ -26,6 +26,7 @@ Future<T?> showVocaBottomSheet<T>({
     isScrollControlled: isScrollControlled,
     isDismissible: isDismissible,
     enableDrag: enableDrag,
+    showDragHandle: false,
     useSafeArea: true,
     backgroundColor: Colors.transparent,
     builder: (ctx) {
@@ -51,13 +52,6 @@ Future<T?> showVocaBottomSheet<T>({
               left: BorderSide(color: colors.borderColor, width: 1),
               right: BorderSide(color: colors.borderColor, width: 1),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: colors.isDark ? 0.45 : 0.08),
-                blurRadius: 24,
-                offset: const Offset(0, -4),
-              ),
-            ],
           ),
           child: AnimatedSize(
             duration: const Duration(milliseconds: 240),
@@ -69,25 +63,37 @@ Future<T?> showVocaBottomSheet<T>({
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Drag Handle Pill (Mobile)
+                    // Drag Handle Pill (Inside container, centered at top)
                     if (showDragHandle)
                       Center(
-                        child: Container(
-                          width: 36,
-                          height: 4,
-                          margin: const EdgeInsets.only(top: 10, bottom: 6),
-                          decoration: BoxDecoration(
-                            color: colors.borderColorHover,
-                            borderRadius: BorderRadius.circular(2),
+                        child: Semantics(
+                          label: ctx.t('common.dragHandle', null, 'Drag handle'),
+                          child: Container(
+                            width: 36,
+                            height: 4,
+                            margin: EdgeInsets.only(
+                              top: 12,
+                              bottom: title != null ? 4 : 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.borderColorHover,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
                           ),
                         ),
                       ),
 
-                    // Optional Title Header (if title specified)
+                    // Title Header (if title specified) with integrated close button
                     if (title != null) ...[
                       Padding(
-                        padding: EdgeInsets.fromLTRB(20, 8, showCloseButton ? 48 : 20, 10),
+                        padding: EdgeInsets.fromLTRB(
+                          20,
+                          showDragHandle ? 10 : 16,
+                          showCloseButton ? 8 : 20,
+                          12,
+                        ),
                         child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Expanded(
                               child: Column(
@@ -117,6 +123,14 @@ Future<T?> showVocaBottomSheet<T>({
                               ),
                             ),
                             if (trailingAction != null) trailingAction,
+                            if (showCloseButton)
+                              IconButton(
+                                icon: Icon(Icons.close_rounded, color: colors.textMuted, size: 20),
+                                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                                padding: const EdgeInsets.all(10),
+                                onPressed: () => Navigator.of(ctx).pop(),
+                                tooltip: ctx.t('common.close', null, 'Close'),
+                              ),
                           ],
                         ),
                       ),
@@ -135,15 +149,15 @@ Future<T?> showVocaBottomSheet<T>({
                   ],
                 ),
 
-                // Absolute-positioned Close button matching lingua-tube's sheet-close-btn
-                if (showCloseButton)
+                // Floating close button for sheets without a title header
+                if (title == null && showCloseButton)
                   Positioned(
-                    top: 6,
+                    top: showDragHandle ? 8 : 4,
                     right: 8,
                     child: IconButton(
                       icon: Icon(Icons.close_rounded, color: colors.textMuted, size: 20),
-                      constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-                      padding: const EdgeInsets.all(10),
+                      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                      padding: const EdgeInsets.all(12),
                       onPressed: () => Navigator.of(ctx).pop(),
                       tooltip: ctx.t('common.close', null, 'Close'),
                     ),

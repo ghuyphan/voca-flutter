@@ -80,7 +80,7 @@ void main() {
 
       // Account Hero Card (Guest Mode)
       expect(find.text('Sync vocabulary across devices'), findsOneWidget);
-      expect(find.text('Continue with Google'), findsOneWidget);
+      expect(find.text('Log in or Sign up'), findsOneWidget);
 
       // Section 1: Learning & Display (Learning & UI languages next to each other)
       expect(find.text('LEARNING & DISPLAY'), findsOneWidget);
@@ -175,6 +175,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Replay Onboarding'), findsOneWidget);
+      await tester.ensureVisible(find.text('Replay Onboarding'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Replay Onboarding'));
       await tester.pumpAndSettle();
 

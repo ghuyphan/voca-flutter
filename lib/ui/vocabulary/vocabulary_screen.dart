@@ -229,7 +229,7 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
           backgroundColor: colors.bgCard,
           surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(28),
             side: BorderSide(color: colors.borderColor),
           ),
           title: Row(

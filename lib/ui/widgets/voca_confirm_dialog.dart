@@ -100,8 +100,12 @@ Future<bool> showVocaConfirmDialog({
                 child: FilledButton(
                   onPressed: () => Navigator.of(ctx).pop(true),
                   style: FilledButton.styleFrom(
-                    backgroundColor: isDanger ? colors.error : colors.accentPrimary,
-                    foregroundColor: Colors.white,
+                    backgroundColor: isDanger
+                        ? (colors.isDark ? const Color(0xFF8C1D18) : colors.error)
+                        : (colors.isDark ? colors.accentPrimary : const Color(0xFFD83855)),
+                    foregroundColor: isDanger
+                        ? (colors.isDark ? const Color(0xFFF9DEDC) : Colors.white)
+                        : (colors.isDark ? const Color(0xFF5C0018) : Colors.white),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
